@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -11,12 +12,15 @@ import (
 	"github.com/google/uuid"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/cli-runtime/pkg/resource"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/deprecated/scheme"
+	"k8s.io/client-go/discovery"
+	memory "k8s.io/client-go/discovery/cached"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
@@ -29,10 +33,12 @@ const (
 var (
 	r              = gin.New()
 	kubeconfigPath string
-	kubeconfig     *rest.Config
-	client         *kubernetes.Clientset
+	config         *rest.Config
+	client         dynamic.Interface
 	// this WILL go away
-	cache = map[string][]runtime.Object{}
+	cache     = map[string][]unstructured.Unstructured{}
+	decode    = scheme.Codecs.UniversalDeserializer().Decode
+	namespace = "default"
 )
 
 func init() {
@@ -51,12 +57,12 @@ func init() {
 		log.Fatal("unable to get spin-cluster-account config file")
 	}
 
-	kubeconfig, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	client, err = kubernetes.NewForConfig(kubeconfig)
+	client, err = dynamic.NewForConfig(config)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -99,8 +105,43 @@ func main() {
 			},
 			PrimaryAccount:          false,
 			ProviderVersion:         "v2",
-			RequiredGroupMembership: []string{},
-			Type:                    "kubernetes",
+			RequiredGroupMembership: []interface{}{},
+			Skin:                    "v2",
+			SpinnakerKindMap: map[string]string{
+				"apiService":                     "unclassified",
+				"clusterRole":                    "unclassified",
+				"clusterRoleBinding":             "unclassified",
+				"configMap":                      "configs",
+				"controllerRevision":             "unclassified",
+				"cronJob":                        "serverGroups",
+				"customResourceDefinition":       "unclassified",
+				"daemonSet":                      "serverGroups",
+				"deployment":                     "serverGroupManagers",
+				"event":                          "unclassified",
+				"horizontalpodautoscaler":        "unclassified",
+				"ingress":                        "loadBalancers",
+				"job":                            "serverGroups",
+				"limitRange":                     "unclassified",
+				"mutatingWebhookConfiguration":   "unclassified",
+				"namespace":                      "unclassified",
+				"networkPolicy":                  "securityGroups",
+				"persistentVolume":               "configs",
+				"persistentVolumeClaim":          "configs",
+				"pod":                            "instances",
+				"podDisruptionBudget":            "unclassified",
+				"podPreset":                      "unclassified",
+				"podSecurityPolicy":              "unclassified",
+				"replicaSet":                     "serverGroups",
+				"role":                           "unclassified",
+				"roleBinding":                    "unclassified",
+				"secret":                         "configs",
+				"service":                        "loadBalancers",
+				"serviceAccount":                 "unclassified",
+				"statefulSet":                    "serverGroups",
+				"storageClass":                   "unclassified",
+				"validatingWebhookConfiguration": "unclassified",
+			},
+			Type: "kubernetes",
 		}
 		credentials = append(credentials, sca)
 		c.JSON(http.StatusOK, credentials)
@@ -125,35 +166,65 @@ func main() {
 					return
 				}
 
-				obj, err := runtime.Decode(unstructured.UnstructuredJSONScheme, b)
+				obj, _, err := decode(b, nil, nil)
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 					return
 				}
 
-				log.Println("applying object", obj.GetObjectKind().GroupVersionKind().Kind)
-
-				o, err := getObject(client, *kubeconfig, obj)
+				// convert the runtime.Object to unstructured.Unstructured
+				m, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 				if err != nil {
-					o, err = createObject(client, *kubeconfig, obj)
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+
+				unstructuredObj := &unstructured.Unstructured{
+					Object: m,
+				}
+
+				name, err := meta.NewAccessor().Name(obj)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+
+				gvk := obj.GetObjectKind().GroupVersionKind()
+
+				restMapping, err := findGVR(&gvk, config)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+
+				result, err := client.
+					Resource(restMapping.Resource).
+					Namespace(namespace).
+					Get(context.TODO(), name, metav1.GetOptions{})
+				if err != nil {
+					result, err = client.
+						Resource(restMapping.Resource).
+						Namespace(namespace).
+						Create(context.TODO(), unstructuredObj, metav1.CreateOptions{})
 					if err != nil {
-						c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-						return
+						panic(err)
 					}
 				} else {
-					o, err = patchObject(client, *kubeconfig, obj, b)
+					result, err = client.
+						Resource(restMapping.Resource).
+						Namespace(namespace).
+						Patch(context.TODO(), name, types.MergePatchType, b, metav1.PatchOptions{})
 					if err != nil {
-						c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-						return
+						panic(err)
 					}
 				}
 
 				if _, ok := cache[id]; !ok {
-					cache[id] = []runtime.Object{}
+					cache[id] = []unstructured.Unstructured{}
 				}
 
 				ro := cache[id]
-				ro = append(ro, o)
+				ro = append(ro, *result)
 				cache[id] = ro
 			}
 		}
@@ -167,16 +238,34 @@ func main() {
 
 	r.GET("/task/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		manifests := []runtime.Object{}
+		manifests := []map[string]interface{}{}
 
 		objs := cache[id]
-		for _, o := range objs {
-			obj, err := getObject(client, *kubeconfig, o)
+		for _, u := range objs {
+			obj := u.DeepCopyObject()
+			name, err := meta.NewAccessor().Name(obj)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
-			manifests = append(manifests, obj)
+
+			gvk := obj.GetObjectKind().GroupVersionKind()
+
+			restMapping, err := findGVR(&gvk, config)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			result, err := client.
+				Resource(restMapping.Resource).
+				Namespace(namespace).
+				Get(context.TODO(), name, metav1.GetOptions{})
+			// obj, err := getObject(client, *kubeconfig, o)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			manifests = append(manifests, result.Object)
 		}
 
 		ro := ResultObject{
@@ -201,16 +290,25 @@ func main() {
 }
 
 type Credential struct {
-	AccountType                 string      `json:"accountType"`
-	ChallengeDestructiveActions bool        `json:"challengeDestructiveActions"`
-	CloudProvider               string      `json:"cloudProvider"`
-	Environment                 string      `json:"environment"`
-	Name                        string      `json:"name"`
-	Permissions                 Permissions `json:"permissions"`
-	PrimaryAccount              bool        `json:"primaryAccount"`
-	ProviderVersion             string      `json:"providerVersion"`
-	RequiredGroupMembership     []string    `json:"requiredGroupMembership"`
-	Type                        string      `json:"type"`
+	AccountType                 string        `json:"accountType"`
+	CacheThreads                int           `json:"cacheThreads"`
+	ChallengeDestructiveActions bool          `json:"challengeDestructiveActions"`
+	CloudProvider               string        `json:"cloudProvider"`
+	DockerRegistries            []interface{} `json:"dockerRegistries"`
+	Enabled                     bool          `json:"enabled"`
+	Environment                 string        `json:"environment"`
+	Name                        string        `json:"name"`
+	Namespaces                  []string      `json:"namespaces"`
+	Permissions                 struct {
+		READ  []string `json:"READ"`
+		WRITE []string `json:"WRITE"`
+	} `json:"permissions"`
+	PrimaryAccount          bool              `json:"primaryAccount"`
+	ProviderVersion         string            `json:"providerVersion"`
+	RequiredGroupMembership []interface{}     `json:"requiredGroupMembership"`
+	Skin                    string            `json:"skin"`
+	SpinnakerKindMap        map[string]string `json:"spinnakerKindMap"`
+	Type                    string            `json:"type"`
 }
 
 type Permissions struct {
@@ -262,7 +360,7 @@ type ResultObject struct {
 	ManifestNamesByNamespace struct {
 		// Default []string `json:"default"`
 	} `json:"manifestNamesByNamespace"`
-	Manifests []runtime.Object `json:"manifests"`
+	Manifests []map[string]interface{} `json:"manifests"`
 }
 
 type KubernetesOpsRequest []struct {
@@ -288,123 +386,15 @@ type KubernetesOpsRequest []struct {
 	} `json:"deployManifest"`
 }
 
-func getObject(kubeClientset kubernetes.Interface,
-	restConfig rest.Config, obj runtime.Object) (runtime.Object, error) {
-	// Create a REST mapper that tracks information about the available resources in the cluster.
-	groupResources, err := restmapper.GetAPIGroupResources(kubeClientset.Discovery())
+// Find the corresponding GVR (available in *meta.RESTMapping) for gvk.
+func findGVR(gvk *schema.GroupVersionKind, cfg *rest.Config) (*meta.RESTMapping, error) {
+	// DiscoveryClient queries API server about the resources
+	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	rm := restmapper.NewDiscoveryRESTMapper(groupResources)
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
 
-	// Get some metadata needed to make the REST request.
-	gvk := obj.GetObjectKind().GroupVersionKind()
-	gk := schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}
-
-	mapping, err := rm.RESTMapping(gk, gvk.Version)
-	if err != nil {
-		return nil, err
-	}
-
-	name, err := meta.NewAccessor().Name(obj)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a client specifically for creating the object.
-	restClient, err := newRestClient(restConfig, mapping.GroupVersionKind.GroupVersion())
-	if err != nil {
-		return nil, err
-	}
-
-	// Use the REST helper to create the object in the "default" namespace.
-	restHelper := resource.NewHelper(restClient, mapping)
-
-	return restHelper.Get("default", name, false)
-}
-
-func createObject(kubeClientset kubernetes.Interface,
-	restConfig rest.Config, obj runtime.Object) (runtime.Object, error) {
-	// Create a REST mapper that tracks information about the available resources in the cluster.
-	groupResources, err := restmapper.GetAPIGroupResources(kubeClientset.Discovery())
-	if err != nil {
-		return nil, err
-	}
-
-	rm := restmapper.NewDiscoveryRESTMapper(groupResources)
-
-	// Get some metadata needed to make the REST request.
-	gvk := obj.GetObjectKind().GroupVersionKind()
-	gk := schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}
-
-	mapping, err := rm.RESTMapping(gk, gvk.Version)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = meta.NewAccessor().Name(obj)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a client specifically for creating the object.
-	restClient, err := newRestClient(restConfig, mapping.GroupVersionKind.GroupVersion())
-	if err != nil {
-		return nil, err
-	}
-
-	// Use the REST helper to create the object in the "default" namespace.
-	restHelper := resource.NewHelper(restClient, mapping)
-
-	return restHelper.Create("default", false, obj)
-}
-
-func patchObject(kubeClientset kubernetes.Interface,
-	restConfig rest.Config, obj runtime.Object, b []byte) (runtime.Object, error) {
-	// Create a REST mapper that tracks information about the available resources in the cluster.
-	groupResources, err := restmapper.GetAPIGroupResources(kubeClientset.Discovery())
-	if err != nil {
-		return nil, err
-	}
-
-	rm := restmapper.NewDiscoveryRESTMapper(groupResources)
-
-	// Get some metadata needed to make the REST request.
-	gvk := obj.GetObjectKind().GroupVersionKind()
-	gk := schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}
-
-	mapping, err := rm.RESTMapping(gk, gvk.Version)
-	if err != nil {
-		return nil, err
-	}
-
-	name, err := meta.NewAccessor().Name(obj)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a client specifically for creating the object.
-	restClient, err := newRestClient(restConfig, mapping.GroupVersionKind.GroupVersion())
-	if err != nil {
-		return nil, err
-	}
-
-	// Use the REST helper to create the object in the "default" namespace.
-	restHelper := resource.NewHelper(restClient, mapping)
-
-	return restHelper.Patch("default", name, types.MergePatchType, b, nil)
-}
-
-func newRestClient(restConfig rest.Config, gv schema.GroupVersion) (rest.Interface, error) {
-	restConfig.ContentConfig = resource.UnstructuredPlusDefaultContentConfig()
-	restConfig.GroupVersion = &gv
-
-	if len(gv.Group) == 0 {
-		restConfig.APIPath = "/api"
-	} else {
-		restConfig.APIPath = "/apis"
-	}
-
-	return rest.RESTClientFor(&restConfig)
+	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 }
