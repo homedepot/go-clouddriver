@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    release: spin
+  name: go-clouddriver-service-monitor
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 10s
+    path: /metrics
+    targetPort: 7002
+  namespaceSelector:
+    matchNames:
+    - spinnaker
+  selector:
+    app: spin
