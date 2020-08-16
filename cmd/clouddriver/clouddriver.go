@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
+	"github.com/mitchellh/mapstructure"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -158,6 +160,9 @@ func main() {
 			return
 		}
 
+		b, _ := json.Marshal(kor)
+		log.Println(string(b))
+
 		for _, req := range kor {
 			for _, manifest := range req.DeployManifest.Manifests {
 				b, err := json.Marshal(manifest)
@@ -236,6 +241,115 @@ func main() {
 		c.JSON(http.StatusOK, or)
 	})
 
+	// force cache refresh
+	// {"account":"spin-cluster-account","location":"default","name":"pod rss-site"}
+	r.POST("/cache/kubernetes/manifest", func(c *gin.Context) {
+		b, _ := ioutil.ReadAll(c.Request.Body)
+		fmt.Println("CACHE:", string(b))
+	})
+
+	// monitor deploy
+	r.GET("/manifests/:account/:location/:name", func(c *gin.Context) {
+		account := c.Param("account")
+		// default
+		namespace := c.Param("location")
+		// pod rss-site
+		n := c.Param("name")
+		a := strings.Split(n, " ")
+		resource := a[0]
+		name := a[1]
+
+		dc, err := discovery.NewDiscoveryClientForConfig(config)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+		gvk, err := mapper.KindFor(schema.GroupVersionResource{Resource: resource})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		restMapping, err := findGVR(&gvk, config)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		result, err := client.
+			Resource(restMapping.Resource).
+			Namespace(namespace).
+			Get(context.TODO(), name, metav1.GetOptions{})
+		// obj, err := getObject(client, *kubeconfig, o)
+		if err != nil {
+			log.Println(err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		kmr := KubernetesManifestResponse{
+			Account:  account,
+			Events:   nil,
+			Location: namespace,
+			Manifest: result.Object,
+			Metrics:  nil,
+			Moniker: struct {
+				App     string "json:\"app\""
+				Cluster string "json:\"cluster\""
+			}{
+				App:     "TODO",
+				Cluster: "TODO",
+			},
+			Name: name,
+			// The 'default' status of a kubernetes resource.
+			Status: KubernetesManifestStatus{
+				Available: Available{
+					State: true,
+				},
+				Failed: Failed{
+					State: false,
+				},
+				Paused: Paused{
+					State: false,
+				},
+				Stable: Stable{
+					State: true,
+				},
+			},
+			Warnings: nil,
+		}
+
+		// status https://github.com/spinnaker/clouddriver/blob/900f2b1013781b290a9d0db96ce1dd964917382f/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/model/Manifest.java#L48
+		// pod status check https://github.com/spinnaker/clouddriver/blob/master/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/op/handler/KubernetesPodHandler.java
+		switch strings.ToLower(gvk.GroupKind().Kind) {
+		case "pod":
+			var pod struct {
+				Status struct {
+					Phase string `json:"phase"`
+				} `json:"status"`
+			}
+			err := mapstructure.Decode(result.Object, &pod)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			if strings.EqualFold(pod.Status.Phase, "pending") ||
+				strings.EqualFold(pod.Status.Phase, "failed") ||
+				strings.EqualFold(pod.Status.Phase, "unknown") {
+				kmr.Status.Stable.State = false
+				kmr.Status.Stable.Message = "Pod is " + strings.ToLower(pod.Status.Phase)
+				kmr.Status.Available.State = false
+				kmr.Status.Available.Message = "Pod is " + strings.ToLower(pod.Status.Phase)
+			}
+		default:
+			c.JSON(http.StatusInternalServerError, nil)
+		}
+
+		c.JSON(http.StatusOK, kmr)
+	})
+
 	r.GET("/task/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		manifests := []map[string]interface{}{}
@@ -270,6 +384,26 @@ func main() {
 
 		ro := ResultObject{
 			Manifests: manifests,
+			CreatedArtifacts: []CreatedArtifact{{
+				CustomKind: false,
+				Location:   "",
+				Metadata: struct {
+					Account string "json:\"account\""
+				}{
+					Account: "spin-cluster-account",
+				},
+				Name:      "rss-site",
+				Reference: "rss-site",
+				Type:      "kubernetes/pod",
+				Version:   "",
+			},
+			},
+			ManifestNamesByNamespace: map[string][]string{
+				"default": {"pod rss-site"},
+			},
+			ManifestNamesByNamespaceToRefresh: map[string][]string{
+				"default": {"pod rss-site"},
+			},
 		}
 		tr := TaskResponse{
 			ID:            id,
@@ -346,21 +480,23 @@ type Status struct {
 }
 
 type ResultObject struct {
-	BoundArtifacts   []interface{} `json:"boundArtifacts"`
-	CreatedArtifacts []struct {
-		// CustomKind bool   `json:"customKind"`
-		// Location   string `json:"location"`
-		// Metadata   struct {
-		// 	Account string `json:"account"`
-		// } `json:"metadata"`
-		// Name      string `json:"name"`
-		// Reference string `json:"reference"`
-		// Type      string `json:"type"`
-	} `json:"createdArtifacts"`
-	ManifestNamesByNamespace struct {
-		// Default []string `json:"default"`
-	} `json:"manifestNamesByNamespace"`
-	Manifests []map[string]interface{} `json:"manifests"`
+	BoundArtifacts                    []interface{}            `json:"boundArtifacts"`
+	CreatedArtifacts                  []CreatedArtifact        `json:"createdArtifacts"`
+	ManifestNamesByNamespace          map[string][]string      `json:"manifestNamesByNamespace"`
+	ManifestNamesByNamespaceToRefresh map[string][]string      `json:"manifestNamesByNamespaceToRefresh"`
+	Manifests                         []map[string]interface{} `json:"manifests"`
+}
+
+type CreatedArtifact struct {
+	CustomKind bool   `json:"customKind"`
+	Location   string `json:"location"`
+	Metadata   struct {
+		Account string `json:"account"`
+	} `json:"metadata"`
+	Name      string `json:"name"`
+	Reference string `json:"reference"`
+	Type      string `json:"type"`
+	Version   string `json:"version"`
 }
 
 type KubernetesOpsRequest []struct {
@@ -397,4 +533,54 @@ func findGVR(gvk *schema.GroupVersionKind, cfg *rest.Config) (*meta.RESTMapping,
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
 
 	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+}
+
+type KubernetesManifestResponse struct {
+	Account string `json:"account"`
+	// Artifacts []struct {
+	// 	CustomKind bool `json:"customKind"`
+	// 	Metadata   struct {
+	// 	} `json:"metadata"`
+	// 	Name      string `json:"name"`
+	// 	Reference string `json:"reference"`
+	// 	Type      string `json:"type"`
+	// } `json:"artifacts"`
+	Events   []interface{}          `json:"events"`
+	Location string                 `json:"location"`
+	Manifest map[string]interface{} `json:"manifest"`
+	Metrics  []interface{}          `json:"metrics"`
+	Moniker  struct {
+		App     string `json:"app"`
+		Cluster string `json:"cluster"`
+	} `json:"moniker"`
+	Name     string                   `json:"name"`
+	Status   KubernetesManifestStatus `json:"status"`
+	Warnings []interface{}            `json:"warnings"`
+}
+
+type KubernetesManifestStatus struct {
+	Available Available `json:"available"`
+	Failed    Failed    `json:"failed"`
+	Paused    Paused    `json:"paused"`
+	Stable    Stable    `json:"stable"`
+}
+
+type Available struct {
+	State   bool   `json:"state"`
+	Message string `json:"message"`
+}
+
+type Failed struct {
+	State   bool   `json:"state"`
+	Message string `json:"message"`
+}
+
+type Paused struct {
+	State   bool   `json:"state"`
+	Message string `json:"message"`
+}
+
+type Stable struct {
+	State   bool   `json:"state"`
+	Message string `json:"message"`
 }
