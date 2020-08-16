@@ -1,0 +1,11 @@
+mode: atomic
+github.com/billiford/go-clouddriver/pkg/sql/sql.go:31.36,33.2 1 6
+github.com/billiford/go-clouddriver/pkg/sql/sql.go:44.71,46.16 2 7
+github.com/billiford/go-clouddriver/pkg/sql/sql.go:50.2,59.16 6 6
+github.com/billiford/go-clouddriver/pkg/sql/sql.go:46.16,48.3 1 1
+github.com/billiford/go-clouddriver/pkg/sql/sql.go:62.72,65.2 2 1
+github.com/billiford/go-clouddriver/pkg/sql/sql.go:67.82,72.2 3 1
+github.com/billiford/go-clouddriver/pkg/sql/sql.go:74.38,76.2 1 1
+github.com/billiford/go-clouddriver/pkg/sql/sql.go:86.34,87.88 1 2
+github.com/billiford/go-clouddriver/pkg/sql/sql.go:91.2,92.56 1 1
+github.com/billiford/go-clouddriver/pkg/sql/sql.go:87.88,89.3 1 1
