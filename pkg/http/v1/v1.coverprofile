@@ -1,8 +1,8 @@
 mode: atomic
-github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:11.47,16.16 4 0
-github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:21.2,22.16 2 0
-github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:27.2,28.16 2 0
-github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:33.2,33.31 1 0
-github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:16.16,19.3 2 0
-github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:22.16,25.3 2 0
-github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:28.16,31.3 2 0
+github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:11.47,16.16 4 4
+github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:21.2,22.16 2 3
+github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:27.2,28.16 2 2
+github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:33.2,33.31 1 1
+github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:16.16,19.3 2 1
+github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:22.16,25.3 2 1
+github.com/billiford/go-clouddriver/pkg/http/v1/provider.go:28.16,31.3 2 1

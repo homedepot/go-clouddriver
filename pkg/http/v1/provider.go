@@ -12,7 +12,7 @@ func CreateKubernetesProvider(c *gin.Context) {
 	sc := sql.Instance(c)
 	p := kubernetes.Provider{}
 
-	err := c.BindJSON(&p)
+	err := c.ShouldBindJSON(&p)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
