@@ -1,6 +1,6 @@
 package clouddriver
 
-type Task struct {
+type TaskResponse struct {
 	ID string `json:"id"`
 	// SagaIds []interface{} `json:"sagaIds"`
 	// History []struct {

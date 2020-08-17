@@ -1,9 +1,9 @@
 package server
 
 import (
+	"github.com/billiford/go-clouddriver/pkg/http"
 	"github.com/billiford/go-clouddriver/pkg/middleware"
 	"github.com/billiford/go-clouddriver/pkg/sql"
-	"github.com/billiford/go-clouddriver/pkg/sql/http"
 	"github.com/gin-gonic/gin"
 )
 

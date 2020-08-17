@@ -26,6 +26,8 @@ const (
 type Client interface {
 	CreateKubernetesProvider(kubernetes.Provider) error
 	GetKubernetesProvider(string) (kubernetes.Provider, error)
+	CreateKubernetesResource(kubernetes.Resource) error
+	ListKubernetesResources(string) ([]kubernetes.Resource, error)
 }
 
 func NewClient(db *gorm.DB) Client {
@@ -50,6 +52,7 @@ func Connect(driver string, connection interface{}) (*gorm.DB, error) {
 	db.LogMode(false)
 	db.AutoMigrate(
 		&kubernetes.Provider{},
+		&kubernetes.Resource{},
 	)
 
 	db.DB().SetMaxOpenConns(maxOpenConns)
@@ -60,7 +63,7 @@ func Connect(driver string, connection interface{}) (*gorm.DB, error) {
 }
 
 func (c *client) CreateKubernetesProvider(p kubernetes.Provider) error {
-	db := c.db.Save(&p)
+	db := c.db.Create(&p)
 	return db.Error
 }
 
@@ -69,6 +72,18 @@ func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error)
 	db := c.db.Select("host, ca_data").Where("name = ?", name).First(&p)
 
 	return p, db.Error
+}
+
+func (c *client) CreateKubernetesResource(r kubernetes.Resource) error {
+	db := c.db.Create(&r)
+	return db.Error
+}
+
+func (c *client) ListKubernetesResources(taskID string) ([]kubernetes.Resource, error) {
+	var rs []kubernetes.Resource
+	db := c.db.Select("group, name, namespace, resource, version").Where("task_id = ?", taskID).Find(&rs)
+
+	return rs, db.Error
 }
 
 func Instance(c *gin.Context) Client {

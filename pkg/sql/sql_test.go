@@ -66,8 +66,11 @@ var _ = Describe("Sql", func() {
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^UPDATE "provider_kubernetes" SET "host" = \?, ` +
-					`"ca_data" = \? WHERE "provider_kubernetes"."name" = \?$`).
+				mock.ExpectExec(`(?i)^INSERT INTO "provider_kubernetes" \(` +
+					`"name",` +
+					`"host",` +
+					`"ca_data"` +
+					`\) VALUES \(\?,\?,\?\)$`).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			})
@@ -104,6 +107,80 @@ var _ = Describe("Sql", func() {
 				Expect(provider.Name).To(Equal("test-name"))
 				Expect(provider.Host).To(Equal("test-host"))
 				Expect(provider.CAData).To(Equal("test-ca-data"))
+			})
+		})
+	})
+
+	Describe("#CreateKubernetesResource", func() {
+		var resource kubernetes.Resource
+
+		BeforeEach(func() {
+			resource = kubernetes.Resource{
+				ID:        "test-id",
+				TaskID:    "test-task-id",
+				Group:     "test-group",
+				Name:      "test-name",
+				Namespace: "test-namespace",
+				Resource:  "test-resource",
+				Version:   "test-version",
+			}
+		})
+
+		JustBeforeEach(func() {
+			err = c.CreateKubernetesResource(resource)
+		})
+
+		When("it succeeds", func() {
+			BeforeEach(func() {
+				mock.ExpectBegin()
+				mock.ExpectExec(`(?i)^INSERT INTO "resource_kubernetes" \(` +
+					`"account_name",` +
+					`"id",` +
+					`"task_id",` +
+					`"group",` +
+					`"name",` +
+					`"namespace",` +
+					`"resource",` +
+					`"version",` +
+					`"kind"` +
+					`\) VALUES \(\?,\?,\?,\?,\?,\?,\?,\?,\?\)$`).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Describe("#ListKubernetesResources", func() {
+		var resources []kubernetes.Resource
+
+		JustBeforeEach(func() {
+			resources, err = c.ListKubernetesResources("test-task-id")
+		})
+
+		When("it succeeds", func() {
+			BeforeEach(func() {
+				sqlRows := sqlmock.NewRows([]string{"group", "name"}).
+					AddRow("group1", "name1").
+					AddRow("group2", "name2")
+				mock.ExpectQuery(`(?i)^SELECT ` +
+					`group, ` +
+					`name, ` +
+					`namespace, ` +
+					`resource, ` +
+					`version ` +
+					`FROM "resource_kubernetes" ` +
+					` WHERE \(task_id = \?\)$`).
+					WillReturnRows(sqlRows)
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+				Expect(resources).To(HaveLen(2))
 			})
 		})
 	})

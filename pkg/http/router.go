@@ -2,6 +2,7 @@ package http
 
 import (
 	v0 "github.com/billiford/go-clouddriver/pkg/http/v0"
+	v1 "github.com/billiford/go-clouddriver/pkg/http/v1"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,5 +23,10 @@ func Initialize(r *gin.Engine) {
 		r.GET("/manifests/:account/:location/:name", v0.GetManifest)
 
 		r.GET("/task/:id", v0.GetTask)
+	}
+
+	api = r.Group("/v1")
+	{
+		api.POST("/kubernetes/providers", v1.CreateKubernetesProvider)
 	}
 }

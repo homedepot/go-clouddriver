@@ -44,7 +44,7 @@ var spinnakerKindMap = map[string]string{
 	"validatingWebhookConfiguration": "unclassified",
 }
 
-// TODO lots of this is hardcoded - we need to get these from each plugin.
+// TODO lots of this is hardcoded - we need to get these from each provider.
 func ListCredentials(c *gin.Context) {
 	credentials := []clouddriver.Credential{}
 	sca := clouddriver.Credential{
