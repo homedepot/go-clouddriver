@@ -4,7 +4,7 @@ type Resource struct {
 	AccountName string `json:"accountName"`
 	ID          string `json:"id" gorm:"primary_key"`
 	TaskID      string `json:"taskId"`
-	Group       string `json:"host"`
+	APIGroup    string `json:"apiGroup"`
 	Name        string `json:"name"`
 	Namespace   string `json:"namespace"`
 	Resource    string `json:"resource"`

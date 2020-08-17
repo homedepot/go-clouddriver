@@ -85,6 +85,10 @@ func (c *client) Apply(manifest []byte) (*unstructured.Unstructured, Metadata, e
 		return nil, metadata, err
 	}
 
+	if namespace == "" {
+		namespace = "default"
+	}
+
 	gvk := obj.GetObjectKind().GroupVersionKind()
 
 	restMapping, err := findGVR(&gvk, c.config)

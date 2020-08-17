@@ -118,7 +118,7 @@ var _ = Describe("Sql", func() {
 			resource = kubernetes.Resource{
 				ID:        "test-id",
 				TaskID:    "test-task-id",
-				Group:     "test-group",
+				APIGroup:  "test-group",
 				Name:      "test-name",
 				Namespace: "test-namespace",
 				Resource:  "test-resource",
@@ -137,7 +137,7 @@ var _ = Describe("Sql", func() {
 					`"account_name",` +
 					`"id",` +
 					`"task_id",` +
-					`"group",` +
+					`"api_group",` +
 					`"name",` +
 					`"namespace",` +
 					`"resource",` +
@@ -167,7 +167,7 @@ var _ = Describe("Sql", func() {
 					AddRow("group1", "name1").
 					AddRow("group2", "name2")
 				mock.ExpectQuery(`(?i)^SELECT ` +
-					`group, ` +
+					`api_group, ` +
 					`name, ` +
 					`namespace, ` +
 					`resource, ` +

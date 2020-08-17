@@ -76,7 +76,7 @@ func CreateKubernetesDeployment(c *gin.Context) {
 				AccountName: accountName,
 				ID:          uuid.New().String(),
 				TaskID:      taskID,
-				Group:       meta.Group,
+				APIGroup:    meta.Group,
 				Name:        meta.Name,
 				Namespace:   meta.Namespace,
 				Resource:    meta.Resource,
