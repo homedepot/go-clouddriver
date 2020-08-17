@@ -222,10 +222,10 @@ var _ = Describe("Sql", func() {
 		When("the config is set", func() {
 			BeforeEach(func() {
 				c = Config{
-					User:                   "user",
-					Password:               "password",
-					InstanceConnectionName: "10.1.1.1",
-					Name:                   "go-clouddriver",
+					User:     "user",
+					Password: "password",
+					Host:     "10.1.1.1",
+					Name:     "go-clouddriver",
 				}
 				connection = Connection(c)
 			})

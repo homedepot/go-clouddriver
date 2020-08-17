@@ -3,7 +3,6 @@ package v0
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
@@ -14,15 +13,6 @@ import (
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
 )
-
-var bearerToken string
-
-func init() {
-	bearerToken = os.Getenv("BEARER_TOKEN")
-	if bearerToken == "" {
-		log.Println("BEARER_TOKEN not set!!!")
-	}
-}
 
 // Get a task - currently only associated with kubernetes 'tasks'.
 func GetTask(c *gin.Context) {

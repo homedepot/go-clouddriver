@@ -63,10 +63,10 @@ func mustGetenv(env string) (s string) {
 
 func mustDBConnect() *gorm.DB {
 	sqlConfig := sql.Config{
-		User:                   mustGetenv("DB_USER"),
-		Password:               mustGetenv("DB_PASS"),
-		InstanceConnectionName: mustGetenv("DB_INSTANCE_CONNECTION_NAME"),
-		Name:                   mustGetenv("DB_NAME"),
+		User:     mustGetenv("DB_USER"),
+		Password: mustGetenv("DB_PASS"),
+		Host:     mustGetenv("DB_HOST"),
+		Name:     mustGetenv("DB_NAME"),
 	}
 
 	db, err := sql.Connect("mysql", sql.Connection(sqlConfig))

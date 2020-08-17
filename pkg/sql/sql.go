@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	ClientInstanceKey = `Client`
+	ClientInstanceKey = `SQLClient`
 	maxOpenConns      = 5
 	connMaxLifetime   = time.Second * 30
 )
@@ -91,18 +91,18 @@ func Instance(c *gin.Context) Client {
 }
 
 type Config struct {
-	User                   string
-	Password               string
-	InstanceConnectionName string
-	Name                   string
+	User     string
+	Password string
+	Host     string
+	Name     string
 }
 
 // Get connection to the DB.
 func Connection(c Config) string {
-	if c.User == "" || c.Password == "" || c.InstanceConnectionName == "" || c.Name == "" {
+	if c.User == "" || c.Password == "" || c.Host == "" || c.Name == "" {
 		return "clouddriver.db"
 	}
 
 	return fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=UTC",
-		c.User, c.Password, c.InstanceConnectionName, c.Name)
+		c.User, c.Password, c.Host, c.Name)
 }
