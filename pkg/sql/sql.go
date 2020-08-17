@@ -81,7 +81,7 @@ func (c *client) CreateKubernetesResource(r kubernetes.Resource) error {
 
 func (c *client) ListKubernetesResources(taskID string) ([]kubernetes.Resource, error) {
 	var rs []kubernetes.Resource
-	db := c.db.Select("api_group, name, namespace, resource, version").Where("task_id = ?", taskID).Find(&rs)
+	db := c.db.Select("account_name, api_group, name, namespace, resource, version").Where("task_id = ?", taskID).Find(&rs)
 
 	return rs, db.Error
 }

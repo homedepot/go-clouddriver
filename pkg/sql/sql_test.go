@@ -167,6 +167,7 @@ var _ = Describe("Sql", func() {
 					AddRow("group1", "name1").
 					AddRow("group2", "name2")
 				mock.ExpectQuery(`(?i)^SELECT ` +
+					`account_name, ` +
 					`api_group, ` +
 					`name, ` +
 					`namespace, ` +
