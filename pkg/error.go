@@ -1,6 +1,10 @@
 package clouddriver
 
-import "time"
+import (
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Error struct {
 	Error     string `json:"error"`
@@ -21,6 +25,11 @@ func NewError(e, m string, s int) Error {
 		Error:     e,
 		Message:   m,
 		Status:    s,
-		Timestamp: time.Now().UnixNano(),
+		Timestamp: time.Now().UnixNano() / 1000000,
 	}
+}
+
+func WriteError(c *gin.Context, status int, err error) {
+	c.Status(status)
+	c.Error(err).SetType(gin.ErrorTypePublic)
 }

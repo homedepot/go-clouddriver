@@ -1,21 +1,18 @@
 package v0
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var bearerToken string
@@ -23,25 +20,20 @@ var bearerToken string
 func init() {
 	bearerToken = os.Getenv("BEARER_TOKEN")
 	if bearerToken == "" {
-		panic("bearer token not set")
+		log.Println("BEARER_TOKEN not set!!!")
 	}
 }
 
 // Get a task - currently only associated with kubernetes 'tasks'.
 func GetTask(c *gin.Context) {
 	sc := sql.Instance(c)
+	kc := kubernetes.Instance(c)
 	id := c.Param("id")
 	manifests := []map[string]interface{}{}
 
 	resources, err := sc.ListKubernetesResources(id)
 	if err != nil {
-		e := clouddriver.NewError(
-			"BadRequest",
-			"Error getting task: "+err.Error(),
-			http.StatusBadRequest,
-		)
-		c.JSON(http.StatusBadRequest, e)
-
+		clouddriver.WriteError(c, http.StatusBadRequest, err)
 		return
 	}
 
@@ -53,25 +45,13 @@ func GetTask(c *gin.Context) {
 
 	provider, err := sc.GetKubernetesProvider(accountName)
 	if err != nil {
-		e := clouddriver.NewError(
-			"InternalServerError",
-			"Error getting provider: "+err.Error(),
-			http.StatusInternalServerError,
-		)
-		c.JSON(http.StatusInternalServerError, e)
-
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		e := clouddriver.NewError(
-			"InternalServerError",
-			"Error decoding provider CA data: "+err.Error(),
-			http.StatusInternalServerError,
-		)
-		c.JSON(http.StatusInternalServerError, e)
-
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -83,30 +63,15 @@ func GetTask(c *gin.Context) {
 		},
 	}
 
-	client, err := dynamic.NewForConfig(config)
-	if err != nil {
-		e := clouddriver.NewError(
-			"InternalServerError",
-			"Error generating dynamic kubernetes client: "+err.Error(),
-			http.StatusInternalServerError,
-		)
-		c.JSON(http.StatusInternalServerError, e)
-
+	if err = kc.WithConfig(config); err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	for _, r := range resources {
-		resource := schema.GroupVersionResource{
-			Group:    r.Group,
-			Version:  r.Version,
-			Resource: r.Resource,
-		}
-		result, err := client.
-			Resource(resource).
-			Namespace(r.Namespace).
-			Get(context.TODO(), r.Name, metav1.GetOptions{})
+		result, err := kc.Get(r.Kind, r.Name, r.Namespace)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
 			return
 		}
 

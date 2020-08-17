@@ -1,35 +1,24 @@
 package pod
 
 import (
-	"strings"
-
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
+	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
 	"github.com/mitchellh/mapstructure"
+	v1 "k8s.io/api/core/v1"
 )
 
-type pod struct {
-	status status
-}
+func Status(m map[string]interface{}) manifest.Status {
+	s := manifest.DefaultStatus
 
-type status struct {
-	Phase string `json:"phase"`
-}
+	p := &v1.Pod{}
+	_ = mapstructure.Decode(m, &p)
 
-func Status(m map[string]interface{}) kubernetes.ManifestStatus {
-	s := kubernetes.DefaultStatus
-
-	p := &pod{}
-	if err := mapstructure.Decode(m, &p); err != nil {
-		return kubernetes.NoneReported
-	}
-
-	if strings.EqualFold(p.status.Phase, "pending") ||
-		strings.EqualFold(p.status.Phase, "failed") ||
-		strings.EqualFold(p.status.Phase, "unknown") {
+	if p.Status.Phase == v1.PodPending ||
+		p.Status.Phase == v1.PodFailed ||
+		p.Status.Phase == v1.PodUnknown {
 		s.Stable.State = false
-		s.Stable.Message = "Pod is " + strings.ToLower(p.status.Phase)
+		s.Stable.Message = "Pod is " + string(p.Status.Phase)
 		s.Available.State = false
-		s.Available.Message = "Pod is " + strings.ToLower(p.status.Phase)
+		s.Available.Message = "Pod is " + string(p.Status.Phase)
 	}
 
 	return s

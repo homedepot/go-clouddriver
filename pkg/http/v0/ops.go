@@ -1,4 +1,6 @@
-package kubernetes
+package v0
+
+import "github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
 
 type OpsRequest []struct {
 	DeployManifest DeployManifest `json:"deployManifest"`
@@ -48,34 +50,7 @@ type ManifestResponse struct {
 		App     string `json:"app"`
 		Cluster string `json:"cluster"`
 	} `json:"moniker"`
-	Name     string         `json:"name"`
-	Status   ManifestStatus `json:"status"`
-	Warnings []interface{}  `json:"warnings"`
-}
-
-type ManifestStatus struct {
-	Available Available `json:"available"`
-	Failed    Failed    `json:"failed"`
-	Paused    Paused    `json:"paused"`
-	Stable    Stable    `json:"stable"`
-}
-
-type Available struct {
-	State   bool   `json:"state"`
-	Message string `json:"message"`
-}
-
-type Failed struct {
-	State   bool   `json:"state"`
-	Message string `json:"message"`
-}
-
-type Paused struct {
-	State   bool   `json:"state"`
-	Message string `json:"message"`
-}
-
-type Stable struct {
-	State   bool   `json:"state"`
-	Message string `json:"message"`
+	Name     string          `json:"name"`
+	Status   manifest.Status `json:"status"`
+	Warnings []interface{}   `json:"warnings"`
 }
