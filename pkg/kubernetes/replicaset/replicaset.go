@@ -1,8 +1,10 @@
 package replicaset
 
 import (
+	"encoding/json"
+	"log"
+
 	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
-	"github.com/mitchellh/mapstructure"
 	v1 "k8s.io/api/apps/v1"
 )
 
@@ -10,7 +12,8 @@ func Status(m map[string]interface{}) manifest.Status {
 	s := manifest.DefaultStatus
 
 	r := &v1.ReplicaSet{}
-	_ = mapstructure.Decode(m, &r)
+	b, _ := json.Marshal(m)
+	_ = json.Unmarshal(b, &r)
 
 	desired := r.Spec.Replicas
 	fullyLabeled := r.Status.FullyLabeledReplicas
@@ -43,6 +46,9 @@ func Status(m map[string]interface{}) manifest.Status {
 	}
 
 	if r.ObjectMeta.Generation != r.Status.ObservedGeneration {
+		log.Println("r.ObjectMeta.Generation", r.ObjectMeta.Generation)
+		log.Println("r.Status.ObservedGeneration", r.Status.ObservedGeneration)
+
 		s.Stable.State = false
 		s.Stable.Message = "Waiting for replicaset spec update to be observed"
 

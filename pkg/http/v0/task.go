@@ -27,11 +27,25 @@ func GetTask(c *gin.Context) {
 		return
 	}
 
-	var accountName string
-	// TODO create a separate table to associate a provider with a task ID.
-	if len(resources) > 0 {
-		accountName = resources[0].AccountName
+	if len(resources) == 0 {
+		tr := clouddriver.TaskResponse{
+			ID:            id,
+			ResultObjects: []clouddriver.ResultObject{},
+			Status: clouddriver.TaskStatus{
+				Complete:  true,
+				Completed: true,
+				Failed:    false,
+				Phase:     "ORCHESTRATION",
+				Retryable: false,
+				Status:    "Orchestration completed.",
+			},
+		}
+
+		c.JSON(http.StatusOK, tr)
+		return
 	}
+
+	accountName := resources[0].AccountName
 
 	provider, err := sc.GetKubernetesProvider(accountName)
 	if err != nil {
@@ -59,7 +73,7 @@ func GetTask(c *gin.Context) {
 	}
 
 	for _, r := range resources {
-		result, err := kc.Get(r.Kind, r.Name, r.Namespace)
+		result, err := kc.Get(r.Resource, r.Name, r.Namespace)
 		if err != nil {
 			clouddriver.WriteError(c, http.StatusInternalServerError, err)
 			return

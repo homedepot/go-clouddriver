@@ -15,6 +15,7 @@ func Initialize(r *gin.Engine) {
 		// Force cache refresh.
 		api.POST("/cache/kubernetes/manifest", v0.OK)
 		api.GET("/credentials", v0.ListCredentials)
+		api.GET("/applications/:application/serverGroupManagers", v0.ListServerGroupManagers)
 
 		// Trigger a kubernetes deployment.
 		r.POST("/kubernetes/ops", v0.CreateKubernetesDeployment)

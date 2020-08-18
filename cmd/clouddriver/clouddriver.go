@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -37,9 +36,9 @@ func init() {
 	r.Use(gin.Recovery())
 
 	r.NoRoute(func(c *gin.Context) {
-		log.Println("HEADERS:", c.Request.Header)
-		b, _ := ioutil.ReadAll(c.Request.Body)
-		log.Println("BODY:", string(b))
+		// log.Println("HEADERS:", c.Request.Header)
+		// b, _ := ioutil.ReadAll(c.Request.Body)
+		// log.Println("BODY:", string(b))
 		c.JSON(http.StatusNotFound, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
 	})
 

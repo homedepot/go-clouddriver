@@ -58,6 +58,19 @@ type FakeClient struct {
 		result1 []kubernetes.Resource
 		result2 error
 	}
+	ListKubernetesAccountsBySpinnakerAppStub        func(string) ([]string, error)
+	listKubernetesAccountsBySpinnakerAppMutex       sync.RWMutex
+	listKubernetesAccountsBySpinnakerAppArgsForCall []struct {
+		arg1 string
+	}
+	listKubernetesAccountsBySpinnakerAppReturns struct {
+		result1 []string
+		result2 error
+	}
+	listKubernetesAccountsBySpinnakerAppReturnsOnCall map[int]struct {
+		result1 []string
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -260,6 +273,57 @@ func (fake *FakeClient) ListKubernetesResourcesReturnsOnCall(i int, result1 []ku
 	}{result1, result2}
 }
 
+func (fake *FakeClient) ListKubernetesAccountsBySpinnakerApp(arg1 string) ([]string, error) {
+	fake.listKubernetesAccountsBySpinnakerAppMutex.Lock()
+	ret, specificReturn := fake.listKubernetesAccountsBySpinnakerAppReturnsOnCall[len(fake.listKubernetesAccountsBySpinnakerAppArgsForCall)]
+	fake.listKubernetesAccountsBySpinnakerAppArgsForCall = append(fake.listKubernetesAccountsBySpinnakerAppArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("ListKubernetesAccountsBySpinnakerApp", []interface{}{arg1})
+	fake.listKubernetesAccountsBySpinnakerAppMutex.Unlock()
+	if fake.ListKubernetesAccountsBySpinnakerAppStub != nil {
+		return fake.ListKubernetesAccountsBySpinnakerAppStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.listKubernetesAccountsBySpinnakerAppReturns.result1, fake.listKubernetesAccountsBySpinnakerAppReturns.result2
+}
+
+func (fake *FakeClient) ListKubernetesAccountsBySpinnakerAppCallCount() int {
+	fake.listKubernetesAccountsBySpinnakerAppMutex.RLock()
+	defer fake.listKubernetesAccountsBySpinnakerAppMutex.RUnlock()
+	return len(fake.listKubernetesAccountsBySpinnakerAppArgsForCall)
+}
+
+func (fake *FakeClient) ListKubernetesAccountsBySpinnakerAppArgsForCall(i int) string {
+	fake.listKubernetesAccountsBySpinnakerAppMutex.RLock()
+	defer fake.listKubernetesAccountsBySpinnakerAppMutex.RUnlock()
+	return fake.listKubernetesAccountsBySpinnakerAppArgsForCall[i].arg1
+}
+
+func (fake *FakeClient) ListKubernetesAccountsBySpinnakerAppReturns(result1 []string, result2 error) {
+	fake.ListKubernetesAccountsBySpinnakerAppStub = nil
+	fake.listKubernetesAccountsBySpinnakerAppReturns = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ListKubernetesAccountsBySpinnakerAppReturnsOnCall(i int, result1 []string, result2 error) {
+	fake.ListKubernetesAccountsBySpinnakerAppStub = nil
+	if fake.listKubernetesAccountsBySpinnakerAppReturnsOnCall == nil {
+		fake.listKubernetesAccountsBySpinnakerAppReturnsOnCall = make(map[int]struct {
+			result1 []string
+			result2 error
+		})
+	}
+	fake.listKubernetesAccountsBySpinnakerAppReturnsOnCall[i] = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -271,6 +335,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.createKubernetesResourceMutex.RUnlock()
 	fake.listKubernetesResourcesMutex.RLock()
 	defer fake.listKubernetesResourcesMutex.RUnlock()
+	fake.listKubernetesAccountsBySpinnakerAppMutex.RLock()
+	defer fake.listKubernetesAccountsBySpinnakerAppMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

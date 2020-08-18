@@ -28,6 +28,7 @@ type Client interface {
 	GetKubernetesProvider(string) (kubernetes.Provider, error)
 	CreateKubernetesResource(kubernetes.Resource) error
 	ListKubernetesResources(string) ([]kubernetes.Resource, error)
+	ListKubernetesAccountsBySpinnakerApp(string) ([]string, error)
 }
 
 func NewClient(db *gorm.DB) Client {
@@ -81,9 +82,25 @@ func (c *client) CreateKubernetesResource(r kubernetes.Resource) error {
 
 func (c *client) ListKubernetesResources(taskID string) ([]kubernetes.Resource, error) {
 	var rs []kubernetes.Resource
-	db := c.db.Select("account_name, api_group, name, namespace, resource, version").Where("task_id = ?", taskID).Find(&rs)
+	db := c.db.Select("account_name, api_group, kind, name, namespace, resource, version").
+		Where("task_id = ?", taskID).Find(&rs)
 
 	return rs, db.Error
+}
+
+func (c *client) ListKubernetesAccountsBySpinnakerApp(spinnakerApp string) ([]string, error) {
+	var rs []kubernetes.Resource
+	db := c.db.Select("account_name").
+		Where("spinnaker_app = ?", spinnakerApp).
+		Group("account_name").
+		Find(&rs)
+
+	accounts := []string{}
+	for _, r := range rs {
+		accounts = append(accounts, r.AccountName)
+	}
+
+	return accounts, db.Error
 }
 
 func Instance(c *gin.Context) Client {

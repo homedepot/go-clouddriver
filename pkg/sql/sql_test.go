@@ -66,7 +66,7 @@ var _ = Describe("Sql", func() {
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^INSERT INTO "provider_kubernetes" \(` +
+				mock.ExpectExec(`(?i)^INSERT INTO "kubernetes_providers" \(` +
 					`"name",` +
 					`"host",` +
 					`"ca_data"` +
@@ -96,8 +96,8 @@ var _ = Describe("Sql", func() {
 			BeforeEach(func() {
 				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data"}).
 					AddRow("test-name", "test-host", "test-ca-data")
-				mock.ExpectQuery(`(?i)^SELECT host, ca_data FROM "provider_kubernetes" ` +
-					` WHERE \(name = \?\) ORDER BY "provider_kubernetes"."name" ASC LIMIT 1$`).
+				mock.ExpectQuery(`(?i)^SELECT host, ca_data FROM "kubernetes_providers" ` +
+					` WHERE \(name = \?\) ORDER BY "kubernetes_providers"."name" ASC LIMIT 1$`).
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -133,7 +133,7 @@ var _ = Describe("Sql", func() {
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^INSERT INTO "resource_kubernetes" \(` +
+				mock.ExpectExec(`(?i)^INSERT INTO "kubernetes_resources" \(` +
 					`"account_name",` +
 					`"id",` +
 					`"task_id",` +
@@ -142,8 +142,9 @@ var _ = Describe("Sql", func() {
 					`"namespace",` +
 					`"resource",` +
 					`"version",` +
-					`"kind"` +
-					`\) VALUES \(\?,\?,\?,\?,\?,\?,\?,\?,\?\)$`).
+					`"kind",` +
+					`"spinnaker_app"` +
+					`\) VALUES \(\?,\?,\?,\?,\?,\?,\?,\?,\?,\?\)$`).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			})
@@ -169,11 +170,12 @@ var _ = Describe("Sql", func() {
 				mock.ExpectQuery(`(?i)^SELECT ` +
 					`account_name, ` +
 					`api_group, ` +
+					`kind, ` +
 					`name, ` +
 					`namespace, ` +
 					`resource, ` +
 					`version ` +
-					`FROM "resource_kubernetes" ` +
+					`FROM "kubernetes_resources" ` +
 					` WHERE \(task_id = \?\)$`).
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
@@ -182,6 +184,34 @@ var _ = Describe("Sql", func() {
 			It("succeeds", func() {
 				Expect(err).To(BeNil())
 				Expect(resources).To(HaveLen(2))
+			})
+		})
+	})
+
+	Describe("#ListKubernetesAccountsBySpinnakerApp", func() {
+		var accounts []string
+
+		JustBeforeEach(func() {
+			accounts, err = c.ListKubernetesAccountsBySpinnakerApp("test-spinnaker-app")
+		})
+
+		When("it succeeds", func() {
+			BeforeEach(func() {
+				sqlRows := sqlmock.NewRows([]string{"account_name"}).
+					AddRow("account1").
+					AddRow("account2")
+				mock.ExpectQuery(`(?i)^SELECT ` +
+					`account_name ` +
+					`FROM "kubernetes_resources" ` +
+					` WHERE \(spinnaker_app = \?\) ` +
+					`GROUP BY account_name$`).
+					WillReturnRows(sqlRows)
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+				Expect(accounts).To(HaveLen(2))
 			})
 		})
 	})

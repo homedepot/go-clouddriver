@@ -7,5 +7,5 @@ type Provider struct {
 }
 
 func (Provider) TableName() string {
-	return "provider_kubernetes"
+	return "kubernetes_providers"
 }

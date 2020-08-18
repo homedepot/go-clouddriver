@@ -166,3 +166,296 @@ const payloadCredentials = `[
               "type": "kubernetes"
             }
           ]`
+
+const payloadServerGroupManagers = `[
+  {
+    "account": "gke_github-replication-sandbox_us-central1_sandbox-us-central1-agent-dev",
+    "accountName": "gke_github-replication-sandbox_us-central1_sandbox-us-central1-agent-dev",
+    "cloudProvider": "kubernetes",
+    "createdTime": 1581619801000,
+    "key": {
+      "account": "gke_github-replication-sandbox_us-central1_sandbox-us-central1-agent-dev",
+      "group": "deployment",
+      "kubernetesKind": "deployment",
+      "name": "smoketest-gke",
+      "namespace": "smoketest",
+      "provider": "kubernetes"
+    },
+    "kind": "deployment",
+    "labels": {
+      "app": "smoketest-gke",
+      "app.kubernetes.io/managed-by": "spinnaker",
+      "app.kubernetes.io/name": "smoketests"
+    },
+    "manifest": {
+      "apiVersion": "extensions/v1beta1",
+      "kind": "Deployment",
+      "metadata": {
+        "annotations": {
+          "artifact.spinnaker.io/location": "smoketest",
+          "artifact.spinnaker.io/name": "smoketest-gke",
+          "artifact.spinnaker.io/type": "kubernetes/deployment",
+          "deployment.kubernetes.io/revision": "11",
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/location\":\"smoketest\",\"artifact.spinnaker.io/name\":\"smoketest-gke\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\",\"moniker.spinnaker.io/application\":\"smoketests\",\"moniker.spinnaker.io/cluster\":\"deployment smoketest-gke\"},\"labels\":{\"app\":\"smoketest-gke\",\"app.kubernetes.io/managed-by\":\"spinnaker\",\"app.kubernetes.io/name\":\"smoketests\"},\"name\":\"smoketest-gke\",\"namespace\":\"smoketest\"},\"spec\":{\"replicas\":2,\"selector\":{\"matchLabels\":{\"app\":\"smoketest-gke\"}},\"template\":{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/location\":\"smoketest\",\"artifact.spinnaker.io/name\":\"smoketest-gke\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\",\"moniker.spinnaker.io/application\":\"smoketests\",\"moniker.spinnaker.io/cluster\":\"deployment smoketest-gke\"},\"labels\":{\"app\":\"smoketest-gke\",\"app.kubernetes.io/managed-by\":\"spinnaker\",\"app.kubernetes.io/name\":\"smoketests\"}},\"spec\":{\"containers\":[{\"image\":\"gcr.io/github-replication-sandbox/rf:1.0.9\",\"name\":\"frontend\"}]}}}}\n",
+          "moniker.spinnaker.io/application": "smoketests",
+          "moniker.spinnaker.io/cluster": "deployment smoketest-gke"
+        },
+        "creationTimestamp": "2020-02-13T18:50:01Z",
+        "generation": 16,
+        "labels": {
+          "app": "smoketest-gke",
+          "app.kubernetes.io/managed-by": "spinnaker",
+          "app.kubernetes.io/name": "smoketests"
+        },
+        "name": "smoketest-gke",
+        "namespace": "smoketest",
+        "resourceVersion": "60136848",
+        "selfLink": "/apis/extensions/v1beta1/namespaces/smoketest/deployments/smoketest-gke",
+        "uid": "a3d93173-4e91-11ea-8db2-4201ac100109"
+      },
+      "spec": {
+        "progressDeadlineSeconds": 600,
+        "replicas": 2,
+        "revisionHistoryLimit": 10,
+        "selector": {
+          "matchLabels": {
+            "app": "smoketest-gke"
+          }
+        },
+        "strategy": {
+          "rollingUpdate": {
+            "maxSurge": "25%",
+            "maxUnavailable": "25%"
+          },
+          "type": "RollingUpdate"
+        },
+        "template": {
+          "metadata": {
+            "annotations": {
+              "artifact.spinnaker.io/location": "smoketest",
+              "artifact.spinnaker.io/name": "smoketest-gke",
+              "artifact.spinnaker.io/type": "kubernetes/deployment",
+              "moniker.spinnaker.io/application": "smoketests",
+              "moniker.spinnaker.io/cluster": "deployment smoketest-gke"
+            },
+            "labels": {
+              "app": "smoketest-gke",
+              "app.kubernetes.io/managed-by": "spinnaker",
+              "app.kubernetes.io/name": "smoketests"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "image": "gcr.io/github-replication-sandbox/rf:1.0.9",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "frontend",
+                "resources": {},
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File"
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "restartPolicy": "Always",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "terminationGracePeriodSeconds": 30
+          }
+        }
+      },
+      "status": {
+        "availableReplicas": 2,
+        "conditions": [
+          {
+            "lastTransitionTime": "2020-06-02T03:09:40Z",
+            "lastUpdateTime": "2020-06-02T03:09:40Z",
+            "message": "Deployment has minimum availability.",
+            "reason": "MinimumReplicasAvailable",
+            "status": "True",
+            "type": "Available"
+          },
+          {
+            "lastTransitionTime": "2020-02-13T18:50:01Z",
+            "lastUpdateTime": "2020-06-16T13:47:10Z",
+            "message": "ReplicaSet \"smoketest-gke-598b749779\" has successfully progressed.",
+            "reason": "NewReplicaSetAvailable",
+            "status": "True",
+            "type": "Progressing"
+          }
+        ],
+        "observedGeneration": 16,
+        "readyReplicas": 2,
+        "replicas": 2,
+        "updatedReplicas": 2
+      }
+    },
+    "moniker": {
+      "app": "smoketests",
+      "cluster": "deployment smoketest-gke"
+    },
+    "name": "deployment smoketest-gke",
+    "providerType": "kubernetes",
+    "region": "smoketest",
+    "serverGroups": [
+      {
+        "account": "gke_github-replication-sandbox_us-central1_sandbox-us-central1-agent-dev",
+        "moniker": {
+          "app": "smoketests",
+          "cluster": "deployment smoketest-gke",
+          "sequence": 11
+        },
+        "name": "replicaSet smoketest-gke-598b749779",
+        "namespace": "smoketest",
+        "region": "smoketest"
+      }
+    ],
+    "type": "kubernetes",
+    "uid": "a3d93173-4e91-11ea-8db2-4201ac100109",
+    "zone": "smoketest"
+  },
+  {
+    "account": "gke_github-replication-sandbox_us-central1_sandbox-us-central1-agent_smoketest-dev",
+    "accountName": "gke_github-replication-sandbox_us-central1_sandbox-us-central1-agent_smoketest-dev",
+    "cloudProvider": "kubernetes",
+    "createdTime": 1581619801000,
+    "key": {
+      "account": "gke_github-replication-sandbox_us-central1_sandbox-us-central1-agent_smoketest-dev",
+      "group": "deployment",
+      "kubernetesKind": "deployment",
+      "name": "smoketest-gke",
+      "namespace": "smoketest",
+      "provider": "kubernetes"
+    },
+    "kind": "deployment",
+    "labels": {
+      "app": "smoketest-gke",
+      "app.kubernetes.io/managed-by": "spinnaker",
+      "app.kubernetes.io/name": "smoketests"
+    },
+    "manifest": {
+      "apiVersion": "extensions/v1beta1",
+      "kind": "Deployment",
+      "metadata": {
+        "annotations": {
+          "artifact.spinnaker.io/location": "smoketest",
+          "artifact.spinnaker.io/name": "smoketest-gke",
+          "artifact.spinnaker.io/type": "kubernetes/deployment",
+          "deployment.kubernetes.io/revision": "11",
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/location\":\"smoketest\",\"artifact.spinnaker.io/name\":\"smoketest-gke\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\",\"moniker.spinnaker.io/application\":\"smoketests\",\"moniker.spinnaker.io/cluster\":\"deployment smoketest-gke\"},\"labels\":{\"app\":\"smoketest-gke\",\"app.kubernetes.io/managed-by\":\"spinnaker\",\"app.kubernetes.io/name\":\"smoketests\"},\"name\":\"smoketest-gke\",\"namespace\":\"smoketest\"},\"spec\":{\"replicas\":2,\"selector\":{\"matchLabels\":{\"app\":\"smoketest-gke\"}},\"template\":{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/location\":\"smoketest\",\"artifact.spinnaker.io/name\":\"smoketest-gke\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\",\"moniker.spinnaker.io/application\":\"smoketests\",\"moniker.spinnaker.io/cluster\":\"deployment smoketest-gke\"},\"labels\":{\"app\":\"smoketest-gke\",\"app.kubernetes.io/managed-by\":\"spinnaker\",\"app.kubernetes.io/name\":\"smoketests\"}},\"spec\":{\"containers\":[{\"image\":\"gcr.io/github-replication-sandbox/rf:1.0.9\",\"name\":\"frontend\"}]}}}}\n",
+          "moniker.spinnaker.io/application": "smoketests",
+          "moniker.spinnaker.io/cluster": "deployment smoketest-gke"
+        },
+        "creationTimestamp": "2020-02-13T18:50:01Z",
+        "generation": 16,
+        "labels": {
+          "app": "smoketest-gke",
+          "app.kubernetes.io/managed-by": "spinnaker",
+          "app.kubernetes.io/name": "smoketests"
+        },
+        "name": "smoketest-gke",
+        "namespace": "smoketest",
+        "resourceVersion": "60136848",
+        "selfLink": "/apis/extensions/v1beta1/namespaces/smoketest/deployments/smoketest-gke",
+        "uid": "a3d93173-4e91-11ea-8db2-4201ac100109"
+      },
+      "spec": {
+        "progressDeadlineSeconds": 600,
+        "replicas": 2,
+        "revisionHistoryLimit": 10,
+        "selector": {
+          "matchLabels": {
+            "app": "smoketest-gke"
+          }
+        },
+        "strategy": {
+          "rollingUpdate": {
+            "maxSurge": "25%",
+            "maxUnavailable": "25%"
+          },
+          "type": "RollingUpdate"
+        },
+        "template": {
+          "metadata": {
+            "annotations": {
+              "artifact.spinnaker.io/location": "smoketest",
+              "artifact.spinnaker.io/name": "smoketest-gke",
+              "artifact.spinnaker.io/type": "kubernetes/deployment",
+              "moniker.spinnaker.io/application": "smoketests",
+              "moniker.spinnaker.io/cluster": "deployment smoketest-gke"
+            },
+            "labels": {
+              "app": "smoketest-gke",
+              "app.kubernetes.io/managed-by": "spinnaker",
+              "app.kubernetes.io/name": "smoketests"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "image": "gcr.io/github-replication-sandbox/rf:1.0.9",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "frontend",
+                "resources": {},
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File"
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "restartPolicy": "Always",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "terminationGracePeriodSeconds": 30
+          }
+        }
+      },
+      "status": {
+        "availableReplicas": 2,
+        "conditions": [
+          {
+            "lastTransitionTime": "2020-06-02T03:09:40Z",
+            "lastUpdateTime": "2020-06-02T03:09:40Z",
+            "message": "Deployment has minimum availability.",
+            "reason": "MinimumReplicasAvailable",
+            "status": "True",
+            "type": "Available"
+          },
+          {
+            "lastTransitionTime": "2020-02-13T18:50:01Z",
+            "lastUpdateTime": "2020-06-16T13:47:10Z",
+            "message": "ReplicaSet \"smoketest-gke-598b749779\" has successfully progressed.",
+            "reason": "NewReplicaSetAvailable",
+            "status": "True",
+            "type": "Progressing"
+          }
+        ],
+        "observedGeneration": 16,
+        "readyReplicas": 2,
+        "replicas": 2,
+        "updatedReplicas": 2
+      }
+    },
+    "moniker": {
+      "app": "smoketests",
+      "cluster": "deployment smoketest-gke"
+    },
+    "name": "deployment smoketest-gke",
+    "providerType": "kubernetes",
+    "region": "smoketest",
+    "serverGroups": [
+      {
+        "account": "gke_github-replication-sandbox_us-central1_sandbox-us-central1-agent_smoketest-dev",
+        "moniker": {
+          "app": "smoketests",
+          "cluster": "deployment smoketest-gke",
+          "sequence": 11
+        },
+        "name": "replicaSet smoketest-gke-598b749779",
+        "namespace": "smoketest",
+        "region": "smoketest"
+      }
+    ],
+    "type": "kubernetes",
+    "uid": "a3d93173-4e91-11ea-8db2-4201ac100109",
+    "zone": "smoketest"
+  }
+]`

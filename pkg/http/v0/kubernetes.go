@@ -30,6 +30,15 @@ func CreateKubernetesDeployment(c *gin.Context) {
 		return
 	}
 
+	if len(kor) == 0 || kor[0].DeployManifest.Account == "" {
+		or := OpsResponse{
+			ID:          taskID,
+			ResourceURI: "/task/" + taskID,
+		}
+		c.JSON(http.StatusOK, or)
+		return
+	}
+
 	// TODO this is hacky - need to figure out how to handle providers.
 	accountName := kor[0].DeployManifest.Account
 
@@ -66,22 +75,23 @@ func CreateKubernetesDeployment(c *gin.Context) {
 				return
 			}
 
-			_, meta, err := kc.Apply(b)
+			_, meta, err := kc.Apply(b, req.DeployManifest.Moniker.App)
 			if err != nil {
 				clouddriver.WriteError(c, http.StatusInternalServerError, err)
 				return
 			}
 
 			kr := kubernetes.Resource{
-				AccountName: accountName,
-				ID:          uuid.New().String(),
-				TaskID:      taskID,
-				APIGroup:    meta.Group,
-				Name:        meta.Name,
-				Namespace:   meta.Namespace,
-				Resource:    meta.Resource,
-				Version:     meta.Version,
-				Kind:        meta.Kind,
+				AccountName:  accountName,
+				ID:           uuid.New().String(),
+				TaskID:       taskID,
+				APIGroup:     meta.Group,
+				Name:         meta.Name,
+				Namespace:    meta.Namespace,
+				Resource:     meta.Resource,
+				Version:      meta.Version,
+				Kind:         meta.Kind,
+				SpinnakerApp: req.DeployManifest.Moniker.App,
 			}
 
 			err = sc.CreateKubernetesResource(kr)

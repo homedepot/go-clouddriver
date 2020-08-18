@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/gin-gonic/gin"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -27,8 +28,9 @@ const (
 //go:generate counterfeiter . Client
 type Client interface {
 	WithConfig(*rest.Config) error
-	Apply([]byte) (*unstructured.Unstructured, Metadata, error)
+	Apply([]byte, string) (*unstructured.Unstructured, Metadata, error)
 	Get(string, string, string) (*unstructured.Unstructured, error)
+	List(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 }
 
 func NewClient() Client {
@@ -57,7 +59,7 @@ func (c *client) WithConfig(config *rest.Config) error {
 	return err
 }
 
-func (c *client) Apply(manifest []byte) (*unstructured.Unstructured, Metadata, error) {
+func (c *client) Apply(manifest []byte, spinnakerApp string) (*unstructured.Unstructured, Metadata, error) {
 	metadata := Metadata{}
 
 	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode(manifest, nil, nil)
@@ -65,7 +67,7 @@ func (c *client) Apply(manifest []byte) (*unstructured.Unstructured, Metadata, e
 		return nil, metadata, err
 	}
 
-	// convert the runtime.Object to unstructured.Unstructured
+	// Convert the runtime.Object to unstructured.Unstructured.
 	m, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 	if err != nil {
 		return nil, metadata, err
@@ -74,6 +76,13 @@ func (c *client) Apply(manifest []byte) (*unstructured.Unstructured, Metadata, e
 	unstructuredObj := &unstructured.Unstructured{
 		Object: m,
 	}
+
+	// Add reserved Spinnaker labels.
+	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-labels
+	labels := unstructuredObj.GetLabels()
+	labels["app.kubernetes.io/name"] = spinnakerApp
+	labels["app.kubernetes.io/managed-by"] = "spinnaker"
+	unstructuredObj.SetLabels(labels)
 
 	name, err := meta.NewAccessor().Name(obj)
 	if err != nil {
@@ -113,10 +122,14 @@ func (c *client) Apply(manifest []byte) (*unstructured.Unstructured, Metadata, e
 			return nil, metadata, err
 		}
 	} else {
+		b, err := json.Marshal(unstructuredObj.Object)
+		if err != nil {
+			return nil, metadata, err
+		}
 		resource, err = c.c.
 			Resource(restMapping.Resource).
 			Namespace(namespace).
-			Patch(context.TODO(), name, types.StrategicMergePatchType, manifest, metav1.PatchOptions{})
+			Patch(context.TODO(), name, types.StrategicMergePatchType, b, metav1.PatchOptions{})
 		if err != nil {
 			return nil, metadata, err
 		}
@@ -132,8 +145,8 @@ func (c *client) Apply(manifest []byte) (*unstructured.Unstructured, Metadata, e
 	return resource, metadata, nil
 }
 
-// Get a manifest by kind (ex 'pod'), name (ex 'my-pod'), and namespace (ex 'my-namespace').
-func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, error) {
+// Get a manifest by resource (ex 'pods'), name (ex 'my-pod'), and namespace (ex 'my-namespace').
+func (c *client) Get(resource, name, namespace string) (*unstructured.Unstructured, error) {
 	dc, err := discovery.NewDiscoveryClientForConfig(c.config)
 	if err != nil {
 		return nil, err
@@ -141,7 +154,7 @@ func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, 
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
 
-	gvk, err := mapper.KindFor(schema.GroupVersionResource{Resource: kind})
+	gvk, err := mapper.KindFor(schema.GroupVersionResource{Resource: resource})
 	if err != nil {
 		return nil, err
 	}
@@ -161,6 +174,10 @@ func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, 
 	}
 
 	return u, nil
+}
+
+func (c *client) List(gvr schema.GroupVersionResource, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+	return c.c.Resource(gvr).List(context.TODO(), lo)
 }
 
 // Find the corresponding GVR (available in *meta.RESTMapping) for gvk.

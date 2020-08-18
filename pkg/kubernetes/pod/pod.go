@@ -1,8 +1,9 @@
 package pod
 
 import (
+	"encoding/json"
+
 	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
-	"github.com/mitchellh/mapstructure"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -10,7 +11,8 @@ func Status(m map[string]interface{}) manifest.Status {
 	s := manifest.DefaultStatus
 
 	p := &v1.Pod{}
-	_ = mapstructure.Decode(m, &p)
+	b, _ := json.Marshal(m)
+	_ = json.Unmarshal(b, &p)
 
 	if p.Status.Phase == v1.PodPending ||
 		p.Status.Phase == v1.PodFailed ||
