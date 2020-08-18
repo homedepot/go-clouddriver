@@ -15,7 +15,12 @@ func Initialize(r *gin.Engine) {
 		// Force cache refresh.
 		api.POST("/cache/kubernetes/manifest", v0.OK)
 		api.GET("/credentials", v0.ListCredentials)
+
+		// Applications API controller.
 		api.GET("/applications/:application/serverGroupManagers", v0.ListServerGroupManagers)
+		api.GET("/applications/:application/serverGroups", v0.ListServerGroups)
+		api.GET("/applications/:application/loadBalancers", v0.ListLoadBalancers)
+		api.GET("/applications/:application/clusters", v0.ListClusters)
 
 		// Trigger a kubernetes deployment.
 		r.POST("/kubernetes/ops", v0.CreateKubernetesDeployment)
@@ -24,6 +29,9 @@ func Initialize(r *gin.Engine) {
 		r.GET("/manifests/:account/:location/:name", v0.GetManifest)
 
 		r.GET("/task/:id", v0.GetTask)
+
+		r.GET("/securityGroups", v0.ListSecurityGroups)
+		r.GET("/search", v0.Search)
 	}
 
 	api = r.Group("/v1")

@@ -3,8 +3,11 @@ package kubernetes
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -77,13 +80,6 @@ func (c *client) Apply(manifest []byte, spinnakerApp string) (*unstructured.Unst
 		Object: m,
 	}
 
-	// Add reserved Spinnaker labels.
-	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-labels
-	labels := unstructuredObj.GetLabels()
-	labels["app.kubernetes.io/name"] = spinnakerApp
-	labels["app.kubernetes.io/managed-by"] = "spinnaker"
-	unstructuredObj.SetLabels(labels)
-
 	name, err := meta.NewAccessor().Name(obj)
 	if err != nil {
 		return nil, metadata, err
@@ -99,6 +95,132 @@ func (c *client) Apply(manifest []byte, spinnakerApp string) (*unstructured.Unst
 	}
 
 	gvk := obj.GetObjectKind().GroupVersionKind()
+
+	// Add reserved annotations.
+	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-annotations
+	{
+		annotations := unstructuredObj.GetAnnotations()
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+
+		annotations["artifact.spinnaker.io/location"] = namespace
+		annotations["artifact.spinnaker.io/name"] = name
+		annotations["artifact.spinnaker.io/type"] = fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
+		unstructuredObj.SetAnnotations(annotations)
+	}
+
+	// Add reserved labels.
+	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-labels
+	{
+		labels := unstructuredObj.GetLabels()
+		if labels == nil {
+			labels = map[string]string{}
+		}
+
+		labels["app.kubernetes.io/name"] = spinnakerApp
+		labels["app.kubernetes.io/managed-by"] = "spinnaker"
+		unstructuredObj.SetLabels(labels)
+	}
+
+	// If this is a deployemnt, set the .spec.template.metadata.* info same as above.
+	if strings.EqualFold(gvk.Kind, "deployment") {
+		d := &v1.Deployment{}
+
+		{
+			b, err := json.Marshal(unstructuredObj.Object)
+			if err != nil {
+				return nil, metadata, err
+			}
+
+			err = json.Unmarshal(b, &d)
+			if err != nil {
+				return nil, metadata, err
+			}
+		}
+
+		// Add reserved annotations.
+		annotations := d.Spec.Template.ObjectMeta.Annotations
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+
+		annotations["artifact.spinnaker.io/location"] = namespace
+		annotations["artifact.spinnaker.io/name"] = name
+		annotations["artifact.spinnaker.io/type"] = fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
+		d.Spec.Template.ObjectMeta.Annotations = annotations
+
+		// Add reserved labels.
+		labels := d.Spec.Template.ObjectMeta.Labels
+		if labels == nil {
+			labels = map[string]string{}
+		}
+
+		labels["app.kubernetes.io/name"] = spinnakerApp
+		labels["app.kubernetes.io/managed-by"] = "spinnaker"
+		d.Spec.Template.ObjectMeta.Labels = labels
+
+		{
+			b, err := json.Marshal(d)
+			if err != nil {
+				return nil, metadata, err
+			}
+
+			err = json.Unmarshal(b, &unstructuredObj.Object)
+			if err != nil {
+				return nil, metadata, err
+			}
+		}
+	}
+
+	if strings.EqualFold(gvk.Kind, "replicaset") {
+		rs := &v1.ReplicaSet{}
+
+		{
+			b, err := json.Marshal(unstructuredObj.Object)
+			if err != nil {
+				return nil, metadata, err
+			}
+
+			err = json.Unmarshal(b, &rs)
+			if err != nil {
+				return nil, metadata, err
+			}
+		}
+
+		// Add reserved annotations.
+		annotations := rs.Spec.Template.ObjectMeta.Annotations
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+
+		annotations["artifact.spinnaker.io/location"] = namespace
+		annotations["artifact.spinnaker.io/name"] = name
+		annotations["artifact.spinnaker.io/type"] = fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
+		rs.Spec.Template.ObjectMeta.Annotations = annotations
+
+		// Add reserved labels.
+		labels := rs.Spec.Template.ObjectMeta.Labels
+		if labels == nil {
+			labels = map[string]string{}
+		}
+
+		labels["app.kubernetes.io/name"] = spinnakerApp
+		labels["app.kubernetes.io/managed-by"] = "spinnaker"
+		rs.Spec.Template.ObjectMeta.Labels = labels
+
+		{
+			b, err := json.Marshal(rs)
+			if err != nil {
+				return nil, metadata, err
+			}
+
+			err = json.Unmarshal(b, &unstructuredObj.Object)
+			if err != nil {
+				return nil, metadata, err
+			}
+		}
+	}
 
 	restMapping, err := findGVR(&gvk, c.config)
 	if err != nil {

@@ -46,6 +46,7 @@ var spinnakerKindMap = map[string]string{
 
 // TODO lots of this is hardcoded - we need to get these from each provider.
 func ListCredentials(c *gin.Context) {
+	expand := c.Query("expand")
 	credentials := []clouddriver.Credential{}
 	sca := clouddriver.Credential{
 		AccountType:                 "spin-cluster-account",
@@ -65,8 +66,11 @@ func ListCredentials(c *gin.Context) {
 		ProviderVersion:         "v2",
 		RequiredGroupMembership: []interface{}{},
 		Skin:                    "v2",
-		SpinnakerKindMap:        spinnakerKindMap,
-		Type:                    "kubernetes",
+		// SpinnakerKindMap:        spinnakerKindMap,
+		Type: "kubernetes",
+	}
+	if expand == "true" {
+		sca.SpinnakerKindMap = spinnakerKindMap
 	}
 	credentials = append(credentials, sca)
 	c.JSON(http.StatusOK, credentials)

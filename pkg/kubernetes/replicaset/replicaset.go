@@ -15,30 +15,30 @@ func Status(m map[string]interface{}) manifest.Status {
 	b, _ := json.Marshal(m)
 	_ = json.Unmarshal(b, &r)
 
-	desired := r.Spec.Replicas
+	desired := int32(0)
 	fullyLabeled := r.Status.FullyLabeledReplicas
 	available := r.Status.AvailableReplicas
 	ready := r.Status.ReadyReplicas
 
-	if desired == nil {
-		*desired = 0
+	if r.Spec.Replicas != nil {
+		desired = *r.Spec.Replicas
 	}
 
-	if *desired > fullyLabeled {
+	if desired > fullyLabeled {
 		s.Stable.State = false
 		s.Stable.Message = "Waiting for all replicas to be fully-labeled"
 
 		return s
 	}
 
-	if *desired > ready {
+	if desired > ready {
 		s.Stable.State = false
 		s.Stable.Message = "Waiting for all replicas to be ready"
 
 		return s
 	}
 
-	if *desired > available {
+	if desired > available {
 		s.Stable.State = false
 		s.Stable.Message = "Waiting for all replicas to be available"
 
