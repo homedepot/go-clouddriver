@@ -32,6 +32,7 @@ const (
 type Client interface {
 	WithConfig(*rest.Config) error
 	Apply([]byte, string) (*unstructured.Unstructured, Metadata, error)
+	Patch([]byte) (*unstructured.Unstructured, error)
 	Get(string, string, string) (*unstructured.Unstructured, error)
 	List(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 }
@@ -107,6 +108,8 @@ func (c *client) Apply(manifest []byte, spinnakerApp string) (*unstructured.Unst
 		annotations["artifact.spinnaker.io/location"] = namespace
 		annotations["artifact.spinnaker.io/name"] = name
 		annotations["artifact.spinnaker.io/type"] = fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
+		annotations["moniker.spinnaker.io/application"] = spinnakerApp
+		annotations["moniker.spinnaker.io/cluster"] = fmt.Sprintf("%s %s", gvk.Kind, name)
 		unstructuredObj.SetAnnotations(annotations)
 	}
 
@@ -148,6 +151,8 @@ func (c *client) Apply(manifest []byte, spinnakerApp string) (*unstructured.Unst
 		annotations["artifact.spinnaker.io/location"] = namespace
 		annotations["artifact.spinnaker.io/name"] = name
 		annotations["artifact.spinnaker.io/type"] = fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
+		annotations["moniker.spinnaker.io/application"] = spinnakerApp
+		annotations["moniker.spinnaker.io/cluster"] = fmt.Sprintf("%s %s", gvk.Kind, name)
 		d.Spec.Template.ObjectMeta.Annotations = annotations
 
 		// Add reserved labels.
@@ -197,6 +202,8 @@ func (c *client) Apply(manifest []byte, spinnakerApp string) (*unstructured.Unst
 		annotations["artifact.spinnaker.io/location"] = namespace
 		annotations["artifact.spinnaker.io/name"] = name
 		annotations["artifact.spinnaker.io/type"] = fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
+		annotations["moniker.spinnaker.io/application"] = spinnakerApp
+		annotations["moniker.spinnaker.io/cluster"] = fmt.Sprintf("%s %s", gvk.Kind, name)
 		rs.Spec.Template.ObjectMeta.Annotations = annotations
 
 		// Add reserved labels.
@@ -265,6 +272,40 @@ func (c *client) Apply(manifest []byte, spinnakerApp string) (*unstructured.Unst
 	metadata.Kind = gvk.Kind
 
 	return resource, metadata, nil
+}
+
+// Patch a given manifest
+func (c *client) Patch(manifest []byte) (*unstructured.Unstructured, error) {
+	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode(manifest, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	name, err := meta.NewAccessor().Name(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	namespace, err := meta.NewAccessor().Namespace(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	if namespace == "" {
+		namespace = "default"
+	}
+
+	gvk := obj.GetObjectKind().GroupVersionKind()
+
+	restMapping, err := findGVR(&gvk, c.config)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.c.
+		Resource(restMapping.Resource).
+		Namespace(namespace).
+		Patch(context.TODO(), name, types.StrategicMergePatchType, manifest, metav1.PatchOptions{})
 }
 
 // Get a manifest by resource (ex 'pods'), name (ex 'my-pod'), and namespace (ex 'my-namespace').

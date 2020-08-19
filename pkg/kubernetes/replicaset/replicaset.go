@@ -2,7 +2,6 @@ package replicaset
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
 	v1 "k8s.io/api/apps/v1"
@@ -52,9 +51,6 @@ func Status(m map[string]interface{}) manifest.Status {
 	}
 
 	if r.ObjectMeta.Generation != r.Status.ObservedGeneration {
-		log.Println("r.ObjectMeta.Generation", r.ObjectMeta.Generation)
-		log.Println("r.Status.ObservedGeneration", r.Status.ObservedGeneration)
-
 		s.Stable.State = false
 		s.Stable.Message = "Waiting for replicaset spec update to be observed"
 

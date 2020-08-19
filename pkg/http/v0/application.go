@@ -155,10 +155,10 @@ type ServerGroupManagerServerGroupMoniker struct {
 func ListServerGroupManagers(c *gin.Context) {
 	sc := sql.Instance(c)
 	kc := kubernetes.Instance(c)
-	spinnakerApp := c.Param("application")
+	application := c.Param("application")
 	response := ServerGroupManagersResponse{}
 
-	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(spinnakerApp)
+	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
@@ -197,7 +197,7 @@ func ListServerGroupManagers(c *gin.Context) {
 		replicaSets := &unstructured.UnstructuredList{}
 
 		lo := metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=" + spinnakerApp,
+			LabelSelector: "app.kubernetes.io/name=" + application,
 		}
 
 		deploymentGVK := schema.GroupVersionKind{
@@ -254,7 +254,7 @@ func ListServerGroupManagers(c *gin.Context) {
 							s := ServerGroupManagerServerGroup{
 								Account: account,
 								Moniker: ServerGroupManagerServerGroupMoniker{
-									App:      spinnakerApp,
+									App:      application,
 									Cluster:  fmt.Sprintf("%s %s", deploymentGVK.Kind, deployment.GetName()),
 									Sequence: sequence,
 								},
@@ -285,7 +285,7 @@ func ListServerGroupManagers(c *gin.Context) {
 				Labels:   deployment.GetLabels(),
 				Manifest: deployment.Object,
 				Moniker: Moniker{
-					App:     spinnakerApp,
+					App:     application,
 					Cluster: fmt.Sprintf("%s %s", deploymentGVK.Kind, deployment.GetName()),
 				},
 				Name:         fmt.Sprintf("%s %s", deploymentGVK.Kind, deployment.GetName()),
@@ -294,7 +294,7 @@ func ListServerGroupManagers(c *gin.Context) {
 				ServerGroups: sgs,
 				Type:         "kubernetes",
 				UID:          string(deployment.GetUID()),
-				Zone:         spinnakerApp,
+				Zone:         application,
 			}
 			response = append(response, sgr)
 		}
@@ -343,10 +343,10 @@ type LoadBalancerServerGroup struct {
 func ListLoadBalancers(c *gin.Context) {
 	sc := sql.Instance(c)
 	kc := kubernetes.Instance(c)
-	spinnakerApp := c.Param("application")
+	application := c.Param("application")
 	response := LoadBalancersResponse{}
 
-	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(spinnakerApp)
+	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
@@ -384,7 +384,7 @@ func ListLoadBalancers(c *gin.Context) {
 		// Label selector for all that we are listing in the cluster. We
 		// only want to list resources that have a label referencing the requested application.
 		lo := metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=" + spinnakerApp,
+			LabelSelector: "app.kubernetes.io/name=" + application,
 		}
 
 		// Create a GVR for ingresses.
@@ -412,7 +412,7 @@ func ListLoadBalancers(c *gin.Context) {
 				CloudProvider: "kubernetes",
 				Labels:        ingress.GetLabels(),
 				Moniker: Moniker{
-					App:     spinnakerApp,
+					App:     application,
 					Cluster: fmt.Sprintf("%s %s", ingressGVK.Kind, ingress.GetName()),
 				},
 				Name:        fmt.Sprintf("%s %s", "ingress", ingress.GetName()),
@@ -431,7 +431,7 @@ func ListLoadBalancers(c *gin.Context) {
 				Manifest:     ingress.Object,
 				ProviderType: "kubernetes",
 				UID:          string(ingress.GetUID()),
-				Zone:         spinnakerApp,
+				Zone:         application,
 			}
 			response = append(response, lb)
 		}
@@ -459,7 +459,7 @@ func ListLoadBalancers(c *gin.Context) {
 				CloudProvider: "kubernetes",
 				Labels:        service.GetLabels(),
 				Moniker: Moniker{
-					App:     spinnakerApp,
+					App:     application,
 					Cluster: fmt.Sprintf("%s %s", serviceGVK.Kind, service.GetName()),
 				},
 				Name:        fmt.Sprintf("%s %s", "service", service.GetName()),
@@ -478,7 +478,7 @@ func ListLoadBalancers(c *gin.Context) {
 				Manifest:     service.Object,
 				ProviderType: "kubernetes",
 				UID:          string(service.GetUID()),
-				Zone:         spinnakerApp,
+				Zone:         application,
 			}
 			response = append(response, lb)
 		}
@@ -594,10 +594,10 @@ type InstanceHealth struct {
 func ListServerGroups(c *gin.Context) {
 	sc := sql.Instance(c)
 	kc := kubernetes.Instance(c)
-	spinnakerApp := c.Param("application")
+	application := c.Param("application")
 	response := ServerGroupsResponse{}
 
-	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(spinnakerApp)
+	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
@@ -633,7 +633,7 @@ func ListServerGroups(c *gin.Context) {
 		}
 
 		lo := metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=" + spinnakerApp,
+			LabelSelector: "app.kubernetes.io/name=" + application,
 		}
 
 		// Create a GVR for replicasets.
@@ -646,11 +646,11 @@ func ListServerGroups(c *gin.Context) {
 			Version:  "v1",
 			Resource: "pods",
 		}
-		replicaSetGVK := schema.GroupVersionKind{
-			Group:   "apps",
-			Version: "v1",
-			Kind:    "replicaset",
-		}
+		// replicaSetGVK := schema.GroupVersionKind{
+		// 	Group:   "apps",
+		// 	Version: "v1",
+		// 	Kind:    "replicaset",
+		// }
 
 		replicaSets, err := kc.List(replicaSetGVR, lo)
 		if err != nil {
@@ -737,6 +737,20 @@ func ListServerGroups(c *gin.Context) {
 				}
 			}
 
+			annotations := replicaSet.GetAnnotations()
+			cluster := ""
+			app := application
+			sequence := 0
+			if _, ok := annotations["moniker.spinnaker.io/cluster"]; ok {
+				cluster = annotations["moniker.spinnaker.io/cluster"]
+			}
+			if _, ok := annotations["moniker.spinnaker.io/application"]; ok {
+				app = annotations["moniker.spinnaker.io/application"]
+			}
+			if _, ok := annotations["deployment.kubernetes.io/revision"]; ok {
+				sequence, _ = strconv.Atoi(annotations["deployment.kubernetes.io/revision"])
+			}
+
 			sgs := ServerGroup{
 				Account: account,
 				BuildInfo: BuildInfo{
@@ -747,7 +761,7 @@ func ListServerGroups(c *gin.Context) {
 					Pinned:  false,
 				},
 				CloudProvider: "kubernetes",
-				Cluster:       fmt.Sprintf("%s %s", replicaSetGVK.Kind, replicaSet.GetName()),
+				Cluster:       cluster,
 				CreatedTime:   replicaSet.GetCreationTimestamp().Unix() * 1000,
 				InstanceCounts: InstanceCounts{
 					Down:         0,
@@ -761,9 +775,9 @@ func ListServerGroups(c *gin.Context) {
 				IsDisabled:    false,
 				LoadBalancers: nil,
 				Moniker: ServerGroupMoniker{
-					App:      spinnakerApp,
-					Cluster:  fmt.Sprintf("%s %s", replicaSetGVK.Kind, replicaSet.GetName()),
-					Sequence: 0,
+					App:      app,
+					Cluster:  cluster,
+					Sequence: sequence,
 				},
 				Name:                fmt.Sprintf("%s %s", "replicaset", replicaSet.GetName()),
 				Region:              replicaSet.GetNamespace(),
@@ -891,14 +905,14 @@ func GetServerGroup(c *gin.Context) {
 				if p.Status.Phase != "Running" {
 					state = "Down"
 				}
-				labels := p.ObjectMeta.Labels
+				annotations := p.ObjectMeta.Annotations
 				cluster := ""
 				app := application
-				if _, ok := labels["moniker.spinnaker.io/cluster"]; ok {
-					cluster = labels["moniker.spinnaker.io/cluster"]
+				if _, ok := annotations["moniker.spinnaker.io/cluster"]; ok {
+					cluster = annotations["moniker.spinnaker.io/cluster"]
 				}
-				if _, ok := labels["moniker.spinnaker.io/application"]; ok {
-					app = labels["moniker.spinnaker.io/application"]
+				if _, ok := annotations["moniker.spinnaker.io/application"]; ok {
+					app = annotations["moniker.spinnaker.io/application"]
 				}
 				instance := Instance{
 					Account:          account,
@@ -946,18 +960,18 @@ func GetServerGroup(c *gin.Context) {
 		}
 	}
 
-	labels := result.GetLabels()
+	annotations := result.GetAnnotations()
 	cluster := ""
 	app := application
 	sequence := 0
-	if _, ok := labels["moniker.spinnaker.io/cluster"]; ok {
-		cluster = labels["moniker.spinnaker.io/cluster"]
+	if _, ok := annotations["moniker.spinnaker.io/cluster"]; ok {
+		cluster = annotations["moniker.spinnaker.io/cluster"]
 	}
-	if _, ok := labels["moniker.spinnaker.io/application"]; ok {
-		app = labels["moniker.spinnaker.io/application"]
+	if _, ok := annotations["moniker.spinnaker.io/application"]; ok {
+		app = annotations["moniker.spinnaker.io/application"]
 	}
-	if _, ok := labels["deployment.kubernetes.io/revision"]; ok {
-		sequence, _ = strconv.Atoi(labels["deployment.kubernetes.io/revision"])
+	if _, ok := annotations["deployment.kubernetes.io/revision"]; ok {
+		sequence, _ = strconv.Atoi(annotations["deployment.kubernetes.io/revision"])
 	}
 
 	response := GetServerGroupResponse{

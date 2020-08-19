@@ -4,15 +4,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
+	"github.com/billiford/go-clouddriver/pkg/kubernetes/deployment"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/pod"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/replicaset"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -20,7 +21,8 @@ import (
 )
 
 type OpsRequest []struct {
-	DeployManifest DeployManifest `json:"deployManifest"`
+	DeployManifest *DeployManifest `json:"deployManifest"`
+	ScaleManifest  *ScaleManifest  `json:"scaleManifest"`
 }
 
 type DeployManifest struct {
@@ -42,6 +44,15 @@ type DeployManifest struct {
 	Account                  string        `json:"account"`
 	SkipExpressionEvaluation bool          `json:"skipExpressionEvaluation"`
 	RequiredArtifacts        []interface{} `json:"requiredArtifacts"`
+}
+
+type ScaleManifest struct {
+	Replicas      string `json:"replicas"`
+	ManifestName  string `json:"manifestName"`
+	CloudProvider string `json:"cloudProvider"`
+	Location      string `json:"location"`
+	User          string `json:"user"`
+	Account       string `json:"account"`
 }
 
 type OpsResponse struct {
@@ -86,7 +97,7 @@ func CreateKubernetesDeployment(c *gin.Context) {
 		return
 	}
 
-	if len(kor) == 0 || kor[0].DeployManifest.Account == "" {
+	if len(kor) == 0 {
 		or := OpsResponse{
 			ID:          taskID,
 			ResourceURI: "/task/" + taskID,
@@ -95,65 +106,126 @@ func CreateKubernetesDeployment(c *gin.Context) {
 		return
 	}
 
-	// TODO this is hacky - need to figure out how to handle providers.
-	accountName := kor[0].DeployManifest.Account
-
-	provider, err := sc.GetKubernetesProvider(kor[0].DeployManifest.Account)
-	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: os.Getenv("BEARER_TOKEN"),
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	if err = kc.WithConfig(config); err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
-		return
-	}
-
 	for _, req := range kor {
-		for _, manifest := range req.DeployManifest.Manifests {
-			b, err := json.Marshal(manifest)
-			if err != nil {
-				clouddriver.WriteError(c, http.StatusBadRequest, err)
-				return
-			}
+		if req.DeployManifest != nil {
+			// TODO this is hacky - need to figure out how to handle providers.
+			accountName := kor[0].DeployManifest.Account
 
-			_, meta, err := kc.Apply(b, req.DeployManifest.Moniker.App)
+			provider, err := sc.GetKubernetesProvider(kor[0].DeployManifest.Account)
 			if err != nil {
 				clouddriver.WriteError(c, http.StatusInternalServerError, err)
 				return
 			}
 
-			kr := kubernetes.Resource{
-				AccountName:  accountName,
-				ID:           uuid.New().String(),
-				TaskID:       taskID,
-				APIGroup:     meta.Group,
-				Name:         meta.Name,
-				Namespace:    meta.Namespace,
-				Resource:     meta.Resource,
-				Version:      meta.Version,
-				Kind:         meta.Kind,
-				SpinnakerApp: req.DeployManifest.Moniker.App,
-			}
-
-			err = sc.CreateKubernetesResource(kr)
+			cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 			if err != nil {
 				clouddriver.WriteError(c, http.StatusInternalServerError, err)
 				return
+			}
+
+			config := &rest.Config{
+				Host:        provider.Host,
+				BearerToken: os.Getenv("BEARER_TOKEN"),
+				TLSClientConfig: rest.TLSClientConfig{
+					CAData: cd,
+				},
+			}
+
+			if err = kc.WithConfig(config); err != nil {
+				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				return
+			}
+
+			for _, manifest := range req.DeployManifest.Manifests {
+				b, err := json.Marshal(manifest)
+				if err != nil {
+					clouddriver.WriteError(c, http.StatusBadRequest, err)
+					return
+				}
+
+				_, meta, err := kc.Apply(b, req.DeployManifest.Moniker.App)
+				if err != nil {
+					clouddriver.WriteError(c, http.StatusInternalServerError, err)
+					return
+				}
+
+				kr := kubernetes.Resource{
+					AccountName:  accountName,
+					ID:           uuid.New().String(),
+					TaskID:       taskID,
+					APIGroup:     meta.Group,
+					Name:         meta.Name,
+					Namespace:    meta.Namespace,
+					Resource:     meta.Resource,
+					Version:      meta.Version,
+					Kind:         meta.Kind,
+					SpinnakerApp: req.DeployManifest.Moniker.App,
+				}
+
+				err = sc.CreateKubernetesResource(kr)
+				if err != nil {
+					clouddriver.WriteError(c, http.StatusInternalServerError, err)
+					return
+				}
+			}
+		}
+		if req.ScaleManifest != nil {
+			sm := req.ScaleManifest
+			provider, err := sc.GetKubernetesProvider(sm.Account)
+			if err != nil {
+				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				return
+			}
+
+			cd, err := base64.StdEncoding.DecodeString(provider.CAData)
+			if err != nil {
+				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				return
+			}
+
+			config := &rest.Config{
+				Host:        provider.Host,
+				BearerToken: os.Getenv("BEARER_TOKEN"),
+				TLSClientConfig: rest.TLSClientConfig{
+					CAData: cd,
+				},
+			}
+
+			if err = kc.WithConfig(config); err != nil {
+				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				return
+			}
+
+			a := strings.Split(sm.ManifestName, " ")
+			kind := a[0]
+			name := a[1]
+
+			unstructuredObj, err := kc.Get(kind, name, sm.Location)
+			if err = kc.WithConfig(config); err != nil {
+				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				return
+			}
+
+			switch strings.ToLower(kind) {
+			case "deployment":
+				d := deployment.New(unstructuredObj.Object)
+				replicas, _ := strconv.Atoi(sm.Replicas)
+				desiredReplicas := int32(replicas)
+
+				d.Spec.Replicas = &desiredReplicas
+
+				b, err := json.Marshal(d)
+				if err != nil {
+					log.Println("error marshaling")
+					clouddriver.WriteError(c, http.StatusBadRequest, err)
+					return
+				}
+
+				_, err = kc.Patch(b)
+				if err != nil {
+					clouddriver.WriteError(c, http.StatusInternalServerError, err)
+					return
+				}
 			}
 		}
 	}
@@ -224,19 +296,8 @@ func GetManifest(c *gin.Context) {
 		},
 		Name: fmt.Sprintf("%s %s", kind, name),
 		// The 'default' status of a kubernetes resource.
-		Status:   manifest.DefaultStatus,
+		Status:   kubernetes.GetStatus(kind, result.Object),
 		Warnings: []interface{}{},
-	}
-
-	// status https://github.com/spinnaker/clouddriver/tree/master/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/op/handler
-	// pod status check https://github.com/spinnaker/clouddriver/blob/master/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/op/handler/KubernetesPodHandler.java
-	switch strings.ToLower(kind) {
-	case "pod":
-		kmr.Status = pod.Status(result.Object)
-	case "replicaset":
-		kmr.Status = replicaset.Status(result.Object)
-	default:
-		kmr.Status = manifest.DefaultStatus
 	}
 
 	c.JSON(http.StatusOK, kmr)
