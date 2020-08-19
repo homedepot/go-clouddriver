@@ -1,9 +1,11 @@
 package sql
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
+	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -24,11 +26,17 @@ const (
 //go:generate counterfeiter . Client
 
 type Client interface {
-	CreateKubernetesProvider(kubernetes.Provider) error
 	GetKubernetesProvider(string) (kubernetes.Provider, error)
+	CreateKubernetesProvider(kubernetes.Provider) error
 	CreateKubernetesResource(kubernetes.Resource) error
-	ListKubernetesResources(string) ([]kubernetes.Resource, error)
+	CreateReadPermission(clouddriver.ReadPermission) error
+	CreateWritePermission(clouddriver.WritePermission) error
+	ListKubernetesProviders() ([]kubernetes.Provider, error)
+	ListKubernetesResourcesByFields(...string) ([]kubernetes.Resource, error)
+	ListKubernetesResourcesByTaskID(string) ([]kubernetes.Resource, error)
 	ListKubernetesAccountsBySpinnakerApp(string) ([]string, error)
+	ListReadGroupsByAccountName(string) ([]string, error)
+	ListWriteGroupsByAccountName(string) ([]string, error)
 }
 
 func NewClient(db *gorm.DB) Client {
@@ -54,6 +62,8 @@ func Connect(driver string, connection interface{}) (*gorm.DB, error) {
 	db.AutoMigrate(
 		&kubernetes.Provider{},
 		&kubernetes.Resource{},
+		&clouddriver.ReadPermission{},
+		&clouddriver.WritePermission{},
 	)
 
 	db.DB().SetMaxOpenConns(maxOpenConns)
@@ -63,11 +73,6 @@ func Connect(driver string, connection interface{}) (*gorm.DB, error) {
 	return db, nil
 }
 
-func (c *client) CreateKubernetesProvider(p kubernetes.Provider) error {
-	db := c.db.Create(&p)
-	return db.Error
-}
-
 func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error) {
 	var p kubernetes.Provider
 	db := c.db.Select("host, ca_data").Where("name = ?", name).First(&p)
@@ -75,15 +80,56 @@ func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error)
 	return p, db.Error
 }
 
+func (c *client) CreateKubernetesProvider(p kubernetes.Provider) error {
+	db := c.db.Create(&p)
+	return db.Error
+}
+
 func (c *client) CreateKubernetesResource(r kubernetes.Resource) error {
 	db := c.db.Create(&r)
 	return db.Error
 }
 
-func (c *client) ListKubernetesResources(taskID string) ([]kubernetes.Resource, error) {
+func (c *client) CreateWritePermission(w clouddriver.WritePermission) error {
+	db := c.db.Create(&w)
+	return db.Error
+}
+
+func (c *client) CreateReadPermission(r clouddriver.ReadPermission) error {
+	db := c.db.Create(&r)
+	return db.Error
+}
+
+func (c *client) ListKubernetesProviders() ([]kubernetes.Provider, error) {
+	var ps []kubernetes.Provider
+	db := c.db.Select("name, host, ca_data").Find(&ps)
+
+	return ps, db.Error
+}
+
+func (c *client) ListKubernetesResourcesByTaskID(taskID string) ([]kubernetes.Resource, error) {
 	var rs []kubernetes.Resource
 	db := c.db.Select("account_name, api_group, kind, name, namespace, resource, version").
 		Where("task_id = ?", taskID).Find(&rs)
+
+	return rs, db.Error
+}
+
+func (c *client) ListKubernetesResourcesByFields(fields ...string) ([]kubernetes.Resource, error) {
+	if len(fields) == 0 {
+		return nil, errors.New("no fields provided")
+	}
+
+	list := ""
+	for i, field := range fields {
+		list += field
+		if i != len(fields)-1 {
+			list += ", "
+		}
+	}
+
+	var rs []kubernetes.Resource
+	db := c.db.Select(list).Group(list).Find(&rs)
 
 	return rs, db.Error
 }
@@ -101,6 +147,36 @@ func (c *client) ListKubernetesAccountsBySpinnakerApp(spinnakerApp string) ([]st
 	}
 
 	return accounts, db.Error
+}
+
+func (c *client) ListReadGroupsByAccountName(accountName string) ([]string, error) {
+	r := []clouddriver.ReadPermission{}
+	db := c.db.Select("read_group").
+		Where("account_name = ?", accountName).
+		Group("read_group").
+		Find(&r)
+
+	groups := []string{}
+	for _, v := range r {
+		groups = append(groups, v.ReadGroup)
+	}
+
+	return groups, db.Error
+}
+
+func (c *client) ListWriteGroupsByAccountName(accountName string) ([]string, error) {
+	w := []clouddriver.WritePermission{}
+	db := c.db.Select("write_group").
+		Where("account_name = ?", accountName).
+		Group("write_group").
+		Find(&w)
+
+	groups := []string{}
+	for _, v := range w {
+		groups = append(groups, v.WriteGroup)
+	}
+
+	return groups, db.Error
 }
 
 func Instance(c *gin.Context) Client {

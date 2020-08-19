@@ -8,12 +8,18 @@ import (
 	v1 "k8s.io/api/apps/v1"
 )
 
-func Status(m map[string]interface{}) manifest.Status {
-	s := manifest.DefaultStatus
-
+func New(m map[string]interface{}) *v1.ReplicaSet {
 	r := &v1.ReplicaSet{}
 	b, _ := json.Marshal(m)
 	_ = json.Unmarshal(b, &r)
+
+	return r
+}
+
+func Status(m map[string]interface{}) manifest.Status {
+	s := manifest.DefaultStatus
+
+	r := New(m)
 
 	desired := int32(0)
 	fullyLabeled := r.Status.FullyLabeledReplicas

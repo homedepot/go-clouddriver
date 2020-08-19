@@ -31,7 +31,7 @@ func init() {
 	// Ignore logging of certain endpoints.
 	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{SkipPaths: []string{
 		"/health",
-		"/applications", // TODO
+		// "/applications", // TODO
 	}}))
 	r.Use(gin.Recovery())
 

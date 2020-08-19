@@ -17,11 +17,90 @@ import (
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
+	"github.com/billiford/go-clouddriver/pkg/kubernetes/pod"
+	"github.com/billiford/go-clouddriver/pkg/kubernetes/replicaset"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 )
+
+type ApplicationsResponse []Application
+
+type Application struct {
+	Attributes   ApplicationAttributes `json:"attributes"`
+	ClusterNames map[string][]string   `json:"clusterNames"`
+	Name         string                `json:"name"`
+}
+
+type ApplicationAttributes struct {
+	Name string `json:"name"`
+}
+
+func ListApplications(c *gin.Context) {
+	sc := sql.Instance(c)
+
+	rs, err := sc.ListKubernetesResourcesByFields("account_name", "kind", "name", "spinnaker_app")
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	response := ApplicationsResponse{}
+	apps := uniqueSpinnakerApps(rs)
+
+	for _, app := range apps {
+		application := Application{
+			Attributes: ApplicationAttributes{
+				Name: app,
+			},
+			ClusterNames: clusterNamesForSpinnakerApp(app, rs),
+			Name:         app,
+		}
+
+		response = append(response, application)
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func clusterNamesForSpinnakerApp(application string, rs []kubernetes.Resource) map[string][]string {
+	clusterNames := map[string][]string{}
+
+	for _, r := range rs {
+		if r.SpinnakerApp == application {
+			if _, ok := clusterNames[r.AccountName]; !ok {
+				clusterNames[r.AccountName] = []string{}
+			}
+			resources := clusterNames[r.AccountName]
+			resources = append(resources, fmt.Sprintf("%s %s", r.Kind, r.Name))
+			clusterNames[r.AccountName] = resources
+		}
+	}
+
+	return clusterNames
+}
+
+func uniqueSpinnakerApps(rs []kubernetes.Resource) []string {
+	apps := []string{}
+
+	for _, r := range rs {
+		if !contains(apps, r.SpinnakerApp) {
+			apps = append(apps, r.SpinnakerApp)
+		}
+	}
+
+	return apps
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
 
 type ServerGroupManagersResponse []ServerGroupManager
 
@@ -179,7 +258,7 @@ func ListServerGroupManagers(c *gin.Context) {
 									Cluster:  fmt.Sprintf("%s %s", deploymentGVK.Kind, deployment.GetName()),
 									Sequence: sequence,
 								},
-								Name:      fmt.Sprintf("%s %s", "replicaSet", replicaSet.GetName()),
+								Name:      fmt.Sprintf("%s %s", "replicaset", replicaSet.GetName()),
 								Namespace: replicaSet.GetNamespace(),
 								Region:    replicaSet.GetNamespace(),
 							}
@@ -211,7 +290,7 @@ func ListServerGroupManagers(c *gin.Context) {
 				},
 				Name:         fmt.Sprintf("%s %s", deploymentGVK.Kind, deployment.GetName()),
 				ProviderType: "kubernetes",
-				Region:       spinnakerApp,
+				Region:       deployment.GetNamespace(),
 				ServerGroups: sgs,
 				Type:         "kubernetes",
 				UID:          string(deployment.GetUID()),
@@ -336,8 +415,8 @@ func ListLoadBalancers(c *gin.Context) {
 					App:     spinnakerApp,
 					Cluster: fmt.Sprintf("%s %s", ingressGVK.Kind, ingress.GetName()),
 				},
-				Name:        ingress.GetName(),
-				Region:      spinnakerApp,
+				Name:        fmt.Sprintf("%s %s", "ingress", ingress.GetName()),
+				Region:      ingress.GetNamespace(),
 				Type:        "kubernetes",
 				CreatedTime: ingress.GetCreationTimestamp().Unix() * 1000,
 				Key: Key{
@@ -383,8 +462,8 @@ func ListLoadBalancers(c *gin.Context) {
 					App:     spinnakerApp,
 					Cluster: fmt.Sprintf("%s %s", serviceGVK.Kind, service.GetName()),
 				},
-				Name:        service.GetName(),
-				Region:      spinnakerApp,
+				Name:        fmt.Sprintf("%s %s", "service", service.GetName()),
+				Region:      service.GetNamespace(),
 				Type:        "kubernetes",
 				CreatedTime: service.GetCreationTimestamp().Unix() * 1000,
 				Key: Key{
@@ -483,16 +562,33 @@ type InstanceCounts struct {
 }
 
 type Instance struct {
-	AvailabilityZone string           `json:"availabilityZone"`
-	Health           []InstanceHealth `json:"health"`
-	HealthState      string           `json:"healthState"`
-	ID               string           `json:"id"`
-	Name             string           `json:"name"`
+	Account           string                 `json:"account,omitempty"`
+	AccountName       string                 `json:"accountName,omitempty"`
+	AvailabilityZone  string                 `json:"availabilityZone,omitempty"`
+	CloudProvider     string                 `json:"cloudProvider,omitempty"`
+	CreatedTime       int64                  `json:"createdTime,omitempty"`
+	Health            []InstanceHealth       `json:"health,omitempty"`
+	HealthState       string                 `json:"healthState,omitempty"`
+	HumanReadableName string                 `json:"humanReadableName,omitempty"`
+	ID                string                 `json:"id,omitempty"`
+	Key               Key                    `json:"key,omitempty"`
+	Kind              string                 `json:"kind,omitempty"`
+	Labels            map[string]string      `json:"labels,omitempty"`
+	Manifest          map[string]interface{} `json:"manifest,omitempty"`
+	Moniker           Moniker                `json:"moniker,omitempty"`
+	Name              string                 `json:"name,omitempty"`
+	ProviderType      string                 `json:"providerType,omitempty"`
+	Region            string                 `json:"region,omitempty"`
+	Type              string                 `json:"type,omitempty"`
+	UID               string                 `json:"uid,omitempty"`
+	Zone              string                 `json:"zone,omitempty"`
 }
 
 type InstanceHealth struct {
-	State string `json:"state"`
-	Type  string `json:"type"`
+	Platform string `json:"platform,omitempty"`
+	Source   string `json:"source,omitempty"`
+	State    string `json:"state"`
+	Type     string `json:"type"`
 }
 
 func ListServerGroups(c *gin.Context) {
@@ -553,7 +649,7 @@ func ListServerGroups(c *gin.Context) {
 		replicaSetGVK := schema.GroupVersionKind{
 			Group:   "apps",
 			Version: "v1",
-			Kind:    "replicaSet",
+			Kind:    "replicaset",
 		}
 
 		replicaSets, err := kc.List(replicaSetGVR, lo)
@@ -669,7 +765,7 @@ func ListServerGroups(c *gin.Context) {
 					Cluster:  fmt.Sprintf("%s %s", replicaSetGVK.Kind, replicaSet.GetName()),
 					Sequence: 0,
 				},
-				Name:                replicaSet.GetName(),
+				Name:                fmt.Sprintf("%s %s", "replicaset", replicaSet.GetName()),
 				Region:              replicaSet.GetNamespace(),
 				SecurityGroups:      nil,
 				ServerGroupManagers: serverGroupManagers,
@@ -678,6 +774,234 @@ func ListServerGroups(c *gin.Context) {
 			}
 			response = append(response, sgs)
 		}
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+type GetServerGroupResponse struct {
+	Account        string            `json:"account"`
+	AccountName    string            `json:"accountName"`
+	BuildInfo      BuildInfo         `json:"buildInfo"`
+	Capacity       Capacity          `json:"capacity"`
+	CloudProvider  string            `json:"cloudProvider"`
+	CreatedTime    int64             `json:"createdTime"`
+	Disabled       bool              `json:"disabled"`
+	InstanceCounts InstanceCounts    `json:"instanceCounts"`
+	Instances      []Instance        `json:"instances"`
+	Key            Key               `json:"key"`
+	Kind           string            `json:"kind"`
+	Labels         map[string]string `json:"labels"`
+	// LaunchConfig struct {} `json:"launchConfig"`
+	LoadBalancers       []interface{}                   `json:"loadBalancers"`
+	Manifest            map[string]interface{}          `json:"manifest"`
+	Moniker             ServerGroupMoniker              `json:"moniker"`
+	Name                string                          `json:"name"`
+	ProviderType        string                          `json:"providerType"`
+	Region              string                          `json:"region"`
+	SecurityGroups      []interface{}                   `json:"securityGroups"`
+	ServerGroupManagers []ServerGroupServerGroupManager `json:"serverGroupManagers"`
+	Type                string                          `json:"type"`
+	UID                 string                          `json:"uid"`
+	Zone                string                          `json:"zone"`
+	Zones               []interface{}                   `json:"zones"`
+	InsightActions      []interface{}                   `json:"insightActions"`
+}
+
+// /applications/:application/serverGroups/:account/:location/:name
+func GetServerGroup(c *gin.Context) {
+	sc := sql.Instance(c)
+	kc := kubernetes.Instance(c)
+	account := c.Param("account")
+	application := c.Param("application")
+	location := c.Param("location")
+	n := c.Param("name")
+	a := strings.Split(n, " ")
+	kind := a[0]
+	name := a[1]
+
+	provider, err := sc.GetKubernetesProvider(account)
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	config := &rest.Config{
+		Host:        provider.Host,
+		BearerToken: os.Getenv("BEARER_TOKEN"),
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: cd,
+		},
+	}
+
+	if err = kc.WithConfig(config); err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	lo := metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=" + application,
+	}
+
+	podsGVR := schema.GroupVersionResource{
+		Version:  "v1",
+		Resource: "pods",
+	}
+
+	result, err := kc.Get(kind, name, location)
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	// "Instances" in kubernetes are pods.
+	pods, err := kc.List(podsGVR, lo)
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	images := []string{}
+	desired := 0
+	instanceCounts := InstanceCounts{}
+	if strings.EqualFold(kind, "replicaset") {
+		rs := replicaset.New(result.Object)
+		for _, container := range rs.Spec.Template.Spec.Containers {
+			images = append(images, container.Image)
+		}
+		if rs.Spec.Replicas != nil {
+			desired = int(*rs.Spec.Replicas)
+		}
+		instanceCounts.Total = int(rs.Status.Replicas)
+		instanceCounts.Up = int(rs.Status.ReadyReplicas)
+	}
+
+	instances := []Instance{}
+	for _, v := range pods.Items {
+		p := pod.New(v.Object)
+		for _, ownerReference := range p.ObjectMeta.OwnerReferences {
+			if strings.EqualFold(ownerReference.Name, result.GetName()) {
+				state := "Up"
+				if p.Status.Phase != "Running" {
+					state = "Down"
+				}
+				labels := p.ObjectMeta.Labels
+				cluster := ""
+				app := application
+				if _, ok := labels["moniker.spinnaker.io/cluster"]; ok {
+					cluster = labels["moniker.spinnaker.io/cluster"]
+				}
+				if _, ok := labels["moniker.spinnaker.io/application"]; ok {
+					app = labels["moniker.spinnaker.io/application"]
+				}
+				instance := Instance{
+					Account:          account,
+					AccountName:      account,
+					AvailabilityZone: p.GetNamespace(),
+					CloudProvider:    "kubernetes",
+					CreatedTime:      p.ObjectMeta.CreationTimestamp.Unix() * 1000,
+					Health: []InstanceHealth{
+						{
+							State: state,
+							Type:  "kubernetes/pod",
+						},
+						{
+							State: state,
+							Type:  "kubernetes/container",
+						},
+					},
+					HealthState:       state,
+					HumanReadableName: fmt.Sprintf("%s %s", "pod", p.GetName()),
+					ID:                string(p.GetUID()),
+					Key: Key{
+						Account:        account,
+						Group:          "pod",
+						KubernetesKind: "pod",
+						Name:           p.GetName(),
+						Namespace:      p.GetNamespace(),
+						Provider:       "kubernetes",
+					},
+					Kind:     "pod",
+					Labels:   p.GetLabels(),
+					Manifest: v.Object,
+					Moniker: Moniker{
+						App:     app,
+						Cluster: cluster,
+					},
+					Name:         fmt.Sprintf("%s %s", "pod", p.GetName()),
+					ProviderType: "kubernetes",
+					Region:       p.GetNamespace(),
+					Type:         "kubernetes",
+					UID:          string(p.GetUID()),
+					Zone:         p.GetNamespace(),
+				}
+				instances = append(instances, instance)
+			}
+		}
+	}
+
+	labels := result.GetLabels()
+	cluster := ""
+	app := application
+	sequence := 0
+	if _, ok := labels["moniker.spinnaker.io/cluster"]; ok {
+		cluster = labels["moniker.spinnaker.io/cluster"]
+	}
+	if _, ok := labels["moniker.spinnaker.io/application"]; ok {
+		app = labels["moniker.spinnaker.io/application"]
+	}
+	if _, ok := labels["deployment.kubernetes.io/revision"]; ok {
+		sequence, _ = strconv.Atoi(labels["deployment.kubernetes.io/revision"])
+	}
+
+	response := GetServerGroupResponse{
+		Account:     account,
+		AccountName: account,
+		BuildInfo: BuildInfo{
+			Images: images,
+		},
+		Capacity: Capacity{
+			Desired: desired,
+			Pinned:  false,
+		},
+		CloudProvider:  "kubernetes",
+		CreatedTime:    result.GetCreationTimestamp().Unix() * 1000,
+		Disabled:       false,
+		InstanceCounts: instanceCounts,
+		Instances:      instances,
+		Key: Key{
+			Account:        account,
+			Group:          result.GetKind(),
+			KubernetesKind: result.GetKind(),
+			Name:           result.GetName(),
+			Namespace:      result.GetNamespace(),
+			Provider:       "kubernetes",
+		},
+		Kind:          result.GetKind(),
+		Labels:        result.GetLabels(),
+		LoadBalancers: []interface{}{},
+		Manifest:      result.Object,
+		Moniker: ServerGroupMoniker{
+			App:      app,
+			Cluster:  cluster,
+			Sequence: sequence,
+		},
+		Name:                fmt.Sprintf("%s %s", result.GetKind(), result.GetName()),
+		ProviderType:        "kubernetes",
+		Region:              result.GetNamespace(),
+		SecurityGroups:      []interface{}{},
+		ServerGroupManagers: []ServerGroupServerGroupManager{},
+		Type:                "kubernetes",
+		UID:                 string(result.GetUID()),
+		Zone:                result.GetNamespace(),
+		Zones:               []interface{}{},
+		InsightActions:      []interface{}{},
 	}
 
 	c.JSON(http.StatusOK, response)

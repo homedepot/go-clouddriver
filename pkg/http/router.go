@@ -15,10 +15,13 @@ func Initialize(r *gin.Engine) {
 		// Force cache refresh.
 		api.POST("/cache/kubernetes/manifest", v0.OK)
 		api.GET("/credentials", v0.ListCredentials)
+		api.GET("/credentials/:account", v0.GetAccountCredentials)
 
 		// Applications API controller.
+		api.GET("/applications", v0.ListApplications)
 		api.GET("/applications/:application/serverGroupManagers", v0.ListServerGroupManagers)
 		api.GET("/applications/:application/serverGroups", v0.ListServerGroups)
+		api.GET("/applications/:application/serverGroups/:account/:location/:name", v0.GetServerGroup)
 		api.GET("/applications/:application/loadBalancers", v0.ListLoadBalancers)
 		api.GET("/applications/:application/clusters", v0.ListClusters)
 

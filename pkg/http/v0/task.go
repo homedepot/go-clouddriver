@@ -21,7 +21,7 @@ func GetTask(c *gin.Context) {
 	id := c.Param("id")
 	manifests := []map[string]interface{}{}
 
-	resources, err := sc.ListKubernetesResources(id)
+	resources, err := sc.ListKubernetesResourcesByTaskID(id)
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusBadRequest, err)
 		return

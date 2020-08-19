@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
+	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
 )
 
@@ -44,34 +45,97 @@ var spinnakerKindMap = map[string]string{
 	"validatingWebhookConfiguration": "unclassified",
 }
 
-// TODO lots of this is hardcoded - we need to get these from each provider.
+// List credentials for providers.
 func ListCredentials(c *gin.Context) {
 	expand := c.Query("expand")
+	sc := sql.Instance(c)
 	credentials := []clouddriver.Credential{}
-	sca := clouddriver.Credential{
-		AccountType:                 "spin-cluster-account",
+
+	providers, err := sc.ListKubernetesProviders()
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	for _, provider := range providers {
+		readGroups, err := sc.ListReadGroupsByAccountName(provider.Name)
+		if err != nil {
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
+		}
+
+		writeGroups, err := sc.ListWriteGroupsByAccountName(provider.Name)
+		if err != nil {
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
+		}
+
+		sca := clouddriver.Credential{
+			AccountType:                 provider.Name,
+			ChallengeDestructiveActions: false,
+			CloudProvider:               "kubernetes",
+			Environment:                 provider.Name,
+			Name:                        provider.Name,
+			Permissions: clouddriver.Permissions{
+				READ:  readGroups,
+				WRITE: writeGroups,
+			},
+			PrimaryAccount:          false,
+			ProviderVersion:         "v2",
+			RequiredGroupMembership: []interface{}{},
+			Skin:                    "v2",
+			// SpinnakerKindMap:        spinnakerKindMap,
+			Type: "kubernetes",
+		}
+
+		if expand == "true" {
+			sca.SpinnakerKindMap = spinnakerKindMap
+		}
+		credentials = append(credentials, sca)
+	}
+
+	c.JSON(http.StatusOK, credentials)
+}
+
+func GetAccountCredentials(c *gin.Context) {
+	sc := sql.Instance(c)
+	account := c.Param("account")
+
+	provider, err := sc.GetKubernetesProvider(account)
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	readGroups, err := sc.ListReadGroupsByAccountName(provider.Name)
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	writeGroups, err := sc.ListWriteGroupsByAccountName(provider.Name)
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	credentials := clouddriver.Credential{
+		AccountType:                 provider.Name,
 		ChallengeDestructiveActions: false,
 		CloudProvider:               "kubernetes",
-		Environment:                 "spin-cluster-account",
-		Name:                        "spin-cluster-account",
+		Environment:                 provider.Name,
+		Name:                        provider.Name,
 		Permissions: clouddriver.Permissions{
-			READ: []string{
-				"gg_cloud_gcp_spinnaker_admins",
-			},
-			WRITE: []string{
-				"gg_cloud_gcp_spinnaker_admins",
-			},
+			READ:  readGroups,
+			WRITE: writeGroups,
 		},
 		PrimaryAccount:          false,
 		ProviderVersion:         "v2",
 		RequiredGroupMembership: []interface{}{},
 		Skin:                    "v2",
-		// SpinnakerKindMap:        spinnakerKindMap,
-		Type: "kubernetes",
+		SpinnakerKindMap:        spinnakerKindMap,
+		Type:                    "kubernetes",
 	}
-	if expand == "true" {
-		sca.SpinnakerKindMap = spinnakerKindMap
-	}
-	credentials = append(credentials, sca)
+
 	c.JSON(http.StatusOK, credentials)
 }

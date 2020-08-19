@@ -214,18 +214,18 @@ func GetManifest(c *gin.Context) {
 
 	kmr := ManifestResponse{
 		Account:  account,
-		Events:   nil,
+		Events:   []interface{}{},
 		Location: namespace,
 		Manifest: result.Object,
-		Metrics:  nil,
+		Metrics:  []interface{}{},
 		Moniker: ManifestResponseMoniker{
 			App:     app,
 			Cluster: fmt.Sprintf("%s %s", kind, name),
 		},
-		Name: name,
+		Name: fmt.Sprintf("%s %s", kind, name),
 		// The 'default' status of a kubernetes resource.
 		Status:   manifest.DefaultStatus,
-		Warnings: nil,
+		Warnings: []interface{}{},
 	}
 
 	// status https://github.com/spinnaker/clouddriver/tree/master/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/op/handler
