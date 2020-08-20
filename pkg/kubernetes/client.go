@@ -85,10 +85,10 @@ func (c *client) Apply(manifest []byte, application string) (*unstructured.Unstr
 
 	name := unstructuredObj.GetName()
 	namespace := unstructuredObj.GetNamespace()
-
 	if namespace == "" {
 		namespace = "default"
 	}
+	unstructuredObj.SetNamespace(namespace)
 
 	gvk := obj.GetObjectKind().GroupVersionKind()
 	t := fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
