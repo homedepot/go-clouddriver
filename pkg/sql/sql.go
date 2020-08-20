@@ -75,7 +75,7 @@ func Connect(driver string, connection interface{}) (*gorm.DB, error) {
 
 func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error) {
 	var p kubernetes.Provider
-	db := c.db.Select("host, ca_data").Where("name = ?", name).First(&p)
+	db := c.db.Select("host, ca_data, bearer_token").Where("name = ?", name).First(&p)
 
 	return p, db.Error
 }

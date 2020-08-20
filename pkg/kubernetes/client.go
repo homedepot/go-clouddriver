@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/deprecated/scheme"
 	"k8s.io/client-go/discovery"
-	memory "k8s.io/client-go/discovery/cached"
+	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
@@ -256,7 +256,6 @@ func (c *client) Get(resource, name, namespace string) (*unstructured.Unstructur
 		Resource(restMapping.Resource).
 		Namespace(namespace).
 		Get(context.TODO(), name, metav1.GetOptions{})
-	// obj, err := getObject(client, *kubeconfig, o)
 	if err != nil {
 		return nil, err
 	}

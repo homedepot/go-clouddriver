@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"os"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"k8s.io/client-go/rest"
@@ -50,7 +49,7 @@ func GetTask(c *gin.Context) {
 
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: os.Getenv("BEARER_TOKEN"),
+		BearerToken: provider.BearerToken,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},

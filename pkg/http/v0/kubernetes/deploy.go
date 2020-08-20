@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"encoding/base64"
 	"encoding/json"
-	"os"
 
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
@@ -80,7 +79,7 @@ func DeployManifests(c *gin.Context, taskID string, dm DeployManifestRequest) er
 
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: os.Getenv("BEARER_TOKEN"),
+		BearerToken: provider.BearerToken,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},

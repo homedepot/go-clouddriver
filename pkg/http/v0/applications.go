@@ -2,16 +2,12 @@ package v0
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
-	v1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -182,7 +178,7 @@ func ListServerGroupManagers(c *gin.Context) {
 
 		config := &rest.Config{
 			Host:        provider.Host,
-			BearerToken: os.Getenv("BEARER_TOKEN"),
+			BearerToken: provider.BearerToken,
 			TLSClientConfig: rest.TLSClientConfig{
 				CAData: cd,
 			},
@@ -245,10 +241,10 @@ func ListServerGroupManagers(c *gin.Context) {
 						if strings.EqualFold(name, deployment.GetName()) &&
 							strings.EqualFold(t, "kubernetes/deployment") {
 							sequence := 0
-							deploymentAnnotations := deployment.GetAnnotations()
-							if deploymentAnnotations != nil {
-								if _, ok := deploymentAnnotations["deployment.kubernetes.io/revision"]; ok {
-									sequence, _ = strconv.Atoi(deploymentAnnotations["deployment.kubernetes.io/revision"])
+							replicaSetAnnotations := replicaSet.GetAnnotations()
+							if replicaSetAnnotations != nil {
+								if _, ok := replicaSetAnnotations["deployment.kubernetes.io/revision"]; ok {
+									sequence, _ = strconv.Atoi(replicaSetAnnotations["deployment.kubernetes.io/revision"])
 								}
 							}
 							s := ServerGroupManagerServerGroup{
@@ -275,7 +271,7 @@ func ListServerGroupManagers(c *gin.Context) {
 				CreatedTime:   deployment.GetCreationTimestamp().Unix() * 1000,
 				Key: Key{
 					Account:        account,
-					Group:          deploymentGVK.Group,
+					Group:          deploymentGVK.Kind,
 					KubernetesKind: deploymentGVK.Kind,
 					Name:           deployment.GetName(),
 					Namespace:      deployment.GetNamespace(),
@@ -370,7 +366,7 @@ func ListLoadBalancers(c *gin.Context) {
 
 		config := &rest.Config{
 			Host:        provider.Host,
-			BearerToken: os.Getenv("BEARER_TOKEN"),
+			BearerToken: provider.BearerToken,
 			TLSClientConfig: rest.TLSClientConfig{
 				CAData: cd,
 			},
@@ -487,26 +483,31 @@ func ListLoadBalancers(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-type ClustersResponse struct {
-	SpinClusterAccount []string `json:"spin-cluster-account"`
-}
+type ClustersResponse map[string][]string
 
+// List clusters, which for kubernetes is a map of provider names to kubernetes deployment
+// kinds and names.
 func ListClusters(c *gin.Context) {
-	cr := ClustersResponse{
-		SpinClusterAccount: []string{
-			"deployment cleanup-operator",
-			"deployment nginx-deployment",
-			"replicaSet cleanup-operator-6f5df67cf9",
-			"replicaSet demo-deployment-5fc8ffdb68",
-			"replicaSet frontend",
-			"replicaSet hello-app-red-black",
-			"replicaSet hello-app-red-black-v006",
-			"replicaSet hello-app-red-black-v007",
-			"service hello-app-red-black",
-		},
+	sc := sql.Instance(c)
+
+	rs, err := sc.ListKubernetesResourcesByFields("account_name", "kind", "name")
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
-	c.JSON(http.StatusOK, cr)
+	response := ClustersResponse{}
+
+	for _, resource := range rs {
+		if _, ok := response[resource.AccountName]; !ok {
+			response[resource.AccountName] = []string{}
+		}
+		kr := response[resource.AccountName]
+		kr = append(kr, fmt.Sprintf("%s %s", resource.Kind, resource.Name))
+		response[resource.AccountName] = kr
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 type ServerGroupsResponse []ServerGroup
@@ -621,7 +622,7 @@ func ListServerGroups(c *gin.Context) {
 
 		config := &rest.Config{
 			Host:        provider.Host,
-			BearerToken: os.Getenv("BEARER_TOKEN"),
+			BearerToken: provider.BearerToken,
 			TLSClientConfig: rest.TLSClientConfig{
 				CAData: cd,
 			},
@@ -646,11 +647,6 @@ func ListServerGroups(c *gin.Context) {
 			Version:  "v1",
 			Resource: "pods",
 		}
-		// replicaSetGVK := schema.GroupVersionKind{
-		// 	Group:   "apps",
-		// 	Version: "v1",
-		// 	Kind:    "replicaset",
-		// }
 
 		replicaSets, err := kc.List(replicaSetGVR, lo)
 		if err != nil {
@@ -665,24 +661,18 @@ func ListServerGroups(c *gin.Context) {
 		}
 
 		for _, replicaSet := range replicaSets.Items {
-			b, _ := json.Marshal(replicaSet.Object)
-			rs := v1.ReplicaSet{}
-			json.Unmarshal(b, &rs)
-			images := []string{}
+			rs := replicaset.New(replicaSet.Object)
+			images := rs.ListImages()
+			spec := rs.GetSpec()
 
-			for _, container := range rs.Spec.Template.Spec.Containers {
-				images = append(images, container.Image)
-			}
 			desired := 0
-			if rs.Spec.Replicas != nil {
-				desired = int(*rs.Spec.Replicas)
+			if spec.Replicas != nil {
+				desired = int(*spec.Replicas)
 			}
 
 			instances := []Instance{}
-			for _, pod := range pods.Items {
-				b, _ = json.Marshal(pod.Object)
-				p := &corev1.Pod{}
-				json.Unmarshal(b, &p)
+			for _, u := range pods.Items {
+				p := pod.New(u.Object)
 				for _, ownerReference := range p.ObjectMeta.OwnerReferences {
 					if strings.EqualFold(ownerReference.Name, replicaSet.GetName()) {
 						state := "Up"
@@ -690,7 +680,7 @@ func ListServerGroups(c *gin.Context) {
 							state = "Down"
 						}
 						instance := Instance{
-							AvailabilityZone: pod.GetNamespace(),
+							AvailabilityZone: u.GetNamespace(),
 							Health: []InstanceHealth{
 								{
 									State: state,
@@ -702,8 +692,8 @@ func ListServerGroups(c *gin.Context) {
 								},
 							},
 							HealthState: state,
-							ID:          string(pod.GetUID()),
-							Name:        fmt.Sprintf("%s %s", "pod", pod.GetName()),
+							ID:          string(u.GetUID()),
+							Name:        fmt.Sprintf("%s %s", "pod", u.GetName()),
 						}
 						instances = append(instances, instance)
 					}
@@ -767,9 +757,9 @@ func ListServerGroups(c *gin.Context) {
 					Down:         0,
 					OutOfService: 0,
 					Starting:     0,
-					Total:        int(rs.Status.Replicas),
+					Total:        int(rs.GetStatus().Replicas),
 					Unknown:      0,
-					Up:           int(rs.Status.ReadyReplicas),
+					Up:           int(rs.GetStatus().ReadyReplicas),
 				},
 				Instances:     instances,
 				IsDisabled:    false,
@@ -848,7 +838,7 @@ func GetServerGroup(c *gin.Context) {
 
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: os.Getenv("BEARER_TOKEN"),
+		BearerToken: provider.BearerToken,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},
@@ -888,9 +878,7 @@ func GetServerGroup(c *gin.Context) {
 		rs := replicaset.New(result.Object)
 		spec := rs.GetSpec()
 		status := rs.GetStatus()
-		for _, container := range spec.Template.Spec.Containers {
-			images = append(images, container.Image)
-		}
+		images = rs.ListImages()
 		if spec.Replicas != nil {
 			desired = int(*spec.Replicas)
 		}

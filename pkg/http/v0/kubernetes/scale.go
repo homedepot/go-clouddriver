@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"encoding/base64"
 	"encoding/json"
-	"os"
 	"strconv"
 	"strings"
 
@@ -39,7 +38,7 @@ func ScaleManifest(c *gin.Context, sm ScaleManifestRequest) error {
 
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: os.Getenv("BEARER_TOKEN"),
+		BearerToken: provider.BearerToken,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},

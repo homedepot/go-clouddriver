@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
@@ -39,7 +38,7 @@ func GetManifest(c *gin.Context) {
 
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: os.Getenv("BEARER_TOKEN"),
+		BearerToken: provider.BearerToken,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},

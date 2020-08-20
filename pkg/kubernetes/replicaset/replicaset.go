@@ -64,6 +64,15 @@ func (rs *ReplicaSet) GetStatus() v1.ReplicaSetStatus {
 	return rs.rs.Status
 }
 
+func (rs *ReplicaSet) ListImages() []string {
+	images := []string{}
+	for _, container := range rs.rs.Spec.Template.Spec.Containers {
+		images = append(images, container.Image)
+	}
+
+	return images
+}
+
 func Status(m map[string]interface{}) manifest.Status {
 	s := manifest.DefaultStatus
 
