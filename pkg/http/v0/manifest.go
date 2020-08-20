@@ -44,7 +44,7 @@ func GetManifest(c *gin.Context) {
 		},
 	}
 
-	if err = kc.WithConfig(config); err != nil {
+	if err = kc.SetDynamicClientForConfig(config); err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}
@@ -57,8 +57,8 @@ func GetManifest(c *gin.Context) {
 
 	app := "unknown"
 	labels := result.GetLabels()
-	if _, ok := labels["app.kubernetes.io/name"]; ok {
-		app = labels["app.kubernetes.io/name"]
+	if _, ok := labels[kubernetes.LabelKubernetesSpinnakerApp]; ok {
+		app = labels[kubernetes.LabelKubernetesSpinnakerApp]
 	}
 
 	kmr := ops.ManifestResponse{

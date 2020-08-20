@@ -184,7 +184,7 @@ func ListServerGroupManagers(c *gin.Context) {
 			},
 		}
 
-		if err = kc.WithConfig(config); err != nil {
+		if err = kc.SetDynamicClientForConfig(config); err != nil {
 			log.Println("error creating dynamic client for account", account)
 			continue
 		}
@@ -193,7 +193,7 @@ func ListServerGroupManagers(c *gin.Context) {
 		replicaSets := &unstructured.UnstructuredList{}
 
 		lo := metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=" + application,
+			LabelSelector: kubernetes.LabelKubernetesSpinnakerApp + "=" + application,
 		}
 
 		deploymentGVK := schema.GroupVersionKind{
@@ -372,7 +372,7 @@ func ListLoadBalancers(c *gin.Context) {
 			},
 		}
 
-		if err = kc.WithConfig(config); err != nil {
+		if err = kc.SetDynamicClientForConfig(config); err != nil {
 			log.Println("error creating dynamic client for account", account)
 			continue
 		}
@@ -380,7 +380,7 @@ func ListLoadBalancers(c *gin.Context) {
 		// Label selector for all that we are listing in the cluster. We
 		// only want to list resources that have a label referencing the requested application.
 		lo := metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=" + application,
+			LabelSelector: kubernetes.LabelKubernetesSpinnakerApp + "=" + application,
 		}
 
 		// Create a GVR for ingresses.
@@ -628,13 +628,13 @@ func ListServerGroups(c *gin.Context) {
 			},
 		}
 
-		if err = kc.WithConfig(config); err != nil {
+		if err = kc.SetDynamicClientForConfig(config); err != nil {
 			log.Println("error creating dynamic client for account", account)
 			continue
 		}
 
 		lo := metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=" + application,
+			LabelSelector: kubernetes.LabelKubernetesSpinnakerApp + "=" + application,
 		}
 
 		// Create a GVR for replicasets.
@@ -844,13 +844,13 @@ func GetServerGroup(c *gin.Context) {
 		},
 	}
 
-	if err = kc.WithConfig(config); err != nil {
+	if err = kc.SetDynamicClientForConfig(config); err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	lo := metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=" + application,
+		LabelSelector: kubernetes.LabelKubernetesSpinnakerApp + "=" + application,
 	}
 
 	podsGVR := schema.GroupVersionResource{

@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"strconv"
 	"strings"
 
@@ -44,7 +43,7 @@ func ScaleManifest(c *gin.Context, sm ScaleManifestRequest) error {
 		},
 	}
 
-	if err = kc.WithConfig(config); err != nil {
+	if err = kc.SetDynamicClientForConfig(config); err != nil {
 		return err
 	}
 
@@ -60,12 +59,17 @@ func ScaleManifest(c *gin.Context, sm ScaleManifestRequest) error {
 	switch strings.ToLower(kind) {
 	case "deployment":
 		d := deployment.New(unstructuredObj.Object)
-		replicas, _ := strconv.Atoi(sm.Replicas)
+
+		replicas, err := strconv.Atoi(sm.Replicas)
+		if err != nil {
+			return err
+		}
+
 		desiredReplicas := int32(replicas)
 
-		d.Spec.Replicas = &desiredReplicas
+		d.SetReplicas(&desiredReplicas)
 
-		b, err := json.Marshal(d)
+		b, err := d.Marshal()
 		if err != nil {
 			return err
 		}

@@ -55,7 +55,7 @@ func GetTask(c *gin.Context) {
 		},
 	}
 
-	if err = kc.WithConfig(config); err != nil {
+	if err = kc.SetDynamicClientForConfig(config); err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}

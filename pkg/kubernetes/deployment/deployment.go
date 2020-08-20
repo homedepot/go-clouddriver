@@ -9,10 +9,14 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func ToUnstructured(d *v1.Deployment) (*unstructured.Unstructured, error) {
+type Deployment struct {
+	d *v1.Deployment
+}
+
+func (d *Deployment) ToUnstructured() (*unstructured.Unstructured, error) {
 	u := &unstructured.Unstructured{}
 
-	b, err := json.Marshal(d)
+	b, err := json.Marshal(d.d)
 	if err != nil {
 		return nil, err
 	}
@@ -25,46 +29,58 @@ func ToUnstructured(d *v1.Deployment) (*unstructured.Unstructured, error) {
 	return u, nil
 }
 
-func AnnotateTemplate(d *v1.Deployment, key, value string) {
-	annotations := d.Spec.Template.ObjectMeta.Annotations
+func (d *Deployment) Marshal() ([]byte, error) {
+	return json.Marshal(d.d)
+}
+
+func (d *Deployment) AnnotateTemplate(key, value string) {
+	annotations := d.d.Spec.Template.ObjectMeta.Annotations
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
 
 	annotations[key] = value
-	d.Spec.Template.ObjectMeta.Annotations = annotations
+	d.d.Spec.Template.ObjectMeta.Annotations = annotations
 }
 
-func LabelTemplate(d *v1.Deployment, key, value string) {
-	labels := d.Spec.Template.ObjectMeta.Labels
+func (d *Deployment) GetSpec() v1.DeploymentSpec {
+	return d.d.Spec
+}
+
+func (d *Deployment) SetReplicas(replicas *int32) {
+	d.d.Spec.Replicas = replicas
+}
+
+func (d *Deployment) LabelTemplate(key, value string) {
+	labels := d.d.Spec.Template.ObjectMeta.Labels
 	if labels == nil {
 		labels = map[string]string{}
 	}
 
 	labels[key] = value
-	d.Spec.Template.ObjectMeta.Labels = labels
+	d.d.Spec.Template.ObjectMeta.Labels = labels
 }
 
-func New(m map[string]interface{}) *v1.Deployment {
-	p := &v1.Deployment{}
+func New(m map[string]interface{}) Deployment {
+	d := &v1.Deployment{}
 	b, _ := json.Marshal(m)
-	_ = json.Unmarshal(b, &p)
+	_ = json.Unmarshal(b, &d)
 
-	return p
+	return Deployment{d: d}
 }
 
 func Status(m map[string]interface{}) manifest.Status {
 	s := manifest.DefaultStatus
 	d := New(m)
 
-	if d.ObjectMeta.Generation != d.Status.ObservedGeneration {
+	if d.d.ObjectMeta.Generation != d.d.Status.ObservedGeneration {
 		s.Stable.State = false
 		s.Stable.Message = "Waiting for status generation to match updated object generation"
 
 		return s
 	}
 
-	conditions := d.Status.Conditions
+	conditions := d.d.Status.Conditions
 	for _, condition := range conditions {
 		if strings.EqualFold(condition.Reason, "deploymentpaused") {
 			s.Paused.State = true
@@ -86,12 +102,12 @@ func Status(m map[string]interface{}) manifest.Status {
 
 	desiredReplicas := int32(0)
 
-	if d.Spec.Replicas != nil {
-		desiredReplicas = *d.Spec.Replicas
+	if d.d.Spec.Replicas != nil {
+		desiredReplicas = *d.d.Spec.Replicas
 	}
 
 	{
-		updatedReplicas := d.Status.UpdatedReplicas
+		updatedReplicas := d.d.Status.UpdatedReplicas
 		if updatedReplicas < desiredReplicas {
 			s.Stable.State = false
 			s.Stable.Message = "Waiting for all replicas to be updated"
@@ -99,7 +115,7 @@ func Status(m map[string]interface{}) manifest.Status {
 			return s
 		}
 
-		statusReplicas := d.Status.Replicas
+		statusReplicas := d.d.Status.Replicas
 		if statusReplicas > updatedReplicas {
 			s.Stable.State = false
 			s.Stable.Message = "Waiting for old replicas to finish termination"
@@ -109,7 +125,7 @@ func Status(m map[string]interface{}) manifest.Status {
 	}
 
 	{
-		availableReplicas := d.Status.AvailableReplicas
+		availableReplicas := d.d.Status.AvailableReplicas
 		if availableReplicas < desiredReplicas {
 			s.Stable.State = false
 			s.Stable.Message = "Waiting for all replicas to be available"
@@ -119,7 +135,7 @@ func Status(m map[string]interface{}) manifest.Status {
 	}
 
 	{
-		readyReplicas := d.Status.ReadyReplicas
+		readyReplicas := d.d.Status.ReadyReplicas
 		if readyReplicas < desiredReplicas {
 			s.Stable.State = false
 			s.Stable.Message = "Waiting for all replicas to be ready"

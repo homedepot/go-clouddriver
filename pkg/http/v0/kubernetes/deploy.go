@@ -85,9 +85,7 @@ func DeployManifests(c *gin.Context, taskID string, dm DeployManifestRequest) er
 		},
 	}
 
-	if err = kc.WithConfig(config); err != nil {
-		return err
-	}
+	kc.WithConfig(config)
 
 	for _, manifest := range dm.Manifests {
 		b, err := json.Marshal(manifest)
@@ -95,7 +93,7 @@ func DeployManifests(c *gin.Context, taskID string, dm DeployManifestRequest) er
 			return err
 		}
 
-		_, meta, err := kc.Apply(b, dm.Moniker.App)
+		meta, err := kc.Apply(b, dm.Moniker.App)
 		if err != nil {
 			return err
 		}

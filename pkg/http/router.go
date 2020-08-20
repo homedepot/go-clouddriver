@@ -12,8 +12,11 @@ func Initialize(r *gin.Engine) {
 	api := r.Group("")
 	{
 		api.GET("/health", v0.OK)
+
 		// Force cache refresh.
 		api.POST("/cache/kubernetes/manifest", v0.OK)
+
+		// Credentials API controller.
 		api.GET("/credentials", v0.ListCredentials)
 		api.GET("/credentials/:account", v0.GetAccountCredentials)
 
@@ -31,14 +34,18 @@ func Initialize(r *gin.Engine) {
 		// Monitor deploy.
 		r.GET("/manifests/:account/:location/:name", v0.GetManifest)
 
+		// Get results for a task triggered in CreateKubernetesOperation.
 		r.GET("/task/:id", v0.GetTask)
 
+		// Not implemented.
 		r.GET("/securityGroups", v0.ListSecurityGroups)
 		r.GET("/search", v0.Search)
 	}
 
+	// New endpoint.
 	api = r.Group("/v1")
 	{
+		// Providers endpoint for kubernetes.
 		api.POST("/kubernetes/providers", v1.CreateKubernetesProvider)
 	}
 }
