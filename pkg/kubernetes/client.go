@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/billiford/go-clouddriver/pkg/kubernetes/deployment"
+	"github.com/billiford/go-clouddriver/pkg/kubernetes/replicaset"
 	"github.com/gin-gonic/gin"
-	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -63,7 +64,8 @@ func (c *client) WithConfig(config *rest.Config) error {
 	return err
 }
 
-func (c *client) Apply(manifest []byte, spinnakerApp string) (*unstructured.Unstructured, Metadata, error) {
+// Apply a given manifest.
+func (c *client) Apply(manifest []byte, application string) (*unstructured.Unstructured, Metadata, error) {
 	metadata := Metadata{}
 
 	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode(manifest, nil, nil)
@@ -81,151 +83,68 @@ func (c *client) Apply(manifest []byte, spinnakerApp string) (*unstructured.Unst
 		Object: m,
 	}
 
-	name, err := meta.NewAccessor().Name(obj)
-	if err != nil {
-		return nil, metadata, err
-	}
-
-	namespace, err := meta.NewAccessor().Namespace(obj)
-	if err != nil {
-		return nil, metadata, err
-	}
+	name := unstructuredObj.GetName()
+	namespace := unstructuredObj.GetNamespace()
 
 	if namespace == "" {
 		namespace = "default"
 	}
 
 	gvk := obj.GetObjectKind().GroupVersionKind()
+	t := fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
+	cluster := fmt.Sprintf("%s %s", gvk.Kind, name)
 
 	// Add reserved annotations.
 	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-annotations
-	{
-		annotations := unstructuredObj.GetAnnotations()
-		if annotations == nil {
-			annotations = map[string]string{}
-		}
-
-		annotations["artifact.spinnaker.io/location"] = namespace
-		annotations["artifact.spinnaker.io/name"] = name
-		annotations["artifact.spinnaker.io/type"] = fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
-		annotations["moniker.spinnaker.io/application"] = spinnakerApp
-		annotations["moniker.spinnaker.io/cluster"] = fmt.Sprintf("%s %s", gvk.Kind, name)
-		unstructuredObj.SetAnnotations(annotations)
-	}
+	annotate(unstructuredObj, "artifact.spinnaker.io/location", namespace)
+	annotate(unstructuredObj, "artifact.spinnaker.io/name", name)
+	annotate(unstructuredObj, "artifact.spinnaker.io/type", t)
+	annotate(unstructuredObj, "moniker.spinnaker.io/application", application)
+	annotate(unstructuredObj, "moniker.spinnaker.io/cluster", cluster)
 
 	// Add reserved labels.
 	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-labels
-	{
-		labels := unstructuredObj.GetLabels()
-		if labels == nil {
-			labels = map[string]string{}
-		}
-
-		labels["app.kubernetes.io/name"] = spinnakerApp
-		labels["app.kubernetes.io/managed-by"] = "spinnaker"
-		unstructuredObj.SetLabels(labels)
-	}
+	label(unstructuredObj, "app.kubernetes.io/name", application)
+	label(unstructuredObj, "app.kubernetes.io/managed-by", "spinnaker")
 
 	// If this is a deployemnt, set the .spec.template.metadata.* info same as above.
 	if strings.EqualFold(gvk.Kind, "deployment") {
-		d := &v1.Deployment{}
+		d := deployment.New(unstructuredObj.Object)
 
-		{
-			b, err := json.Marshal(unstructuredObj.Object)
-			if err != nil {
-				return nil, metadata, err
-			}
-
-			err = json.Unmarshal(b, &d)
-			if err != nil {
-				return nil, metadata, err
-			}
-		}
-
-		// Add reserved annotations.
-		annotations := d.Spec.Template.ObjectMeta.Annotations
-		if annotations == nil {
-			annotations = map[string]string{}
-		}
-
-		annotations["artifact.spinnaker.io/location"] = namespace
-		annotations["artifact.spinnaker.io/name"] = name
-		annotations["artifact.spinnaker.io/type"] = fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
-		annotations["moniker.spinnaker.io/application"] = spinnakerApp
-		annotations["moniker.spinnaker.io/cluster"] = fmt.Sprintf("%s %s", gvk.Kind, name)
-		d.Spec.Template.ObjectMeta.Annotations = annotations
+		// Add spinnaker annotations to the deployment pod template.
+		deployment.AnnotateTemplate(d, "artifact.spinnaker.io/location", namespace)
+		deployment.AnnotateTemplate(d, "artifact.spinnaker.io/name", name)
+		deployment.AnnotateTemplate(d, "artifact.spinnaker.io/type", t)
+		deployment.AnnotateTemplate(d, "moniker.spinnaker.io/application", application)
+		deployment.AnnotateTemplate(d, "moniker.spinnaker.io/cluster", cluster)
 
 		// Add reserved labels.
-		labels := d.Spec.Template.ObjectMeta.Labels
-		if labels == nil {
-			labels = map[string]string{}
-		}
+		deployment.LabelTemplate(d, "app.kubernetes.io/name", application)
+		deployment.LabelTemplate(d, "app.kubernetes.io/managed-by", "spinnaker")
 
-		labels["app.kubernetes.io/name"] = spinnakerApp
-		labels["app.kubernetes.io/managed-by"] = "spinnaker"
-		d.Spec.Template.ObjectMeta.Labels = labels
-
-		{
-			b, err := json.Marshal(d)
-			if err != nil {
-				return nil, metadata, err
-			}
-
-			err = json.Unmarshal(b, &unstructuredObj.Object)
-			if err != nil {
-				return nil, metadata, err
-			}
+		unstructuredObj, err = deployment.ToUnstructured(d)
+		if err != nil {
+			return nil, metadata, err
 		}
 	}
 
 	if strings.EqualFold(gvk.Kind, "replicaset") {
-		rs := &v1.ReplicaSet{}
+		rs := replicaset.New(unstructuredObj.Object)
 
-		{
-			b, err := json.Marshal(unstructuredObj.Object)
-			if err != nil {
-				return nil, metadata, err
-			}
-
-			err = json.Unmarshal(b, &rs)
-			if err != nil {
-				return nil, metadata, err
-			}
-		}
-
-		// Add reserved annotations.
-		annotations := rs.Spec.Template.ObjectMeta.Annotations
-		if annotations == nil {
-			annotations = map[string]string{}
-		}
-
-		annotations["artifact.spinnaker.io/location"] = namespace
-		annotations["artifact.spinnaker.io/name"] = name
-		annotations["artifact.spinnaker.io/type"] = fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
-		annotations["moniker.spinnaker.io/application"] = spinnakerApp
-		annotations["moniker.spinnaker.io/cluster"] = fmt.Sprintf("%s %s", gvk.Kind, name)
-		rs.Spec.Template.ObjectMeta.Annotations = annotations
+		// Add spinnaker annotations to the replicaset pod template.
+		rs.AnnotateTemplate("artifact.spinnaker.io/location", namespace)
+		rs.AnnotateTemplate("artifact.spinnaker.io/name", name)
+		rs.AnnotateTemplate("artifact.spinnaker.io/type", t)
+		rs.AnnotateTemplate("moniker.spinnaker.io/application", application)
+		rs.AnnotateTemplate("moniker.spinnaker.io/cluster", cluster)
 
 		// Add reserved labels.
-		labels := rs.Spec.Template.ObjectMeta.Labels
-		if labels == nil {
-			labels = map[string]string{}
-		}
+		rs.LabelTemplate("app.kubernetes.io/name", application)
+		rs.LabelTemplate("app.kubernetes.io/managed-by", "spinnaker")
 
-		labels["app.kubernetes.io/name"] = spinnakerApp
-		labels["app.kubernetes.io/managed-by"] = "spinnaker"
-		rs.Spec.Template.ObjectMeta.Labels = labels
-
-		{
-			b, err := json.Marshal(rs)
-			if err != nil {
-				return nil, metadata, err
-			}
-
-			err = json.Unmarshal(b, &unstructuredObj.Object)
-			if err != nil {
-				return nil, metadata, err
-			}
+		unstructuredObj, err = rs.ToUnstructured()
+		if err != nil {
+			return nil, metadata, err
 		}
 	}
 
@@ -236,33 +155,7 @@ func (c *client) Apply(manifest []byte, spinnakerApp string) (*unstructured.Unst
 
 	gvr := restMapping.Resource
 
-	resource := &unstructured.Unstructured{}
-
-	_, err = c.c.
-		Resource(gvr).
-		Namespace(namespace).
-		Get(context.TODO(), name, metav1.GetOptions{})
-	if err != nil {
-		resource, err = c.c.
-			Resource(restMapping.Resource).
-			Namespace(namespace).
-			Create(context.TODO(), unstructuredObj, metav1.CreateOptions{})
-		if err != nil {
-			return nil, metadata, err
-		}
-	} else {
-		b, err := json.Marshal(unstructuredObj.Object)
-		if err != nil {
-			return nil, metadata, err
-		}
-		resource, err = c.c.
-			Resource(restMapping.Resource).
-			Namespace(namespace).
-			Patch(context.TODO(), name, types.StrategicMergePatchType, b, metav1.PatchOptions{})
-		if err != nil {
-			return nil, metadata, err
-		}
-	}
+	resource, err := c.apply(gvr, unstructuredObj)
 
 	metadata.Name = name
 	metadata.Namespace = namespace
@@ -272,6 +165,38 @@ func (c *client) Apply(manifest []byte, spinnakerApp string) (*unstructured.Unst
 	metadata.Kind = gvk.Kind
 
 	return resource, metadata, nil
+}
+
+func (c *client) apply(gvr schema.GroupVersionResource, o *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	resource := &unstructured.Unstructured{}
+
+	_, err := c.c.
+		Resource(gvr).
+		Namespace(o.GetNamespace()).
+		Get(context.TODO(), o.GetName(), metav1.GetOptions{})
+	if err != nil {
+		resource, err = c.c.
+			Resource(gvr).
+			Namespace(o.GetNamespace()).
+			Create(context.TODO(), o, metav1.CreateOptions{})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		b, err := json.Marshal(o)
+		if err != nil {
+			return nil, err
+		}
+		resource, err = c.c.
+			Resource(gvr).
+			Namespace(o.GetNamespace()).
+			Patch(context.TODO(), o.GetName(), types.StrategicMergePatchType, b, metav1.PatchOptions{})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return resource, nil
 }
 
 // Patch a given manifest

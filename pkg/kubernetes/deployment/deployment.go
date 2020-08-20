@@ -6,7 +6,44 @@ import (
 
 	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
 	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
+
+func ToUnstructured(d *v1.Deployment) (*unstructured.Unstructured, error) {
+	u := &unstructured.Unstructured{}
+
+	b, err := json.Marshal(d)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(b, &u.Object)
+	if err != nil {
+		return nil, err
+	}
+
+	return u, nil
+}
+
+func AnnotateTemplate(d *v1.Deployment, key, value string) {
+	annotations := d.Spec.Template.ObjectMeta.Annotations
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+
+	annotations[key] = value
+	d.Spec.Template.ObjectMeta.Annotations = annotations
+}
+
+func LabelTemplate(d *v1.Deployment, key, value string) {
+	labels := d.Spec.Template.ObjectMeta.Labels
+	if labels == nil {
+		labels = map[string]string{}
+	}
+
+	labels[key] = value
+	d.Spec.Template.ObjectMeta.Labels = labels
+}
 
 func New(m map[string]interface{}) *v1.Deployment {
 	p := &v1.Deployment{}

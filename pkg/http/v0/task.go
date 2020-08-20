@@ -27,21 +27,10 @@ func GetTask(c *gin.Context) {
 		return
 	}
 
+	// If there were no kubernetes resources associated with this task ID,
+	// return the default task.
 	if len(resources) == 0 {
-		tr := clouddriver.TaskResponse{
-			ID:            id,
-			ResultObjects: []clouddriver.ResultObject{},
-			Status: clouddriver.TaskStatus{
-				Complete:  true,
-				Completed: true,
-				Failed:    false,
-				Phase:     "ORCHESTRATION",
-				Retryable: false,
-				Status:    "Orchestration completed.",
-			},
-		}
-
-		c.JSON(http.StatusOK, tr)
+		c.JSON(http.StatusOK, clouddriver.NewDefaultTask(id))
 		return
 	}
 
@@ -82,37 +71,27 @@ func GetTask(c *gin.Context) {
 		manifests = append(manifests, result.Object)
 	}
 
-	ro := clouddriver.ResultObject{
+	ro := clouddriver.TaskResultObject{
 		Manifests:                         manifests,
 		CreatedArtifacts:                  buildCreatedArtifacts(resources),
 		ManifestNamesByNamespace:          makeManifestNamesByNamespace(resources),
 		ManifestNamesByNamespaceToRefresh: makeManifestNamesByNamespaceToRefresh(resources),
 	}
 
-	tr := clouddriver.TaskResponse{
-		ID:            id,
-		ResultObjects: []clouddriver.ResultObject{ro},
-		Status: clouddriver.TaskStatus{
-			Complete:  true,
-			Completed: true,
-			Failed:    false,
-			Phase:     "ORCHESTRATION",
-			Retryable: false,
-			Status:    "Orchestration completed.",
-		},
-	}
+	task := clouddriver.NewDefaultTask(id)
+	task.ResultObjects = []clouddriver.TaskResultObject{ro}
 
-	c.JSON(http.StatusOK, tr)
+	c.JSON(http.StatusOK, task)
 }
 
-func buildCreatedArtifacts(resources []kubernetes.Resource) []clouddriver.CreatedArtifact {
-	cas := []clouddriver.CreatedArtifact{}
+func buildCreatedArtifacts(resources []kubernetes.Resource) []clouddriver.TaskCreatedArtifact {
+	cas := []clouddriver.TaskCreatedArtifact{}
 
 	for _, resource := range resources {
-		ca := clouddriver.CreatedArtifact{
+		ca := clouddriver.TaskCreatedArtifact{
 			CustomKind: false,
 			Location:   resource.Namespace,
-			Metadata: clouddriver.CreatedArtifactMetadata{
+			Metadata: clouddriver.TaskCreatedArtifactMetadata{
 				Account: resource.AccountName,
 			},
 			Name:      resource.Name,

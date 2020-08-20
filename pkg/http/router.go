@@ -25,8 +25,8 @@ func Initialize(r *gin.Engine) {
 		api.GET("/applications/:application/loadBalancers", v0.ListLoadBalancers)
 		api.GET("/applications/:application/clusters", v0.ListClusters)
 
-		// Trigger a kubernetes deployment.
-		r.POST("/kubernetes/ops", v0.CreateKubernetesDeployment)
+		// Create a kubernetes operation - deploy/delete/scale manifest.
+		r.POST("/kubernetes/ops", v0.CreateKubernetesOperation)
 
 		// Monitor deploy.
 		r.GET("/manifests/:account/:location/:name", v0.GetManifest)

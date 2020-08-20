@@ -423,7 +423,7 @@ func ListLoadBalancers(c *gin.Context) {
 					Account:        account,
 					Group:          ingressGVK.Group,
 					KubernetesKind: ingressGVK.Kind,
-					Name:           ingress.GetName(),
+					Name:           fmt.Sprintf("%s %s", "ingress", ingress.GetName()),
 					Namespace:      ingress.GetNamespace(),
 					Provider:       "kubernetes",
 				},
@@ -470,7 +470,7 @@ func ListLoadBalancers(c *gin.Context) {
 					Account:        account,
 					Group:          serviceGVK.Group,
 					KubernetesKind: serviceGVK.Kind,
-					Name:           service.GetName(),
+					Name:           fmt.Sprintf("%s %s", "service", service.GetName()),
 					Namespace:      service.GetNamespace(),
 					Provider:       "kubernetes",
 				},
@@ -886,14 +886,16 @@ func GetServerGroup(c *gin.Context) {
 	instanceCounts := InstanceCounts{}
 	if strings.EqualFold(kind, "replicaset") {
 		rs := replicaset.New(result.Object)
-		for _, container := range rs.Spec.Template.Spec.Containers {
+		spec := rs.GetSpec()
+		status := rs.GetStatus()
+		for _, container := range spec.Template.Spec.Containers {
 			images = append(images, container.Image)
 		}
-		if rs.Spec.Replicas != nil {
-			desired = int(*rs.Spec.Replicas)
+		if spec.Replicas != nil {
+			desired = int(*spec.Replicas)
 		}
-		instanceCounts.Total = int(rs.Status.Replicas)
-		instanceCounts.Up = int(rs.Status.ReadyReplicas)
+		instanceCounts.Total = int(status.Replicas)
+		instanceCounts.Up = int(status.ReadyReplicas)
 	}
 
 	instances := []Instance{}

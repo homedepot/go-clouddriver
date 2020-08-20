@@ -6,81 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type SecurityGroupsResponse struct {
-	Label           string           `json:"label"`
-	Name            string           `json:"name"`
-	Profiles        []string         `json:"profiles"`
-	PropertySources []PropertySource `json:"propertySources"`
-}
-
-type PropertySource struct {
-	Name   string `json:"name"`
-	Source Source `json:"source"`
-}
-
-type Source struct {
-	KubernetesAccounts0CacheIntervalSeconds         int    `json:"kubernetes.accounts[0].cacheIntervalSeconds"`
-	KubernetesAccounts0CacheThreads                 int    `json:"kubernetes.accounts[0].cacheThreads"`
-	KubernetesAccounts0CachingPolicies              string `json:"kubernetes.accounts[0].cachingPolicies"`
-	KubernetesAccounts0CheckPermissionsOnStartup    bool   `json:"kubernetes.accounts[0].checkPermissionsOnStartup"`
-	KubernetesAccounts0ConfigureImagePullSecrets    bool   `json:"kubernetes.accounts[0].configureImagePullSecrets"`
-	KubernetesAccounts0Context                      string `json:"kubernetes.accounts[0].context"`
-	KubernetesAccounts0DockerRegistries0AccountName string `json:"kubernetes.accounts[0].dockerRegistries[0].accountName"`
-	KubernetesAccounts0DockerRegistries0Namespaces  string `json:"kubernetes.accounts[0].dockerRegistries[0].namespaces"`
-	KubernetesAccounts0KubeconfigContents           string `json:"kubernetes.accounts[0].kubeconfigContents"`
-	KubernetesAccounts0LiveManifestCalls            bool   `json:"kubernetes.accounts[0].liveManifestCalls"`
-	KubernetesAccounts0Metrics                      bool   `json:"kubernetes.accounts[0].metrics"`
-	KubernetesAccounts0Name                         string `json:"kubernetes.accounts[0].name"`
-	KubernetesAccounts0Namespaces                   string `json:"kubernetes.accounts[0].namespaces"`
-	KubernetesAccounts0OAuthScopes                  string `json:"kubernetes.accounts[0].oAuthScopes"`
-	KubernetesAccounts0OmitKinds0                   string `json:"kubernetes.accounts[0].omitKinds[0]"`
-	KubernetesAccounts0OmitNamespaces0              string `json:"kubernetes.accounts[0].omitNamespaces[0]"`
-	KubernetesAccounts0OmitNamespaces1              string `json:"kubernetes.accounts[0].omitNamespaces[1]"`
-	KubernetesAccounts0OnlySpinnakerManaged         bool   `json:"kubernetes.accounts[0].onlySpinnakerManaged"`
-	KubernetesAccounts0PermissionsREAD0             string `json:"kubernetes.accounts[0].permissions.READ[0]"`
-	KubernetesAccounts0PermissionsREAD1             string `json:"kubernetes.accounts[0].permissions.READ[1]"`
-	KubernetesAccounts0PermissionsWRITE0            string `json:"kubernetes.accounts[0].permissions.WRITE[0]"`
-	KubernetesAccounts0ProviderVersion              string `json:"kubernetes.accounts[0].providerVersion"`
-	KubernetesAccounts0RequiredGroupMembership      string `json:"kubernetes.accounts[0].requiredGroupMembership"`
-}
-
-func ListSecurityGroups(c *gin.Context) {
-	var empty struct{}
-	// sgr := SecurityGroupsResponse{
-	// 	// Label:    "securityGroups",
-	// 	// Name:     "applications",
-	// 	// Profiles: []string{"test2"},
-	// 	// PropertySources: []PropertySource{
-	// 	// 	{
-	// 	// 		Name: "vualt:spinnaker",
-	// 	// 		Source: Source{
-	// 	// 			KubernetesAccounts0CacheIntervalSeconds:         3600,
-	// 	// 			KubernetesAccounts0CacheThreads:                 4,
-	// 	// 			KubernetesAccounts0CachingPolicies:              "",
-	// 	// 			KubernetesAccounts0CheckPermissionsOnStartup:    false,
-	// 	// 			KubernetesAccounts0ConfigureImagePullSecrets:    true,
-	// 	// 			KubernetesAccounts0Context:                      "spin-cluster-account",
-	// 	// 			KubernetesAccounts0DockerRegistries0AccountName: "docker-registry",
-	// 	// 			KubernetesAccounts0DockerRegistries0Namespaces:  "",
-	// 	// 			KubernetesAccounts0KubeconfigContents:           "",
-	// 	// 			KubernetesAccounts0LiveManifestCalls:            false,
-	// 	// 			KubernetesAccounts0Metrics:                      false,
-	// 	// 			KubernetesAccounts0Name:                         "spin-cluster-account",
-	// 	// 			KubernetesAccounts0Namespaces:                   "",
-	// 	// 			KubernetesAccounts0OAuthScopes:                  "",
-	// 	// 			KubernetesAccounts0OmitKinds0:                   "podPreset",
-	// 	// 			KubernetesAccounts0OnlySpinnakerManaged:         true,
-	// 	// 			KubernetesAccounts0PermissionsREAD0:             "gg_cloud_gcp_spinnaker_admins",
-	// 	// 			KubernetesAccounts0PermissionsWRITE0:            "gg_cloud_gcp_spinnaker_admins",
-	// 	// 			KubernetesAccounts0ProviderVersion:              "V2",
-	// 	// 			KubernetesAccounts0RequiredGroupMembership:      "",
-	// 	// 		},
-	// 	// 	},
-	// 	// },
-	// }
-	c.JSON(http.StatusOK, empty)
-}
-
+// I'm not sure what this endpoint is supposed to do or what Spinnaker does with it,
+// but here is an example of the response. I found that returning an empty object "{}"
+// satisfies Deck.
+//
 // {
 //   "label": "securityGroups",
 //   "name": "applications",
@@ -118,3 +47,7 @@ func ListSecurityGroups(c *gin.Context) {
 //     }
 //   ]
 // }
+func ListSecurityGroups(c *gin.Context) {
+	var empty struct{}
+	c.JSON(http.StatusOK, empty)
+}
