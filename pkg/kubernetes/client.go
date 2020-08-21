@@ -3,21 +3,14 @@ package kubernetes
 import (
 	"context"
 	"fmt"
-	"log"
-	"strings"
 
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/deployment"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/replicaset"
 	"github.com/gin-gonic/gin"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/resource"
-	"k8s.io/client-go/deprecated/scheme"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
@@ -27,17 +20,8 @@ import (
 )
 
 const (
-	ClientInstanceKey                     = `KubeClient`
-	AnnotationSpinnakerArtifactLocation   = `artifact.spinnaker.io/location`
-	AnnotationSpinnakerArtifactName       = `artifact.spinnaker.io/name`
-	AnnotationSpinnakerArtifactType       = `artifact.spinnaker.io/type`
-	AnnotationSpinnakerMonikerApplication = `moniker.spinnaker.io/application`
-	AnnotationSpinnakerMonikerCluster     = `moniker.spinnaker.io/cluster`
-	LabelKubernetesSpinnakerApp           = `app.kubernetes.io/spinnaker-app`
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
-	LabelKubernetesName      = `app.kubernetes.io/name`
-	LabelKubernetesManagedBy = `app.kubernetes.io/managed-by`
-	spinnaker                = `spinnaker`
+	ClientInstanceKey = `KubeClient`
+	spinnaker         = `spinnaker`
 )
 
 // Wrapper for kubernetes dynamic client to make testing easier.
@@ -46,8 +30,7 @@ const (
 type Client interface {
 	SetDynamicClientForConfig(*rest.Config) error
 	WithConfig(*rest.Config)
-	Apply([]byte, string) (Metadata, error)
-	Patch([]byte) (*unstructured.Unstructured, error)
+	Apply(*unstructured.Unstructured) (Metadata, error)
 	Get(string, string, string) (*unstructured.Unstructured, error)
 	List(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 }
@@ -83,94 +66,10 @@ func (c *client) WithConfig(config *rest.Config) {
 }
 
 // Apply a given manifest.
-func (c *client) Apply(manifest []byte, application string) (Metadata, error) {
+func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 	metadata := Metadata{}
 
-	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode(manifest, nil, nil)
-	if err != nil {
-		return metadata, err
-	}
-
-	// Convert the runtime.Object to unstructured.Unstructured.
-	m, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
-	if err != nil {
-		return metadata, err
-	}
-
-	unstructuredObj := &unstructured.Unstructured{
-		Object: m,
-	}
-
-	name := unstructuredObj.GetName()
-	namespace := unstructuredObj.GetNamespace()
-	if namespace == "" {
-		namespace = "default"
-	}
-	unstructuredObj.SetNamespace(namespace)
-
-	gvk := obj.GetObjectKind().GroupVersionKind()
-	t := fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
-	cluster := fmt.Sprintf("%s %s", strings.ToLower(gvk.Kind), name)
-
-	// Add reserved annotations.
-	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-annotations
-	annotate(unstructuredObj, AnnotationSpinnakerArtifactLocation, namespace)
-	annotate(unstructuredObj, AnnotationSpinnakerArtifactName, name)
-	annotate(unstructuredObj, AnnotationSpinnakerArtifactType, t)
-	annotate(unstructuredObj, AnnotationSpinnakerMonikerApplication, application)
-	annotate(unstructuredObj, AnnotationSpinnakerMonikerCluster, cluster)
-
-	// Add reserved labels. Had some trouble with setting the kubernetes name as
-	// this interferes with label selectors, so I changed that to be spinnaker-app.
-	//
-	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-labels
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
-	// label(unstructuredObj, LabelKubernetesName, application)
-	label(unstructuredObj, LabelKubernetesSpinnakerApp, application)
-	label(unstructuredObj, LabelKubernetesManagedBy, spinnaker)
-
-	// If this is a deployemnt, set the .spec.template.metadata.* info same as above.
-	if strings.EqualFold(gvk.Kind, "deployment") {
-		d := deployment.New(unstructuredObj.Object)
-
-		// Add spinnaker annotations to the deployment pod template.
-		d.AnnotateTemplate(AnnotationSpinnakerArtifactLocation, namespace)
-		d.AnnotateTemplate(AnnotationSpinnakerArtifactName, name)
-		d.AnnotateTemplate(AnnotationSpinnakerArtifactType, t)
-		d.AnnotateTemplate(AnnotationSpinnakerMonikerApplication, application)
-		d.AnnotateTemplate(AnnotationSpinnakerMonikerCluster, cluster)
-
-		// Add reserved labels.
-		// d.LabelTemplate(LabelKubernetesName, application)
-		d.LabelTemplate(LabelKubernetesSpinnakerApp, application)
-		d.LabelTemplate(LabelKubernetesManagedBy, spinnaker)
-
-		unstructuredObj, err = d.ToUnstructured()
-		if err != nil {
-			return metadata, err
-		}
-	}
-
-	if strings.EqualFold(gvk.Kind, "replicaset") {
-		rs := replicaset.New(unstructuredObj.Object)
-
-		// Add spinnaker annotations to the replicaset pod template.
-		rs.AnnotateTemplate(AnnotationSpinnakerArtifactLocation, namespace)
-		rs.AnnotateTemplate(AnnotationSpinnakerArtifactName, name)
-		rs.AnnotateTemplate(AnnotationSpinnakerArtifactType, t)
-		rs.AnnotateTemplate(AnnotationSpinnakerMonikerApplication, application)
-		rs.AnnotateTemplate(AnnotationSpinnakerMonikerCluster, cluster)
-
-		// Add reserved labels.
-		// rs.LabelTemplate(LabelKubernetesName, application)
-		rs.LabelTemplate(LabelKubernetesSpinnakerApp, application)
-		rs.LabelTemplate(LabelKubernetesManagedBy, spinnaker)
-
-		unstructuredObj, err = rs.ToUnstructured()
-		if err != nil {
-			return metadata, err
-		}
-	}
+	gvk := u.GroupVersionKind()
 
 	restMapping, err := findGVR(&gvk, c.config)
 	if err != nil {
@@ -187,13 +86,15 @@ func (c *client) Apply(manifest []byte, application string) (Metadata, error) {
 	}
 
 	helper := resource.NewHelper(restClient, restMapping)
+	SetDefaultNamespaceIfScopedAndNoneSet(u, helper)
+
 	info := &resource.Info{
 		Client:          restClient,
 		Mapping:         restMapping,
-		Namespace:       unstructuredObj.GetNamespace(),
-		Name:            unstructuredObj.GetName(),
+		Namespace:       u.GetNamespace(),
+		Name:            u.GetName(),
 		Source:          "",
-		Object:          unstructuredObj,
+		Object:          u,
 		ResourceVersion: restMapping.Resource.Version,
 		Export:          false,
 	}
@@ -230,7 +131,6 @@ func (c *client) Apply(manifest []byte, application string) (Metadata, error) {
 		info.Refresh(obj, true)
 	}
 
-	// func (p *Patcher) Patch(current runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
 	_, patchedObject, err := patcher.Patch(info.Object, modified, info.Namespace, info.Name)
 	if err != nil {
 		return metadata, err
@@ -238,8 +138,8 @@ func (c *client) Apply(manifest []byte, application string) (Metadata, error) {
 
 	info.Refresh(patchedObject, true)
 
-	metadata.Name = name
-	metadata.Namespace = namespace
+	metadata.Name = u.GetName()
+	metadata.Namespace = u.GetNamespace()
 	metadata.Group = gvr.Group
 	metadata.Resource = gvr.Resource
 	metadata.Version = gvr.Version
@@ -260,81 +160,49 @@ func newRestClient(restConfig rest.Config, gv schema.GroupVersion) (rest.Interfa
 	return rest.RESTClientFor(&restConfig)
 }
 
-// Patch a given manifest
-func (c *client) Patch(manifest []byte) (*unstructured.Unstructured, error) {
-	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode(manifest, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	name, err := meta.NewAccessor().Name(obj)
-	if err != nil {
-		return nil, err
-	}
-
-	namespace, err := meta.NewAccessor().Namespace(obj)
-	if err != nil {
-		return nil, err
-	}
-
-	if namespace == "" {
-		namespace = "default"
-	}
-
-	gvk := obj.GetObjectKind().GroupVersionKind()
-
-	restMapping, err := findGVR(&gvk, c.config)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.c.
-		Resource(restMapping.Resource).
-		Namespace(namespace).
-		Patch(context.TODO(), name, types.StrategicMergePatchType, manifest, metav1.PatchOptions{})
-}
-
 // Get a manifest by resource/kind (example: 'pods' or 'pod'),
 // name (example: 'my-pod'), and namespace (example: 'my-namespace').
-func (c *client) Get(resource, name, namespace string) (*unstructured.Unstructured, error) {
-	log.Printf("getting resource (%s) name (%s) namespace (%s)\n", resource, name, namespace)
-
+func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, error) {
 	dc, err := discovery.NewDiscoveryClientForConfig(c.config)
 	if err != nil {
-		log.Printf("error 1: error getting resource (%s) name (%s) namespace (%s)\n", resource, name, namespace)
 		return nil, err
 	}
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
 
-	gvk, err := mapper.KindFor(schema.GroupVersionResource{Resource: resource})
+	gvk, err := mapper.KindFor(schema.GroupVersionResource{Resource: kind})
 	if err != nil {
-		log.Printf("error 2: error getting resource (%s) name (%s) namespace (%s)\n", resource, name, namespace)
 		return nil, err
 	}
 
 	restMapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if err != nil {
-		log.Printf("error 3: error getting resource (%s) name (%s) namespace (%s)\n", resource, name, namespace)
 		return nil, err
 	}
 
-	// Try to get the resource at the namespace scope.
-	u, err := c.c.
-		Resource(restMapping.Resource).
-		Namespace(namespace).
-		Get(context.TODO(), name, metav1.GetOptions{})
+	restClient, err := newRestClient(*c.config, gvk.GroupVersion())
 	if err != nil {
-		// Try again at the cluster scope.
+		return nil, err
+	}
+
+	helper := resource.NewHelper(restClient, restMapping)
+
+	var u *unstructured.Unstructured
+	fmt.Println("GETTING:", gvk)
+	fmt.Println("NAMESPACED:", helper.NamespaceScoped)
+
+	if helper.NamespaceScoped {
+		u, err = c.c.
+			Resource(restMapping.Resource).
+			Namespace(namespace).
+			Get(context.TODO(), name, metav1.GetOptions{})
+	} else {
 		u, err = c.c.
 			Resource(restMapping.Resource).
 			Get(context.TODO(), name, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
 	}
 
-	return u, nil
+	return u, err
 }
 
 // List all resources by their GVR and list options.

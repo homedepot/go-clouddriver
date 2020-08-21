@@ -13,17 +13,17 @@ type Deployment struct {
 	d *v1.Deployment
 }
 
-func (d *Deployment) ToUnstructured() (*unstructured.Unstructured, error) {
-	u := &unstructured.Unstructured{}
+func (d *Deployment) ToUnstructured() (unstructured.Unstructured, error) {
+	u := unstructured.Unstructured{}
 
 	b, err := json.Marshal(d.d)
 	if err != nil {
-		return nil, err
+		return u, err
 	}
 
 	err = json.Unmarshal(b, &u.Object)
 	if err != nil {
-		return nil, err
+		return u, err
 	}
 
 	return u, nil

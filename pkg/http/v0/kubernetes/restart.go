@@ -2,8 +2,8 @@ package kubernetes
 
 import (
 	"encoding/base64"
-	"strconv"
 	"strings"
+	"time"
 
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes/deployment"
@@ -12,11 +12,13 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func ScaleManifest(c *gin.Context, sm ScaleManifestRequest) error {
+// Perform a `kubectl rollout restart` by setting an annotation on a pod template
+// to the current time in RFC3339.
+func RollingRestartManifest(c *gin.Context, rrm RollingRestartManifestRequest) error {
 	sc := sql.Instance(c)
 	kc := kubernetes.Instance(c)
 
-	provider, err := sc.GetKubernetesProvider(sm.Account)
+	provider, err := sc.GetKubernetesProvider(rrm.Account)
 	if err != nil {
 		return err
 	}
@@ -38,11 +40,11 @@ func ScaleManifest(c *gin.Context, sm ScaleManifestRequest) error {
 		return err
 	}
 
-	a := strings.Split(sm.ManifestName, " ")
+	a := strings.Split(rrm.ManifestName, " ")
 	kind := a[0]
 	name := a[1]
 
-	u, err := kc.Get(kind, name, sm.Location)
+	u, err := kc.Get(kind, name, rrm.Location)
 	if err != nil {
 		return err
 	}
@@ -51,21 +53,17 @@ func ScaleManifest(c *gin.Context, sm ScaleManifestRequest) error {
 	case "deployment":
 		d := deployment.New(u.Object)
 
-		replicas, err := strconv.Atoi(sm.Replicas)
+		// add annotations to pod spec
+		// kubectl.kubernetes.io/restartedAt: "2020-08-21T03:56:27Z"
+		d.AnnotateTemplate("clouddriver.spinnaker.io/restartedAt",
+			time.Now().In(time.UTC).Format(time.RFC3339))
+
+		annotatedObject, err := d.ToUnstructured()
 		if err != nil {
 			return err
 		}
 
-		desiredReplicas := int32(replicas)
-
-		d.SetReplicas(&desiredReplicas)
-
-		scaledManifestObject, err := d.ToUnstructured()
-		if err != nil {
-			return err
-		}
-
-		_, err = kc.Apply(&scaledManifestObject)
+		_, err = kc.Apply(&annotatedObject)
 		if err != nil {
 			return err
 		}

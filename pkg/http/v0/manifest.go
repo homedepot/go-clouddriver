@@ -24,6 +24,13 @@ func GetManifest(c *gin.Context) {
 	kind := a[0]
 	name := a[1]
 
+	// Sometimes a full kind such as MutatingWebhookConfiguration.admissionregistration.k8s.io
+	// is passed in - this is the current fix for that...
+	if strings.Index(kind, ".") > -1 {
+		a2 := strings.Split(kind, ".")
+		kind = a2[0]
+	}
+
 	provider, err := sc.GetKubernetesProvider(account)
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
@@ -51,6 +58,7 @@ func GetManifest(c *gin.Context) {
 
 	result, err := kc.Get(kind, name, namespace)
 	if err != nil {
+		fmt.Println("ERROR:", err.Error())
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}

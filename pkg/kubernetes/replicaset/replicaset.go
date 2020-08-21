@@ -20,17 +20,17 @@ func New(m map[string]interface{}) ReplicaSet {
 	return ReplicaSet{rs: r}
 }
 
-func (rs *ReplicaSet) ToUnstructured() (*unstructured.Unstructured, error) {
-	u := &unstructured.Unstructured{}
+func (rs *ReplicaSet) ToUnstructured() (unstructured.Unstructured, error) {
+	u := unstructured.Unstructured{}
 
 	b, err := json.Marshal(rs.rs)
 	if err != nil {
-		return nil, err
+		return u, err
 	}
 
 	err = json.Unmarshal(b, &u.Object)
 	if err != nil {
-		return nil, err
+		return u, err
 	}
 
 	return u, nil

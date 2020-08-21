@@ -2516,3 +2516,44 @@ const payloadListApplications = `[
     "name": "vishnu"
   }
 ]`
+
+const payloadDeleteManifest = `[
+   {
+      "deleteManifest":{
+         "manifestName":"ReplicaSet frontend234-65cbfd6b8f",
+         "cloudProvider":"kubernetes",
+         "options":{
+            "orphanDependants":false,
+            "gracePeriodSeconds":15
+         },
+         "location":"default",
+         "user":"me@me.com",
+         "account":"spin-cluster-account"
+      }
+   }
+]`
+
+const payloadUndoRolloutManifest = `[
+		{
+			 "undoRolloutManifest":{
+					"manifestName":"deployment spin-clouddriver",
+					"cloudProvider":"kubernetes",
+					"location":"spinnaker",
+					"user":"me@me.com",
+					"account":"spin-cluster-account",
+					"revision":"196"
+			 }
+		}
+]`
+
+const payloadRollingRestartManfiest = `[
+   {
+      "rollingRestartManifest":{
+         "cloudProvider":"kubernetes",
+         "manifestName":"deployment spin-clouddriver",
+         "location":"spinnaker",
+         "user":"william_bolton@demo.homedepot.com",
+         "account":"spin-cluster-account"
+      }
+   }
+]`

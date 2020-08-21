@@ -1,6 +1,7 @@
 package v0
 
 import (
+	"log"
 	"net/http"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
@@ -56,6 +57,18 @@ func CreateKubernetesOperation(c *gin.Context) {
 
 		if req.ScaleManifest != nil {
 			err = kubernetes.ScaleManifest(c, *req.ScaleManifest)
+			if err != nil {
+				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				return
+			}
+		}
+
+		if req.CleanupArtifacts != nil {
+			log.Println("got request to cleanup artifacts - unimplemented, returning status OK")
+		}
+
+		if req.RollingRestartManifest != nil {
+			err = kubernetes.RollingRestartManifest(c, *req.RollingRestartManifest)
 			if err != nil {
 				clouddriver.WriteError(c, http.StatusInternalServerError, err)
 				return
