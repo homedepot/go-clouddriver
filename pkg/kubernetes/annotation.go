@@ -5,8 +5,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/deployment"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/replicaset"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -38,7 +36,7 @@ func AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) e
 
 	log.Println("ANNOTATING KIND:", gvk.Kind)
 	if strings.EqualFold(gvk.Kind, "deployment") {
-		d := deployment.New(u.Object)
+		d := NewDeployment(u.Object)
 
 		// Add spinnaker annotations to the deployment pod template.
 		d.AnnotateTemplate(AnnotationSpinnakerArtifactLocation, namespace)
@@ -54,7 +52,7 @@ func AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) e
 	}
 
 	if strings.EqualFold(gvk.Kind, "replicaset") {
-		rs := replicaset.New(u.Object)
+		rs := NewReplicaSet(u.Object)
 
 		// Add spinnaker annotations to the replicaset pod template.
 		rs.AnnotateTemplate(AnnotationSpinnakerArtifactLocation, namespace)

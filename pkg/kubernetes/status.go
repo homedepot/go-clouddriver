@@ -3,10 +3,7 @@ package kubernetes
 import (
 	"strings"
 
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/deployment"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/pod"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/replicaset"
 )
 
 // Status definitions of kinds can be found at
@@ -16,11 +13,11 @@ func GetStatus(kind string, m map[string]interface{}) manifest.Status {
 
 	switch strings.ToLower(kind) {
 	case "deployment":
-		status = deployment.Status(m)
+		status = NewDeployment(m).Status()
 	case "pod":
-		status = pod.Status(m)
+		status = NewPod(m).Status()
 	case "replicaset":
-		status = replicaset.Status(m)
+		status = NewReplicaSet(m).Status()
 	}
 
 	return status

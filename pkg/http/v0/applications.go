@@ -13,8 +13,6 @@ import (
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/pod"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/replicaset"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -661,9 +659,9 @@ func ListServerGroups(c *gin.Context) {
 		}
 
 		for _, replicaSet := range replicaSets.Items {
-			rs := replicaset.New(replicaSet.Object)
+			rs := kubernetes.NewReplicaSet(replicaSet.Object)
 			images := rs.ListImages()
-			spec := rs.GetSpec()
+			spec := rs.GetReplicaSetSpec()
 
 			desired := 0
 			if spec.Replicas != nil {
@@ -672,11 +670,11 @@ func ListServerGroups(c *gin.Context) {
 
 			instances := []Instance{}
 			for _, u := range pods.Items {
-				p := pod.New(u.Object)
-				for _, ownerReference := range p.ObjectMeta.OwnerReferences {
+				p := kubernetes.NewPod(u.Object)
+				for _, ownerReference := range p.GetObjectMeta().OwnerReferences {
 					if strings.EqualFold(ownerReference.Name, replicaSet.GetName()) {
 						state := "Up"
-						if p.Status.Phase != "Running" {
+						if p.GetPodStatus().Phase != "Running" {
 							state = "Down"
 						}
 						instance := Instance{
@@ -757,9 +755,9 @@ func ListServerGroups(c *gin.Context) {
 					Down:         0,
 					OutOfService: 0,
 					Starting:     0,
-					Total:        int(rs.GetStatus().Replicas),
+					Total:        int(rs.GetReplicaSetStatus().Replicas),
 					Unknown:      0,
-					Up:           int(rs.GetStatus().ReadyReplicas),
+					Up:           int(rs.GetReplicaSetStatus().ReadyReplicas),
 				},
 				Instances:     instances,
 				IsDisabled:    false,
@@ -875,9 +873,9 @@ func GetServerGroup(c *gin.Context) {
 	desired := 0
 	instanceCounts := InstanceCounts{}
 	if strings.EqualFold(kind, "replicaset") {
-		rs := replicaset.New(result.Object)
-		spec := rs.GetSpec()
-		status := rs.GetStatus()
+		rs := kubernetes.NewReplicaSet(result.Object)
+		spec := rs.GetReplicaSetSpec()
+		status := rs.GetReplicaSetStatus()
 		images = rs.ListImages()
 		if spec.Replicas != nil {
 			desired = int(*spec.Replicas)
@@ -888,14 +886,14 @@ func GetServerGroup(c *gin.Context) {
 
 	instances := []Instance{}
 	for _, v := range pods.Items {
-		p := pod.New(v.Object)
-		for _, ownerReference := range p.ObjectMeta.OwnerReferences {
+		p := kubernetes.NewPod(v.Object)
+		for _, ownerReference := range p.GetObjectMeta().OwnerReferences {
 			if strings.EqualFold(ownerReference.Name, result.GetName()) {
 				state := "Up"
-				if p.Status.Phase != "Running" {
+				if p.GetPodStatus().Phase != "Running" {
 					state = "Down"
 				}
-				annotations := p.ObjectMeta.Annotations
+				annotations := p.GetObjectMeta().Annotations
 				cluster := ""
 				app := application
 				if _, ok := annotations["moniker.spinnaker.io/cluster"]; ok {
@@ -909,7 +907,7 @@ func GetServerGroup(c *gin.Context) {
 					AccountName:      account,
 					AvailabilityZone: p.GetNamespace(),
 					CloudProvider:    "kubernetes",
-					CreatedTime:      p.ObjectMeta.CreationTimestamp.Unix() * 1000,
+					CreatedTime:      p.GetObjectMeta().CreationTimestamp.Unix() * 1000,
 					Health: []InstanceHealth{
 						{
 							State: state,

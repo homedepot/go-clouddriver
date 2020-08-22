@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/deployment"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
 	"k8s.io/client-go/rest"
@@ -51,7 +50,7 @@ func RollingRestartManifest(c *gin.Context, rrm RollingRestartManifestRequest) e
 
 	switch strings.ToLower(kind) {
 	case "deployment":
-		d := deployment.New(u.Object)
+		d := kubernetes.NewDeployment(u.Object)
 
 		// add annotations to pod spec
 		// kubectl.kubernetes.io/restartedAt: "2020-08-21T03:56:27Z"

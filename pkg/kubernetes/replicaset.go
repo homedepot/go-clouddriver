@@ -1,4 +1,4 @@
-package replicaset
+package kubernetes
 
 import (
 	"encoding/json"
@@ -8,19 +8,29 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-type ReplicaSet struct {
-	rs *v1.ReplicaSet
+type ReplicaSet interface {
+	ToUnstructured() (unstructured.Unstructured, error)
+	AnnotateTemplate(string, string)
+	GetReplicaSetSpec() v1.ReplicaSetSpec
+	GetReplicaSetStatus() v1.ReplicaSetStatus
+	LabelTemplate(string, string)
+	Status() manifest.Status
+	ListImages() []string
 }
 
-func New(m map[string]interface{}) ReplicaSet {
+func NewReplicaSet(m map[string]interface{}) ReplicaSet {
 	r := &v1.ReplicaSet{}
 	b, _ := json.Marshal(m)
 	_ = json.Unmarshal(b, &r)
 
-	return ReplicaSet{rs: r}
+	return &replicaSet{rs: r}
 }
 
-func (rs *ReplicaSet) ToUnstructured() (unstructured.Unstructured, error) {
+type replicaSet struct {
+	rs *v1.ReplicaSet
+}
+
+func (rs *replicaSet) ToUnstructured() (unstructured.Unstructured, error) {
 	u := unstructured.Unstructured{}
 
 	b, err := json.Marshal(rs.rs)
@@ -36,7 +46,7 @@ func (rs *ReplicaSet) ToUnstructured() (unstructured.Unstructured, error) {
 	return u, nil
 }
 
-func (rs *ReplicaSet) AnnotateTemplate(key, value string) {
+func (rs *replicaSet) AnnotateTemplate(key, value string) {
 	annotations := rs.rs.Spec.Template.ObjectMeta.Annotations
 	if annotations == nil {
 		annotations = map[string]string{}
@@ -46,7 +56,7 @@ func (rs *ReplicaSet) AnnotateTemplate(key, value string) {
 	rs.rs.Spec.Template.ObjectMeta.Annotations = annotations
 }
 
-func (rs *ReplicaSet) LabelTemplate(key, value string) {
+func (rs *replicaSet) LabelTemplate(key, value string) {
 	labels := rs.rs.Spec.Template.ObjectMeta.Labels
 	if labels == nil {
 		labels = map[string]string{}
@@ -56,15 +66,19 @@ func (rs *ReplicaSet) LabelTemplate(key, value string) {
 	rs.rs.Spec.Template.ObjectMeta.Labels = labels
 }
 
-func (rs *ReplicaSet) GetSpec() v1.ReplicaSetSpec {
+func (rs *replicaSet) GetReplicaSetSpec() v1.ReplicaSetSpec {
 	return rs.rs.Spec
 }
 
-func (rs *ReplicaSet) GetStatus() v1.ReplicaSetStatus {
+func (rs *replicaSet) GetReplicaSetStatus() v1.ReplicaSetStatus {
 	return rs.rs.Status
 }
 
-func (rs *ReplicaSet) ListImages() []string {
+func (rs *replicaSet) GetStatus() v1.ReplicaSetStatus {
+	return rs.rs.Status
+}
+
+func (rs *replicaSet) ListImages() []string {
 	images := []string{}
 	for _, container := range rs.rs.Spec.Template.Spec.Containers {
 		images = append(images, container.Image)
@@ -73,10 +87,8 @@ func (rs *ReplicaSet) ListImages() []string {
 	return images
 }
 
-func Status(m map[string]interface{}) manifest.Status {
+func (rs *replicaSet) Status() manifest.Status {
 	s := manifest.DefaultStatus
-
-	rs := New(m)
 	r := rs.rs
 
 	desired := int32(0)

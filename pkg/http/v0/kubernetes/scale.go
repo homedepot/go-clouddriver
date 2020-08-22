@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/deployment"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
 	"k8s.io/client-go/rest"
@@ -49,7 +48,7 @@ func ScaleManifest(c *gin.Context, sm ScaleManifestRequest) error {
 
 	switch strings.ToLower(kind) {
 	case "deployment":
-		d := deployment.New(u.Object)
+		d := kubernetes.NewDeployment(u.Object)
 
 		replicas, err := strconv.Atoi(sm.Replicas)
 		if err != nil {

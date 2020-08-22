@@ -3,8 +3,6 @@ package kubernetes
 import (
 	"strings"
 
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/deployment"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/replicaset"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -30,7 +28,7 @@ func AddSpinnakerLabels(u *unstructured.Unstructured, application string) error 
 	label(u, LabelKubernetesManagedBy, spinnaker)
 
 	if strings.EqualFold(gvk.Kind, "deployment") {
-		d := deployment.New(u.Object)
+		d := NewDeployment(u.Object)
 
 		// Add reserved labels.
 		// d.LabelTemplate(LabelKubernetesName, application)
@@ -44,7 +42,7 @@ func AddSpinnakerLabels(u *unstructured.Unstructured, application string) error 
 	}
 
 	if strings.EqualFold(gvk.Kind, "replicaset") {
-		rs := replicaset.New(u.Object)
+		rs := NewReplicaSet(u.Object)
 
 		// Add reserved labels.
 		// rs.LabelTemplate(LabelKubernetesName, application)

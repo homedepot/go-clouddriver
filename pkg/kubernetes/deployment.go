@@ -1,4 +1,4 @@
-package deployment
+package kubernetes
 
 import (
 	"encoding/json"
@@ -9,11 +9,28 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-type Deployment struct {
+func NewDeployment(m map[string]interface{}) Deployment {
+	d := &v1.Deployment{}
+	b, _ := json.Marshal(m)
+	_ = json.Unmarshal(b, &d)
+
+	return &deployment{d: d}
+}
+
+type Deployment interface {
+	ToUnstructured() (unstructured.Unstructured, error)
+	AnnotateTemplate(string, string)
+	GetSpec() v1.DeploymentSpec
+	SetReplicas(*int32)
+	LabelTemplate(string, string)
+	Status() manifest.Status
+}
+
+type deployment struct {
 	d *v1.Deployment
 }
 
-func (d *Deployment) ToUnstructured() (unstructured.Unstructured, error) {
+func (d *deployment) ToUnstructured() (unstructured.Unstructured, error) {
 	u := unstructured.Unstructured{}
 
 	b, err := json.Marshal(d.d)
@@ -29,11 +46,7 @@ func (d *Deployment) ToUnstructured() (unstructured.Unstructured, error) {
 	return u, nil
 }
 
-func (d *Deployment) Marshal() ([]byte, error) {
-	return json.Marshal(d.d)
-}
-
-func (d *Deployment) AnnotateTemplate(key, value string) {
+func (d *deployment) AnnotateTemplate(key, value string) {
 	annotations := d.d.Spec.Template.ObjectMeta.Annotations
 	if annotations == nil {
 		annotations = map[string]string{}
@@ -43,15 +56,15 @@ func (d *Deployment) AnnotateTemplate(key, value string) {
 	d.d.Spec.Template.ObjectMeta.Annotations = annotations
 }
 
-func (d *Deployment) GetSpec() v1.DeploymentSpec {
+func (d *deployment) GetSpec() v1.DeploymentSpec {
 	return d.d.Spec
 }
 
-func (d *Deployment) SetReplicas(replicas *int32) {
+func (d *deployment) SetReplicas(replicas *int32) {
 	d.d.Spec.Replicas = replicas
 }
 
-func (d *Deployment) LabelTemplate(key, value string) {
+func (d *deployment) LabelTemplate(key, value string) {
 	labels := d.d.Spec.Template.ObjectMeta.Labels
 	if labels == nil {
 		labels = map[string]string{}
@@ -61,17 +74,8 @@ func (d *Deployment) LabelTemplate(key, value string) {
 	d.d.Spec.Template.ObjectMeta.Labels = labels
 }
 
-func New(m map[string]interface{}) Deployment {
-	d := &v1.Deployment{}
-	b, _ := json.Marshal(m)
-	_ = json.Unmarshal(b, &d)
-
-	return Deployment{d: d}
-}
-
-func Status(m map[string]interface{}) manifest.Status {
+func (d *deployment) Status() manifest.Status {
 	s := manifest.DefaultStatus
-	d := New(m)
 
 	if d.d.ObjectMeta.Generation != d.d.Status.ObservedGeneration {
 		s.Stable.State = false
