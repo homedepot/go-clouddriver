@@ -1,4 +1,4 @@
-package v0
+package core
 
 import (
 	"encoding/base64"
@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
-	ops "github.com/billiford/go-clouddriver/pkg/http/v0/kubernetes"
+	ops "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"

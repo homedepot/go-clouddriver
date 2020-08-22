@@ -1,45 +1,45 @@
 package http
 
 import (
-	v0 "github.com/billiford/go-clouddriver/pkg/http/v0"
+	"github.com/billiford/go-clouddriver/pkg/http/core"
 	v1 "github.com/billiford/go-clouddriver/pkg/http/v1"
 	"github.com/gin-gonic/gin"
 )
 
 // Define the API.
 func Initialize(r *gin.Engine) {
-	// API endpoints without a version will go under "v0".
+	// API endpoints without a version will go under "core".
 	api := r.Group("")
 	{
-		api.GET("/health", v0.OK)
+		api.GET("/health", core.OK)
 
 		// Force cache refresh.
-		api.POST("/cache/kubernetes/manifest", v0.OK)
+		api.POST("/cache/kubernetes/manifest", core.OK)
 
 		// Credentials API controller.
-		api.GET("/credentials", v0.ListCredentials)
-		api.GET("/credentials/:account", v0.GetAccountCredentials)
+		api.GET("/credentials", core.ListCredentials)
+		api.GET("/credentials/:account", core.GetAccountCredentials)
 
 		// Applications API controller.
-		api.GET("/applications", v0.ListApplications)
-		api.GET("/applications/:application/serverGroupManagers", v0.ListServerGroupManagers)
-		api.GET("/applications/:application/serverGroups", v0.ListServerGroups)
-		api.GET("/applications/:application/serverGroups/:account/:location/:name", v0.GetServerGroup)
-		api.GET("/applications/:application/loadBalancers", v0.ListLoadBalancers)
-		api.GET("/applications/:application/clusters", v0.ListClusters)
+		api.GET("/applications", core.ListApplications)
+		api.GET("/applications/:application/serverGroupManagers", core.ListServerGroupManagers)
+		api.GET("/applications/:application/serverGroups", core.ListServerGroups)
+		api.GET("/applications/:application/serverGroups/:account/:location/:name", core.GetServerGroup)
+		api.GET("/applications/:application/loadBalancers", core.ListLoadBalancers)
+		api.GET("/applications/:application/clusters", core.ListClusters)
 
 		// Create a kubernetes operation - deploy/delete/scale manifest.
-		r.POST("/kubernetes/ops", v0.CreateKubernetesOperation)
+		r.POST("/kubernetes/ops", core.CreateKubernetesOperation)
 
 		// Monitor deploy.
-		r.GET("/manifests/:account/:location/:name", v0.GetManifest)
+		r.GET("/manifests/:account/:location/:name", core.GetManifest)
 
 		// Get results for a task triggered in CreateKubernetesOperation.
-		r.GET("/task/:id", v0.GetTask)
+		r.GET("/task/:id", core.GetTask)
 
 		// Not implemented.
-		r.GET("/securityGroups", v0.ListSecurityGroups)
-		r.GET("/search", v0.Search)
+		r.GET("/securityGroups", core.ListSecurityGroups)
+		r.GET("/search", core.Search)
 	}
 
 	// New endpoint.

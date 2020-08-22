@@ -1,4 +1,4 @@
-package v0_test
+package core_test
 
 import (
 	// . "github.com/billiford/go-clouddriver/pkg/http/v0"

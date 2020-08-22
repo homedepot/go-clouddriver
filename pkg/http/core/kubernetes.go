@@ -1,11 +1,11 @@
-package v0
+package core
 
 import (
 	"log"
 	"net/http"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
-	"github.com/billiford/go-clouddriver/pkg/http/v0/kubernetes"
+	"github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )

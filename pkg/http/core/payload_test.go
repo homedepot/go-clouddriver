@@ -1,4 +1,4 @@
-package v0_test
+package core_test
 
 const payloadBadRequest = `{
             "error": "invalid character 'd' looking for beginning of value"
