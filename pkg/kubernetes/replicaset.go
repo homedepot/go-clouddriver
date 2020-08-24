@@ -16,6 +16,7 @@ type ReplicaSet interface {
 	LabelTemplate(string, string)
 	Status() manifest.Status
 	ListImages() []string
+	Object() *v1.ReplicaSet
 }
 
 func NewReplicaSet(m map[string]interface{}) ReplicaSet {
@@ -28,6 +29,10 @@ func NewReplicaSet(m map[string]interface{}) ReplicaSet {
 
 type replicaSet struct {
 	rs *v1.ReplicaSet
+}
+
+func (rs *replicaSet) Object() *v1.ReplicaSet {
+	return rs.rs
 }
 
 func (rs *replicaSet) ToUnstructured() (unstructured.Unstructured, error) {

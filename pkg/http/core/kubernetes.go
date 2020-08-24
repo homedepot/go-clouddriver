@@ -74,6 +74,14 @@ func CreateKubernetesOperation(c *gin.Context) {
 				return
 			}
 		}
+
+		if req.UndoRolloutManifest != nil {
+			err = kubernetes.UndoRolloutManifest(c, *req.UndoRolloutManifest)
+			if err != nil {
+				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				return
+			}
+		}
 	}
 
 	or := kubernetes.OperationsResponse{

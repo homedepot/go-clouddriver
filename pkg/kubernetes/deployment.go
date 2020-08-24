@@ -24,6 +24,7 @@ type Deployment interface {
 	SetReplicas(*int32)
 	LabelTemplate(string, string)
 	Status() manifest.Status
+	Object() *v1.Deployment
 }
 
 type deployment struct {
@@ -44,6 +45,10 @@ func (d *deployment) ToUnstructured() (unstructured.Unstructured, error) {
 	}
 
 	return u, nil
+}
+
+func (d *deployment) Object() *v1.Deployment {
+	return d.d
 }
 
 func (d *deployment) AnnotateTemplate(key, value string) {

@@ -32,4 +32,4 @@ require (
 	sigs.k8s.io/yaml v1.2.0
 )
 
-replace k8s.io/client-go => k8s.io/client-go v0.18.6
+replace k8s.io/client-go => k8s.io/client-go v0.18.8
