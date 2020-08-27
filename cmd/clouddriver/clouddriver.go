@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	kube "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/server"
 	"github.com/billiford/go-clouddriver/pkg/sql"
@@ -41,12 +42,13 @@ func init() {
 		c.JSON(http.StatusNotFound, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
 	})
 
-	kubeClient := kubernetes.NewClient()
+	kubeController := kubernetes.NewController()
 	sqlClient := sql.NewClient(mustDBConnect())
 
 	c := &server.Config{
-		SQLClient:  sqlClient,
-		KubeClient: kubeClient,
+		SQLClient:         sqlClient,
+		KubeController:    kubeController,
+		KubeActionHandler: kube.NewActionHandler(),
 	}
 	server.Setup(r, c)
 }

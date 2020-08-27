@@ -16,7 +16,7 @@ import (
 // Get a task - currently only associated with kubernetes 'tasks'.
 func GetTask(c *gin.Context) {
 	sc := sql.Instance(c)
-	kc := kubernetes.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
 	id := c.Param("id")
 	manifests := []map[string]interface{}{}
 
@@ -55,13 +55,14 @@ func GetTask(c *gin.Context) {
 		},
 	}
 
-	if err = kc.SetDynamicClientForConfig(config); err != nil {
+	client, err := kc.NewClient(config)
+	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	for _, r := range resources {
-		result, err := kc.Get(r.Resource, r.Name, r.Namespace)
+		result, err := client.Get(r.Resource, r.Name, r.Namespace)
 		if err != nil {
 			clouddriver.WriteError(c, http.StatusInternalServerError, err)
 			return

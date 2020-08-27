@@ -148,7 +148,7 @@ type ServerGroupManagerServerGroupMoniker struct {
 // Server Group Managers for a kubernetes target are deployments.
 func ListServerGroupManagers(c *gin.Context) {
 	sc := sql.Instance(c)
-	kc := kubernetes.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
 	application := c.Param("application")
 	response := ServerGroupManagersResponse{}
 
@@ -182,7 +182,8 @@ func ListServerGroupManagers(c *gin.Context) {
 			},
 		}
 
-		if err = kc.SetDynamicClientForConfig(config); err != nil {
+		client, err := kc.NewClient(config)
+		if err != nil {
 			log.Println("error creating dynamic client for account", account)
 			continue
 		}
@@ -210,13 +211,13 @@ func ListServerGroupManagers(c *gin.Context) {
 			Resource: "replicasets",
 		}
 
-		deployments, err = kc.List(deploymentGVR, lo)
+		deployments, err = client.List(deploymentGVR, lo)
 		if err != nil {
 			log.Println("error listing deployments:", err.Error())
 			continue
 		}
 
-		replicaSets, err = kc.List(replicaSetGVR, lo)
+		replicaSets, err = client.List(replicaSetGVR, lo)
 		if err != nil {
 			log.Println("error listing replicaSets:", err.Error())
 			continue
@@ -329,7 +330,7 @@ type LoadBalancerServerGroup struct {
 // List "load balancers", which for kubernetes are kinds "ingress" and "service".
 func ListLoadBalancers(c *gin.Context) {
 	sc := sql.Instance(c)
-	kc := kubernetes.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
 	application := c.Param("application")
 	response := LoadBalancersResponse{}
 
@@ -363,7 +364,8 @@ func ListLoadBalancers(c *gin.Context) {
 			},
 		}
 
-		if err = kc.SetDynamicClientForConfig(config); err != nil {
+		client, err := kc.NewClient(config)
+		if err != nil {
 			log.Println("error creating dynamic client for account", account)
 			continue
 		}
@@ -387,7 +389,7 @@ func ListLoadBalancers(c *gin.Context) {
 			Kind:    "ingress",
 		}
 
-		ingresses, err := kc.List(ingressGVR, lo)
+		ingresses, err := client.List(ingressGVR, lo)
 		if err != nil {
 			log.Println("error listing ingresses:", err.Error())
 			continue
@@ -434,7 +436,7 @@ func ListLoadBalancers(c *gin.Context) {
 			Kind:    "service",
 		}
 
-		services, err := kc.List(serviceGVR, lo)
+		services, err := client.List(serviceGVR, lo)
 		if err != nil {
 			log.Println("error listing services:", err.Error())
 			continue
@@ -589,7 +591,7 @@ type InstanceHealth struct {
 
 func ListServerGroups(c *gin.Context) {
 	sc := sql.Instance(c)
-	kc := kubernetes.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
 	application := c.Param("application")
 	response := ServerGroupsResponse{}
 
@@ -623,7 +625,8 @@ func ListServerGroups(c *gin.Context) {
 			},
 		}
 
-		if err = kc.SetDynamicClientForConfig(config); err != nil {
+		client, err := kc.NewClient(config)
+		if err != nil {
 			log.Println("error creating dynamic client for account", account)
 			continue
 		}
@@ -643,13 +646,13 @@ func ListServerGroups(c *gin.Context) {
 			Resource: "pods",
 		}
 
-		replicaSets, err := kc.List(replicaSetGVR, lo)
+		replicaSets, err := client.List(replicaSetGVR, lo)
 		if err != nil {
 			log.Println("error listing replicaSets:", err.Error())
 			continue
 		}
 
-		pods, err := kc.List(podsGVR, lo)
+		pods, err := client.List(podsGVR, lo)
 		if err != nil {
 			log.Println("error listing pods:", err.Error())
 			continue
@@ -794,7 +797,7 @@ type GetServerGroupResponse struct {
 // /applications/:application/serverGroups/:account/:location/:name
 func GetServerGroup(c *gin.Context) {
 	sc := sql.Instance(c)
-	kc := kubernetes.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
 	account := c.Param("account")
 	application := c.Param("application")
 	location := c.Param("location")
@@ -823,7 +826,8 @@ func GetServerGroup(c *gin.Context) {
 		},
 	}
 
-	if err = kc.SetDynamicClientForConfig(config); err != nil {
+	client, err := kc.NewClient(config)
+	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}
@@ -837,14 +841,14 @@ func GetServerGroup(c *gin.Context) {
 		Resource: "pods",
 	}
 
-	result, err := kc.Get(kind, name, location)
+	result, err := client.Get(kind, name, location)
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	// "Instances" in kubernetes are pods.
-	pods, err := kc.List(podsGVR, lo)
+	pods, err := client.List(podsGVR, lo)
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return

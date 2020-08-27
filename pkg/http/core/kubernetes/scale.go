@@ -13,7 +13,7 @@ import (
 func (ah *actionHandler) NewScaleManifestAction(ac ActionConfig) Action {
 	return &scaleManifest{
 		sc: ac.SQLClient,
-		kc: ac.KubeClient,
+		kc: ac.KubeController,
 		id: ac.ID,
 		sm: ac.Operation.ScaleManifest,
 	}
@@ -21,7 +21,7 @@ func (ah *actionHandler) NewScaleManifestAction(ac ActionConfig) Action {
 
 type scaleManifest struct {
 	sc sql.Client
-	kc kubernetes.Client
+	kc kubernetes.Controller
 	id string
 	sm *ScaleManifestRequest
 }
@@ -45,7 +45,8 @@ func (s *scaleManifest) Run() error {
 		},
 	}
 
-	if err = s.kc.SetDynamicClientForConfig(config); err != nil {
+	client, err := s.kc.NewClient(config)
+	if err != nil {
 		return err
 	}
 
@@ -53,7 +54,7 @@ func (s *scaleManifest) Run() error {
 	kind := a[0]
 	name := a[1]
 
-	u, err := s.kc.Get(kind, name, s.sm.Location)
+	u, err := client.Get(kind, name, s.sm.Location)
 	if err != nil {
 		return err
 	}
@@ -76,7 +77,7 @@ func (s *scaleManifest) Run() error {
 			return err
 		}
 
-		_, err = s.kc.Apply(&scaledManifestObject)
+		_, err = client.Apply(&scaledManifestObject)
 		if err != nil {
 			return err
 		}

@@ -12,11 +12,11 @@ type Action interface {
 }
 
 type ActionConfig struct {
-	KubeClient  kubernetes.Client
-	SQLClient   sql.Client
-	ID          string
-	Application string
-	Operation   Operation
+	KubeController kubernetes.Controller
+	SQLClient      sql.Client
+	ID             string
+	Application    string
+	Operation      Operation
 }
 
 //go:generate counterfeiter . ActionHandler

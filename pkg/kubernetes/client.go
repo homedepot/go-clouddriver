@@ -4,15 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gin-gonic/gin"
+	"github.com/billiford/go-clouddriver/pkg/kubernetes/patcher"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/resource"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
@@ -20,29 +17,8 @@ import (
 )
 
 const (
-	ClientInstanceKey = `KubeClient`
-	spinnaker         = `spinnaker`
+	spinnaker = `spinnaker`
 )
-
-// Wrapper for kubernetes dynamic client to make testing easier.
-
-//go:generate counterfeiter . Client
-type Client interface {
-	SetDynamicClientForConfig(*rest.Config) error
-	WithConfig(*rest.Config)
-	Apply(*unstructured.Unstructured) (Metadata, error)
-	Get(string, string, string) (*unstructured.Unstructured, error)
-	List(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
-}
-
-func NewClient() Client {
-	return &client{}
-}
-
-type client struct {
-	c      dynamic.Interface
-	config *rest.Config
-}
 
 type Metadata struct {
 	Name      string
@@ -53,25 +29,27 @@ type Metadata struct {
 	Kind      string
 }
 
-func (c *client) SetDynamicClientForConfig(config *rest.Config) error {
-	d, err := dynamic.NewForConfig(config)
-	c.c = d
-	c.config = config
+// Generate a new client using the kubernetes controller.
 
-	return err
+//go:generate counterfeiter . Client
+type Client interface {
+	Apply(*unstructured.Unstructured) (Metadata, error)
+	Get(string, string, string) (*unstructured.Unstructured, error)
+	List(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 }
 
-func (c *client) WithConfig(config *rest.Config) {
-	c.config = config
+type client struct {
+	c      dynamic.Interface
+	config *rest.Config
+	mapper *restmapper.DeferredDiscoveryRESTMapper
 }
 
 // Apply a given manifest.
 func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 	metadata := Metadata{}
-
 	gvk := u.GroupVersionKind()
 
-	restMapping, err := findGVR(&gvk, c.config)
+	restMapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if err != nil {
 		return metadata, err
 	}
@@ -99,7 +77,7 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 		Export:          false,
 	}
 
-	patcher, err := newPatcher(info, helper)
+	patcher, err := patcher.New(info, helper)
 	if err != nil {
 		return metadata, err
 	}
@@ -163,19 +141,12 @@ func newRestClient(restConfig rest.Config, gv schema.GroupVersion) (rest.Interfa
 // Get a manifest by resource/kind (example: 'pods' or 'pod'),
 // name (example: 'my-pod'), and namespace (example: 'my-namespace').
 func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, error) {
-	dc, err := discovery.NewDiscoveryClientForConfig(c.config)
+	gvk, err := c.mapper.KindFor(schema.GroupVersionResource{Resource: kind})
 	if err != nil {
 		return nil, err
 	}
 
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
-
-	gvk, err := mapper.KindFor(schema.GroupVersionResource{Resource: kind})
-	if err != nil {
-		return nil, err
-	}
-
-	restMapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	restMapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -208,23 +179,4 @@ func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, 
 // List all resources by their GVR and list options.
 func (c *client) List(gvr schema.GroupVersionResource, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	return c.c.Resource(gvr).List(context.TODO(), lo)
-}
-
-// TODO we should only set up the rest mapper *once* for each client.
-//
-// Find the corresponding GVR (available in *meta.RESTMapping) for gvk.
-func findGVR(gvk *schema.GroupVersionKind, cfg *rest.Config) (*meta.RESTMapping, error) {
-	// DiscoveryClient queries API server about the resources
-	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
-
-	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-}
-
-func Instance(c *gin.Context) Client {
-	return c.MustGet(ClientInstanceKey).(Client)
 }

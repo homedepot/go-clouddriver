@@ -40,6 +40,17 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
+	When("creating the kube client returns an error", func() {
+		BeforeEach(func() {
+			fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
+		})
+
+		It("returns an error", func() {
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("bad config"))
+		})
+	})
+
 	When("getting the unstructured manifest returns an error", func() {
 		BeforeEach(func() {
 			actionConfig.Operation.DeployManifest.Manifests = []map[string]interface{}{

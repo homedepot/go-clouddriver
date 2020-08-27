@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-var _ = Describe("Credential", func() {
+var _ = Describe("Application", func() {
 	Describe("#ListApplications", func() {
 		BeforeEach(func() {
 			setup()
@@ -223,9 +223,9 @@ var _ = Describe("Credential", func() {
 			})
 		})
 
-		When("setting up the kube client returns an error", func() {
+		When("creating the kube client returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.SetDynamicClientForConfigReturns(errors.New("error setting up client"))
+				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
 			})
 
 			It("continues", func() {
@@ -385,9 +385,9 @@ var _ = Describe("Credential", func() {
 			})
 		})
 
-		When("setting up the kube client returns an error", func() {
+		When("creating the kube client returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.SetDynamicClientForConfigReturns(errors.New("error setting up client"))
+				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
 			})
 
 			It("continues", func() {
@@ -689,9 +689,9 @@ var _ = Describe("Credential", func() {
 			})
 		})
 
-		When("setting up the kube client returns an error", func() {
+		When("creating the kube client returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.SetDynamicClientForConfigReturns(errors.New("error setting up client"))
+				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
 			})
 
 			It("continues", func() {
@@ -857,16 +857,16 @@ var _ = Describe("Credential", func() {
 			})
 		})
 
-		When("setting the dynamic client returns an error", func() {
+		When("creating the kube client returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.SetDynamicClientForConfigReturns(errors.New("error setting the client"))
+				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
 			})
 
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
 				Expect(ce.Error).To(Equal("Internal Server Error"))
-				Expect(ce.Message).To(Equal("error setting the client"))
+				Expect(ce.Message).To(Equal("bad config"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
 		})

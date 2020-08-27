@@ -12,7 +12,7 @@ import (
 func (ah *actionHandler) NewDeployManifestAction(ac ActionConfig) Action {
 	return &deployManfest{
 		sc: ac.SQLClient,
-		kc: ac.KubeClient,
+		kc: ac.KubeController,
 		id: ac.ID,
 		dm: ac.Operation.DeployManifest,
 	}
@@ -20,7 +20,7 @@ func (ah *actionHandler) NewDeployManifestAction(ac ActionConfig) Action {
 
 type deployManfest struct {
 	sc sql.Client
-	kc kubernetes.Client
+	kc kubernetes.Controller
 	id string
 	dm *DeployManifestRequest
 }
@@ -44,7 +44,10 @@ func (d *deployManfest) Run() error {
 		},
 	}
 
-	d.kc.WithConfig(config)
+	client, err := d.kc.NewClient(config)
+	if err != nil {
+		return err
+	}
 
 	for _, manifest := range d.dm.Manifests {
 		u, err := kubernetes.ToUnstructured(manifest)
@@ -62,7 +65,7 @@ func (d *deployManfest) Run() error {
 			return err
 		}
 
-		meta, err := d.kc.Apply(u)
+		meta, err := client.Apply(u)
 		if err != nil {
 			return err
 		}

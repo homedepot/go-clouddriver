@@ -13,7 +13,7 @@ import (
 func (ah *actionHandler) NewRollingRestartAction(ac ActionConfig) Action {
 	return &rollingRestart{
 		sc: ac.SQLClient,
-		kc: ac.KubeClient,
+		kc: ac.KubeController,
 		id: ac.ID,
 		rr: ac.Operation.RollingRestartManifest,
 	}
@@ -21,7 +21,7 @@ func (ah *actionHandler) NewRollingRestartAction(ac ActionConfig) Action {
 
 type rollingRestart struct {
 	sc sql.Client
-	kc kubernetes.Client
+	kc kubernetes.Controller
 	id string
 	rr *RollingRestartManifestRequest
 }
@@ -47,7 +47,8 @@ func (rr *rollingRestart) Run() error {
 		},
 	}
 
-	if err = rr.kc.SetDynamicClientForConfig(config); err != nil {
+	client, err := rr.kc.NewClient(config)
+	if err != nil {
 		return err
 	}
 
@@ -55,7 +56,7 @@ func (rr *rollingRestart) Run() error {
 	kind := a[0]
 	name := a[1]
 
-	u, err := rr.kc.Get(kind, name, rr.rr.Location)
+	u, err := client.Get(kind, name, rr.rr.Location)
 	if err != nil {
 		return err
 	}
@@ -74,7 +75,7 @@ func (rr *rollingRestart) Run() error {
 			return err
 		}
 
-		_, err = rr.kc.Apply(&annotatedObject)
+		_, err = client.Apply(&annotatedObject)
 		if err != nil {
 			return err
 		}

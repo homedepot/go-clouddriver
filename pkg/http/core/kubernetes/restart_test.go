@@ -40,14 +40,14 @@ var _ = Describe("Restart", func() {
 		})
 	})
 
-	When("setting the dynamic client returns an error", func() {
+	When("creating the kube client returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeClient.SetDynamicClientForConfigReturns(errors.New("error setting client"))
+			fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
 		})
 
 		It("returns an error", func() {
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error setting client"))
+			Expect(err.Error()).To(Equal("bad config"))
 		})
 	})
 

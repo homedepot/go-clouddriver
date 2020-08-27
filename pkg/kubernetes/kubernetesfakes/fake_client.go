@@ -8,26 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/rest"
 )
 
 type FakeClient struct {
-	SetDynamicClientForConfigStub        func(*rest.Config) error
-	setDynamicClientForConfigMutex       sync.RWMutex
-	setDynamicClientForConfigArgsForCall []struct {
-		arg1 *rest.Config
-	}
-	setDynamicClientForConfigReturns struct {
-		result1 error
-	}
-	setDynamicClientForConfigReturnsOnCall map[int]struct {
-		result1 error
-	}
-	WithConfigStub        func(*rest.Config)
-	withConfigMutex       sync.RWMutex
-	withConfigArgsForCall []struct {
-		arg1 *rest.Config
-	}
 	ApplyStub        func(*unstructured.Unstructured) (kubernetes.Metadata, error)
 	applyMutex       sync.RWMutex
 	applyArgsForCall []struct {
@@ -72,78 +55,6 @@ type FakeClient struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeClient) SetDynamicClientForConfig(arg1 *rest.Config) error {
-	fake.setDynamicClientForConfigMutex.Lock()
-	ret, specificReturn := fake.setDynamicClientForConfigReturnsOnCall[len(fake.setDynamicClientForConfigArgsForCall)]
-	fake.setDynamicClientForConfigArgsForCall = append(fake.setDynamicClientForConfigArgsForCall, struct {
-		arg1 *rest.Config
-	}{arg1})
-	fake.recordInvocation("SetDynamicClientForConfig", []interface{}{arg1})
-	fake.setDynamicClientForConfigMutex.Unlock()
-	if fake.SetDynamicClientForConfigStub != nil {
-		return fake.SetDynamicClientForConfigStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.setDynamicClientForConfigReturns.result1
-}
-
-func (fake *FakeClient) SetDynamicClientForConfigCallCount() int {
-	fake.setDynamicClientForConfigMutex.RLock()
-	defer fake.setDynamicClientForConfigMutex.RUnlock()
-	return len(fake.setDynamicClientForConfigArgsForCall)
-}
-
-func (fake *FakeClient) SetDynamicClientForConfigArgsForCall(i int) *rest.Config {
-	fake.setDynamicClientForConfigMutex.RLock()
-	defer fake.setDynamicClientForConfigMutex.RUnlock()
-	return fake.setDynamicClientForConfigArgsForCall[i].arg1
-}
-
-func (fake *FakeClient) SetDynamicClientForConfigReturns(result1 error) {
-	fake.SetDynamicClientForConfigStub = nil
-	fake.setDynamicClientForConfigReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) SetDynamicClientForConfigReturnsOnCall(i int, result1 error) {
-	fake.SetDynamicClientForConfigStub = nil
-	if fake.setDynamicClientForConfigReturnsOnCall == nil {
-		fake.setDynamicClientForConfigReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.setDynamicClientForConfigReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) WithConfig(arg1 *rest.Config) {
-	fake.withConfigMutex.Lock()
-	fake.withConfigArgsForCall = append(fake.withConfigArgsForCall, struct {
-		arg1 *rest.Config
-	}{arg1})
-	fake.recordInvocation("WithConfig", []interface{}{arg1})
-	fake.withConfigMutex.Unlock()
-	if fake.WithConfigStub != nil {
-		fake.WithConfigStub(arg1)
-	}
-}
-
-func (fake *FakeClient) WithConfigCallCount() int {
-	fake.withConfigMutex.RLock()
-	defer fake.withConfigMutex.RUnlock()
-	return len(fake.withConfigArgsForCall)
-}
-
-func (fake *FakeClient) WithConfigArgsForCall(i int) *rest.Config {
-	fake.withConfigMutex.RLock()
-	defer fake.withConfigMutex.RUnlock()
-	return fake.withConfigArgsForCall[i].arg1
 }
 
 func (fake *FakeClient) Apply(arg1 *unstructured.Unstructured) (kubernetes.Metadata, error) {
@@ -305,10 +216,6 @@ func (fake *FakeClient) ListReturnsOnCall(i int, result1 *unstructured.Unstructu
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.setDynamicClientForConfigMutex.RLock()
-	defer fake.setDynamicClientForConfigMutex.RUnlock()
-	fake.withConfigMutex.RLock()
-	defer fake.withConfigMutex.RUnlock()
 	fake.applyMutex.RLock()
 	defer fake.applyMutex.RUnlock()
 	fake.getMutex.RLock()

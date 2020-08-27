@@ -241,9 +241,9 @@ var _ = Describe("Credential", func() {
 				})
 			})
 
-			When("setting the dynamic client returns an error", func() {
+			When("creating the kube client returns an error", func() {
 				BeforeEach(func() {
-					fakeKubeClient.SetDynamicClientForConfigReturns(errors.New("error setting the client"))
+					fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
 				})
 
 				It("continues", func() {

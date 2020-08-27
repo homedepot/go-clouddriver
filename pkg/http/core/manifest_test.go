@@ -55,9 +55,9 @@ var _ = Describe("Manifest", func() {
 			})
 		})
 
-		When("setting the kube config returns an error", func() {
+		When("creating the kube client returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.SetDynamicClientForConfigReturns(errors.New("bad config"))
+				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
 			})
 
 			It("returns status internal server error", func() {

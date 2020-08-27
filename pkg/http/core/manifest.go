@@ -16,7 +16,7 @@ import (
 
 func GetManifest(c *gin.Context) {
 	sc := sql.Instance(c)
-	kc := kubernetes.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
 	account := c.Param("account")
 	namespace := c.Param("location")
 	n := c.Param("name")
@@ -51,12 +51,13 @@ func GetManifest(c *gin.Context) {
 		},
 	}
 
-	if err = kc.SetDynamicClientForConfig(config); err != nil {
+	client, err := kc.NewClient(config)
+	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	result, err := kc.Get(kind, name, namespace)
+	result, err := client.Get(kind, name, namespace)
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
@@ -64,6 +65,7 @@ func GetManifest(c *gin.Context) {
 
 	app := "unknown"
 	labels := result.GetLabels()
+	// TODO which label should we use here?
 	if _, ok := labels[kubernetes.LabelKubernetesSpinnakerApp]; ok {
 		app = labels[kubernetes.LabelKubernetesSpinnakerApp]
 	}

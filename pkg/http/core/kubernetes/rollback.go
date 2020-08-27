@@ -40,7 +40,7 @@ var (
 func (ah *actionHandler) NewRollbackAction(ac ActionConfig) Action {
 	return &rollback{
 		sc:          ac.SQLClient,
-		kc:          ac.KubeClient,
+		kc:          ac.KubeController,
 		id:          ac.ID,
 		application: ac.Application,
 		rb:          ac.Operation.UndoRolloutManifest,
@@ -49,7 +49,7 @@ func (ah *actionHandler) NewRollbackAction(ac ActionConfig) Action {
 
 type rollback struct {
 	sc          sql.Client
-	kc          kubernetes.Client
+	kc          kubernetes.Controller
 	id          string
 	rb          *UndoRolloutManifestRequest
 	application string
@@ -82,12 +82,12 @@ func (r *rollback) Run() error {
 		},
 	}
 
-	err = r.kc.SetDynamicClientForConfig(config)
+	client, err := r.kc.NewClient(config)
 	if err != nil {
 		return err
 	}
 
-	d, err := r.kc.Get(manifestKind, manifestName, r.rb.Location)
+	d, err := client.Get(manifestKind, manifestName, r.rb.Location)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (r *rollback) Run() error {
 		LabelSelector: kubernetes.LabelKubernetesSpinnakerApp + "=" + r.application,
 	}
 
-	replicaSets, err := r.kc.List(replicaSetGVR, lo)
+	replicaSets, err := client.List(replicaSetGVR, lo)
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func (r *rollback) Run() error {
 		return err
 	}
 
-	_, err = r.kc.Apply(&u)
+	_, err = client.Apply(&u)
 	if err != nil {
 		return err
 	}

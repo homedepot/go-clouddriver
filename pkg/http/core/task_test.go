@@ -1,8 +1,6 @@
 package core_test
 
 import (
-	// . "github.com/billiford/go-clouddriver/pkg/http/v0"
-
 	"errors"
 	"net/http"
 
@@ -51,9 +49,9 @@ var _ = Describe("Task", func() {
 			})
 		})
 
-		When("setting the kube config returns an error", func() {
+		When("creating the kube client returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.SetDynamicClientForConfigReturns(errors.New("bad config"))
+				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
 			})
 
 			It("returns status internal server error", func() {

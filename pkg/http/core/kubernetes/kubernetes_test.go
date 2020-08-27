@@ -9,12 +9,13 @@ import (
 )
 
 var (
-	err            error
-	fakeSQLClient  *sqlfakes.FakeClient
-	fakeKubeClient *kubernetesfakes.FakeClient
-	actionConfig   ActionConfig
-	actionHandler  ActionHandler
-	action         Action
+	err                error
+	fakeSQLClient      *sqlfakes.FakeClient
+	fakeKubeClient     *kubernetesfakes.FakeClient
+	fakeKubeController *kubernetesfakes.FakeController
+	actionConfig       ActionConfig
+	actionHandler      ActionHandler
+	action             Action
 )
 
 func setup() {
@@ -50,16 +51,19 @@ func setup() {
 	fakeKubeClient.GetReturns(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil)
 	fakeKubeClient.ListReturns(ul, nil)
 
+	fakeKubeController = &kubernetesfakes.FakeController{}
+	fakeKubeController.NewClientReturns(fakeKubeClient, nil)
+
 	actionHandler = NewActionHandler()
 	actionConfig = newActionConfig()
 }
 
 func newActionConfig() ActionConfig {
 	return ActionConfig{
-		KubeClient:  fakeKubeClient,
-		SQLClient:   fakeSQLClient,
-		ID:          "test-id",
-		Application: "test-application",
+		KubeController: fakeKubeController,
+		SQLClient:      fakeSQLClient,
+		ID:             "test-id",
+		Application:    "test-application",
 		Operation: Operation{
 			DeployManifest: &DeployManifestRequest{
 				EnableTraffic:     false,

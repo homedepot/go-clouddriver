@@ -14,9 +14,9 @@ func SetSQLClient(r sql.Client) gin.HandlerFunc {
 	}
 }
 
-func SetKubeClient(k kubernetes.Client) gin.HandlerFunc {
+func SetKubeController(k kubernetes.Controller) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Set(kubernetes.ClientInstanceKey, k)
+		c.Set(kubernetes.ControllerInstanceKey, k)
 		c.Next()
 	}
 }

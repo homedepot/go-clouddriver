@@ -30,6 +30,7 @@ var (
 	res                   *http.Response
 	fakeSQLClient         *sqlfakes.FakeClient
 	fakeKubeClient        *kubernetesfakes.FakeClient
+	fakeKubeController    *kubernetesfakes.FakeController
 	fakeKubeActionHandler *kubefakes.FakeActionHandler
 	fakeAction            *kubefakes.FakeAction
 )
@@ -51,6 +52,9 @@ func setup() {
 	fakeKubeClient = &kubernetesfakes.FakeClient{}
 	fakeKubeClient.GetReturns(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil)
 
+	fakeKubeController = &kubernetesfakes.FakeController{}
+	fakeKubeController.NewClientReturns(fakeKubeClient, nil)
+
 	fakeAction = &kubefakes.FakeAction{}
 	fakeKubeActionHandler = &kubefakes.FakeActionHandler{}
 
@@ -69,7 +73,7 @@ func setup() {
 
 	c := &server.Config{
 		SQLClient:         fakeSQLClient,
-		KubeClient:        fakeKubeClient,
+		KubeController:    fakeKubeController,
 		KubeActionHandler: fakeKubeActionHandler,
 	}
 	// Create server.

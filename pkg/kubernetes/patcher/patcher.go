@@ -1,4 +1,4 @@
-package kubernetes
+package patcher
 
 import (
 	"encoding/json"
@@ -35,7 +35,7 @@ const (
 
 // All this code copied from
 // https://github.com/kubernetes/kubectl/blob/4ceef69fbc451d9bde6f4d5f92d55624b748141d/pkg/cmd/apply/patcher.go
-func newPatcher(info *resource.Info, helper *resource.Helper) (*Patcher, error) {
+func New(info *resource.Info, helper *resource.Helper) (*Patcher, error) {
 	var openapiSchema openapi.Resources
 
 	return &Patcher{

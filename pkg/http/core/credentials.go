@@ -16,6 +16,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var listNamespacesTimeout = int64(5)
+
 // I'm not sure why spinnaker needs this, but without it several necessary Spinnaker manifest stages are missing
 // (I suppose this is *why* Spinnaker needs it!).
 //
@@ -59,7 +61,7 @@ var spinnakerKindMap = map[string]string{
 func ListCredentials(c *gin.Context) {
 	expand := c.Query("expand")
 	sc := sql.Instance(c)
-	kc := kubernetes.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
 	credentials := []clouddriver.Credential{}
 
 	providers, err := sc.ListKubernetesProviders()
@@ -147,7 +149,7 @@ func ListCredentials(c *gin.Context) {
 					},
 				}
 
-				err = kc.SetDynamicClientForConfig(config)
+				client, err := kc.NewClient(config)
 				if err != nil {
 					log.Println("/credentials error creating dynamic account:", err.Error())
 					return
@@ -159,9 +161,8 @@ func ListCredentials(c *gin.Context) {
 					Resource: "namespaces",
 				}
 				// timeout listing namespaces to 5 seconds
-				timeout := int64(5)
-				result, err := kc.List(gvr, metav1.ListOptions{
-					TimeoutSeconds: &timeout,
+				result, err := client.List(gvr, metav1.ListOptions{
+					TimeoutSeconds: &listNamespacesTimeout,
 				})
 				if err != nil {
 					log.Println("/credentials error listing using kubernetes account:", err.Error())

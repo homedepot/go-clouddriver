@@ -26,7 +26,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 	taskID := uuid.New().String()
 	ko := kubernetes.Operations{}
 	ah := kubernetes.ActionHandlerInstance(c)
-	kc := kube.Instance(c)
+	kc := kube.ControllerInstance(c)
 	sc := sql.Instance(c)
 	application := c.GetHeader("X-Spinnaker-Application")
 
@@ -54,11 +54,11 @@ func CreateKubernetesOperation(c *gin.Context) {
 	// each requested action.
 	for _, req := range ko {
 		config := kubernetes.ActionConfig{
-			KubeClient:  kc,
-			SQLClient:   sc,
-			ID:          taskID,
-			Application: application,
-			Operation:   req,
+			KubeController: kc,
+			SQLClient:      sc,
+			ID:             taskID,
+			Application:    application,
+			Operation:      req,
 		}
 
 		if req.DeployManifest != nil {
