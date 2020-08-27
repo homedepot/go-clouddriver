@@ -1,0 +1,81 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: spin
+    cluster: spin-clouddriver
+  name: spin-clouddriver
+  namespace: spinnaker
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: spin
+      cluster: spin-clouddriver
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/agent-inject-secret-db.env: secret/clouddriver/database
+        vault.hashicorp.com/agent-inject-template-db.env: |
+          {{ with secret "secret/clouddriver/database" }}
+          {{ range $k, $v := .Data }}
+          export DB_{{ $k | toUpper }}='{{ $v }}'
+          {{ end }}
+          {{ end }}
+        vault.hashicorp.com/agent-pre-populate-only: 'true'
+        vault.hashicorp.com/auth-path: auth/kubernetes-spinnaker-us-central1
+        vault.hashicorp.com/role: onboarding
+        vault.hashicorp.com/tls-skip-verify: 'true'
+      labels:
+        app: spin
+        cluster: spin-clouddriver
+    spec:
+      affinity: {}
+      containers:
+        - args:
+            - for f in /vault/secrets/*.env; do source $f; done; clouddriver
+          command:
+            - /bin/sh
+            - '-c'
+          image: 'docker.io/billiford/go-clouddriver:${ parameters["IMAGE_VERSION"] }'
+          imagePullPolicy: IfNotPresent
+          name: clouddriver
+          ports:
+            - containerPort: 7002
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                - wget
+                - '--no-check-certificate'
+                - '--spider'
+                - '-q'
+                - 'http://localhost:7002/health'
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              memory: 2Gi
+            requests:
+              cpu: '1'
+              memory: 1Gi
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        cloud.google.com/gke-nodepool: clouddriver
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: spinnaker-onboarding
+      serviceAccountName: spinnaker-onboarding
+      terminationGracePeriodSeconds: 720
+
