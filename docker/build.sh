@@ -8,7 +8,6 @@ build_and_publish_image(){
     GCR_TAG="billiford/go-clouddriver:${TAG_VERSION}"
     docker build . -f docker/Dockerfile -t ${GCR_TAG}
     docker push ${GCR_TAG}
-    curl -XPOST https://np-api.kubesvc.spinnaker.homedepot.com/webhooks/webhook/go-clouddriver -d '{"parameters":{"IMAGE_VERSION":"'$TAG_VERSION'"}}' -H "Content-Type: application/json" | jq
 }
 
 print_help(){
