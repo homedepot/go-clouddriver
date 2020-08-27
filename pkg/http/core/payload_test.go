@@ -2839,7 +2839,7 @@ const payloadRollingRestartManfiest = `[
          "cloudProvider":"kubernetes",
          "manifestName":"deployment spin-clouddriver",
          "location":"spinnaker",
-         "user":"william_bolton@demo.homedepot.com",
+         "user":"me@demo.me.com",
          "account":"spin-cluster-account"
       }
    }
