@@ -2,6 +2,8 @@ package sql_test
 
 import (
 	"database/sql"
+	"io/ioutil"
+	"log"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
@@ -30,6 +32,8 @@ var _ = Describe("Sql", func() {
 		// Enable DB logging.
 		// db.LogMode(true)
 		c = NewClient(db)
+
+		log.SetOutput(ioutil.Discard)
 	})
 
 	AfterEach(func() {
@@ -433,15 +437,16 @@ var _ = Describe("Sql", func() {
 	})
 
 	Describe("#Connection", func() {
-		var connection string
+		var driver, connection string
 		var c Config
 
 		When("the config is not set", func() {
 			BeforeEach(func() {
-				connection = Connection(c)
+				driver, connection = Connection(c)
 			})
 
 			It("returns a disk db", func() {
+				Expect(driver).To(Equal("sqlite3"))
 				Expect(connection).To(Equal("clouddriver.db"))
 			})
 		})
@@ -454,10 +459,11 @@ var _ = Describe("Sql", func() {
 					Host:     "10.1.1.1",
 					Name:     "go-clouddriver",
 				}
-				connection = Connection(c)
+				driver, connection = Connection(c)
 			})
 
-			It("returns a disk db", func() {
+			It("returns a mysql connection string", func() {
+				Expect(driver).To(Equal("mysql"))
 				Expect(connection).To(Equal("user:password@tcp(10.1.1.1)/go-clouddriver?charset=utf8&parseTime=True&loc=UTC"))
 			})
 		})
