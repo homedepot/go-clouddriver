@@ -16,7 +16,7 @@ Requirements: [install Ginkgo and Gomega](https://onsi.github.io/ginkgo/)
 
 Run from the root directory
 ```bash
-ginkgo -r -cover
+ginkgo -r
 ```
 
 ### Running Locally
