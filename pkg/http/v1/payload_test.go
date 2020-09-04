@@ -38,7 +38,6 @@ const payloadKubernetesProviderCreated = `{
             "name": "test-name",
             "host": "test-host",
             "caData": "test-ca-data",
-            "bearerToken": "",
             "permissions": {
               "read": [
                 "gg_test"

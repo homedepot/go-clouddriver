@@ -3,6 +3,7 @@ package sql
 import (
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
@@ -84,13 +85,14 @@ type Config struct {
 	Name     string
 }
 
-// Get connection to the DB.
-func Connection(c Config) string {
+// Get driver and connection string to the DB.
+func Connection(c Config) (string, string) {
 	if c.User == "" || c.Password == "" || c.Host == "" || c.Name == "" {
-		return "clouddriver.db"
+		log.Println("SQL config missing field - defaulting to local sqlite DB.")
+		return "sqlite3", "clouddriver.db"
 	}
 
-	return fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=UTC",
+	return "mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=UTC",
 		c.User, c.Password, c.Host, c.Name)
 }
 

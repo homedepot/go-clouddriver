@@ -1,3 +1,4 @@
 /clouddriver
 test/
 *.coverprofile
+clouddriver.db

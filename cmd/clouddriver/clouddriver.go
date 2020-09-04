@@ -54,13 +54,13 @@ func init() {
 
 func mustDBConnect() *gorm.DB {
 	sqlConfig := sql.Config{
-		User:     mustGetenv("DB_USER"),
-		Password: mustGetenv("DB_PASS"),
-		Host:     mustGetenv("DB_HOST"),
-		Name:     mustGetenv("DB_NAME"),
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASS"),
+		Host:     os.Getenv("DB_HOST"),
+		Name:     os.Getenv("DB_NAME"),
 	}
 
-	db, err := sql.Connect("mysql", sql.Connection(sqlConfig))
+	db, err := sql.Connect(sql.Connection(sqlConfig))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
