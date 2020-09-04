@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 )
 
@@ -21,6 +22,43 @@ type FakeController struct {
 	newClientReturnsOnCall map[int]struct {
 		result1 kubernetes.Client
 		result2 error
+	}
+	ToUnstructuredStub        func(map[string]interface{}) (*unstructured.Unstructured, error)
+	toUnstructuredMutex       sync.RWMutex
+	toUnstructuredArgsForCall []struct {
+		arg1 map[string]interface{}
+	}
+	toUnstructuredReturns struct {
+		result1 *unstructured.Unstructured
+		result2 error
+	}
+	toUnstructuredReturnsOnCall map[int]struct {
+		result1 *unstructured.Unstructured
+		result2 error
+	}
+	AddSpinnakerAnnotationsStub        func(u *unstructured.Unstructured, application string) error
+	addSpinnakerAnnotationsMutex       sync.RWMutex
+	addSpinnakerAnnotationsArgsForCall []struct {
+		u           *unstructured.Unstructured
+		application string
+	}
+	addSpinnakerAnnotationsReturns struct {
+		result1 error
+	}
+	addSpinnakerAnnotationsReturnsOnCall map[int]struct {
+		result1 error
+	}
+	AddSpinnakerLabelsStub        func(u *unstructured.Unstructured, application string) error
+	addSpinnakerLabelsMutex       sync.RWMutex
+	addSpinnakerLabelsArgsForCall []struct {
+		u           *unstructured.Unstructured
+		application string
+	}
+	addSpinnakerLabelsReturns struct {
+		result1 error
+	}
+	addSpinnakerLabelsReturnsOnCall map[int]struct {
+		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -77,11 +115,166 @@ func (fake *FakeController) NewClientReturnsOnCall(i int, result1 kubernetes.Cli
 	}{result1, result2}
 }
 
+func (fake *FakeController) ToUnstructured(arg1 map[string]interface{}) (*unstructured.Unstructured, error) {
+	fake.toUnstructuredMutex.Lock()
+	ret, specificReturn := fake.toUnstructuredReturnsOnCall[len(fake.toUnstructuredArgsForCall)]
+	fake.toUnstructuredArgsForCall = append(fake.toUnstructuredArgsForCall, struct {
+		arg1 map[string]interface{}
+	}{arg1})
+	fake.recordInvocation("ToUnstructured", []interface{}{arg1})
+	fake.toUnstructuredMutex.Unlock()
+	if fake.ToUnstructuredStub != nil {
+		return fake.ToUnstructuredStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.toUnstructuredReturns.result1, fake.toUnstructuredReturns.result2
+}
+
+func (fake *FakeController) ToUnstructuredCallCount() int {
+	fake.toUnstructuredMutex.RLock()
+	defer fake.toUnstructuredMutex.RUnlock()
+	return len(fake.toUnstructuredArgsForCall)
+}
+
+func (fake *FakeController) ToUnstructuredArgsForCall(i int) map[string]interface{} {
+	fake.toUnstructuredMutex.RLock()
+	defer fake.toUnstructuredMutex.RUnlock()
+	return fake.toUnstructuredArgsForCall[i].arg1
+}
+
+func (fake *FakeController) ToUnstructuredReturns(result1 *unstructured.Unstructured, result2 error) {
+	fake.ToUnstructuredStub = nil
+	fake.toUnstructuredReturns = struct {
+		result1 *unstructured.Unstructured
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeController) ToUnstructuredReturnsOnCall(i int, result1 *unstructured.Unstructured, result2 error) {
+	fake.ToUnstructuredStub = nil
+	if fake.toUnstructuredReturnsOnCall == nil {
+		fake.toUnstructuredReturnsOnCall = make(map[int]struct {
+			result1 *unstructured.Unstructured
+			result2 error
+		})
+	}
+	fake.toUnstructuredReturnsOnCall[i] = struct {
+		result1 *unstructured.Unstructured
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeController) AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error {
+	fake.addSpinnakerAnnotationsMutex.Lock()
+	ret, specificReturn := fake.addSpinnakerAnnotationsReturnsOnCall[len(fake.addSpinnakerAnnotationsArgsForCall)]
+	fake.addSpinnakerAnnotationsArgsForCall = append(fake.addSpinnakerAnnotationsArgsForCall, struct {
+		u           *unstructured.Unstructured
+		application string
+	}{u, application})
+	fake.recordInvocation("AddSpinnakerAnnotations", []interface{}{u, application})
+	fake.addSpinnakerAnnotationsMutex.Unlock()
+	if fake.AddSpinnakerAnnotationsStub != nil {
+		return fake.AddSpinnakerAnnotationsStub(u, application)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.addSpinnakerAnnotationsReturns.result1
+}
+
+func (fake *FakeController) AddSpinnakerAnnotationsCallCount() int {
+	fake.addSpinnakerAnnotationsMutex.RLock()
+	defer fake.addSpinnakerAnnotationsMutex.RUnlock()
+	return len(fake.addSpinnakerAnnotationsArgsForCall)
+}
+
+func (fake *FakeController) AddSpinnakerAnnotationsArgsForCall(i int) (*unstructured.Unstructured, string) {
+	fake.addSpinnakerAnnotationsMutex.RLock()
+	defer fake.addSpinnakerAnnotationsMutex.RUnlock()
+	return fake.addSpinnakerAnnotationsArgsForCall[i].u, fake.addSpinnakerAnnotationsArgsForCall[i].application
+}
+
+func (fake *FakeController) AddSpinnakerAnnotationsReturns(result1 error) {
+	fake.AddSpinnakerAnnotationsStub = nil
+	fake.addSpinnakerAnnotationsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) AddSpinnakerAnnotationsReturnsOnCall(i int, result1 error) {
+	fake.AddSpinnakerAnnotationsStub = nil
+	if fake.addSpinnakerAnnotationsReturnsOnCall == nil {
+		fake.addSpinnakerAnnotationsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.addSpinnakerAnnotationsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) AddSpinnakerLabels(u *unstructured.Unstructured, application string) error {
+	fake.addSpinnakerLabelsMutex.Lock()
+	ret, specificReturn := fake.addSpinnakerLabelsReturnsOnCall[len(fake.addSpinnakerLabelsArgsForCall)]
+	fake.addSpinnakerLabelsArgsForCall = append(fake.addSpinnakerLabelsArgsForCall, struct {
+		u           *unstructured.Unstructured
+		application string
+	}{u, application})
+	fake.recordInvocation("AddSpinnakerLabels", []interface{}{u, application})
+	fake.addSpinnakerLabelsMutex.Unlock()
+	if fake.AddSpinnakerLabelsStub != nil {
+		return fake.AddSpinnakerLabelsStub(u, application)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.addSpinnakerLabelsReturns.result1
+}
+
+func (fake *FakeController) AddSpinnakerLabelsCallCount() int {
+	fake.addSpinnakerLabelsMutex.RLock()
+	defer fake.addSpinnakerLabelsMutex.RUnlock()
+	return len(fake.addSpinnakerLabelsArgsForCall)
+}
+
+func (fake *FakeController) AddSpinnakerLabelsArgsForCall(i int) (*unstructured.Unstructured, string) {
+	fake.addSpinnakerLabelsMutex.RLock()
+	defer fake.addSpinnakerLabelsMutex.RUnlock()
+	return fake.addSpinnakerLabelsArgsForCall[i].u, fake.addSpinnakerLabelsArgsForCall[i].application
+}
+
+func (fake *FakeController) AddSpinnakerLabelsReturns(result1 error) {
+	fake.AddSpinnakerLabelsStub = nil
+	fake.addSpinnakerLabelsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) AddSpinnakerLabelsReturnsOnCall(i int, result1 error) {
+	fake.AddSpinnakerLabelsStub = nil
+	if fake.addSpinnakerLabelsReturnsOnCall == nil {
+		fake.addSpinnakerLabelsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.addSpinnakerLabelsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeController) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.newClientMutex.RLock()
 	defer fake.newClientMutex.RUnlock()
+	fake.toUnstructuredMutex.RLock()
+	defer fake.toUnstructuredMutex.RUnlock()
+	fake.addSpinnakerAnnotationsMutex.RLock()
+	defer fake.addSpinnakerAnnotationsMutex.RUnlock()
+	fake.addSpinnakerLabelsMutex.RLock()
+	defer fake.addSpinnakerLabelsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

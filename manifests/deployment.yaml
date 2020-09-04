@@ -3,8 +3,8 @@ kind: Deployment
 metadata:
   labels:
     app: spin
-    cluster: spin-clouddriver
-  name: spin-clouddriver
+    cluster: spin-go-clouddriver
+  name: spin-go-clouddriver
   namespace: spinnaker
 spec:
   progressDeadlineSeconds: 600
@@ -13,7 +13,7 @@ spec:
   selector:
     matchLabels:
       app: spin
-      cluster: spin-clouddriver
+      cluster: spin-go-clouddriver
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -23,20 +23,27 @@ spec:
     metadata:
       annotations:
         vault.hashicorp.com/agent-inject: 'true'
-        vault.hashicorp.com/agent-inject-secret-db.env: secret/clouddriver/database
+        vault.hashicorp.com/agent-inject-secret-db.env: secret/spinnaker/clouddriver/database
+        vault.hashicorp.com/agent-inject-secret-arcade.env: secret/spinnaker/arcade
         vault.hashicorp.com/agent-inject-template-db.env: |
           {{ with secret "secret/clouddriver/database" }}
           {{ range $k, $v := .Data }}
           export DB_{{ $k | toUpper }}='{{ $v }}'
           {{ end }}
           {{ end }}
+        vault.hashicorp.com/agent-inject-template-arcade.env: |
+          {{ with secret "secret/spinnaker/arcade/api-key" }}
+          {{ range $k, $v := .Data }}
+          export ARCADE_{{ $k | replaceAll "-" "_" | toUpper }}='{{ $v }}'
+          {{ end }}
+          {{ end }}
         vault.hashicorp.com/agent-pre-populate-only: 'true'
-        vault.hashicorp.com/auth-path: auth/kubernetes-spinnaker-us-central1
+        vault.hashicorp.com/auth-path: auth/kubernetes-sandbox-us-central1
         vault.hashicorp.com/role: onboarding
         vault.hashicorp.com/tls-skip-verify: 'true'
       labels:
         app: spin
-        cluster: spin-clouddriver
+        cluster: spin-go-clouddriver
     spec:
       affinity: {}
       containers:
@@ -69,6 +76,17 @@ spec:
             requests:
               cpu: '1'
               memory: 1Gi
+        - args:
+            - for f in /vault/secrets/*.env; do source $f; done; arcade
+          command:
+            - /bin/sh
+            - '-c'
+          image: 'docker.io/billiford/arcade:${ parameters["ARCADE_IMAGE_VERSION"] }'
+          imagePullPolicy: IfNotPresent
+          name: arcade
+          ports:
+            - containerPort: 1982
+              protocol: TCP
       dnsPolicy: ClusterFirst
       nodeSelector:
         cloud.google.com/gke-nodepool: clouddriver
@@ -78,4 +96,3 @@ spec:
       serviceAccount: spinnaker-onboarding
       serviceAccountName: spinnaker-onboarding
       terminationGracePeriodSeconds: 720
-

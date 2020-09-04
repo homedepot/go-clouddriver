@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
+	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
@@ -61,6 +62,7 @@ var spinnakerKindMap = map[string]string{
 func ListCredentials(c *gin.Context) {
 	expand := c.Query("expand")
 	sc := sql.Instance(c)
+	ac := arcade.Instance(c)
 	kc := kubernetes.ControllerInstance(c)
 	credentials := []clouddriver.Credential{}
 
@@ -141,9 +143,15 @@ func ListCredentials(c *gin.Context) {
 					return
 				}
 
+				token, err := ac.Token()
+				if err != nil {
+					log.Println("error getting arcade token:", err.Error())
+					return
+				}
+
 				config := &rest.Config{
 					Host:        provider.Host,
-					BearerToken: provider.BearerToken,
+					BearerToken: token,
 					TLSClientConfig: rest.TLSClientConfig{
 						CAData: cd,
 					},

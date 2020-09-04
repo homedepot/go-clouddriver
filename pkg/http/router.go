@@ -40,6 +40,12 @@ func Initialize(r *gin.Engine) {
 		// Not implemented.
 		r.GET("/securityGroups", core.ListSecurityGroups)
 		r.GET("/search", core.Search)
+
+		// Artifacts controller.
+		r.GET("/artifacts/credentials", core.ListArtifactCredentials)
+		r.GET("/artifacts/account/:accountName/names", core.ListHelmArtifactAccountNames)
+		r.GET("/artifacts/account/:accountName/versions", core.ListHelmArtifactAccountVersions)
+		r.PUT("/artifacts/fetch/", core.GetArtifact)
 	}
 
 	// New endpoint.

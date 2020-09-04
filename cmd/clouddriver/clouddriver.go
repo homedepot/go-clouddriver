@@ -2,9 +2,10 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"os"
 
+	"github.com/billiford/go-clouddriver/pkg/arcade"
+	"github.com/billiford/go-clouddriver/pkg/helm"
 	kube "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/server"
@@ -30,25 +31,23 @@ func init() {
 
 	gin.ForceConsoleColor()
 	// Ignore logging of certain endpoints.
-	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{SkipPaths: []string{
-		"/health",
-	}}))
+	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{SkipPaths: []string{"/health"}}))
 	r.Use(gin.Recovery())
-
-	r.NoRoute(func(c *gin.Context) {
-		// log.Println("HEADERS:", c.Request.Header)
-		// b, _ := ioutil.ReadAll(c.Request.Body)
-		// log.Println("BODY:", string(b))
-		c.JSON(http.StatusNotFound, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
-	})
 
 	kubeController := kubernetes.NewController()
 	sqlClient := sql.NewClient(mustDBConnect())
+	helmClient := helm.NewClient("https://kubernetes-charts.storage.googleapis.com")
+	arcadeClient := arcade.NewDefaultClient()
+
+	arcadeAPIKey := mustGetenv("ARCADE_API_KEY")
+	arcadeClient.WithAPIKey(arcadeAPIKey)
 
 	c := &server.Config{
+		ArcadeClient:      arcadeClient,
 		SQLClient:         sqlClient,
 		KubeController:    kubeController,
 		KubeActionHandler: kube.NewActionHandler(),
+		HelmClient:        helmClient,
 	}
 	server.Setup(r, c)
 }

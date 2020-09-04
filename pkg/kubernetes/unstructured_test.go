@@ -13,7 +13,12 @@ var _ = Describe("Unstructured", func() {
 	var (
 		m   map[string]interface{}
 		err error
+		kc  Controller
 	)
+
+	BeforeEach(func() {
+		kc = NewController()
+	})
 
 	Describe("#ToUnstructured", func() {
 		var u *unstructured.Unstructured
@@ -26,7 +31,7 @@ var _ = Describe("Unstructured", func() {
 		})
 
 		JustBeforeEach(func() {
-			u, err = ToUnstructured(m)
+			u, err = kc.ToUnstructured(m)
 		})
 
 		When("object kind is missing", func() {
@@ -63,7 +68,7 @@ var _ = Describe("Unstructured", func() {
 			helper = &resource.Helper{
 				NamespaceScoped: false,
 			}
-			u, err = ToUnstructured(m)
+			u, err = kc.ToUnstructured(m)
 			Expect(err).To(BeNil())
 		})
 

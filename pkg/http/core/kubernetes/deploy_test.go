@@ -40,6 +40,17 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
+	When("getting the gcloud access token returns an error", func() {
+		BeforeEach(func() {
+			fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
+		})
+
+		It("returns an error", func() {
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("error getting token"))
+		})
+	})
+
 	When("creating the kube client returns an error", func() {
 		BeforeEach(func() {
 			fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
@@ -53,16 +64,34 @@ var _ = Describe("Deploy", func() {
 
 	When("getting the unstructured manifest returns an error", func() {
 		BeforeEach(func() {
-			actionConfig.Operation.DeployManifest.Manifests = []map[string]interface{}{
-				{
-					"kind": "Pod",
-				},
-			}
+			fakeKubeController.ToUnstructuredReturns(nil, errors.New("error converting to unstructured"))
 		})
 
 		It("returns an error", func() {
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("Object 'apiVersion' is missing in '{\"kind\":\"Pod\"}'"))
+			Expect(err.Error()).To(Equal("error converting to unstructured"))
+		})
+	})
+
+	When("adding the spinnaker annotations returns an error", func() {
+		BeforeEach(func() {
+			fakeKubeController.AddSpinnakerAnnotationsReturns(errors.New("error adding annotations"))
+		})
+
+		It("returns an error", func() {
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("error adding annotations"))
+		})
+	})
+
+	When("adding the spinnaker labels returns an error", func() {
+		BeforeEach(func() {
+			fakeKubeController.AddSpinnakerLabelsReturns(errors.New("error adding labels"))
+		})
+
+		It("returns an error", func() {
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("error adding labels"))
 		})
 	})
 

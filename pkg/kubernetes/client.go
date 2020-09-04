@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/billiford/go-clouddriver/pkg/kubernetes/patcher"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -51,6 +52,7 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 
 	restMapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if err != nil {
+		log.Println("ERROR 1:", err.Error())
 		return metadata, err
 	}
 
@@ -60,6 +62,7 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 
 	restClient, err := newRestClient(*c.config, gv)
 	if err != nil {
+		log.Println("ERROR 2:", err.Error())
 		return metadata, err
 	}
 
@@ -79,6 +82,7 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 
 	patcher, err := patcher.New(info, helper)
 	if err != nil {
+		log.Println("ERROR 3:", err.Error())
 		return metadata, err
 	}
 
@@ -87,23 +91,27 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 	// in the patch sent to the server.
 	modified, err := util.GetModifiedConfiguration(info.Object, true, unstructured.UnstructuredJSONScheme)
 	if err != nil {
+		log.Println("ERROR 4:", err.Error())
 		return metadata, err
 	}
 
 	if err := info.Get(); err != nil {
 		if !errors.IsNotFound(err) {
+			log.Println("ERROR 5:", err.Error())
 			return metadata, err
 		}
 
 		// Create the resource if it doesn't exist
 		// First, update the annotation used by kubectl apply
 		if err := util.CreateApplyAnnotation(info.Object, unstructured.UnstructuredJSONScheme); err != nil {
+			log.Println("ERROR 6:", err.Error())
 			return metadata, err
 		}
 
 		// Then create the resource and skip the three-way merge
 		obj, err := helper.Create(info.Namespace, true, info.Object)
 		if err != nil {
+			log.Println("ERROR 7:", err.Error())
 			return metadata, err
 		}
 		info.Refresh(obj, true)
@@ -111,6 +119,7 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 
 	_, patchedObject, err := patcher.Patch(info.Object, modified, info.Namespace, info.Name)
 	if err != nil {
+		log.Println("ERROR 8:", err.Error())
 		return metadata, err
 	}
 

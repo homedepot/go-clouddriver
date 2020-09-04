@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 
@@ -39,6 +40,7 @@ var (
 
 func (ah *actionHandler) NewRollbackAction(ac ActionConfig) Action {
 	return &rollback{
+		ac:          ac.ArcadeClient,
 		sc:          ac.SQLClient,
 		kc:          ac.KubeController,
 		id:          ac.ID,
@@ -48,6 +50,7 @@ func (ah *actionHandler) NewRollbackAction(ac ActionConfig) Action {
 }
 
 type rollback struct {
+	ac          arcade.Client
 	sc          sql.Client
 	kc          kubernetes.Controller
 	id          string
@@ -74,9 +77,14 @@ func (r *rollback) Run() error {
 		return err
 	}
 
+	token, err := r.ac.Token()
+	if err != nil {
+		return err
+	}
+
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: provider.BearerToken,
+		BearerToken: token,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},

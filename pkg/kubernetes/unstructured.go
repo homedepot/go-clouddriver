@@ -6,16 +6,15 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
-	"k8s.io/kubectl/pkg/scheme"
 )
 
-func ToUnstructured(manifest map[string]interface{}) (*unstructured.Unstructured, error) {
+func (c *controller) ToUnstructured(manifest map[string]interface{}) (*unstructured.Unstructured, error) {
 	b, err := json.Marshal(manifest)
 	if err != nil {
 		return nil, err
 	}
 
-	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode(b, nil, nil)
+	obj, _, err := unstructured.UnstructuredJSONScheme.Decode(b, nil, nil)
 	if err != nil {
 		return nil, err
 	}

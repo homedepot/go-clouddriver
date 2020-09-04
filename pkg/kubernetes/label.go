@@ -13,7 +13,7 @@ const (
 	LabelKubernetesManagedBy = `app.kubernetes.io/managed-by`
 )
 
-func AddSpinnakerLabels(u *unstructured.Unstructured, application string) error {
+func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, application string) error {
 	var err error
 
 	gvk := u.GroupVersionKind()

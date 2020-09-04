@@ -9,6 +9,8 @@ import (
 	"net/http/httptest"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
+	"github.com/billiford/go-clouddriver/pkg/arcade/arcadefakes"
+	"github.com/billiford/go-clouddriver/pkg/helm/helmfakes"
 	kubefakes "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes/kubernetesfakes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes/kubernetesfakes"
@@ -28,6 +30,8 @@ var (
 	req                   *http.Request
 	body                  *bytes.Buffer
 	res                   *http.Response
+	fakeArcadeClient      *arcadefakes.FakeClient
+	fakeHelmClient        *helmfakes.FakeClient
 	fakeSQLClient         *sqlfakes.FakeClient
 	fakeKubeClient        *kubernetesfakes.FakeClient
 	fakeKubeController    *kubernetesfakes.FakeController
@@ -36,7 +40,7 @@ var (
 )
 
 func setup() {
-	// Setup fake SQL client.
+	// Setup fakes.
 	fakeSQLClient = &sqlfakes.FakeClient{}
 	fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
 		Name:   "test-account",
@@ -63,6 +67,10 @@ func setup() {
 	fakeKubeActionHandler.NewRollingRestartActionReturns(fakeAction)
 	fakeKubeActionHandler.NewRollbackActionReturns(fakeAction)
 
+	fakeArcadeClient = &arcadefakes.FakeClient{}
+
+	fakeHelmClient = &helmfakes.FakeClient{}
+
 	// Disable debug logging.
 	gin.SetMode(gin.ReleaseMode)
 
@@ -72,10 +80,13 @@ func setup() {
 	r.Use(gin.Recovery())
 
 	c := &server.Config{
+		ArcadeClient:      fakeArcadeClient,
+		HelmClient:        fakeHelmClient,
 		SQLClient:         fakeSQLClient,
 		KubeController:    fakeKubeController,
 		KubeActionHandler: fakeKubeActionHandler,
 	}
+
 	// Create server.
 	server.Setup(r, c)
 	svr = httptest.NewServer(r)
@@ -84,9 +95,6 @@ func setup() {
 
 func teardown() {
 	svr.Close()
-	mt, mtp, _ := mime.ParseMediaType(res.Header.Get("content-type"))
-	Expect(mt).To(Equal("application/json"), "content-type")
-	Expect(mtp["charset"]).To(Equal("utf-8"), "charset")
 	res.Body.Close()
 }
 
@@ -100,8 +108,19 @@ func doRequest() {
 }
 
 func validateResponse(expected string) {
+	mt, mtp, _ := mime.ParseMediaType(res.Header.Get("content-type"))
+	Expect(mt).To(Equal("application/json"), "content-type")
+	Expect(mtp["charset"]).To(Equal("utf-8"), "charset")
 	actual, _ := ioutil.ReadAll(res.Body)
 	Expect(actual).To(MatchJSON(expected), "correct body")
+}
+
+func validateTextResponse(expected string) {
+	mt, mtp, _ := mime.ParseMediaType(res.Header.Get("content-type"))
+	Expect(mt).To(Equal("text/plain"), "content-type")
+	Expect(mtp["charset"]).To(Equal("utf-8"), "charset")
+	actual, _ := ioutil.ReadAll(res.Body)
+	Expect(string(actual)).To(Equal(expected), "correct body")
 }
 
 func getClouddriverError() clouddriver.Error {

@@ -15,7 +15,7 @@ const (
 	AnnotationSpinnakerMonikerCluster     = `moniker.spinnaker.io/cluster`
 )
 
-func AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error {
+func (c *controller) AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error {
 	var err error
 
 	name := u.GetName()

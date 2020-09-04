@@ -13,10 +13,15 @@ var _ = Describe("Annotation", func() {
 		u           *unstructured.Unstructured
 		application string
 		err         error
+		kc          Controller
 	)
 
+	BeforeEach(func() {
+		kc = NewController()
+	})
+
 	JustBeforeEach(func() {
-		err = AddSpinnakerLabels(u, application)
+		err = kc.AddSpinnakerLabels(u, application)
 	})
 
 	When("the object is a deployment", func() {
@@ -29,7 +34,7 @@ var _ = Describe("Annotation", func() {
 					"name":      "test-name",
 				},
 			}
-			u, err = ToUnstructured(m)
+			u, err = kc.ToUnstructured(m)
 			Expect(err).To(BeNil())
 			application = "test-application"
 		})
@@ -56,7 +61,7 @@ var _ = Describe("Annotation", func() {
 					"name":      "test-name",
 				},
 			}
-			u, err = ToUnstructured(m)
+			u, err = kc.ToUnstructured(m)
 			Expect(err).To(BeNil())
 			application = "test-application"
 		})

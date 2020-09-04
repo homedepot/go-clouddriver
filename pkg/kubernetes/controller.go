@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"github.com/gin-gonic/gin"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
@@ -16,6 +17,9 @@ const (
 //go:generate counterfeiter . Controller
 type Controller interface {
 	NewClient(*rest.Config) (Client, error)
+	ToUnstructured(map[string]interface{}) (*unstructured.Unstructured, error)
+	AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error
+	AddSpinnakerLabels(u *unstructured.Unstructured, application string) error
 }
 
 func NewController() Controller {

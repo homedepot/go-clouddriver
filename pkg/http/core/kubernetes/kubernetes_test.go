@@ -1,6 +1,7 @@
 package kubernetes_test
 
 import (
+	"github.com/billiford/go-clouddriver/pkg/arcade/arcadefakes"
 	. "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes/kubernetesfakes"
@@ -10,6 +11,7 @@ import (
 
 var (
 	err                error
+	fakeArcadeClient   *arcadefakes.FakeClient
 	fakeSQLClient      *sqlfakes.FakeClient
 	fakeKubeClient     *kubernetesfakes.FakeClient
 	fakeKubeController *kubernetesfakes.FakeController
@@ -19,7 +21,9 @@ var (
 )
 
 func setup() {
-	// Setup fake SQL client.
+	// Setup fakes.
+	fakeArcadeClient = &arcadefakes.FakeClient{}
+
 	fakeSQLClient = &sqlfakes.FakeClient{}
 	fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
 		Name:   "test-account",
@@ -60,6 +64,7 @@ func setup() {
 
 func newActionConfig() ActionConfig {
 	return ActionConfig{
+		ArcadeClient:   fakeArcadeClient,
 		KubeController: fakeKubeController,
 		SQLClient:      fakeSQLClient,
 		ID:             "test-id",

@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"k8s.io/client-go/rest"
@@ -12,6 +13,7 @@ import (
 
 func (ah *actionHandler) NewScaleManifestAction(ac ActionConfig) Action {
 	return &scaleManifest{
+		ac: ac.ArcadeClient,
 		sc: ac.SQLClient,
 		kc: ac.KubeController,
 		id: ac.ID,
@@ -20,6 +22,7 @@ func (ah *actionHandler) NewScaleManifestAction(ac ActionConfig) Action {
 }
 
 type scaleManifest struct {
+	ac arcade.Client
 	sc sql.Client
 	kc kubernetes.Controller
 	id string
@@ -37,9 +40,14 @@ func (s *scaleManifest) Run() error {
 		return err
 	}
 
+	token, err := s.ac.Token()
+	if err != nil {
+		return err
+	}
+
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: provider.BearerToken,
+		BearerToken: token,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},

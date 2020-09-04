@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
+	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
@@ -149,6 +150,7 @@ type ServerGroupManagerServerGroupMoniker struct {
 func ListServerGroupManagers(c *gin.Context) {
 	sc := sql.Instance(c)
 	kc := kubernetes.ControllerInstance(c)
+	ac := arcade.Instance(c)
 	application := c.Param("application")
 	response := ServerGroupManagersResponse{}
 
@@ -174,9 +176,15 @@ func ListServerGroupManagers(c *gin.Context) {
 			continue
 		}
 
+		token, err := ac.Token()
+		if err != nil {
+			log.Println("error getting token", err.Error())
+			continue
+		}
+
 		config := &rest.Config{
 			Host:        provider.Host,
-			BearerToken: provider.BearerToken,
+			BearerToken: token,
 			TLSClientConfig: rest.TLSClientConfig{
 				CAData: cd,
 			},
@@ -331,6 +339,7 @@ type LoadBalancerServerGroup struct {
 func ListLoadBalancers(c *gin.Context) {
 	sc := sql.Instance(c)
 	kc := kubernetes.ControllerInstance(c)
+	ac := arcade.Instance(c)
 	application := c.Param("application")
 	response := LoadBalancersResponse{}
 
@@ -340,7 +349,7 @@ func ListLoadBalancers(c *gin.Context) {
 		return
 	}
 
-	// Don't actually return while attempting to create a list of server group managers.
+	// Don't actually return while attempting to create a list of load balancers.
 	// We want to avoid the situation where a user cannot perform operations when any
 	// cluster is not available.
 	for _, account := range accounts {
@@ -356,9 +365,15 @@ func ListLoadBalancers(c *gin.Context) {
 			continue
 		}
 
+		token, err := ac.Token()
+		if err != nil {
+			log.Println("error getting token", err.Error())
+			continue
+		}
+
 		config := &rest.Config{
 			Host:        provider.Host,
-			BearerToken: provider.BearerToken,
+			BearerToken: token,
 			TLSClientConfig: rest.TLSClientConfig{
 				CAData: cd,
 			},
@@ -592,6 +607,7 @@ type InstanceHealth struct {
 func ListServerGroups(c *gin.Context) {
 	sc := sql.Instance(c)
 	kc := kubernetes.ControllerInstance(c)
+	ac := arcade.Instance(c)
 	application := c.Param("application")
 	response := ServerGroupsResponse{}
 
@@ -617,9 +633,15 @@ func ListServerGroups(c *gin.Context) {
 			continue
 		}
 
+		token, err := ac.Token()
+		if err != nil {
+			log.Println("error getting token", err.Error())
+			continue
+		}
+
 		config := &rest.Config{
 			Host:        provider.Host,
-			BearerToken: provider.BearerToken,
+			BearerToken: token,
 			TLSClientConfig: rest.TLSClientConfig{
 				CAData: cd,
 			},
@@ -798,6 +820,7 @@ type GetServerGroupResponse struct {
 func GetServerGroup(c *gin.Context) {
 	sc := sql.Instance(c)
 	kc := kubernetes.ControllerInstance(c)
+	ac := arcade.Instance(c)
 	account := c.Param("account")
 	application := c.Param("application")
 	location := c.Param("location")
@@ -818,9 +841,15 @@ func GetServerGroup(c *gin.Context) {
 		return
 	}
 
+	token, err := ac.Token()
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: provider.BearerToken,
+		BearerToken: token,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},

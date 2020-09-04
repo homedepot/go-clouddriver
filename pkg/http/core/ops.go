@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
+	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	kube "github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
@@ -25,6 +26,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 	// All operations are bound to a task ID and stored in the database.
 	taskID := uuid.New().String()
 	ko := kubernetes.Operations{}
+	ac := arcade.Instance(c)
 	ah := kubernetes.ActionHandlerInstance(c)
 	kc := kube.ControllerInstance(c)
 	sc := sql.Instance(c)
@@ -54,6 +56,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 	// each requested action.
 	for _, req := range ko {
 		config := kubernetes.ActionConfig{
+			ArcadeClient:   ac,
 			KubeController: kc,
 			SQLClient:      sc,
 			ID:             taskID,

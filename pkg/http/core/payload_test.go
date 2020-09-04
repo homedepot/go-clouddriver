@@ -67,6 +67,22 @@ const payloadRequestKubernetesOpsDeployManifest = `[
   }
 ]`
 
+const payloadRequestFetchHelmArtifact = `{
+  "name": "test-chart-name",
+  "type": "helm/chart",
+	"version": "1.0.0"
+}`
+
+const payloadRequestFetchBase64ArtifactBadReference = `{
+  "type": "embedded/base64",
+	"reference": "not-base-64!"
+}`
+
+const payloadRequestFetchBase64Artifact = `{
+  "type": "embedded/base64",
+	"reference": "aGVsbG93b3JsZAo="
+}`
+
 const payloadRequestKubernetesOpsScaleManifest = `[
   {
     "scaleManifest": {
@@ -338,6 +354,31 @@ const payloadCredentials = `[
               "spinnakerKindMap": null,
               "type": "kubernetes"
             }
+          ]`
+
+const payloadArtifactCredentials = `[
+            {
+              "name": "helm-stable",
+              "types": [
+                "helm/chart"
+              ]
+            },
+            {
+              "name": "embedded-artifact",
+              "types": [
+                "embedded/base64"
+              ]
+            }
+          ]`
+
+const payloadListHelmArtifactAccountNames = `[
+            "minecraft",
+            "prometheus-operator"
+          ]`
+
+const payloadListHelmArtifactAccountVersions = `[
+            "1.0.0",
+            "1.1.0"
           ]`
 
 const payloadApplications = `[

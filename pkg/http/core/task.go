@@ -8,6 +8,7 @@ import (
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"k8s.io/client-go/rest"
 
+	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,7 @@ import (
 func GetTask(c *gin.Context) {
 	sc := sql.Instance(c)
 	kc := kubernetes.ControllerInstance(c)
+	ac := arcade.Instance(c)
 	id := c.Param("id")
 	manifests := []map[string]interface{}{}
 
@@ -47,9 +49,15 @@ func GetTask(c *gin.Context) {
 		return
 	}
 
+	token, err := ac.Token()
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: provider.BearerToken,
+		BearerToken: token,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"k8s.io/client-go/rest"
@@ -12,6 +13,7 @@ import (
 
 func (ah *actionHandler) NewRollingRestartAction(ac ActionConfig) Action {
 	return &rollingRestart{
+		ac: ac.ArcadeClient,
 		sc: ac.SQLClient,
 		kc: ac.KubeController,
 		id: ac.ID,
@@ -20,6 +22,7 @@ func (ah *actionHandler) NewRollingRestartAction(ac ActionConfig) Action {
 }
 
 type rollingRestart struct {
+	ac arcade.Client
 	sc sql.Client
 	kc kubernetes.Controller
 	id string
@@ -39,9 +42,14 @@ func (rr *rollingRestart) Run() error {
 		return err
 	}
 
+	token, err := rr.ac.Token()
+	if err != nil {
+		return err
+	}
+
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: provider.BearerToken,
+		BearerToken: token,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},

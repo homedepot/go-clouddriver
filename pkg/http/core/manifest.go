@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
+	"github.com/billiford/go-clouddriver/pkg/arcade"
 	ops "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
@@ -17,6 +18,7 @@ import (
 func GetManifest(c *gin.Context) {
 	sc := sql.Instance(c)
 	kc := kubernetes.ControllerInstance(c)
+	ac := arcade.Instance(c)
 	account := c.Param("account")
 	namespace := c.Param("location")
 	n := c.Param("name")
@@ -43,9 +45,15 @@ func GetManifest(c *gin.Context) {
 		return
 	}
 
+	token, err := ac.Token()
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: provider.BearerToken,
+		BearerToken: token,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},

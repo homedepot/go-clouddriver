@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"encoding/base64"
 
+	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/google/uuid"
@@ -11,6 +12,7 @@ import (
 
 func (ah *actionHandler) NewDeployManifestAction(ac ActionConfig) Action {
 	return &deployManfest{
+		ac: ac.ArcadeClient,
 		sc: ac.SQLClient,
 		kc: ac.KubeController,
 		id: ac.ID,
@@ -19,6 +21,7 @@ func (ah *actionHandler) NewDeployManifestAction(ac ActionConfig) Action {
 }
 
 type deployManfest struct {
+	ac arcade.Client
 	sc sql.Client
 	kc kubernetes.Controller
 	id string
@@ -36,9 +39,14 @@ func (d *deployManfest) Run() error {
 		return err
 	}
 
+	token, err := d.ac.Token()
+	if err != nil {
+		return err
+	}
+
 	config := &rest.Config{
 		Host:        provider.Host,
-		BearerToken: provider.BearerToken,
+		BearerToken: token,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},
@@ -50,17 +58,17 @@ func (d *deployManfest) Run() error {
 	}
 
 	for _, manifest := range d.dm.Manifests {
-		u, err := kubernetes.ToUnstructured(manifest)
+		u, err := d.kc.ToUnstructured(manifest)
 		if err != nil {
 			return err
 		}
 
-		err = kubernetes.AddSpinnakerAnnotations(u, d.dm.Moniker.App)
+		err = d.kc.AddSpinnakerAnnotations(u, d.dm.Moniker.App)
 		if err != nil {
 			return err
 		}
 
-		err = kubernetes.AddSpinnakerLabels(u, d.dm.Moniker.App)
+		err = d.kc.AddSpinnakerLabels(u, d.dm.Moniker.App)
 		if err != nil {
 			return err
 		}
