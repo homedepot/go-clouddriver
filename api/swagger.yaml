@@ -1,0 +1,280 @@
+swagger: "2.0"
+info:
+  description: "This is the go-clouddriver server API."
+  version: "0.1.0"
+  title: "go-clouddriver"
+  termsOfService: "http://swagger.io/terms/"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "spin-clouddriver.spinnaker:7002"
+tags:
+- name: "core"
+  description: "Core endpoints to the microservice"
+- name: "kubernetes"
+  description: "Endpoints that handle kubernetes operations"
+- name: "credentials"
+  description: "Credentials API controller"
+- name: "applications"
+  description: "Applications API controller"
+- name: "manifests"
+  description: "Manifests API controller"
+- name: "artifacts"
+  description: "Artifacts API controller"
+- name: "tasks"
+  description: "Tasks API controller"
+schemes:
+- "http"
+paths:
+  /health:
+    get:
+      tags:
+      - "core"
+      summary: "Health check endpoint"
+      responses:
+        "200":
+          description: "OK"
+  /cache/kubernetes/manifest:
+    post:
+      tags:
+      - "kubernetes"
+      summary: "Force cache refresh"
+      responses:
+        "200":
+          description: "OK"
+  /credentials:
+    get:
+      tags:
+      - "credentials"
+      summary: "List account credentials"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /credentials/{account}:
+    get:
+      parameters:
+      - name: "account"
+        in: "path"
+        required: true
+        type: "string"
+      tags:
+      - "credentials"
+      summary: "Get account credentials"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /applications:
+    get:
+      tags:
+      - "applications"
+      summary: "List Spinnaker applications and associated cluster names"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /applications/{application}/serverGroupManagers:
+    get:
+      parameters:
+      - name: "application"
+        in: "path"
+        required: true
+        type: "string"
+      tags:
+      - "applications"
+      summary: "List server group managers for a given Spinnaker application"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /applications/{application}/serverGroups:
+    get:
+      parameters:
+      - name: "application"
+        in: "path"
+        required: true
+        type: "string"
+      tags:
+      - "applications"
+      summary: "List server groups for a given Spinnaker application"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /applications/{application}/serverGroups/{account}/{location}/{name}:
+    get:
+      parameters:
+      - name: "application"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "account"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "location"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        type: "string"
+      tags:
+      - "applications"
+      summary: "Get a server group for a given application, account, location, and name"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /applications/{application}/loadBalancers:
+    get:
+      parameters:
+      - name: "application"
+        in: "path"
+        required: true
+        type: "string"
+      tags:
+      - "applications"
+      summary: "List load balancers for a given Spinnaker application"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /applications/{application}/clusters:
+    get:
+      parameters:
+      - name: "application"
+        in: "path"
+        required: true
+        type: "string"
+      tags:
+      - "applications"
+      summary: "List clusters for a given Spinnaker application"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /kubernetes/ops:
+    post:
+      tags:
+      - "kubernetes"
+      summary: "Create a kubernetes operation"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /manifests/{account}/{location}/{name}:
+    get:
+      tags:
+      - "manifests"
+      parameters:
+      - name: "account"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "location"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        type: "string"
+      summary: "Get a manifest for a given account, location, and name"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /task/{id}:
+    get:
+      tags:
+      - "tasks"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      summary: "Get a task result"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          description: "Bad Request"
+        "500":
+          description: "Internal Server Error"
+  /artifacts/credentials:
+    get:
+      tags:
+      - "artifacts"
+      summary: "List artifacts credentials"
+      responses:
+        "200":
+          description: "OK"
+  /artifacts/account/{account}/names:
+    get:
+      tags:
+      - "artifacts"
+      parameters:
+      - name: "account"
+        in: "path"
+        required: true
+        type: "string"
+      summary: "List artifact names for a given (helm) account"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /artifacts/account/{account}/versions:
+    get:
+      tags:
+      - "artifacts"
+      parameters:
+      - name: "account"
+        in: "path"
+        required: true
+        type: "string"
+      summary: "List artifact versions for a given (helm) account"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /artifacts/fetch/:
+    put:
+      tags:
+      - "artifacts"
+      summary: "Retrieve a given artifact"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          description: "Bad Request"
+        "500":
+          description: "Internal Server Error"
+  /v1/kubernetes/providers:
+    post:
+      tags:
+      - "kubernetes"
+      summary: "Create a new Kubernetes account (provider)"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          description: "Bad Request"
+        "409":
+          description: "Conflict"
+        "500":
+          description: "Internal Server Error"
