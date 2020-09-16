@@ -1031,7 +1031,7 @@ const payloadServerGroupManagers = `[
                     "cluster": "deployment test-deployment1",
                     "sequence": 236
                   },
-                  "name": "replicaset test-rs1",
+                  "name": "replicaSet test-rs1",
                   "namespace": "test-namespace1",
                   "region": "test-namespace1"
                 }
@@ -1085,7 +1085,7 @@ const payloadServerGroupManagers = `[
                     "cluster": "deployment test-deployment2",
                     "sequence": 19
                   },
-                  "name": "replicaset test-rs2",
+                  "name": "replicaSet test-rs2",
                   "namespace": "test-namespace2",
                   "region": "test-namespace2"
                 }
@@ -1099,6 +1099,7 @@ const payloadServerGroupManagers = `[
 const payloadListServerGroups = `[
             {
               "account": "account1",
+              "accountName": "",
               "buildInfo": {
                 "images": [
                   "test-image1",
@@ -1112,6 +1113,7 @@ const payloadListServerGroups = `[
               "cloudProvider": "kubernetes",
               "cluster": "deployment test-deployment1",
               "createdTime": 1581603123000,
+              "disabled": false,
               "instanceCounts": {
                 "down": 0,
                 "outOfService": 0,
@@ -1151,13 +1153,25 @@ const payloadListServerGroups = `[
                 }
               ],
               "isDisabled": false,
+              "key": {
+                "account": "",
+                "group": "",
+                "kubernetesKind": "",
+                "name": "",
+                "namespace": "",
+                "provider": ""
+              },
+              "kind": "",
+              "labels": null,
               "loadBalancers": null,
+              "manifest": null,
               "moniker": {
                 "app": "test-deployment1",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
               "name": "replicaset test-rs1",
+              "providerType": "",
               "region": "test-namespace1",
               "securityGroups": null,
               "serverGroupManagers": [
@@ -1167,10 +1181,15 @@ const payloadListServerGroups = `[
                   "name": "test-deployment1"
                 }
               ],
-              "type": "kubernetes"
+              "type": "kubernetes",
+              "uid": "",
+              "zone": "",
+              "zones": null,
+              "insightActions": null
             },
             {
               "account": "account2",
+              "accountName": "",
               "buildInfo": {
                 "images": [
                   "test-image3",
@@ -1184,6 +1203,7 @@ const payloadListServerGroups = `[
               "cloudProvider": "kubernetes",
               "cluster": "deployment test-deployment1",
               "createdTime": 1581603123000,
+              "disabled": false,
               "instanceCounts": {
                 "down": 0,
                 "outOfService": 0,
@@ -1223,13 +1243,25 @@ const payloadListServerGroups = `[
                 }
               ],
               "isDisabled": false,
+              "key": {
+                "account": "",
+                "group": "",
+                "kubernetesKind": "",
+                "name": "",
+                "namespace": "",
+                "provider": ""
+              },
+              "kind": "",
+              "labels": null,
               "loadBalancers": null,
+              "manifest": null,
               "moniker": {
                 "app": "test-deployment2",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
               "name": "replicaset test-rs2",
+              "providerType": "",
               "region": "test-namespace2",
               "securityGroups": null,
               "serverGroupManagers": [
@@ -1239,11 +1271,15 @@ const payloadListServerGroups = `[
                   "name": "test-deployment2"
                 }
               ],
-              "type": "kubernetes"
+              "type": "kubernetes",
+              "uid": "",
+              "zone": "",
+              "zones": null,
+              "insightActions": null
             }
           ]`
 
-const payloadLoadBalancers = `[
+const payloadListLoadBalancers = `[
             {
               "account": "account1",
               "cloudProvider": "kubernetes",
@@ -1270,7 +1306,7 @@ const payloadLoadBalancers = `[
               },
               "kind": "ingress",
               "manifest": {
-                "apiVersion": "v1beta1",
+                "apiVersion": "networking.k8s.io/v1beta1",
                 "kind": "Ingress",
                 "metadata": {
                   "creationTimestamp": "2020-02-13T14:12:03Z",
@@ -1345,7 +1381,7 @@ const payloadLoadBalancers = `[
               },
               "kind": "ingress",
               "manifest": {
-                "apiVersion": "v1beta1",
+                "apiVersion": "networking.k8s.io/v1beta1",
                 "kind": "Ingress",
                 "metadata": {
                   "creationTimestamp": "2020-02-13T14:12:03Z",
@@ -2205,6 +2241,7 @@ const payloadGetServerGroup = `{
                 "zone": "test-namespace2"
               }
             ],
+						"isDisabled": false,
             "key": {
               "account": "test-account",
               "group": "ReplicaSet",

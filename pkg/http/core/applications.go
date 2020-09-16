@@ -20,7 +20,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type ApplicationsResponse []Application
+type Applications []Application
 
 type Application struct {
 	Attributes   ApplicationAttributes `json:"attributes"`
@@ -41,7 +41,7 @@ func ListApplications(c *gin.Context) {
 		return
 	}
 
-	response := ApplicationsResponse{}
+	response := Applications{}
 	apps := uniqueSpinnakerApps(rs)
 
 	for _, app := range apps {
@@ -97,7 +97,7 @@ func clusterNamesForSpinnakerApp(application string, rs []kubernetes.Resource) m
 	return clusterNames
 }
 
-type ServerGroupManagersResponse []ServerGroupManager
+type ServerGroupManagers []ServerGroupManager
 
 type ServerGroupManager struct {
 	Account       string                          `json:"account"`
@@ -152,7 +152,7 @@ func ListServerGroupManagers(c *gin.Context) {
 	kc := kubernetes.ControllerInstance(c)
 	ac := arcade.Instance(c)
 	application := c.Param("application")
-	response := ServerGroupManagersResponse{}
+	response := ServerGroupManagers{}
 
 	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
@@ -203,11 +203,6 @@ func ListServerGroupManagers(c *gin.Context) {
 			LabelSelector: kubernetes.LabelKubernetesSpinnakerApp + "=" + application,
 		}
 
-		deploymentGVK := schema.GroupVersionKind{
-			Group:   "apps",
-			Version: "v1",
-			Kind:    "deployment",
-		}
 		deploymentGVR := schema.GroupVersionResource{
 			Group:    "apps",
 			Version:  "v1",
@@ -232,74 +227,80 @@ func ListServerGroupManagers(c *gin.Context) {
 		}
 
 		for _, deployment := range deployments.Items {
-			sgs := []ServerGroupManagerServerGroup{}
-			// Deployments manage replicasets, so build a list of managed replicasets for each deployment.
-			for _, replicaSet := range replicaSets.Items {
-				annotations := replicaSet.GetAnnotations()
-				if annotations != nil {
-					name := annotations["artifact.spinnaker.io/name"]
-					t := annotations["artifact.spinnaker.io/type"]
-					if strings.EqualFold(name, deployment.GetName()) &&
-						strings.EqualFold(t, "kubernetes/deployment") {
-						sequence := 0
-
-						replicaSetAnnotations := replicaSet.GetAnnotations()
-						if replicaSetAnnotations != nil {
-							sequence, _ = strconv.Atoi(replicaSetAnnotations["deployment.kubernetes.io/revision"])
-						}
-
-						s := ServerGroupManagerServerGroup{
-							Account: account,
-							Moniker: ServerGroupManagerServerGroupMoniker{
-								App:      application,
-								Cluster:  fmt.Sprintf("%s %s", deploymentGVK.Kind, deployment.GetName()),
-								Sequence: sequence,
-							},
-							Name:      fmt.Sprintf("%s %s", "replicaset", replicaSet.GetName()),
-							Namespace: replicaSet.GetNamespace(),
-							Region:    replicaSet.GetNamespace(),
-						}
-						sgs = append(sgs, s)
-					}
-				}
-			}
-
-			sgr := ServerGroupManager{
-				Account:       account,
-				AccountName:   account,
-				CloudProvider: "kubernetes",
-				CreatedTime:   deployment.GetCreationTimestamp().Unix() * 1000,
-				Key: Key{
-					Account:        account,
-					Group:          deploymentGVK.Kind,
-					KubernetesKind: deploymentGVK.Kind,
-					Name:           deployment.GetName(),
-					Namespace:      deployment.GetNamespace(),
-					Provider:       "kubernetes",
-				},
-				Kind:     deploymentGVK.Kind,
-				Labels:   deployment.GetLabels(),
-				Manifest: deployment.Object,
-				Moniker: Moniker{
-					App:     application,
-					Cluster: fmt.Sprintf("%s %s", deploymentGVK.Kind, deployment.GetName()),
-				},
-				Name:         fmt.Sprintf("%s %s", deploymentGVK.Kind, deployment.GetName()),
-				ProviderType: "kubernetes",
-				Region:       deployment.GetNamespace(),
-				ServerGroups: sgs,
-				Type:         "kubernetes",
-				UID:          string(deployment.GetUID()),
-				Zone:         application,
-			}
-			response = append(response, sgr)
+			sgm := newServerGroupManager(deployment, account, application)
+			sgm.ServerGroups = buildServerGroups(replicaSets, deployment, account, application)
+			response = append(response, sgm)
 		}
 	}
 
 	c.JSON(http.StatusOK, response)
 }
 
-type LoadBalancersResponse []LoadBalancer
+func newServerGroupManager(deployment unstructured.Unstructured,
+	account, application string) ServerGroupManager {
+	return ServerGroupManager{
+		Account:       account,
+		AccountName:   account,
+		CloudProvider: "kubernetes",
+		CreatedTime:   deployment.GetCreationTimestamp().Unix() * 1000,
+		Key: Key{
+			Account:        account,
+			Group:          "deployment",
+			KubernetesKind: "deployment",
+			Name:           deployment.GetName(),
+			Namespace:      deployment.GetNamespace(),
+			Provider:       "kubernetes",
+		},
+		Kind:     "deployment",
+		Labels:   deployment.GetLabels(),
+		Manifest: deployment.Object,
+		Moniker: Moniker{
+			App:     application,
+			Cluster: fmt.Sprintf("%s %s", "deployment", deployment.GetName()),
+		},
+		Name:         fmt.Sprintf("%s %s", "deployment", deployment.GetName()),
+		ProviderType: "kubernetes",
+		Region:       deployment.GetNamespace(),
+		Type:         "kubernetes",
+		UID:          string(deployment.GetUID()),
+		Zone:         application,
+	}
+}
+
+func buildServerGroups(replicaSets *unstructured.UnstructuredList,
+	deployment unstructured.Unstructured,
+	account, application string) []ServerGroupManagerServerGroup {
+	sgs := []ServerGroupManagerServerGroup{}
+
+	// Deployments manage replicasets, so build a list of managed replicasets for each deployment.
+	for _, replicaSet := range replicaSets.Items {
+		annotations := replicaSet.GetAnnotations()
+		if annotations != nil {
+			name := annotations["artifact.spinnaker.io/name"]
+			t := annotations["artifact.spinnaker.io/type"]
+			if strings.EqualFold(name, deployment.GetName()) &&
+				strings.EqualFold(t, "kubernetes/deployment") {
+				sequence, _ := strconv.Atoi(annotations["deployment.kubernetes.io/revision"])
+				s := ServerGroupManagerServerGroup{
+					Account: account,
+					Moniker: ServerGroupManagerServerGroupMoniker{
+						App:      application,
+						Cluster:  fmt.Sprintf("%s %s", "deployment", deployment.GetName()),
+						Sequence: sequence,
+					},
+					Name:      fmt.Sprintf("%s %s", "replicaSet", replicaSet.GetName()),
+					Namespace: replicaSet.GetNamespace(),
+					Region:    replicaSet.GetNamespace(),
+				}
+				sgs = append(sgs, s)
+			}
+		}
+	}
+
+	return sgs
+}
+
+type LoadBalancers []LoadBalancer
 
 type LoadBalancer struct {
 	Account       string                    `json:"account"`
@@ -341,7 +342,7 @@ func ListLoadBalancers(c *gin.Context) {
 	kc := kubernetes.ControllerInstance(c)
 	ac := arcade.Instance(c)
 	application := c.Param("application")
-	response := LoadBalancersResponse{}
+	response := LoadBalancers{}
 
 	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
@@ -398,11 +399,6 @@ func ListLoadBalancers(c *gin.Context) {
 			Version:  "v1beta1",
 			Resource: "ingresses",
 		}
-		ingressGVK := schema.GroupVersionKind{
-			Group:   "networking.k8s.io",
-			Version: "v1beta1",
-			Kind:    "ingress",
-		}
 
 		ingresses, err := client.List(ingressGVR, lo)
 		if err != nil {
@@ -411,33 +407,7 @@ func ListLoadBalancers(c *gin.Context) {
 		}
 
 		for _, ingress := range ingresses.Items {
-			lb := LoadBalancer{
-				Account:       account,
-				AccountName:   account,
-				CloudProvider: "kubernetes",
-				Labels:        ingress.GetLabels(),
-				Moniker: Moniker{
-					App:     application,
-					Cluster: fmt.Sprintf("%s %s", ingressGVK.Kind, ingress.GetName()),
-				},
-				Name:        fmt.Sprintf("%s %s", "ingress", ingress.GetName()),
-				Region:      ingress.GetNamespace(),
-				Type:        "kubernetes",
-				CreatedTime: ingress.GetCreationTimestamp().Unix() * 1000,
-				Key: Key{
-					Account:        account,
-					Group:          ingressGVK.Group,
-					KubernetesKind: ingressGVK.Kind,
-					Name:           fmt.Sprintf("%s %s", "ingress", ingress.GetName()),
-					Namespace:      ingress.GetNamespace(),
-					Provider:       "kubernetes",
-				},
-				Kind:         ingressGVK.Kind,
-				Manifest:     ingress.Object,
-				ProviderType: "kubernetes",
-				UID:          string(ingress.GetUID()),
-				Zone:         application,
-			}
+			lb := newLoadBalancer(ingress, account, application)
 			response = append(response, lb)
 		}
 
@@ -445,10 +415,6 @@ func ListLoadBalancers(c *gin.Context) {
 		serviceGVR := schema.GroupVersionResource{
 			Version:  "v1",
 			Resource: "services",
-		}
-		serviceGVK := schema.GroupVersionKind{
-			Version: "v1",
-			Kind:    "service",
 		}
 
 		services, err := client.List(serviceGVR, lo)
@@ -458,33 +424,7 @@ func ListLoadBalancers(c *gin.Context) {
 		}
 
 		for _, service := range services.Items {
-			lb := LoadBalancer{
-				Account:       account,
-				AccountName:   account,
-				CloudProvider: "kubernetes",
-				Labels:        service.GetLabels(),
-				Moniker: Moniker{
-					App:     application,
-					Cluster: fmt.Sprintf("%s %s", serviceGVK.Kind, service.GetName()),
-				},
-				Name:        fmt.Sprintf("%s %s", "service", service.GetName()),
-				Region:      service.GetNamespace(),
-				Type:        "kubernetes",
-				CreatedTime: service.GetCreationTimestamp().Unix() * 1000,
-				Key: Key{
-					Account:        account,
-					Group:          serviceGVK.Group,
-					KubernetesKind: serviceGVK.Kind,
-					Name:           fmt.Sprintf("%s %s", "service", service.GetName()),
-					Namespace:      service.GetNamespace(),
-					Provider:       "kubernetes",
-				},
-				Kind:         serviceGVK.Kind,
-				Manifest:     service.Object,
-				ProviderType: "kubernetes",
-				UID:          string(service.GetUID()),
-				Zone:         application,
-			}
+			lb := newLoadBalancer(service, account, application)
 			response = append(response, lb)
 		}
 	}
@@ -492,7 +432,38 @@ func ListLoadBalancers(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-type ClustersResponse map[string][]string
+func newLoadBalancer(u unstructured.Unstructured, account, application string) LoadBalancer {
+	kind := strings.ToLower(u.GetKind())
+	return LoadBalancer{
+		Account:       account,
+		AccountName:   account,
+		CloudProvider: "kubernetes",
+		Labels:        u.GetLabels(),
+		Moniker: Moniker{
+			App:     application,
+			Cluster: fmt.Sprintf("%s %s", kind, u.GetName()),
+		},
+		Name:        fmt.Sprintf("%s %s", kind, u.GetName()),
+		Region:      u.GetNamespace(),
+		Type:        "kubernetes",
+		CreatedTime: u.GetCreationTimestamp().Unix() * 1000,
+		Key: Key{
+			Account:        account,
+			Group:          u.GroupVersionKind().Group,
+			KubernetesKind: kind,
+			Name:           fmt.Sprintf("%s %s", kind, u.GetName()),
+			Namespace:      u.GetNamespace(),
+			Provider:       "kubernetes",
+		},
+		Kind:         kind,
+		Manifest:     u.Object,
+		ProviderType: "kubernetes",
+		UID:          string(u.GetUID()),
+		Zone:         application,
+	}
+}
+
+type Clusters map[string][]string
 
 // List clusters, which for kubernetes is a map of provider names to kubernetes deployment
 // kinds and names.
@@ -508,7 +479,7 @@ func ListClusters(c *gin.Context) {
 		return
 	}
 
-	response := ClustersResponse{}
+	response := Clusters{}
 
 	for _, resource := range rs {
 		if _, ok := response[resource.AccountName]; !ok {
@@ -522,26 +493,37 @@ func ListClusters(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-type ServerGroupsResponse []ServerGroup
+type ServerGroups []ServerGroup
 
 type ServerGroup struct {
-	Account             string                          `json:"account"`
-	BuildInfo           BuildInfo                       `json:"buildInfo"`
-	Capacity            Capacity                        `json:"capacity"`
-	CloudProvider       string                          `json:"cloudProvider"`
-	Cluster             string                          `json:"cluster"`
-	CreatedTime         int64                           `json:"createdTime"`
-	InstanceCounts      InstanceCounts                  `json:"instanceCounts"`
-	Instances           []Instance                      `json:"instances"`
-	IsDisabled          bool                            `json:"isDisabled"`
+	Account        string            `json:"account"`
+	AccountName    string            `json:"accountName"`
+	BuildInfo      BuildInfo         `json:"buildInfo"`
+	Capacity       Capacity          `json:"capacity"`
+	CloudProvider  string            `json:"cloudProvider"`
+	Cluster        string            `json:"cluster,omitempty"`
+	CreatedTime    int64             `json:"createdTime"`
+	Disabled       bool              `json:"disabled"`
+	InstanceCounts InstanceCounts    `json:"instanceCounts"`
+	Instances      []Instance        `json:"instances"`
+	IsDisabled     bool              `json:"isDisabled"`
+	Key            Key               `json:"key"`
+	Kind           string            `json:"kind"`
+	Labels         map[string]string `json:"labels"`
+	// LaunchConfig struct {} `json:"launchConfig"`
 	LoadBalancers       []interface{}                   `json:"loadBalancers"`
+	Manifest            map[string]interface{}          `json:"manifest"`
 	Moniker             ServerGroupMoniker              `json:"moniker"`
 	Name                string                          `json:"name"`
+	ProviderType        string                          `json:"providerType"`
 	Region              string                          `json:"region"`
 	SecurityGroups      []interface{}                   `json:"securityGroups"`
 	ServerGroupManagers []ServerGroupServerGroupManager `json:"serverGroupManagers"`
 	Type                string                          `json:"type"`
-	Labels              map[string]string               `json:"labels,omitempty"`
+	UID                 string                          `json:"uid"`
+	Zone                string                          `json:"zone"`
+	Zones               []interface{}                   `json:"zones"`
+	InsightActions      []interface{}                   `json:"insightActions"`
 }
 
 type ServerGroupServerGroupManager struct {
@@ -609,7 +591,7 @@ func ListServerGroups(c *gin.Context) {
 	kc := kubernetes.ControllerInstance(c)
 	ac := arcade.Instance(c)
 	application := c.Param("application")
-	response := ServerGroupsResponse{}
+	response := ServerGroups{}
 
 	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
@@ -681,139 +663,115 @@ func ListServerGroups(c *gin.Context) {
 		}
 
 		for _, replicaSet := range replicaSets.Items {
-			rs := kubernetes.NewReplicaSet(replicaSet.Object)
-			images := rs.ListImages()
-			spec := rs.GetReplicaSetSpec()
-
-			desired := 0
-			if spec.Replicas != nil {
-				desired = int(*spec.Replicas)
-			}
-
-			instances := []Instance{}
-			for _, u := range pods.Items {
-				p := kubernetes.NewPod(u.Object)
-				for _, ownerReference := range p.GetObjectMeta().OwnerReferences {
-					if strings.EqualFold(ownerReference.Name, replicaSet.GetName()) {
-						state := "Up"
-						if p.GetPodStatus().Phase != "Running" {
-							state = "Down"
-						}
-						instance := Instance{
-							AvailabilityZone: u.GetNamespace(),
-							Health: []InstanceHealth{
-								{
-									State: state,
-									Type:  "kubernetes/pod",
-								},
-								{
-									State: state,
-									Type:  "kubernetes/container",
-								},
-							},
-							HealthState: state,
-							ID:          string(u.GetUID()),
-							Name:        fmt.Sprintf("%s %s", "pod", u.GetName()),
-						}
-						instances = append(instances, instance)
-					}
-				}
-			}
-
-			serverGroupManagers := []ServerGroupServerGroupManager{}
-
-			// Build server group manager
-			{
-				annotations := replicaSet.GetAnnotations()
-				if annotations != nil {
-					managerName := annotations["artifact.spinnaker.io/name"]
-					managerLocation := annotations["artifact.spinnaker.io/location"]
-					managerType := annotations["artifact.spinnaker.io/type"]
-					if managerType == "kubernetes/deployment" {
-						sgm := ServerGroupServerGroupManager{
-							Account:  account,
-							Location: managerLocation,
-							Name:     managerName,
-						}
-						serverGroupManagers = append(serverGroupManagers, sgm)
-					}
-				}
-			}
-
-			annotations := replicaSet.GetAnnotations()
-			cluster := annotations["moniker.spinnaker.io/cluster"]
-			app := annotations["moniker.spinnaker.io/application"]
-			sequence, _ := strconv.Atoi(annotations["deployment.kubernetes.io/revision"])
-
-			sgs := ServerGroup{
-				Account: account,
-				BuildInfo: BuildInfo{
-					Images: images,
-				},
-				Capacity: Capacity{
-					Desired: desired,
-					Pinned:  false,
-				},
-				CloudProvider: "kubernetes",
-				Cluster:       cluster,
-				CreatedTime:   replicaSet.GetCreationTimestamp().Unix() * 1000,
-				InstanceCounts: InstanceCounts{
-					Down:         0,
-					OutOfService: 0,
-					Starting:     0,
-					Total:        int(rs.GetReplicaSetStatus().Replicas),
-					Unknown:      0,
-					Up:           int(rs.GetReplicaSetStatus().ReadyReplicas),
-				},
-				Instances:     instances,
-				IsDisabled:    false,
-				LoadBalancers: nil,
-				Moniker: ServerGroupMoniker{
-					App:      app,
-					Cluster:  cluster,
-					Sequence: sequence,
-				},
-				Name:                fmt.Sprintf("%s %s", "replicaset", replicaSet.GetName()),
-				Region:              replicaSet.GetNamespace(),
-				SecurityGroups:      nil,
-				ServerGroupManagers: serverGroupManagers,
-				Type:                "kubernetes",
-				Labels:              replicaSet.GetLabels(),
-			}
-			response = append(response, sgs)
+			sg := newServerGroup(replicaSet, pods, account)
+			response = append(response, sg)
 		}
 	}
 
 	c.JSON(http.StatusOK, response)
 }
 
-type GetServerGroupResponse struct {
-	Account        string            `json:"account"`
-	AccountName    string            `json:"accountName"`
-	BuildInfo      BuildInfo         `json:"buildInfo"`
-	Capacity       Capacity          `json:"capacity"`
-	CloudProvider  string            `json:"cloudProvider"`
-	CreatedTime    int64             `json:"createdTime"`
-	Disabled       bool              `json:"disabled"`
-	InstanceCounts InstanceCounts    `json:"instanceCounts"`
-	Instances      []Instance        `json:"instances"`
-	Key            Key               `json:"key"`
-	Kind           string            `json:"kind"`
-	Labels         map[string]string `json:"labels"`
-	// LaunchConfig struct {} `json:"launchConfig"`
-	LoadBalancers       []interface{}                   `json:"loadBalancers"`
-	Manifest            map[string]interface{}          `json:"manifest"`
-	Moniker             ServerGroupMoniker              `json:"moniker"`
-	Name                string                          `json:"name"`
-	ProviderType        string                          `json:"providerType"`
-	Region              string                          `json:"region"`
-	SecurityGroups      []interface{}                   `json:"securityGroups"`
-	ServerGroupManagers []ServerGroupServerGroupManager `json:"serverGroupManagers"`
-	Type                string                          `json:"type"`
-	UID                 string                          `json:"uid"`
-	Zone                string                          `json:"zone"`
-	Zones               []interface{}                   `json:"zones"`
-	InsightActions      []interface{}                   `json:"insightActions"`
+func newServerGroup(replicaSet unstructured.Unstructured,
+	pods *unstructured.UnstructuredList, account string) ServerGroup {
+	rs := kubernetes.NewReplicaSet(replicaSet.Object)
+	images := rs.ListImages()
+	spec := rs.GetReplicaSetSpec()
+
+	desired := 0
+	if spec.Replicas != nil {
+		desired = int(*spec.Replicas)
+	}
+
+	serverGroupManagers := []ServerGroupServerGroupManager{}
+	instances := buildInstances(pods, replicaSet)
+	annotations := replicaSet.GetAnnotations()
+
+	// Build server group manager
+	managerName := annotations["artifact.spinnaker.io/name"]
+	managerLocation := annotations["artifact.spinnaker.io/location"]
+	managerType := annotations["artifact.spinnaker.io/type"]
+	if managerType == "kubernetes/deployment" {
+		sgm := ServerGroupServerGroupManager{
+			Account:  account,
+			Location: managerLocation,
+			Name:     managerName,
+		}
+		serverGroupManagers = append(serverGroupManagers, sgm)
+	}
+
+	cluster := annotations["moniker.spinnaker.io/cluster"]
+	app := annotations["moniker.spinnaker.io/application"]
+	sequence, _ := strconv.Atoi(annotations["deployment.kubernetes.io/revision"])
+
+	return ServerGroup{
+		Account: account,
+		BuildInfo: BuildInfo{
+			Images: images,
+		},
+		Capacity: Capacity{
+			Desired: desired,
+			Pinned:  false,
+		},
+		CloudProvider: "kubernetes",
+		Cluster:       cluster,
+		CreatedTime:   replicaSet.GetCreationTimestamp().Unix() * 1000,
+		InstanceCounts: InstanceCounts{
+			Down:         0,
+			OutOfService: 0,
+			Starting:     0,
+			Total:        int(rs.GetReplicaSetStatus().Replicas),
+			Unknown:      0,
+			Up:           int(rs.GetReplicaSetStatus().ReadyReplicas),
+		},
+		Instances:     instances,
+		IsDisabled:    false,
+		LoadBalancers: nil,
+		Moniker: ServerGroupMoniker{
+			App:      app,
+			Cluster:  cluster,
+			Sequence: sequence,
+		},
+		Name:                fmt.Sprintf("%s %s", "replicaset", replicaSet.GetName()),
+		Region:              replicaSet.GetNamespace(),
+		SecurityGroups:      nil,
+		ServerGroupManagers: serverGroupManagers,
+		Type:                "kubernetes",
+		Labels:              replicaSet.GetLabels(),
+	}
+}
+
+func buildInstances(pods *unstructured.UnstructuredList,
+	replicaSet unstructured.Unstructured) []Instance {
+	instances := []Instance{}
+	for _, u := range pods.Items {
+		p := kubernetes.NewPod(u.Object)
+		for _, ownerReference := range p.GetObjectMeta().OwnerReferences {
+			if strings.EqualFold(ownerReference.Name, replicaSet.GetName()) {
+				state := "Up"
+				if p.GetPodStatus().Phase != "Running" {
+					state = "Down"
+				}
+				instance := Instance{
+					AvailabilityZone: u.GetNamespace(),
+					Health: []InstanceHealth{
+						{
+							State: state,
+							Type:  "kubernetes/pod",
+						},
+						{
+							State: state,
+							Type:  "kubernetes/container",
+						},
+					},
+					HealthState: state,
+					ID:          string(u.GetUID()),
+					Name:        fmt.Sprintf("%s %s", "pod", u.GetName()),
+				}
+				instances = append(instances, instance)
+			}
+		}
+	}
+	return instances
 }
 
 // /applications/:application/serverGroups/:account/:location/:name
@@ -971,7 +929,7 @@ func GetServerGroup(c *gin.Context) {
 		app = application
 	}
 
-	response := GetServerGroupResponse{
+	response := ServerGroup{
 		Account:     account,
 		AccountName: account,
 		BuildInfo: BuildInfo{

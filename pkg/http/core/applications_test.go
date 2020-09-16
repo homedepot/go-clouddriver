@@ -287,7 +287,7 @@ var _ = Describe("Application", func() {
 					{
 						Object: map[string]interface{}{
 							"kind":       "Ingress",
-							"apiVersion": "v1beta1",
+							"apiVersion": "networking.k8s.io/v1beta1",
 							"metadata": map[string]interface{}{
 								"name":              "test-ingress1",
 								"namespace":         "test-namespace1",
@@ -320,7 +320,7 @@ var _ = Describe("Application", func() {
 					{
 						Object: map[string]interface{}{
 							"kind":       "Ingress",
-							"apiVersion": "v1beta1",
+							"apiVersion": "networking.k8s.io/v1beta1",
 							"metadata": map[string]interface{}{
 								"name":              "test-ingress2",
 								"namespace":         "test-namespace2",
@@ -440,7 +440,7 @@ var _ = Describe("Application", func() {
 		When("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				validateResponse(payloadLoadBalancers)
+				validateResponse(payloadListLoadBalancers)
 			})
 		})
 	})
