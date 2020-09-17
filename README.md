@@ -75,7 +75,7 @@ curl localhost:7002/credentials | jq
 
 Building go-clouddriver requires a lot of reverse engineering and monitoring incoming requests.
 
-Turn on verbose request logging by setting the environment variable `VERBOSE_REQUEST_LOGGING` to `true`. You'll now see helpful request logs in the logs.
+Turn on verbose request logging by setting the environment variable `VERBOSE_REQUEST_LOGGING` to `true`. You'll now see helpful request logs.
 
 ```
 REQUEST: [2020-09-17T14:26:00Z]
