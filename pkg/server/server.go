@@ -12,11 +12,12 @@ import (
 )
 
 type Config struct {
-	ArcadeClient      arcade.Client
-	SQLClient         sql.Client
-	KubeController    kubernetes.Controller
-	KubeActionHandler kube.ActionHandler
-	HelmClient        helm.Client
+	ArcadeClient          arcade.Client
+	SQLClient             sql.Client
+	KubeController        kubernetes.Controller
+	KubeActionHandler     kube.ActionHandler
+	HelmClient            helm.Client
+	VerboseRequestLogging bool
 }
 
 // Define all middlewares to use then set up the API.
@@ -27,6 +28,10 @@ func Setup(r *gin.Engine, c *Config) {
 	r.Use(middleware.SetKubeActionHandler(c.KubeActionHandler))
 	r.Use(middleware.SetHelmClient(c.HelmClient))
 	r.Use(middleware.HandleError())
+
+	if c.VerboseRequestLogging {
+		r.Use(middleware.LogRequest())
+	}
 
 	http.Initialize(r)
 }

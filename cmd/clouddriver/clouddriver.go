@@ -11,7 +11,6 @@ import (
 	"github.com/billiford/go-clouddriver/pkg/server"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )
 
@@ -34,25 +33,6 @@ func init() {
 	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{SkipPaths: []string{"/health"}}))
 	r.Use(gin.Recovery())
 
-	kubeController := kubernetes.NewController()
-	sqlClient := sql.NewClient(mustDBConnect())
-	helmClient := helm.NewClient("https://kubernetes-charts.storage.googleapis.com")
-	arcadeClient := arcade.NewDefaultClient()
-
-	arcadeAPIKey := mustGetenv("ARCADE_API_KEY")
-	arcadeClient.WithAPIKey(arcadeAPIKey)
-
-	c := &server.Config{
-		ArcadeClient:      arcadeClient,
-		SQLClient:         sqlClient,
-		KubeController:    kubeController,
-		KubeActionHandler: kube.NewActionHandler(),
-		HelmClient:        helmClient,
-	}
-	server.Setup(r, c)
-}
-
-func mustDBConnect() *gorm.DB {
 	sqlConfig := sql.Config{
 		User:     os.Getenv("DB_USER"),
 		Password: os.Getenv("DB_PASS"),
@@ -65,13 +45,28 @@ func mustDBConnect() *gorm.DB {
 		log.Fatal(err.Error())
 	}
 
-	return db
-}
+	sqlClient := sql.NewClient(db)
+	kubeController := kubernetes.NewController()
+	helmClient := helm.NewClient("https://kubernetes-charts.storage.googleapis.com")
+	arcadeClient := arcade.NewDefaultClient()
 
-func mustGetenv(env string) (s string) {
-	if s = os.Getenv(env); s == "" {
-		log.Fatal(env + " not set; exiting.")
+	arcadeAPIKey := os.Getenv("ARCADE_API_KEY")
+	if arcadeAPIKey == "" {
+		log.Println("WARNING: ARCADE_API_KEY not set")
 	}
 
-	return
+	arcadeClient.WithAPIKey(arcadeAPIKey)
+
+	c := &server.Config{
+		ArcadeClient:      arcadeClient,
+		SQLClient:         sqlClient,
+		KubeController:    kubeController,
+		KubeActionHandler: kube.NewActionHandler(),
+		HelmClient:        helmClient,
+	}
+	if os.Getenv("VERBOSE_REQUEST_LOGGING") == "true" {
+		c.VerboseRequestLogging = true
+	}
+
+	server.Setup(r, c)
 }
