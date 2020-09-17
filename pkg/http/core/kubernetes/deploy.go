@@ -73,7 +73,7 @@ func (d *deployManfest) Run() error {
 			return err
 		}
 
-		meta, err := client.Apply(u)
+		meta, err := client.ApplyWithNamespaceOverride(u, d.dm.NamespaceOverride)
 		if err != nil {
 			return err
 		}

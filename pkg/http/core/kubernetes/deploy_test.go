@@ -97,7 +97,7 @@ var _ = Describe("Deploy", func() {
 
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeClient.ApplyReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
+			fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
 		})
 
 		It("returns an error", func() {

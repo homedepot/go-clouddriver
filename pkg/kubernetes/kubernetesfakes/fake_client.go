@@ -24,6 +24,20 @@ type FakeClient struct {
 		result1 kubernetes.Metadata
 		result2 error
 	}
+	ApplyWithNamespaceOverrideStub        func(*unstructured.Unstructured, string) (kubernetes.Metadata, error)
+	applyWithNamespaceOverrideMutex       sync.RWMutex
+	applyWithNamespaceOverrideArgsForCall []struct {
+		arg1 *unstructured.Unstructured
+		arg2 string
+	}
+	applyWithNamespaceOverrideReturns struct {
+		result1 kubernetes.Metadata
+		result2 error
+	}
+	applyWithNamespaceOverrideReturnsOnCall map[int]struct {
+		result1 kubernetes.Metadata
+		result2 error
+	}
 	GetStub        func(string, string, string) (*unstructured.Unstructured, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
@@ -103,6 +117,58 @@ func (fake *FakeClient) ApplyReturnsOnCall(i int, result1 kubernetes.Metadata, r
 		})
 	}
 	fake.applyReturnsOnCall[i] = struct {
+		result1 kubernetes.Metadata
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ApplyWithNamespaceOverride(arg1 *unstructured.Unstructured, arg2 string) (kubernetes.Metadata, error) {
+	fake.applyWithNamespaceOverrideMutex.Lock()
+	ret, specificReturn := fake.applyWithNamespaceOverrideReturnsOnCall[len(fake.applyWithNamespaceOverrideArgsForCall)]
+	fake.applyWithNamespaceOverrideArgsForCall = append(fake.applyWithNamespaceOverrideArgsForCall, struct {
+		arg1 *unstructured.Unstructured
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("ApplyWithNamespaceOverride", []interface{}{arg1, arg2})
+	fake.applyWithNamespaceOverrideMutex.Unlock()
+	if fake.ApplyWithNamespaceOverrideStub != nil {
+		return fake.ApplyWithNamespaceOverrideStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.applyWithNamespaceOverrideReturns.result1, fake.applyWithNamespaceOverrideReturns.result2
+}
+
+func (fake *FakeClient) ApplyWithNamespaceOverrideCallCount() int {
+	fake.applyWithNamespaceOverrideMutex.RLock()
+	defer fake.applyWithNamespaceOverrideMutex.RUnlock()
+	return len(fake.applyWithNamespaceOverrideArgsForCall)
+}
+
+func (fake *FakeClient) ApplyWithNamespaceOverrideArgsForCall(i int) (*unstructured.Unstructured, string) {
+	fake.applyWithNamespaceOverrideMutex.RLock()
+	defer fake.applyWithNamespaceOverrideMutex.RUnlock()
+	return fake.applyWithNamespaceOverrideArgsForCall[i].arg1, fake.applyWithNamespaceOverrideArgsForCall[i].arg2
+}
+
+func (fake *FakeClient) ApplyWithNamespaceOverrideReturns(result1 kubernetes.Metadata, result2 error) {
+	fake.ApplyWithNamespaceOverrideStub = nil
+	fake.applyWithNamespaceOverrideReturns = struct {
+		result1 kubernetes.Metadata
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ApplyWithNamespaceOverrideReturnsOnCall(i int, result1 kubernetes.Metadata, result2 error) {
+	fake.ApplyWithNamespaceOverrideStub = nil
+	if fake.applyWithNamespaceOverrideReturnsOnCall == nil {
+		fake.applyWithNamespaceOverrideReturnsOnCall = make(map[int]struct {
+			result1 kubernetes.Metadata
+			result2 error
+		})
+	}
+	fake.applyWithNamespaceOverrideReturnsOnCall[i] = struct {
 		result1 kubernetes.Metadata
 		result2 error
 	}{result1, result2}
@@ -218,6 +284,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.applyMutex.RLock()
 	defer fake.applyMutex.RUnlock()
+	fake.applyWithNamespaceOverrideMutex.RLock()
+	defer fake.applyWithNamespaceOverrideMutex.RUnlock()
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	fake.listMutex.RLock()

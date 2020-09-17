@@ -33,6 +33,7 @@ type Metadata struct {
 //go:generate counterfeiter . Client
 type Client interface {
 	Apply(*unstructured.Unstructured) (Metadata, error)
+	ApplyWithNamespaceOverride(*unstructured.Unstructured, string) (Metadata, error)
 	Get(string, string, string) (*unstructured.Unstructured, error)
 	List(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 }
@@ -45,6 +46,15 @@ type client struct {
 
 // Apply a given manifest.
 func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
+	return c.ApplyWithNamespaceOverride(u, "")
+}
+
+// Apply a given manifest with an optional namespace to override.
+// If no namespace is set on the manifest and no namespace override is passed in then we set the namespace to 'default'.
+// If namespaceOverride is empty it will NOT override the namespace set on the manifest.
+// We only override the namespace if the manifest is NOT cluster scoped (i.e. a ClusterRole) and namespaceOverride is NOT an
+// empty string.
+func (c *client) ApplyWithNamespaceOverride(u *unstructured.Unstructured, namespaceOverride string) (Metadata, error) {
 	metadata := Metadata{}
 	gvk := u.GroupVersionKind()
 
@@ -63,7 +73,11 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 	}
 
 	helper := resource.NewHelper(restClient, restMapping)
-	SetDefaultNamespaceIfScopedAndNoneSet(u, helper)
+	if namespaceOverride == "" {
+		SetDefaultNamespaceIfScopedAndNoneSet(u, helper)
+	} else {
+		SetNamespaceIfScoped(namespaceOverride, u, helper)
+	}
 
 	info := &resource.Info{
 		Client:          restClient,

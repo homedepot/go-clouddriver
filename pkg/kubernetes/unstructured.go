@@ -37,3 +37,9 @@ func SetDefaultNamespaceIfScopedAndNoneSet(u *unstructured.Unstructured, helper 
 		u.SetNamespace(namespace)
 	}
 }
+
+func SetNamespaceIfScoped(namespace string, u *unstructured.Unstructured, helper *resource.Helper) {
+	if helper.NamespaceScoped {
+		u.SetNamespace(namespace)
+	}
+}
