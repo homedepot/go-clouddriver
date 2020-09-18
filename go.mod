@@ -16,8 +16,8 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.0
 	github.com/mcuadros/go-gin-prometheus v0.1.0
 	github.com/mitchellh/mapstructure v1.3.3
-	github.com/onsi/ginkgo v1.14.0
-	github.com/onsi/gomega v1.10.1
+	github.com/onsi/ginkgo v1.14.1
+	github.com/onsi/gomega v1.10.2
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/sirupsen/logrus v1.6.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect

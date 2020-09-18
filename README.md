@@ -2,33 +2,31 @@
 
 # go-clouddriver
 
-go-clouddriver is a rewrite of Spinnaker's [Clouddriver](https://github.com/spinnaker/clouddriver) microservice. It aims to fix severe scaling problems and operational concerns when using Clouddriver at production scale. 
+go-clouddriver is a rewrite of Spinnaker's [Clouddriver](https://github.com/spinnaker/clouddriver) microservice. It aims to fix severe scaling problems and operational concerns when using Clouddriver at production scale.
 
 It changes how clouddriver operates by providing an extended API for account onboarding (no more "dynamic accounts") and removing over-complicated strategies such as [Cache All The Stuff](https://github.com/spinnaker/clouddriver/tree/master/cats) in favor of talking directly to APIs.
 
-Currently, go-clouddriver generates its access tokens using [arcade](https://github.com/billiford/arcade), which is meant to be used in tandem with Google's [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) to generate your tokens in a sidecar and make them retrievable through a simple  authenticated API.
+Currently, go-clouddriver generates its access tokens using [arcade](https://github.com/billiford/arcade), which is meant to be used in tandem with Google's [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) to generate your tokens in a sidecar and make them retrievable through a simple authenticated API.
 
 ## Getting Started
 
 ### Testing
 
-Requirements: [install Ginkgo and Gomega](https://onsi.github.io/ginkgo/)
-
 Run from the root directory
 ```bash
-ginkgo -r
+make tools test
 ```
 
 ### Running Locally
 
-1) Build go-clouddriver
+1) Build
 ```bash
-go build cmd/clouddriver/clouddriver.go
+make build
 ```
 
-2) Run go-clouddriver
+2) Run
 ```bash
-./clouddriver
+make run
 ```
 You should see a log like `SQL config missing field - defaulting to local sqlite DB.` - this is expected when running locally. For production, you should set the env variables `DB_HOST`, `DB_NAME`, `DB_PASS`, and `DB_USER`.
 
