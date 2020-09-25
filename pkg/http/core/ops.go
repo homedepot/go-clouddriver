@@ -38,11 +38,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 		return
 	}
 
-	// Spinnaker likes to send an 'extra' POST request to /kubernetes/ops -
-	// I have not figured out what these requests are yet. I'll need to unmarshal
-	// into a map[string]interface{} in order to read all the fields being sent.
-	//
-	// For now, I return status OK for this task - so far so good!
+	// Handle unknown operations.
 	if len(ko) == 0 {
 		or := kubernetes.OperationsResponse{
 			ID:          taskID,
@@ -86,6 +82,14 @@ func CreateKubernetesOperation(c *gin.Context) {
 
 		if req.RollingRestartManifest != nil {
 			err = ah.NewRollingRestartAction(config).Run()
+			if err != nil {
+				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				return
+			}
+		}
+
+		if req.RunJob != nil {
+			err = ah.NewRunJobAction(config).Run()
 			if err != nil {
 				clouddriver.WriteError(c, http.StatusInternalServerError, err)
 				return

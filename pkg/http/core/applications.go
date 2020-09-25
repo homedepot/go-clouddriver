@@ -782,10 +782,9 @@ func GetServerGroup(c *gin.Context) {
 	account := c.Param("account")
 	application := c.Param("application")
 	location := c.Param("location")
-	n := c.Param("name")
-	a := strings.Split(n, " ")
-	kind := a[0]
-	name := a[1]
+	nameArray := strings.Split(c.Param("name"), " ")
+	kind := nameArray[0]
+	name := nameArray[1]
 
 	provider, err := sc.GetKubernetesProvider(account)
 	if err != nil {
@@ -974,4 +973,93 @@ func GetServerGroup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+type Job struct {
+	Account           string                   `json:"account"`
+	CompletionDetails JobCompletionDetails     `json:"completionDetails"`
+	CreatedTime       int64                    `json:"createdTime"`
+	JobState          string                   `json:"jobState"`
+	Location          string                   `json:"location"`
+	Name              string                   `json:"name"`
+	Pods              []map[string]interface{} `json:"pods"`
+	Provider          string                   `json:"provider"`
+}
+
+type JobCompletionDetails struct {
+	ExitCode string `json:"exitCode"`
+	Message  string `json:"message"`
+	Reason   string `json:"reason"`
+	Signal   string `json:"signal"`
+}
+
+func GetJob(c *gin.Context) {
+	sc := sql.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
+	ac := arcade.Instance(c)
+	account := c.Param("account")
+	// application := c.Param("application")
+	location := c.Param("location")
+	nameArray := strings.Split(c.Param("name"), " ")
+	kind := nameArray[0]
+	name := nameArray[1]
+
+	provider, err := sc.GetKubernetesProvider(account)
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	token, err := ac.Token()
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	config := &rest.Config{
+		Host:        provider.Host,
+		BearerToken: token,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: cd,
+		},
+	}
+
+	client, err := kc.NewClient(config)
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	result, err := client.Get(kind, name, location)
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	j := kubernetes.NewJob(result.Object)
+
+	// TODO fill in pod definitions.
+	job := Job{
+		Account: account,
+		CompletionDetails: JobCompletionDetails{
+			ExitCode: "",
+			Message:  "",
+			Reason:   "",
+			Signal:   "",
+		},
+		CreatedTime: result.GetCreationTimestamp().Unix() * 1000,
+		JobState:    j.State(),
+		Location:    location,
+		Name:        name,
+		Pods:        []map[string]interface{}{},
+		Provider:    "kubernetes",
+	}
+
+	c.JSON(http.StatusOK, job)
 }

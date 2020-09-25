@@ -27,25 +27,29 @@ func Initialize(r *gin.Engine) {
 		api.GET("/applications/:application/serverGroups/:account/:location/:name", core.GetServerGroup)
 		api.GET("/applications/:application/loadBalancers", core.ListLoadBalancers)
 		api.GET("/applications/:application/clusters", core.ListClusters)
+		api.GET("/applications/:application/jobs/:account/:location/:name", core.GetJob)
 
 		// Create a kubernetes operation - deploy/delete/scale manifest.
-		r.POST("/kubernetes/ops", core.CreateKubernetesOperation)
+		api.POST("/kubernetes/ops", core.CreateKubernetesOperation)
 
 		// Monitor deploy.
-		r.GET("/manifests/:account/:location/:name", core.GetManifest)
+		api.GET("/manifests/:account/:location/:name", core.GetManifest)
 
 		// Get results for a task triggered in CreateKubernetesOperation.
-		r.GET("/task/:id", core.GetTask)
+		api.GET("/task/:id", core.GetTask)
 
 		// Not implemented.
-		r.GET("/securityGroups", core.ListSecurityGroups)
-		r.GET("/search", core.Search)
+		api.GET("/securityGroups", core.ListSecurityGroups)
+		api.GET("/search", core.Search)
 
 		// Artifacts controller.
-		r.GET("/artifacts/credentials", core.ListArtifactCredentials)
-		r.GET("/artifacts/account/:accountName/names", core.ListHelmArtifactAccountNames)
-		r.GET("/artifacts/account/:accountName/versions", core.ListHelmArtifactAccountVersions)
-		r.PUT("/artifacts/fetch/", core.GetArtifact)
+		api.GET("/artifacts/credentials", core.ListArtifactCredentials)
+		api.GET("/artifacts/account/:accountName/names", core.ListHelmArtifactAccountNames)
+		api.GET("/artifacts/account/:accountName/versions", core.ListHelmArtifactAccountVersions)
+		api.PUT("/artifacts/fetch/", core.GetArtifact)
+
+		// Features.
+		api.GET("/features/stages", core.ListStages)
 	}
 
 	// New endpoint.

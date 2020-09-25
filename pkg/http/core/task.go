@@ -79,11 +79,14 @@ func GetTask(c *gin.Context) {
 		manifests = append(manifests, result.Object)
 	}
 
+	mnr := buildMapOfNamespaceToResource(resources)
+
 	ro := clouddriver.TaskResultObject{
-		Manifests:                         manifests,
+		DeployedNamesByLocation:           mnr,
 		CreatedArtifacts:                  buildCreatedArtifacts(resources),
-		ManifestNamesByNamespace:          makeManifestNamesByNamespace(resources),
-		ManifestNamesByNamespaceToRefresh: makeManifestNamesByNamespaceToRefresh(resources),
+		Manifests:                         manifests,
+		ManifestNamesByNamespace:          mnr,
+		ManifestNamesByNamespaceToRefresh: mnr,
 	}
 
 	task := clouddriver.NewDefaultTask(id)
@@ -113,23 +116,7 @@ func buildCreatedArtifacts(resources []kubernetes.Resource) []clouddriver.TaskCr
 	return cas
 }
 
-func makeManifestNamesByNamespace(resources []kubernetes.Resource) map[string][]string {
-	m := map[string][]string{}
-
-	for _, resource := range resources {
-		if _, ok := m[resource.Namespace]; !ok {
-			m[resource.Namespace] = []string{}
-		}
-
-		a := m[resource.Namespace]
-		a = append(a, fmt.Sprintf("%s %s", resource.Kind, resource.Name))
-		m[resource.Namespace] = a
-	}
-
-	return m
-}
-
-func makeManifestNamesByNamespaceToRefresh(resources []kubernetes.Resource) map[string][]string {
+func buildMapOfNamespaceToResource(resources []kubernetes.Resource) map[string][]string {
 	m := map[string][]string{}
 
 	for _, resource := range resources {

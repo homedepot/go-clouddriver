@@ -104,6 +104,23 @@ var _ = Describe("Kubernetes", func() {
 			})
 		})
 
+		When("a run job returns an error", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesOpsRunJob))
+				createRequest(http.MethodPost)
+				fakeAction.RunReturns(errors.New("error running job"))
+			})
+
+			It("returns status internal server error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error running job"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
 		When("undo rollout returns an error", func() {
 			BeforeEach(func() {
 				body = &bytes.Buffer{}

@@ -42,6 +42,7 @@ type TaskStatus struct {
 type TaskResultObject struct {
 	BoundArtifacts                    []interface{}            `json:"boundArtifacts"`
 	CreatedArtifacts                  []TaskCreatedArtifact    `json:"createdArtifacts"`
+	DeployedNamesByLocation           map[string][]string      `json:"deployedNamesByLocation"`
 	ManifestNamesByNamespace          map[string][]string      `json:"manifestNamesByNamespace"`
 	ManifestNamesByNamespaceToRefresh map[string][]string      `json:"manifestNamesByNamespaceToRefresh"`
 	Manifests                         []map[string]interface{} `json:"manifests"`

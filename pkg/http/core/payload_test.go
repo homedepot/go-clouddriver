@@ -209,6 +209,69 @@ const payloadRequestKubernetesOpsRollingRestartManifest = `[
   }
 ]`
 
+const payloadRequestKubernetesOpsRunJob = `[
+  {
+    "runJob": {
+      "enableTraffic": true,
+      "namespaceOverride": "default",
+      "optionalArtifacts": [],
+      "cloudProvider": "kubernetes",
+      "manifests": [
+        {
+          "metadata": {
+            "name": "rss-site",
+            "labels": {
+              "app": "web"
+            }
+          },
+          "apiVersion": "v1",
+          "kind": "Pod",
+          "spec": {
+            "containers": [
+              {
+                "image": "nginx",
+                "name": "front-end",
+                "ports": [
+                  {
+                    "containerPort": 80
+                  }
+                ]
+              },
+              {
+                "image": "nickchase/rss-php-nginx:vasdf1",
+                "name": "rss-reader",
+                "ports": [
+                  {
+                    "containerPort": 88
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "trafficManagement": {
+        "options": {
+          "enableTraffic": true,
+          "namespace": "default",
+          "services": [
+            "service hello-app-red-black"
+          ],
+          "strategy": "redblack"
+        },
+        "enabled": false
+      },
+      "moniker": {
+        "app": "test"
+      },
+      "source": "text",
+      "account": "spin-cluster-account",
+      "skipExpressionEvaluation": false,
+      "requiredArtifacts": []
+    }
+  }
+]`
+
 const payloadRequestKubernetesOpsUndoRolloutManifest = `[
   {
     "undoRolloutManifest": {
@@ -2304,6 +2367,22 @@ const payloadGetServerGroup = `{
             "zone": "test-namespace1",
             "zones": [],
             "insightActions": []
+          }`
+
+const payloadGetJob = `{
+            "account": "test-account",
+            "completionDetails": {
+              "exitCode": "",
+              "message": "",
+              "reason": "",
+              "signal": ""
+            },
+            "createdTime": 1581603123000,
+            "jobState": "Running",
+            "location": "test-namespace",
+            "name": "test-job1",
+            "pods": [],
+            "provider": "kubernetes"
           }`
 
 const payloadListApplications = `[

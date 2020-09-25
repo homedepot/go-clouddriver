@@ -950,4 +950,134 @@ var _ = Describe("Application", func() {
 			})
 		})
 	})
+
+	Describe("#GetJob", func() {
+		BeforeEach(func() {
+			setup()
+			uri = svr.URL + "/applications/test-application/jobs/test-account/test-namespace/job test-job1"
+			createRequest(http.MethodGet)
+			fakeKubeClient.GetReturns(&unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Job",
+					"apiVersion": "batch/v1",
+					"metadata": map[string]interface{}{
+						"name":              "test-job1",
+						"namespace":         "test-namespace1",
+						"creationTimestamp": "2020-02-13T14:12:03Z",
+						"annotations": map[string]interface{}{
+							"artifact.spinnaker.io/name":        "test-deployment2",
+							"artifact.spinnaker.io/type":        "kubernetes/deployment",
+							"artifact.spinnaker.io/location":    "test-namespace2",
+							"moniker.spinnaker.io/application":  "test-deployment2",
+							"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+							"deployment.kubernetes.io/revision": "19",
+						},
+					},
+					"spec": map[string]interface{}{
+						"replicas": 1,
+						"template": map[string]interface{}{
+							"spec": map[string]interface{}{
+								"containers": []map[string]interface{}{
+									{
+										"image": "test-image3",
+									},
+									{
+										"image": "test-image4",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, nil)
+			log.SetOutput(ioutil.Discard)
+		})
+
+		AfterEach(func() {
+			teardown()
+		})
+
+		JustBeforeEach(func() {
+			doRequest()
+		})
+
+		When("getting the provider returns an error", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error getting provider"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("decoding the ca data returns an error", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
+					CAData: "{}",
+				}, nil)
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Message).To(Equal("illegal base64 data at input byte 0"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("getting the gcloud access token returns an error", func() {
+			BeforeEach(func() {
+				fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error getting token"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("creating the kube client returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Message).To(Equal("bad config"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("getting the resource returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.GetReturns(nil, errors.New("error getting resource"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error getting resource"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("it succeeds", func() {
+			It("succeeds", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadGetJob)
+			})
+		})
+	})
 })

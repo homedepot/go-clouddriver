@@ -41,6 +41,17 @@ type FakeActionHandler struct {
 	newRollbackActionReturnsOnCall map[int]struct {
 		result1 kubernetes.Action
 	}
+	NewRunJobActionStub        func(kubernetes.ActionConfig) kubernetes.Action
+	newRunJobActionMutex       sync.RWMutex
+	newRunJobActionArgsForCall []struct {
+		arg1 kubernetes.ActionConfig
+	}
+	newRunJobActionReturns struct {
+		result1 kubernetes.Action
+	}
+	newRunJobActionReturnsOnCall map[int]struct {
+		result1 kubernetes.Action
+	}
 	NewScaleManifestActionStub        func(kubernetes.ActionConfig) kubernetes.Action
 	newScaleManifestActionMutex       sync.RWMutex
 	newScaleManifestActionArgsForCall []struct {
@@ -200,6 +211,54 @@ func (fake *FakeActionHandler) NewRollbackActionReturnsOnCall(i int, result1 kub
 	}{result1}
 }
 
+func (fake *FakeActionHandler) NewRunJobAction(arg1 kubernetes.ActionConfig) kubernetes.Action {
+	fake.newRunJobActionMutex.Lock()
+	ret, specificReturn := fake.newRunJobActionReturnsOnCall[len(fake.newRunJobActionArgsForCall)]
+	fake.newRunJobActionArgsForCall = append(fake.newRunJobActionArgsForCall, struct {
+		arg1 kubernetes.ActionConfig
+	}{arg1})
+	fake.recordInvocation("NewRunJobAction", []interface{}{arg1})
+	fake.newRunJobActionMutex.Unlock()
+	if fake.NewRunJobActionStub != nil {
+		return fake.NewRunJobActionStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.newRunJobActionReturns.result1
+}
+
+func (fake *FakeActionHandler) NewRunJobActionCallCount() int {
+	fake.newRunJobActionMutex.RLock()
+	defer fake.newRunJobActionMutex.RUnlock()
+	return len(fake.newRunJobActionArgsForCall)
+}
+
+func (fake *FakeActionHandler) NewRunJobActionArgsForCall(i int) kubernetes.ActionConfig {
+	fake.newRunJobActionMutex.RLock()
+	defer fake.newRunJobActionMutex.RUnlock()
+	return fake.newRunJobActionArgsForCall[i].arg1
+}
+
+func (fake *FakeActionHandler) NewRunJobActionReturns(result1 kubernetes.Action) {
+	fake.NewRunJobActionStub = nil
+	fake.newRunJobActionReturns = struct {
+		result1 kubernetes.Action
+	}{result1}
+}
+
+func (fake *FakeActionHandler) NewRunJobActionReturnsOnCall(i int, result1 kubernetes.Action) {
+	fake.NewRunJobActionStub = nil
+	if fake.newRunJobActionReturnsOnCall == nil {
+		fake.newRunJobActionReturnsOnCall = make(map[int]struct {
+			result1 kubernetes.Action
+		})
+	}
+	fake.newRunJobActionReturnsOnCall[i] = struct {
+		result1 kubernetes.Action
+	}{result1}
+}
+
 func (fake *FakeActionHandler) NewScaleManifestAction(arg1 kubernetes.ActionConfig) kubernetes.Action {
 	fake.newScaleManifestActionMutex.Lock()
 	ret, specificReturn := fake.newScaleManifestActionReturnsOnCall[len(fake.newScaleManifestActionArgsForCall)]
@@ -257,6 +316,8 @@ func (fake *FakeActionHandler) Invocations() map[string][][]interface{} {
 	defer fake.newRollingRestartActionMutex.RUnlock()
 	fake.newRollbackActionMutex.RLock()
 	defer fake.newRollbackActionMutex.RUnlock()
+	fake.newRunJobActionMutex.RLock()
+	defer fake.newRunJobActionMutex.RUnlock()
 	fake.newScaleManifestActionMutex.RLock()
 	defer fake.newScaleManifestActionMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

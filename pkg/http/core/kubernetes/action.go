@@ -26,6 +26,7 @@ type ActionHandler interface {
 	NewDeployManifestAction(ActionConfig) Action
 	NewRollingRestartAction(ActionConfig) Action
 	NewRollbackAction(ActionConfig) Action
+	NewRunJobAction(ActionConfig) Action
 	NewScaleManifestAction(ActionConfig) Action
 }
 

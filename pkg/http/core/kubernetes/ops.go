@@ -16,6 +16,7 @@ type Operation struct {
 	DeleteManifest         *DeleteManifestRequest         `json:"deleteManifest"`
 	UndoRolloutManifest    *UndoRolloutManifestRequest    `json:"undoRolloutManifest"`
 	RollingRestartManifest *RollingRestartManifestRequest `json:"rollingRestartManifest"`
+	RunJob                 *RunJobRequest                 `json:"runJob"`
 }
 
 type DeployManifestRequest struct {
@@ -105,4 +106,39 @@ type RollingRestartManifestRequest struct {
 	Location      string `json:"location"`
 	User          string `json:"user"`
 	Account       string `json:"account"`
+}
+
+type RunJobRequest struct {
+	Account       string                 `json:"account"`
+	Alias         string                 `json:"alias"`
+	Application   string                 `json:"application"`
+	CloudProvider string                 `json:"cloudProvider"`
+	Manifest      map[string]interface{} `json:"manifest"`
+	// OptionalArtifacts []struct {
+	// 	Type       string `json:"type"`
+	// 	CustomKind bool   `json:"customKind"`
+	// 	Name       string `json:"name"`
+	// 	Version    string `json:"version"`
+	// 	Location   string `json:"location"`
+	// 	Reference  string `json:"reference"`
+	// 	Metadata   struct {
+	// 		Account string `json:"account"`
+	// 	} `json:"metadata"`
+	// } `json:"optionalArtifacts"`
+	// PreconfiguredJobParameters []struct {
+	// 	Mapping     string `json:"mapping"`
+	// 	Name        string `json:"name"`
+	// 	Description string `json:"description"`
+	// 	Label       string `json:"label"`
+	// 	Type        string `json:"type"`
+	// 	Order       int    `json:"order"`
+	// } `json:"preconfiguredJobParameters"`
+	// WaitForCompletion bool   `json:"waitForCompletion"`
+	// Source            string `json:"source"`
+	// Parameters        struct {
+	// 	IMAGEPATHS     string `json:"IMAGE_PATHS"`
+	// 	SOURCEREGISTRY string `json:"SOURCE_REGISTRY"`
+	// 	TARGETREGISTRY string `json:"TARGET_REGISTRY"`
+	// } `json:"parameters"`
+	// RequiredArtifacts []interface{} `json:"requiredArtifacts"`
 }
