@@ -100,7 +100,7 @@ var _ = Describe("Application", func() {
 				"account1",
 				"account2",
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(0, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(0, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -119,7 +119,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(1, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(1, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -138,7 +138,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(2, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(2, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -157,7 +157,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(3, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(3, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -245,8 +245,8 @@ var _ = Describe("Application", func() {
 
 		When("listing deployments returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListReturnsOnCall(0, nil, errors.New("error listing deployments"))
-				fakeKubeClient.ListReturnsOnCall(1, nil, errors.New("error listing deployments"))
+				fakeKubeClient.ListByGVRReturnsOnCall(0, nil, errors.New("error listing deployments"))
+				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing deployments"))
 			})
 
 			It("continues", func() {
@@ -256,8 +256,8 @@ var _ = Describe("Application", func() {
 
 		When("listing replicasets returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListReturnsOnCall(1, nil, errors.New("error listing replicaSets"))
-				fakeKubeClient.ListReturnsOnCall(3, nil, errors.New("error listing replicaSets"))
+				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing replicaSets"))
+				fakeKubeClient.ListByGVRReturnsOnCall(3, nil, errors.New("error listing replicaSets"))
 			})
 
 			It("continues", func() {
@@ -282,7 +282,7 @@ var _ = Describe("Application", func() {
 				"account1",
 				"account2",
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(0, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(0, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -301,7 +301,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(1, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(1, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -315,7 +315,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(2, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(2, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -334,7 +334,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(3, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(3, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -417,8 +417,8 @@ var _ = Describe("Application", func() {
 
 		When("listing ingresses returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListReturnsOnCall(0, nil, errors.New("error listing ingresses"))
-				fakeKubeClient.ListReturnsOnCall(1, nil, errors.New("error listing ingresses"))
+				fakeKubeClient.ListByGVRReturnsOnCall(0, nil, errors.New("error listing ingresses"))
+				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing ingresses"))
 			})
 
 			It("continues", func() {
@@ -428,8 +428,8 @@ var _ = Describe("Application", func() {
 
 		When("listing services returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListReturnsOnCall(1, nil, errors.New("error listing services"))
-				fakeKubeClient.ListReturnsOnCall(3, nil, errors.New("error listing services"))
+				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing services"))
+				fakeKubeClient.ListByGVRReturnsOnCall(3, nil, errors.New("error listing services"))
 			})
 
 			It("continues", func() {
@@ -530,7 +530,7 @@ var _ = Describe("Application", func() {
 				"account1",
 				"account2",
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(0, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(0, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -572,7 +572,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(1, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(1, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -596,7 +596,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(2, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(2, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -638,7 +638,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListReturnsOnCall(3, &unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturnsOnCall(3, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -731,8 +731,8 @@ var _ = Describe("Application", func() {
 
 		When("listing replicasets returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListReturnsOnCall(0, nil, errors.New("error listing replicasets"))
-				fakeKubeClient.ListReturnsOnCall(1, nil, errors.New("error listing replicasets"))
+				fakeKubeClient.ListByGVRReturnsOnCall(0, nil, errors.New("error listing replicasets"))
+				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing replicasets"))
 			})
 
 			It("continues", func() {
@@ -742,8 +742,8 @@ var _ = Describe("Application", func() {
 
 		When("listing pods returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListReturnsOnCall(1, nil, errors.New("error listing pods"))
-				fakeKubeClient.ListReturnsOnCall(3, nil, errors.New("error listing pods"))
+				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing pods"))
+				fakeKubeClient.ListByGVRReturnsOnCall(3, nil, errors.New("error listing pods"))
 			})
 
 			It("continues", func() {
@@ -764,7 +764,7 @@ var _ = Describe("Application", func() {
 			setup()
 			uri = svr.URL + "/applications/test-application/serverGroups/test-account/test-namespace/replicaSet test-rs1"
 			createRequest(http.MethodGet)
-			fakeKubeClient.ListReturns(&unstructured.UnstructuredList{
+			fakeKubeClient.ListByGVRReturns(&unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -931,7 +931,7 @@ var _ = Describe("Application", func() {
 
 		When("listing pods returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListReturns(nil, errors.New("error listing pods"))
+				fakeKubeClient.ListByGVRReturns(nil, errors.New("error listing pods"))
 			})
 
 			It("returns an error", func() {

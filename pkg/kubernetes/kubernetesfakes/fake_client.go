@@ -8,6 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 type FakeClient struct {
@@ -38,6 +39,19 @@ type FakeClient struct {
 		result1 kubernetes.Metadata
 		result2 error
 	}
+	GVRForKindStub        func(string) (schema.GroupVersionResource, error)
+	gVRForKindMutex       sync.RWMutex
+	gVRForKindArgsForCall []struct {
+		arg1 string
+	}
+	gVRForKindReturns struct {
+		result1 schema.GroupVersionResource
+		result2 error
+	}
+	gVRForKindReturnsOnCall map[int]struct {
+		result1 schema.GroupVersionResource
+		result2 error
+	}
 	GetStub        func(string, string, string) (*unstructured.Unstructured, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
@@ -53,19 +67,56 @@ type FakeClient struct {
 		result1 *unstructured.Unstructured
 		result2 error
 	}
-	ListStub        func(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
-	listMutex       sync.RWMutex
-	listArgsForCall []struct {
+	ListByGVRStub        func(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
+	listByGVRMutex       sync.RWMutex
+	listByGVRArgsForCall []struct {
 		arg1 schema.GroupVersionResource
 		arg2 metav1.ListOptions
 	}
-	listReturns struct {
+	listByGVRReturns struct {
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}
-	listReturnsOnCall map[int]struct {
+	listByGVRReturnsOnCall map[int]struct {
 		result1 *unstructured.UnstructuredList
 		result2 error
+	}
+	PatchStub        func(string, string, string, []byte) (kubernetes.Metadata, *unstructured.Unstructured, error)
+	patchMutex       sync.RWMutex
+	patchArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 []byte
+	}
+	patchReturns struct {
+		result1 kubernetes.Metadata
+		result2 *unstructured.Unstructured
+		result3 error
+	}
+	patchReturnsOnCall map[int]struct {
+		result1 kubernetes.Metadata
+		result2 *unstructured.Unstructured
+		result3 error
+	}
+	PatchUsingStrategyStub        func(string, string, string, []byte, types.PatchType) (kubernetes.Metadata, *unstructured.Unstructured, error)
+	patchUsingStrategyMutex       sync.RWMutex
+	patchUsingStrategyArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 []byte
+		arg5 types.PatchType
+	}
+	patchUsingStrategyReturns struct {
+		result1 kubernetes.Metadata
+		result2 *unstructured.Unstructured
+		result3 error
+	}
+	patchUsingStrategyReturnsOnCall map[int]struct {
+		result1 kubernetes.Metadata
+		result2 *unstructured.Unstructured
+		result3 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -174,6 +225,57 @@ func (fake *FakeClient) ApplyWithNamespaceOverrideReturnsOnCall(i int, result1 k
 	}{result1, result2}
 }
 
+func (fake *FakeClient) GVRForKind(arg1 string) (schema.GroupVersionResource, error) {
+	fake.gVRForKindMutex.Lock()
+	ret, specificReturn := fake.gVRForKindReturnsOnCall[len(fake.gVRForKindArgsForCall)]
+	fake.gVRForKindArgsForCall = append(fake.gVRForKindArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("GVRForKind", []interface{}{arg1})
+	fake.gVRForKindMutex.Unlock()
+	if fake.GVRForKindStub != nil {
+		return fake.GVRForKindStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.gVRForKindReturns.result1, fake.gVRForKindReturns.result2
+}
+
+func (fake *FakeClient) GVRForKindCallCount() int {
+	fake.gVRForKindMutex.RLock()
+	defer fake.gVRForKindMutex.RUnlock()
+	return len(fake.gVRForKindArgsForCall)
+}
+
+func (fake *FakeClient) GVRForKindArgsForCall(i int) string {
+	fake.gVRForKindMutex.RLock()
+	defer fake.gVRForKindMutex.RUnlock()
+	return fake.gVRForKindArgsForCall[i].arg1
+}
+
+func (fake *FakeClient) GVRForKindReturns(result1 schema.GroupVersionResource, result2 error) {
+	fake.GVRForKindStub = nil
+	fake.gVRForKindReturns = struct {
+		result1 schema.GroupVersionResource
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GVRForKindReturnsOnCall(i int, result1 schema.GroupVersionResource, result2 error) {
+	fake.GVRForKindStub = nil
+	if fake.gVRForKindReturnsOnCall == nil {
+		fake.gVRForKindReturnsOnCall = make(map[int]struct {
+			result1 schema.GroupVersionResource
+			result2 error
+		})
+	}
+	fake.gVRForKindReturnsOnCall[i] = struct {
+		result1 schema.GroupVersionResource
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Get(arg1 string, arg2 string, arg3 string) (*unstructured.Unstructured, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
@@ -227,56 +329,181 @@ func (fake *FakeClient) GetReturnsOnCall(i int, result1 *unstructured.Unstructur
 	}{result1, result2}
 }
 
-func (fake *FakeClient) List(arg1 schema.GroupVersionResource, arg2 metav1.ListOptions) (*unstructured.UnstructuredList, error) {
-	fake.listMutex.Lock()
-	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
-	fake.listArgsForCall = append(fake.listArgsForCall, struct {
+func (fake *FakeClient) ListByGVR(arg1 schema.GroupVersionResource, arg2 metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+	fake.listByGVRMutex.Lock()
+	ret, specificReturn := fake.listByGVRReturnsOnCall[len(fake.listByGVRArgsForCall)]
+	fake.listByGVRArgsForCall = append(fake.listByGVRArgsForCall, struct {
 		arg1 schema.GroupVersionResource
 		arg2 metav1.ListOptions
 	}{arg1, arg2})
-	fake.recordInvocation("List", []interface{}{arg1, arg2})
-	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub(arg1, arg2)
+	fake.recordInvocation("ListByGVR", []interface{}{arg1, arg2})
+	fake.listByGVRMutex.Unlock()
+	if fake.ListByGVRStub != nil {
+		return fake.ListByGVRStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.listReturns.result1, fake.listReturns.result2
+	return fake.listByGVRReturns.result1, fake.listByGVRReturns.result2
 }
 
-func (fake *FakeClient) ListCallCount() int {
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	return len(fake.listArgsForCall)
+func (fake *FakeClient) ListByGVRCallCount() int {
+	fake.listByGVRMutex.RLock()
+	defer fake.listByGVRMutex.RUnlock()
+	return len(fake.listByGVRArgsForCall)
 }
 
-func (fake *FakeClient) ListArgsForCall(i int) (schema.GroupVersionResource, metav1.ListOptions) {
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	return fake.listArgsForCall[i].arg1, fake.listArgsForCall[i].arg2
+func (fake *FakeClient) ListByGVRArgsForCall(i int) (schema.GroupVersionResource, metav1.ListOptions) {
+	fake.listByGVRMutex.RLock()
+	defer fake.listByGVRMutex.RUnlock()
+	return fake.listByGVRArgsForCall[i].arg1, fake.listByGVRArgsForCall[i].arg2
 }
 
-func (fake *FakeClient) ListReturns(result1 *unstructured.UnstructuredList, result2 error) {
-	fake.ListStub = nil
-	fake.listReturns = struct {
+func (fake *FakeClient) ListByGVRReturns(result1 *unstructured.UnstructuredList, result2 error) {
+	fake.ListByGVRStub = nil
+	fake.listByGVRReturns = struct {
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeClient) ListReturnsOnCall(i int, result1 *unstructured.UnstructuredList, result2 error) {
-	fake.ListStub = nil
-	if fake.listReturnsOnCall == nil {
-		fake.listReturnsOnCall = make(map[int]struct {
+func (fake *FakeClient) ListByGVRReturnsOnCall(i int, result1 *unstructured.UnstructuredList, result2 error) {
+	fake.ListByGVRStub = nil
+	if fake.listByGVRReturnsOnCall == nil {
+		fake.listByGVRReturnsOnCall = make(map[int]struct {
 			result1 *unstructured.UnstructuredList
 			result2 error
 		})
 	}
-	fake.listReturnsOnCall[i] = struct {
+	fake.listByGVRReturnsOnCall[i] = struct {
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeClient) Patch(arg1 string, arg2 string, arg3 string, arg4 []byte) (kubernetes.Metadata, *unstructured.Unstructured, error) {
+	var arg4Copy []byte
+	if arg4 != nil {
+		arg4Copy = make([]byte, len(arg4))
+		copy(arg4Copy, arg4)
+	}
+	fake.patchMutex.Lock()
+	ret, specificReturn := fake.patchReturnsOnCall[len(fake.patchArgsForCall)]
+	fake.patchArgsForCall = append(fake.patchArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 []byte
+	}{arg1, arg2, arg3, arg4Copy})
+	fake.recordInvocation("Patch", []interface{}{arg1, arg2, arg3, arg4Copy})
+	fake.patchMutex.Unlock()
+	if fake.PatchStub != nil {
+		return fake.PatchStub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
+	}
+	return fake.patchReturns.result1, fake.patchReturns.result2, fake.patchReturns.result3
+}
+
+func (fake *FakeClient) PatchCallCount() int {
+	fake.patchMutex.RLock()
+	defer fake.patchMutex.RUnlock()
+	return len(fake.patchArgsForCall)
+}
+
+func (fake *FakeClient) PatchArgsForCall(i int) (string, string, string, []byte) {
+	fake.patchMutex.RLock()
+	defer fake.patchMutex.RUnlock()
+	return fake.patchArgsForCall[i].arg1, fake.patchArgsForCall[i].arg2, fake.patchArgsForCall[i].arg3, fake.patchArgsForCall[i].arg4
+}
+
+func (fake *FakeClient) PatchReturns(result1 kubernetes.Metadata, result2 *unstructured.Unstructured, result3 error) {
+	fake.PatchStub = nil
+	fake.patchReturns = struct {
+		result1 kubernetes.Metadata
+		result2 *unstructured.Unstructured
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeClient) PatchReturnsOnCall(i int, result1 kubernetes.Metadata, result2 *unstructured.Unstructured, result3 error) {
+	fake.PatchStub = nil
+	if fake.patchReturnsOnCall == nil {
+		fake.patchReturnsOnCall = make(map[int]struct {
+			result1 kubernetes.Metadata
+			result2 *unstructured.Unstructured
+			result3 error
+		})
+	}
+	fake.patchReturnsOnCall[i] = struct {
+		result1 kubernetes.Metadata
+		result2 *unstructured.Unstructured
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeClient) PatchUsingStrategy(arg1 string, arg2 string, arg3 string, arg4 []byte, arg5 types.PatchType) (kubernetes.Metadata, *unstructured.Unstructured, error) {
+	var arg4Copy []byte
+	if arg4 != nil {
+		arg4Copy = make([]byte, len(arg4))
+		copy(arg4Copy, arg4)
+	}
+	fake.patchUsingStrategyMutex.Lock()
+	ret, specificReturn := fake.patchUsingStrategyReturnsOnCall[len(fake.patchUsingStrategyArgsForCall)]
+	fake.patchUsingStrategyArgsForCall = append(fake.patchUsingStrategyArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 []byte
+		arg5 types.PatchType
+	}{arg1, arg2, arg3, arg4Copy, arg5})
+	fake.recordInvocation("PatchUsingStrategy", []interface{}{arg1, arg2, arg3, arg4Copy, arg5})
+	fake.patchUsingStrategyMutex.Unlock()
+	if fake.PatchUsingStrategyStub != nil {
+		return fake.PatchUsingStrategyStub(arg1, arg2, arg3, arg4, arg5)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
+	}
+	return fake.patchUsingStrategyReturns.result1, fake.patchUsingStrategyReturns.result2, fake.patchUsingStrategyReturns.result3
+}
+
+func (fake *FakeClient) PatchUsingStrategyCallCount() int {
+	fake.patchUsingStrategyMutex.RLock()
+	defer fake.patchUsingStrategyMutex.RUnlock()
+	return len(fake.patchUsingStrategyArgsForCall)
+}
+
+func (fake *FakeClient) PatchUsingStrategyArgsForCall(i int) (string, string, string, []byte, types.PatchType) {
+	fake.patchUsingStrategyMutex.RLock()
+	defer fake.patchUsingStrategyMutex.RUnlock()
+	return fake.patchUsingStrategyArgsForCall[i].arg1, fake.patchUsingStrategyArgsForCall[i].arg2, fake.patchUsingStrategyArgsForCall[i].arg3, fake.patchUsingStrategyArgsForCall[i].arg4, fake.patchUsingStrategyArgsForCall[i].arg5
+}
+
+func (fake *FakeClient) PatchUsingStrategyReturns(result1 kubernetes.Metadata, result2 *unstructured.Unstructured, result3 error) {
+	fake.PatchUsingStrategyStub = nil
+	fake.patchUsingStrategyReturns = struct {
+		result1 kubernetes.Metadata
+		result2 *unstructured.Unstructured
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeClient) PatchUsingStrategyReturnsOnCall(i int, result1 kubernetes.Metadata, result2 *unstructured.Unstructured, result3 error) {
+	fake.PatchUsingStrategyStub = nil
+	if fake.patchUsingStrategyReturnsOnCall == nil {
+		fake.patchUsingStrategyReturnsOnCall = make(map[int]struct {
+			result1 kubernetes.Metadata
+			result2 *unstructured.Unstructured
+			result3 error
+		})
+	}
+	fake.patchUsingStrategyReturnsOnCall[i] = struct {
+		result1 kubernetes.Metadata
+		result2 *unstructured.Unstructured
+		result3 error
+	}{result1, result2, result3}
 }
 
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
@@ -286,10 +513,16 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.applyMutex.RUnlock()
 	fake.applyWithNamespaceOverrideMutex.RLock()
 	defer fake.applyWithNamespaceOverrideMutex.RUnlock()
+	fake.gVRForKindMutex.RLock()
+	defer fake.gVRForKindMutex.RUnlock()
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
+	fake.listByGVRMutex.RLock()
+	defer fake.listByGVRMutex.RUnlock()
+	fake.patchMutex.RLock()
+	defer fake.patchMutex.RUnlock()
+	fake.patchUsingStrategyMutex.RLock()
+	defer fake.patchUsingStrategyMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

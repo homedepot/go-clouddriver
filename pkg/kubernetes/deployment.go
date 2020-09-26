@@ -23,6 +23,7 @@ type Deployment interface {
 	GetSpec() v1.DeploymentSpec
 	SetReplicas(*int32)
 	LabelTemplate(string, string)
+	LabelTemplateIfNotExists(string, string)
 	Status() manifest.Status
 	Object() *v1.Deployment
 }
@@ -76,6 +77,18 @@ func (d *deployment) LabelTemplate(key, value string) {
 	}
 
 	labels[key] = value
+	d.d.Spec.Template.ObjectMeta.Labels = labels
+}
+
+func (d *deployment) LabelTemplateIfNotExists(key, value string) {
+	labels := d.d.Spec.Template.ObjectMeta.Labels
+	if labels == nil {
+		labels = map[string]string{}
+	}
+
+	if _, ok := labels[key]; !ok {
+		labels[key] = value
+	}
 	d.d.Spec.Template.ObjectMeta.Labels = labels
 }
 

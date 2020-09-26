@@ -169,7 +169,7 @@ func ListCredentials(c *gin.Context) {
 					Resource: "namespaces",
 				}
 				// timeout listing namespaces to 5 seconds
-				result, err := client.List(gvr, metav1.ListOptions{
+				result, err := client.ListByGVR(gvr, metav1.ListOptions{
 					TimeoutSeconds: &listNamespacesTimeout,
 				})
 				if err != nil {

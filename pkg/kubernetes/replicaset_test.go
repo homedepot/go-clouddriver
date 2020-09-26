@@ -114,6 +114,35 @@ var _ = Describe("Replicaset", func() {
 		})
 	})
 
+	Describe("#LabelTemplateIfNotExists", func() {
+		JustBeforeEach(func() {
+			rs.LabelTemplateIfNotExists("test", "value")
+		})
+
+		When("the label exists", func() {
+			BeforeEach(func() {
+				o := rs.Object()
+				o.Spec.Template.ObjectMeta.Labels = map[string]string{
+					"test": "taken",
+				}
+			})
+
+			It("does not label the template", func() {
+				o := rs.Object()
+				labels := o.Spec.Template.ObjectMeta.Labels
+				Expect(labels["test"]).To(Equal("taken"))
+			})
+		})
+
+		When("it succeeds", func() {
+			It("succeeds", func() {
+				o := rs.Object()
+				labels := o.Spec.Template.ObjectMeta.Labels
+				Expect(labels["test"]).To(Equal("value"))
+			})
+		})
+	})
+
 	Describe("#Status", func() {
 		var s manifest.Status
 

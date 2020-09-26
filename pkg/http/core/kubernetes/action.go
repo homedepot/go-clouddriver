@@ -28,6 +28,7 @@ type ActionHandler interface {
 	NewRollbackAction(ActionConfig) Action
 	NewRunJobAction(ActionConfig) Action
 	NewScaleManifestAction(ActionConfig) Action
+	NewPatchManifestAction(ActionConfig) Action
 }
 
 const ActionHandlerInstanceKey = `KubernetesActionHandler`

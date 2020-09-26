@@ -56,7 +56,7 @@ func setup() {
 	}
 	fakeKubeClient = &kubernetesfakes.FakeClient{}
 	fakeKubeClient.GetReturns(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil)
-	fakeKubeClient.ListReturns(fakeUnstructuredList, nil)
+	fakeKubeClient.ListByGVRReturns(fakeUnstructuredList, nil)
 
 	fakeKubeController = &kubernetesfakes.FakeController{}
 	fakeKubeController.NewClientReturns(fakeKubeClient, nil)
@@ -75,79 +75,30 @@ func newActionConfig() ActionConfig {
 		Application:    "test-application",
 		Operation: Operation{
 			DeployManifest: &DeployManifestRequest{
-				EnableTraffic:     false,
-				NamespaceOverride: "",
-				OptionalArtifacts: nil,
-				CloudProvider:     "",
 				Manifests: []map[string]interface{}{
 					{
 						"kind":       "Pod",
 						"apiVersion": "v1",
 					},
 				},
-				TrafficManagement: struct {
-					Options struct {
-						EnableTraffic bool "json:\"enableTraffic\""
-					} "json:\"options\""
-					Enabled bool "json:\"enabled\""
-				}{
-					Options: struct {
-						EnableTraffic bool "json:\"enableTraffic\""
-					}{
-						EnableTraffic: false,
-					},
-					Enabled: false,
-				},
-				Moniker: struct {
-					App string "json:\"app\""
-				}{
-					App: "",
-				},
-				Source:                   "",
-				Account:                  "",
-				SkipExpressionEvaluation: false,
-				RequiredArtifacts:        nil,
 			},
 			ScaleManifest: &ScaleManifestRequest{
-				Replicas:      "16",
-				ManifestName:  "deployment test-deployment",
-				CloudProvider: "",
-				Location:      "",
-				User:          "",
-				Account:       "",
+				Replicas:     "16",
+				ManifestName: "deployment test-deployment",
 			},
-			CleanupArtifacts: &CleanupArtifactsRequest{
-				Manifests: nil,
-				Account:   "",
-			},
+			CleanupArtifacts: &CleanupArtifactsRequest{},
 			DeleteManifest: &DeleteManifestRequest{
-				ManifestName:  "deployment test-deployment",
-				CloudProvider: "",
-				Options: struct {
-					OrphanDependants   bool "json:\"orphanDependants\""
-					GracePeriodSeconds int  "json:\"gracePeriodSeconds\""
-				}{
-					OrphanDependants:   false,
-					GracePeriodSeconds: 0,
-				},
-				Location: "",
-				User:     "",
-				Account:  "",
+				ManifestName: "deployment test-deployment",
 			},
 			UndoRolloutManifest: &UndoRolloutManifestRequest{
-				ManifestName:  "deployment test-deployment",
-				CloudProvider: "",
-				Location:      "",
-				User:          "",
-				Account:       "",
-				Revision:      "100",
+				ManifestName: "deployment test-deployment",
+				Revision:     "100",
 			},
 			RollingRestartManifest: &RollingRestartManifestRequest{
-				CloudProvider: "",
-				ManifestName:  "deployment test-deployment",
-				Location:      "",
-				User:          "",
-				Account:       "",
+				ManifestName: "deployment test-deployment",
+			},
+			PatchManifest: &PatchManifestRequest{
+				ManifestName: "deployment test-deployment",
 			},
 			RunJob: &RunJobRequest{
 				Application:   "test-application",

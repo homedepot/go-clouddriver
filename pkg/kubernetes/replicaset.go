@@ -14,6 +14,7 @@ type ReplicaSet interface {
 	GetReplicaSetSpec() v1.ReplicaSetSpec
 	GetReplicaSetStatus() v1.ReplicaSetStatus
 	LabelTemplate(string, string)
+	LabelTemplateIfNotExists(string, string)
 	Status() manifest.Status
 	SetReplicas(*int32)
 	ListImages() []string
@@ -69,6 +70,18 @@ func (rs *replicaSet) LabelTemplate(key, value string) {
 	}
 
 	labels[key] = value
+	rs.rs.Spec.Template.ObjectMeta.Labels = labels
+}
+
+func (rs *replicaSet) LabelTemplateIfNotExists(key, value string) {
+	labels := rs.rs.Spec.Template.ObjectMeta.Labels
+	if labels == nil {
+		labels = map[string]string{}
+	}
+
+	if _, ok := labels[key]; !ok {
+		labels[key] = value
+	}
 	rs.rs.Spec.Template.ObjectMeta.Labels = labels
 }
 

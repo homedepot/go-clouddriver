@@ -24,8 +24,8 @@ import (
 // this function a bit more readable.
 func CreateKubernetesOperation(c *gin.Context) {
 	// All operations are bound to a task ID and stored in the database.
-	taskID := uuid.New().String()
 	ko := kubernetes.Operations{}
+	taskID := uuid.New().String()
 	ac := arcade.Instance(c)
 	ah := kubernetes.ActionHandlerInstance(c)
 	kc := kube.ControllerInstance(c)
@@ -98,6 +98,14 @@ func CreateKubernetesOperation(c *gin.Context) {
 
 		if req.UndoRolloutManifest != nil {
 			err = ah.NewRollbackAction(config).Run()
+			if err != nil {
+				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				return
+			}
+		}
+
+		if req.PatchManifest != nil {
+			err = ah.NewPatchManifestAction(config).Run()
 			if err != nil {
 				clouddriver.WriteError(c, http.StatusInternalServerError, err)
 				return

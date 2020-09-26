@@ -32,8 +32,9 @@ func Initialize(r *gin.Engine) {
 		// Create a kubernetes operation - deploy/delete/scale manifest.
 		api.POST("/kubernetes/ops", core.CreateKubernetesOperation)
 
-		// Monitor deploy.
-		api.GET("/manifests/:account/:location/:name", core.GetManifest)
+		// Manifests API controller.
+		api.GET("/manifests/:account/:location/:kind", core.GetManifest)
+		api.GET("/manifests/:account/:location/:kind/cluster/:application/:cluster/dynamic/:target", core.GetManifestByTarget)
 
 		// Get results for a task triggered in CreateKubernetesOperation.
 		api.GET("/task/:id", core.GetTask)
@@ -42,7 +43,7 @@ func Initialize(r *gin.Engine) {
 		api.GET("/securityGroups", core.ListSecurityGroups)
 		api.GET("/search", core.Search)
 
-		// Artifacts controller.
+		// Artifacts API controller.
 		api.GET("/artifacts/credentials", core.ListArtifactCredentials)
 		api.GET("/artifacts/account/:accountName/names", core.ListHelmArtifactAccountNames)
 		api.GET("/artifacts/account/:accountName/versions", core.ListHelmArtifactAccountVersions)

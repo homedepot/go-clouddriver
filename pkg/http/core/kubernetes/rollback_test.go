@@ -75,7 +75,7 @@ var _ = Describe("Rollback", func() {
 
 	When("listing replicasets returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeClient.ListReturns(nil, errors.New("error listing replicasets"))
+			fakeKubeClient.ListByGVRReturns(nil, errors.New("error listing replicasets"))
 		})
 
 		It("returns an error", func() {

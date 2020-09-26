@@ -82,6 +82,35 @@ var _ = Describe("Deployment", func() {
 		})
 	})
 
+	Describe("#LabelTemplateIfNotExists", func() {
+		JustBeforeEach(func() {
+			deployment.LabelTemplateIfNotExists("test", "value")
+		})
+
+		When("the label exists", func() {
+			BeforeEach(func() {
+				o := deployment.Object()
+				o.Spec.Template.ObjectMeta.Labels = map[string]string{
+					"test": "taken",
+				}
+			})
+
+			It("does not label the template", func() {
+				o := deployment.Object()
+				labels := o.Spec.Template.ObjectMeta.Labels
+				Expect(labels["test"]).To(Equal("taken"))
+			})
+		})
+
+		When("it succeeds", func() {
+			It("succeeds", func() {
+				o := deployment.Object()
+				labels := o.Spec.Template.ObjectMeta.Labels
+				Expect(labels["test"]).To(Equal("value"))
+			})
+		})
+	})
+
 	Describe("#SetReplicas", func() {
 		BeforeEach(func() {
 			replicas := int32(4)

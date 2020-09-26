@@ -146,7 +146,7 @@ var _ = Describe("Credential", func() {
 						},
 					},
 				}, nil)
-				fakeKubeClient.ListReturns(&unstructured.UnstructuredList{
+				fakeKubeClient.ListByGVRReturns(&unstructured.UnstructuredList{
 					Items: []unstructured.Unstructured{
 						{
 							Object: map[string]interface{}{
@@ -254,7 +254,7 @@ var _ = Describe("Credential", func() {
 
 			When("listing namespaces returns an error", func() {
 				BeforeEach(func() {
-					fakeKubeClient.ListReturns(nil, errors.New("error listing"))
+					fakeKubeClient.ListByGVRReturns(nil, errors.New("error listing"))
 				})
 
 				It("continues", func() {

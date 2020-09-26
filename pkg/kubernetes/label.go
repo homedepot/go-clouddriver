@@ -7,7 +7,6 @@ import (
 )
 
 const (
-	LabelKubernetesSpinnakerApp = `app.kubernetes.io/spinnaker-app`
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	LabelKubernetesName      = `app.kubernetes.io/name`
 	LabelKubernetesManagedBy = `app.kubernetes.io/managed-by`
@@ -18,22 +17,20 @@ func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, applicatio
 
 	gvk := u.GroupVersionKind()
 
-	// Add reserved labels. Had some trouble with setting the kubernetes name as
-	// this interferes with label selectors, so I changed that to be spinnaker-app.
+	// Add reserved labels. Do not overwrite the "qpp.kubernetes.io/name" label
+	// as this could affect label selectors.
 	//
 	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-labels
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
-	// label(u, LabelKubernetesName, application)
-	label(u, LabelKubernetesSpinnakerApp, application)
 	label(u, LabelKubernetesManagedBy, spinnaker)
+	labelIfNotExists(u, LabelKubernetesName, application)
 
 	if strings.EqualFold(gvk.Kind, "deployment") {
 		d := NewDeployment(u.Object)
 
 		// Add reserved labels.
-		// d.LabelTemplate(LabelKubernetesName, application)
-		d.LabelTemplate(LabelKubernetesSpinnakerApp, application)
 		d.LabelTemplate(LabelKubernetesManagedBy, spinnaker)
+		d.LabelTemplateIfNotExists(LabelKubernetesName, application)
 
 		*u, err = d.ToUnstructured()
 		if err != nil {
@@ -45,9 +42,8 @@ func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, applicatio
 		rs := NewReplicaSet(u.Object)
 
 		// Add reserved labels.
-		// rs.LabelTemplate(LabelKubernetesName, application)
-		rs.LabelTemplate(LabelKubernetesSpinnakerApp, application)
 		rs.LabelTemplate(LabelKubernetesManagedBy, spinnaker)
+		rs.LabelTemplateIfNotExists(LabelKubernetesName, application)
 
 		*u, err = rs.ToUnstructured()
 		if err != nil {
@@ -58,12 +54,25 @@ func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, applicatio
 	return nil
 }
 
-func label(o *unstructured.Unstructured, key, value string) {
-	labels := o.GetLabels()
+func label(u *unstructured.Unstructured, key, value string) {
+	labels := u.GetLabels()
 	if labels == nil {
 		labels = map[string]string{}
 	}
 
 	labels[key] = value
-	o.SetLabels(labels)
+	u.SetLabels(labels)
+}
+
+func labelIfNotExists(u *unstructured.Unstructured, key, value string) {
+	labels := u.GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
+
+	if _, ok := labels[key]; !ok {
+		labels[key] = value
+	}
+
+	u.SetLabels(labels)
 }

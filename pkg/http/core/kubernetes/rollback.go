@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 )
 
@@ -100,17 +99,16 @@ func (r *rollback) Run() error {
 		return err
 	}
 
-	replicaSetGVR := schema.GroupVersionResource{
-		Group:    "apps",
-		Version:  "v1",
-		Resource: "replicasets",
-	}
-	// TODO we might need to set this to just be 'spinnaker-managed'.
-	lo := metav1.ListOptions{
-		LabelSelector: kubernetes.LabelKubernetesSpinnakerApp + "=" + r.application,
+	replicaSetGVR, err := client.GVRForKind("ReplicaSet")
+	if err != nil {
+		return err
 	}
 
-	replicaSets, err := client.List(replicaSetGVR, lo)
+	lo := metav1.ListOptions{
+		LabelSelector: kubernetes.LabelKubernetesName + "=" + r.application,
+	}
+
+	replicaSets, err := client.ListByGVR(replicaSetGVR, lo)
 	if err != nil {
 		return err
 	}

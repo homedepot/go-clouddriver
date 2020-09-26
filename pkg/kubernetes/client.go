@@ -8,6 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -34,8 +35,11 @@ type Metadata struct {
 type Client interface {
 	Apply(*unstructured.Unstructured) (Metadata, error)
 	ApplyWithNamespaceOverride(*unstructured.Unstructured, string) (Metadata, error)
+	GVRForKind(string) (schema.GroupVersionResource, error)
 	Get(string, string, string) (*unstructured.Unstructured, error)
-	List(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
+	ListByGVR(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
+	Patch(string, string, string, []byte) (Metadata, *unstructured.Unstructured, error)
+	PatchUsingStrategy(string, string, string, []byte, types.PatchType) (Metadata, *unstructured.Unstructured, error)
 }
 
 type client struct {
@@ -187,7 +191,63 @@ func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, 
 	return u, err
 }
 
+func (c *client) GVRForKind(kind string) (schema.GroupVersionResource, error) {
+	return c.mapper.ResourceFor(schema.GroupVersionResource{Resource: kind})
+}
+
 // List all resources by their GVR and list options.
-func (c *client) List(gvr schema.GroupVersionResource, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+func (c *client) ListByGVR(gvr schema.GroupVersionResource, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	return c.c.Resource(gvr).List(context.TODO(), lo)
+}
+
+func (c *client) Patch(kind, name, namespace string, p []byte) (Metadata, *unstructured.Unstructured, error) {
+	return c.PatchUsingStrategy(kind, name, namespace, p, types.StrategicMergePatchType)
+}
+
+func (c *client) PatchUsingStrategy(kind, name, namespace string, p []byte, strategy types.PatchType) (Metadata, *unstructured.Unstructured, error) {
+	metadata := Metadata{}
+	gvk, err := c.mapper.KindFor(schema.GroupVersionResource{Resource: kind})
+	if err != nil {
+		return metadata, nil, err
+	}
+
+	restMapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return metadata, nil, err
+	}
+
+	restClient, err := newRestClient(*c.config, gvk.GroupVersion())
+	if err != nil {
+		return metadata, nil, err
+	}
+
+	helper := resource.NewHelper(restClient, restMapping)
+
+	var u *unstructured.Unstructured
+
+	if helper.NamespaceScoped {
+		u, err = c.c.
+			Resource(restMapping.Resource).
+			Namespace(namespace).
+			Patch(context.TODO(), name, strategy, p, metav1.PatchOptions{})
+	} else {
+		u, err = c.c.
+			Resource(restMapping.Resource).
+			Patch(context.TODO(), name, strategy, p, metav1.PatchOptions{})
+	}
+
+	if err != nil {
+		return metadata, nil, err
+	}
+
+	gvr := restMapping.Resource
+
+	metadata.Name = u.GetName()
+	metadata.Namespace = u.GetNamespace()
+	metadata.Group = gvr.Group
+	metadata.Resource = gvr.Resource
+	metadata.Version = gvr.Version
+	metadata.Kind = gvk.Kind
+
+	return metadata, u, err
 }

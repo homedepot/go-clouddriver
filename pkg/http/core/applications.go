@@ -200,7 +200,7 @@ func ListServerGroupManagers(c *gin.Context) {
 		replicaSets := &unstructured.UnstructuredList{}
 
 		lo := metav1.ListOptions{
-			LabelSelector: kubernetes.LabelKubernetesSpinnakerApp + "=" + application,
+			LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
 		}
 
 		deploymentGVR := schema.GroupVersionResource{
@@ -214,13 +214,13 @@ func ListServerGroupManagers(c *gin.Context) {
 			Resource: "replicasets",
 		}
 
-		deployments, err = client.List(deploymentGVR, lo)
+		deployments, err = client.ListByGVR(deploymentGVR, lo)
 		if err != nil {
 			log.Println("error listing deployments:", err.Error())
 			continue
 		}
 
-		replicaSets, err = client.List(replicaSetGVR, lo)
+		replicaSets, err = client.ListByGVR(replicaSetGVR, lo)
 		if err != nil {
 			log.Println("error listing replicaSets:", err.Error())
 			continue
@@ -389,7 +389,7 @@ func ListLoadBalancers(c *gin.Context) {
 		// Label selector for all that we are listing in the cluster. We
 		// only want to list resources that have a label referencing the requested application.
 		lo := metav1.ListOptions{
-			LabelSelector: kubernetes.LabelKubernetesSpinnakerApp + "=" + application,
+			LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
 		}
 
 		// TODO get these using the dynamic account.
@@ -400,7 +400,7 @@ func ListLoadBalancers(c *gin.Context) {
 			Resource: "ingresses",
 		}
 
-		ingresses, err := client.List(ingressGVR, lo)
+		ingresses, err := client.ListByGVR(ingressGVR, lo)
 		if err != nil {
 			log.Println("error listing ingresses:", err.Error())
 			continue
@@ -417,7 +417,7 @@ func ListLoadBalancers(c *gin.Context) {
 			Resource: "services",
 		}
 
-		services, err := client.List(serviceGVR, lo)
+		services, err := client.ListByGVR(serviceGVR, lo)
 		if err != nil {
 			log.Println("error listing services:", err.Error())
 			continue
@@ -636,7 +636,7 @@ func ListServerGroups(c *gin.Context) {
 		}
 
 		lo := metav1.ListOptions{
-			LabelSelector: kubernetes.LabelKubernetesSpinnakerApp + "=" + application,
+			LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
 		}
 
 		// Create a GVR for replicasets.
@@ -650,13 +650,13 @@ func ListServerGroups(c *gin.Context) {
 			Resource: "pods",
 		}
 
-		replicaSets, err := client.List(replicaSetGVR, lo)
+		replicaSets, err := client.ListByGVR(replicaSetGVR, lo)
 		if err != nil {
 			log.Println("error listing replicaSets:", err.Error())
 			continue
 		}
 
-		pods, err := client.List(podsGVR, lo)
+		pods, err := client.ListByGVR(podsGVR, lo)
 		if err != nil {
 			log.Println("error listing pods:", err.Error())
 			continue
@@ -819,7 +819,7 @@ func GetServerGroup(c *gin.Context) {
 	}
 
 	lo := metav1.ListOptions{
-		LabelSelector: kubernetes.LabelKubernetesSpinnakerApp + "=" + application,
+		LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
 	}
 
 	podsGVR := schema.GroupVersionResource{
@@ -834,7 +834,7 @@ func GetServerGroup(c *gin.Context) {
 	}
 
 	// "Instances" in kubernetes are pods.
-	pods, err := client.List(podsGVR, lo)
+	pods, err := client.ListByGVR(podsGVR, lo)
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
