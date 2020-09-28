@@ -9,12 +9,6 @@ import (
 
 type Job interface {
 	Status() manifest.Status
-	// GetObjectMeta() metav1.ObjectMeta
-	// GetPodStatus() v1.PodStatus
-	// GetLabels() map[string]string
-	// GetNamespace() string
-	// GetName() string
-	// GetUID() string
 	State() string
 	Object() *v1.Job
 }
@@ -73,5 +67,27 @@ func (j *job) State() string {
 
 func (j *job) Status() manifest.Status {
 	s := manifest.DefaultStatus
+
+	completions := int32(1)
+	spec := j.j.Spec
+	status := j.j.Status
+
+	if spec.Completions != nil {
+		completions = *spec.Completions
+	}
+
+	succeeded := status.Succeeded
+	if succeeded < completions {
+		conditions := status.Conditions
+		for _, condition := range conditions {
+			if condition.Type == v1.JobFailed {
+				s.Failed.State = true
+				return s
+			}
+		}
+		s.Stable.State = false
+		s.Stable.Message = "Waiting for jobs to finish"
+	}
+
 	return s
 }

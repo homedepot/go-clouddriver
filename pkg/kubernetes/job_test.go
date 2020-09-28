@@ -7,6 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/billiford/go-clouddriver/pkg/kubernetes"
+	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
 )
 
 var _ = Describe("Job", func() {
@@ -84,5 +85,55 @@ var _ = Describe("Job", func() {
 	})
 
 	Describe("#Status", func() {
+		var s manifest.Status
+
+		BeforeEach(func() {
+			completions := int32(1)
+			o := job.Object()
+			o.Status.Succeeded = 1
+			o.Spec.Completions = &completions
+		})
+
+		JustBeforeEach(func() {
+			s = job.Status()
+		})
+
+		Context("succeeded pods is less than completions", func() {
+			BeforeEach(func() {
+				o := job.Object()
+				completions := int32(2)
+				o.Status.Succeeded = 1
+				o.Spec.Completions = &completions
+			})
+
+			When("there is a failed condition", func() {
+				BeforeEach(func() {
+					o := job.Object()
+					o.Status.Conditions = []v1.JobCondition{
+						{
+							Type: v1.JobFailed,
+						},
+					}
+				})
+
+				It("returns status failed", func() {
+					Expect(s.Failed.State).To(BeTrue())
+				})
+			})
+
+			When("the job is not finished", func() {
+				It("returns the expected status", func() {
+					Expect(s.Stable.State).To(BeFalse())
+					Expect(s.Stable.Message).To(Equal("Waiting for jobs to finish"))
+				})
+			})
+		})
+
+		When("it succeeeds", func() {
+			It("succeeds", func() {
+				Expect(s.Stable.State).To(BeTrue())
+				Expect(s.Available.State).To(BeTrue())
+			})
+		})
 	})
 })
