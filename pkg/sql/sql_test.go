@@ -288,6 +288,77 @@ var _ = Describe("Sql", func() {
 		})
 	})
 
+	Describe("#ListKubernetesProvidersAndPermissions", func() {
+		var providers []kubernetes.Provider
+
+		JustBeforeEach(func() {
+			providers, err = c.ListKubernetesProvidersAndPermissions()
+		})
+
+		When("getting the rows returns an error", func() {
+			BeforeEach(func() {
+				db.Close()
+			})
+
+			It("returns an error", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("sql: database is closed"))
+			})
+		})
+
+		When("scanning a row returns an error", func() {
+			BeforeEach(func() {
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "read_group", "write_group"}).
+					AddRow("name1", "host1", "read_group1", "write_group1")
+				mock.ExpectQuery(`(?i)^SELECT ` +
+					`a.name, ` +
+					`a.host, ` +
+					`a.ca_data, ` +
+					`b.read_group, ` +
+					`c.write_group ` +
+					`FROM kubernetes_providers a ` +
+					`left join provider_read_permissions b on a.name = b.account_name ` +
+					`left join provider_write_permissions c on a.name = c.account_name$`).
+					WillReturnRows(sqlRows)
+			})
+
+			It("returns an error", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("sql: expected 4 destination arguments in Scan, not 5"))
+			})
+		})
+
+		When("it succeeds", func() {
+			BeforeEach(func() {
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "read_group", "write_group"}).
+					AddRow("name1", "host1", "ca_data1", "read_group1", "write_group1").
+					AddRow("name1", "host1", "ca_data1", "read_group2", "write_group1").
+					AddRow("name2", "host2", "ca_data2", "read_group2", "write_group2").
+					AddRow("name2", "host2", "ca_data2", "read_group2", "write_group3")
+				mock.ExpectQuery(`(?i)^SELECT ` +
+					`a.name, ` +
+					`a.host, ` +
+					`a.ca_data, ` +
+					`b.read_group, ` +
+					`c.write_group ` +
+					`FROM kubernetes_providers a ` +
+					`left join provider_read_permissions b on a.name = b.account_name ` +
+					`left join provider_write_permissions c on a.name = c.account_name$`).
+					WillReturnRows(sqlRows)
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+				Expect(providers).To(HaveLen(2))
+				Expect(providers[0].Permissions.Read).To(HaveLen(2))
+				Expect(providers[0].Permissions.Write).To(HaveLen(1))
+				Expect(providers[1].Permissions.Read).To(HaveLen(1))
+				Expect(providers[1].Permissions.Write).To(HaveLen(2))
+			})
+		})
+	})
+
 	Describe("#ListKubernetesResourcesByFields", func() {
 		var resources []kubernetes.Resource
 		fields := []string{}

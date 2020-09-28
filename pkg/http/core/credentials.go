@@ -66,37 +66,21 @@ func ListCredentials(c *gin.Context) {
 	kc := kubernetes.ControllerInstance(c)
 	credentials := []clouddriver.Credential{}
 
-	providers, err := sc.ListKubernetesProviders()
+	providers, err := sc.ListKubernetesProvidersAndPermissions()
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	for _, provider := range providers {
-		readGroups, err := sc.ListReadGroupsByAccountName(provider.Name)
-		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
-			return
-		}
-
-		writeGroups, err := sc.ListWriteGroupsByAccountName(provider.Name)
-		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
-			return
-		}
-
 		sca := clouddriver.Credential{
-			AccountType: provider.Name,
-			// CacheThreads:                0,
-			// ChallengeDestructiveActions: false,
+			AccountType:   provider.Name,
 			CloudProvider: "kubernetes",
-			// DockerRegistries:            nil,
-			// Enabled:                     false,
-			Environment: provider.Name,
-			Name:        provider.Name,
+			Environment:   provider.Name,
+			Name:          provider.Name,
 			Permissions: clouddriver.Permissions{
-				READ:  readGroups,
-				WRITE: writeGroups,
+				READ:  provider.Permissions.Read,
+				WRITE: provider.Permissions.Write,
 			},
 			PrimaryAccount:          false,
 			ProviderVersion:         "v2",
@@ -128,14 +112,8 @@ func ListCredentials(c *gin.Context) {
 
 		// Get all namespaces of allowed accounts asynchronously.
 		for _, provider := range providers {
-			go func(account string) {
+			go func(provider kubernetes.Provider) {
 				defer wg.Done()
-
-				provider, err := sc.GetKubernetesProvider(account)
-				if err != nil {
-					log.Println("/credentials error getting provider:", err.Error())
-					return
-				}
 
 				cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 				if err != nil {
@@ -182,12 +160,12 @@ func ListCredentials(c *gin.Context) {
 					namespaces = append(namespaces, ns.GetName())
 				}
 				an := AccountNamespaces{
-					Name:       account,
+					Name:       provider.Name,
 					Namespaces: namespaces,
 				}
 
 				accountNamespacesCh <- an
-			}(provider.Name)
+			}(provider)
 		}
 
 		wg.Wait()

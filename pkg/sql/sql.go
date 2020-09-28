@@ -33,6 +33,7 @@ type Client interface {
 	CreateReadPermission(clouddriver.ReadPermission) error
 	CreateWritePermission(clouddriver.WritePermission) error
 	ListKubernetesProviders() ([]kubernetes.Provider, error)
+	ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider, error)
 	ListKubernetesResourcesByFields(...string) ([]kubernetes.Resource, error)
 	ListKubernetesResourcesByTaskID(string) ([]kubernetes.Resource, error)
 	ListKubernetesAccountsBySpinnakerApp(string) ([]string, error)
@@ -128,6 +129,93 @@ func (c *client) ListKubernetesProviders() ([]kubernetes.Provider, error) {
 	db := c.db.Select("name, host, ca_data").Find(&ps)
 
 	return ps, db.Error
+}
+
+// select a.name, a.host, a.ca_data, b.read_group, c.write_group from kubernetes_providers a
+//   left join provider_read_permissions b on a.name = b.account_name
+//   left join provider_write_permissions c on a.name = c.account_name;
+func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider, error) {
+	ps := []kubernetes.Provider{}
+
+	rows, err := c.db.Table("kubernetes_providers a").
+		Select("a.name, " +
+			"a.host, " +
+			"a.ca_data, " +
+			"b.read_group, " +
+			"c.write_group").
+		Joins("LEFT JOIN provider_read_permissions b ON a.name = b.account_name").
+		Joins("LEFT JOIN provider_write_permissions c ON a.name = c.account_name").
+		Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	providers := map[string]kubernetes.Provider{}
+	readGroups := map[string][]string{}
+	writeGroups := map[string][]string{}
+
+	for rows.Next() {
+		var r struct {
+			CAData     string
+			Host       string
+			Name       string
+			ReadGroup  *string
+			WriteGroup *string
+		}
+
+		err = rows.Scan(&r.Name, &r.Host, &r.CAData, &r.ReadGroup, &r.WriteGroup)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, ok := providers[r.Name]; !ok {
+			p := kubernetes.Provider{
+				Name:   r.Name,
+				Host:   r.Host,
+				CAData: r.CAData,
+			}
+			providers[r.Name] = p
+		}
+
+		if r.ReadGroup != nil {
+			if _, ok := readGroups[r.Name]; !ok {
+				readGroups[r.Name] = []string{}
+			}
+
+			if !contains(readGroups[r.Name], *r.ReadGroup) {
+				readGroups[r.Name] = append(readGroups[r.Name], *r.ReadGroup)
+			}
+		}
+
+		if r.WriteGroup != nil {
+			if _, ok := writeGroups[r.Name]; !ok {
+				writeGroups[r.Name] = []string{}
+			}
+
+			if !contains(writeGroups[r.Name], *r.WriteGroup) {
+				writeGroups[r.Name] = append(writeGroups[r.Name], *r.WriteGroup)
+			}
+		}
+	}
+
+	for name, provider := range providers {
+		provider.Permissions.Read = readGroups[name]
+		provider.Permissions.Write = writeGroups[name]
+		ps = append(ps, provider)
+	}
+
+	return ps, nil
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (c *client) ListKubernetesResourcesByTaskID(taskID string) ([]kubernetes.Resource, error) {

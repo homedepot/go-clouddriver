@@ -6,6 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/docker/docker-credential-helpers v0.6.3
 	github.com/fatih/color v1.9.0
+	github.com/gdexlab/go-render v1.0.1
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/gddo v0.0.0-20200715224205-051695c33a3f
@@ -14,6 +15,7 @@ require (
 	github.com/jonboulle/clockwork v0.1.0
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.0
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3 // indirect
 	github.com/mcuadros/go-gin-prometheus v0.1.0
 	github.com/mitchellh/mapstructure v1.3.3
 	github.com/onsi/ginkgo v1.14.1

@@ -21,11 +21,11 @@ var _ = Describe("Credential", func() {
 				setup()
 				uri = svr.URL + "/credentials"
 				createRequest(http.MethodGet)
-				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{
+				fakeSQLClient.ListKubernetesProvidersAndPermissionsReturns([]kubernetes.Provider{
 					{
 						Name:        "provider1",
 						Host:        "host1",
-						CAData:      "caData1",
+						CAData:      "dGVzdAo=",
 						BearerToken: "some.bearer.token",
 						Permissions: kubernetes.ProviderPermissions{
 							Read: []string{
@@ -39,7 +39,7 @@ var _ = Describe("Credential", func() {
 					{
 						Name:        "provider2",
 						Host:        "host2",
-						CAData:      "caData2",
+						CAData:      "dGVzdAo=",
 						BearerToken: "some.bearer.token2",
 						Permissions: kubernetes.ProviderPermissions{
 							Read: []string{
@@ -63,7 +63,7 @@ var _ = Describe("Credential", func() {
 
 			When("listing providers returns an error", func() {
 				BeforeEach(func() {
-					fakeSQLClient.ListKubernetesProvidersReturns(nil, errors.New("error listing providers"))
+					fakeSQLClient.ListKubernetesProvidersAndPermissionsReturns(nil, errors.New("error listing providers"))
 				})
 
 				It("returns an error", func() {
@@ -71,34 +71,6 @@ var _ = Describe("Credential", func() {
 					ce := getClouddriverError()
 					Expect(ce.Error).To(Equal("Internal Server Error"))
 					Expect(ce.Message).To(Equal("error listing providers"))
-					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-				})
-			})
-
-			When("listing read groups returns an error", func() {
-				BeforeEach(func() {
-					fakeSQLClient.ListReadGroupsByAccountNameReturns(nil, errors.New("error listing read groups"))
-				})
-
-				It("returns an error", func() {
-					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
-					Expect(ce.Message).To(Equal("error listing read groups"))
-					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-				})
-			})
-
-			When("listing write groups returns an error", func() {
-				BeforeEach(func() {
-					fakeSQLClient.ListWriteGroupsByAccountNameReturns(nil, errors.New("error listing write groups"))
-				})
-
-				It("returns an error", func() {
-					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
-					Expect(ce.Message).To(Equal("error listing write groups"))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
 			})
@@ -116,11 +88,11 @@ var _ = Describe("Credential", func() {
 				setup()
 				uri = svr.URL + "/credentials?expand=true"
 				createRequest(http.MethodGet)
-				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{
+				fakeSQLClient.ListKubernetesProvidersAndPermissionsReturns([]kubernetes.Provider{
 					{
 						Name:        "provider1",
 						Host:        "host1",
-						CAData:      "caData1",
+						CAData:      "dGVzdAo=",
 						BearerToken: "some.bearer.token",
 						Permissions: kubernetes.ProviderPermissions{
 							Read: []string{
@@ -134,7 +106,7 @@ var _ = Describe("Credential", func() {
 					{
 						Name:        "provider2",
 						Host:        "host2",
-						CAData:      "caData2",
+						CAData:      "dGVzdAo=",
 						BearerToken: "some.bearer.token2",
 						Permissions: kubernetes.ProviderPermissions{
 							Read: []string{
@@ -177,7 +149,7 @@ var _ = Describe("Credential", func() {
 
 			When("listing providers returns an error", func() {
 				BeforeEach(func() {
-					fakeSQLClient.ListKubernetesProvidersReturns(nil, errors.New("error listing providers"))
+					fakeSQLClient.ListKubernetesProvidersAndPermissionsReturns(nil, errors.New("error listing providers"))
 				})
 
 				It("returns an error", func() {
@@ -189,37 +161,38 @@ var _ = Describe("Credential", func() {
 				})
 			})
 
-			When("listing read groups returns an error", func() {
+			When("decoding the ca data returns an error", func() {
 				BeforeEach(func() {
-					fakeSQLClient.ListReadGroupsByAccountNameReturns(nil, errors.New("error listing read groups"))
-				})
-
-				It("returns an error", func() {
-					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
-					Expect(ce.Message).To(Equal("error listing read groups"))
-					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-				})
-			})
-
-			When("listing write groups returns an error", func() {
-				BeforeEach(func() {
-					fakeSQLClient.ListWriteGroupsByAccountNameReturns(nil, errors.New("error listing write groups"))
-				})
-
-				It("returns an error", func() {
-					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
-					Expect(ce.Message).To(Equal("error listing write groups"))
-					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-				})
-			})
-
-			When("getting the kubernetes provider returns an error", func() {
-				BeforeEach(func() {
-					fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting kubernetes provider"))
+					fakeSQLClient.ListKubernetesProvidersAndPermissionsReturns([]kubernetes.Provider{
+						{
+							Name:        "provider1",
+							Host:        "host1",
+							CAData:      "{}",
+							BearerToken: "some.bearer.token",
+							Permissions: kubernetes.ProviderPermissions{
+								Read: []string{
+									"gg_test",
+								},
+								Write: []string{
+									"gg_test",
+								},
+							},
+						},
+						{
+							Name:        "provider2",
+							Host:        "host2",
+							CAData:      "{}",
+							BearerToken: "some.bearer.token2",
+							Permissions: kubernetes.ProviderPermissions{
+								Read: []string{
+									"gg_test2",
+								},
+								Write: []string{
+									"gg_test2",
+								},
+							},
+						},
+					}, nil)
 				})
 
 				It("continues", func() {
@@ -228,15 +201,14 @@ var _ = Describe("Credential", func() {
 				})
 			})
 
-			When("decoding the ca data returns an error", func() {
+			When("getting the gcloud token returns an error", func() {
 				BeforeEach(func() {
-					fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-						CAData: "{}",
-					}, nil)
+					fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
 				})
 
 				It("continues", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					Expect(fakeArcadeClient.TokenCallCount()).To(Equal(2))
 					validateResponse(payloadCredentialsExpandTrueNoNamespaces)
 				})
 			})
@@ -248,6 +220,7 @@ var _ = Describe("Credential", func() {
 
 				It("continues", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					Expect(fakeKubeController.NewClientCallCount()).To(Equal(2))
 					validateResponse(payloadCredentialsExpandTrueNoNamespaces)
 				})
 			})
@@ -259,6 +232,7 @@ var _ = Describe("Credential", func() {
 
 				It("continues", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					Expect(fakeKubeClient.ListByGVRCallCount()).To(Equal(2))
 					validateResponse(payloadCredentialsExpandTrueNoNamespaces)
 				})
 			})
@@ -281,7 +255,7 @@ var _ = Describe("Credential", func() {
 				{
 					Name:        "provider1",
 					Host:        "host1",
-					CAData:      "caData1",
+					CAData:      "dGVzdAo=",
 					BearerToken: "some.bearer.token",
 					Permissions: kubernetes.ProviderPermissions{
 						Read: []string{
@@ -295,7 +269,7 @@ var _ = Describe("Credential", func() {
 				{
 					Name:        "provider2",
 					Host:        "host2",
-					CAData:      "caData2",
+					CAData:      "dGVzdAo=",
 					BearerToken: "some.bearer.token2",
 					Permissions: kubernetes.ProviderPermissions{
 						Read: []string{
