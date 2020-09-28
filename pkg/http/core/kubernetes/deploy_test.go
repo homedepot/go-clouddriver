@@ -2,6 +2,7 @@ package kubernetes_test
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
@@ -114,6 +115,99 @@ var _ = Describe("Deploy", func() {
 		It("returns an error", func() {
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(Equal("error creating resource"))
+		})
+	})
+
+	Context("generating the cluster", func() {
+		When("the kind is deployment", func() {
+			kind := "deployment"
+
+			BeforeEach(func() {
+				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+			})
+
+			It("sets the cluster", func() {
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
+			})
+		})
+
+		When("the kind is statefulSet", func() {
+			kind := "statefulSet"
+
+			BeforeEach(func() {
+				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+			})
+
+			It("sets the cluster", func() {
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
+			})
+		})
+
+		When("the kind is replicaSet", func() {
+			kind := "replicaSet"
+
+			BeforeEach(func() {
+				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+			})
+
+			It("sets the cluster", func() {
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
+			})
+		})
+
+		When("the kind is ingress", func() {
+			kind := "ingress"
+
+			BeforeEach(func() {
+				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+			})
+
+			It("sets the cluster", func() {
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
+			})
+		})
+
+		When("the kind is service", func() {
+			kind := "service"
+
+			BeforeEach(func() {
+				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+			})
+
+			It("sets the cluster", func() {
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
+			})
+		})
+
+		When("the kind is daemonSet", func() {
+			kind := "daemonSet"
+
+			BeforeEach(func() {
+				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+			})
+
+			It("sets the cluster", func() {
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
+			})
+		})
+
+		When("the kind is not a cluster type", func() {
+			kind := "pod"
+
+			BeforeEach(func() {
+				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+			})
+
+			It("does not set the cluster", func() {
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.Cluster).To(BeEmpty())
+			})
 		})
 	})
 

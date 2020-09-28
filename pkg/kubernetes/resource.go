@@ -11,6 +11,7 @@ type Resource struct {
 	Version      string `json:"version"`
 	Kind         string `json:"kind"`
 	SpinnakerApp string `json:"spinnakerApp"`
+	Cluster      string `json:"-"`
 }
 
 func (Resource) TableName() string {

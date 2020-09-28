@@ -465,15 +465,15 @@ func newLoadBalancer(u unstructured.Unstructured, account, application string) L
 
 type Clusters map[string][]string
 
-// List clusters, which for kubernetes is a map of provider names to kubernetes deployment
+// List clusters for a given application, which for kubernetes is a map of provider names to kubernetes deployment
 // kinds and names.
 //
-// TODO For now we are pulling this from the DB, but it might be possible to make API calls to
-// the cluster.
+// Clusters are kinds deployment, statefulSet, replicaSet, ingress, service, and daemonSet.
 func ListClusters(c *gin.Context) {
 	sc := sql.Instance(c)
+	application := c.Param("application")
 
-	rs, err := sc.ListKubernetesResourcesByFields("account_name", "kind", "name")
+	rs, err := sc.ListKubernetesClustersByApplication(application)
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
@@ -482,12 +482,14 @@ func ListClusters(c *gin.Context) {
 	response := Clusters{}
 
 	for _, resource := range rs {
-		if _, ok := response[resource.AccountName]; !ok {
-			response[resource.AccountName] = []string{}
+		if resource.Cluster != "" {
+			if _, ok := response[resource.AccountName]; !ok {
+				response[resource.AccountName] = []string{}
+			}
+			kr := response[resource.AccountName]
+			kr = append(kr, resource.Cluster)
+			response[resource.AccountName] = kr
 		}
-		kr := response[resource.AccountName]
-		kr = append(kr, fmt.Sprintf("%s %s", resource.Kind, resource.Name))
-		response[resource.AccountName] = kr
 	}
 
 	c.JSON(http.StatusOK, response)

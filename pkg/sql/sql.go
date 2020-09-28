@@ -32,6 +32,7 @@ type Client interface {
 	CreateKubernetesResource(kubernetes.Resource) error
 	CreateReadPermission(clouddriver.ReadPermission) error
 	CreateWritePermission(clouddriver.WritePermission) error
+	ListKubernetesClustersByApplication(string) ([]kubernetes.Resource, error)
 	ListKubernetesProviders() ([]kubernetes.Provider, error)
 	ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider, error)
 	ListKubernetesResourcesByFields(...string) ([]kubernetes.Resource, error)
@@ -122,6 +123,17 @@ func (c *client) CreateWritePermission(w clouddriver.WritePermission) error {
 func (c *client) CreateReadPermission(r clouddriver.ReadPermission) error {
 	db := c.db.Create(&r)
 	return db.Error
+}
+
+// A Kubernetes cluster is of kind deployment, statefulSet, replicaSet, ingress, service, and daemonSet.
+func (c *client) ListKubernetesClustersByApplication(spinnakerApp string) ([]kubernetes.Resource, error) {
+	var rs []kubernetes.Resource
+	db := c.db.Select("account_name, cluster").
+		Where("spinnaker_app = ? AND kind in ('deployment', 'statefulSet', 'replicaSet', 'ingress', 'service', 'daemonSet')",
+			spinnakerApp).
+		Group("account_name, cluster").Find(&rs)
+
+	return rs, db.Error
 }
 
 func (c *client) ListKubernetesProviders() ([]kubernetes.Provider, error) {

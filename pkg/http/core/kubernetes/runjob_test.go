@@ -6,11 +6,25 @@ import (
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var _ = Describe("RunJob", func() {
 	BeforeEach(func() {
 		setup()
+		fakeUnstructured := unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"annotations": map[string]interface{}{
+						kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+						kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+						"deployment.kubernetes.io/revision":        "100",
+					},
+					"generateName": "test-",
+				},
+			},
+		}
+		fakeKubeController.ToUnstructuredReturns(&fakeUnstructured, nil)
 	})
 
 	JustBeforeEach(func() {

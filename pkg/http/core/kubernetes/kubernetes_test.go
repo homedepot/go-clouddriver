@@ -44,7 +44,7 @@ func setup() {
 					kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
 					"deployment.kubernetes.io/revision":        "100",
 				},
-				"generateName": "test-",
+				"name": "test-name",
 			},
 		},
 	}

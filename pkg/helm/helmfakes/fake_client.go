@@ -8,6 +8,17 @@ import (
 )
 
 type FakeClient struct {
+	GetIndexStub        func() (helm.Index, error)
+	getIndexMutex       sync.RWMutex
+	getIndexArgsForCall []struct{}
+	getIndexReturns     struct {
+		result1 helm.Index
+		result2 error
+	}
+	getIndexReturnsOnCall map[int]struct {
+		result1 helm.Index
+		result2 error
+	}
 	GetChartStub        func(string, string) ([]byte, error)
 	getChartMutex       sync.RWMutex
 	getChartArgsForCall []struct {
@@ -22,20 +33,51 @@ type FakeClient struct {
 		result1 []byte
 		result2 error
 	}
-	GetIndexStub        func() (helm.Index, error)
-	getIndexMutex       sync.RWMutex
-	getIndexArgsForCall []struct {
-	}
-	getIndexReturns struct {
-		result1 helm.Index
-		result2 error
-	}
-	getIndexReturnsOnCall map[int]struct {
-		result1 helm.Index
-		result2 error
-	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeClient) GetIndex() (helm.Index, error) {
+	fake.getIndexMutex.Lock()
+	ret, specificReturn := fake.getIndexReturnsOnCall[len(fake.getIndexArgsForCall)]
+	fake.getIndexArgsForCall = append(fake.getIndexArgsForCall, struct{}{})
+	fake.recordInvocation("GetIndex", []interface{}{})
+	fake.getIndexMutex.Unlock()
+	if fake.GetIndexStub != nil {
+		return fake.GetIndexStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getIndexReturns.result1, fake.getIndexReturns.result2
+}
+
+func (fake *FakeClient) GetIndexCallCount() int {
+	fake.getIndexMutex.RLock()
+	defer fake.getIndexMutex.RUnlock()
+	return len(fake.getIndexArgsForCall)
+}
+
+func (fake *FakeClient) GetIndexReturns(result1 helm.Index, result2 error) {
+	fake.GetIndexStub = nil
+	fake.getIndexReturns = struct {
+		result1 helm.Index
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetIndexReturnsOnCall(i int, result1 helm.Index, result2 error) {
+	fake.GetIndexStub = nil
+	if fake.getIndexReturnsOnCall == nil {
+		fake.getIndexReturnsOnCall = make(map[int]struct {
+			result1 helm.Index
+			result2 error
+		})
+	}
+	fake.getIndexReturnsOnCall[i] = struct {
+		result1 helm.Index
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeClient) GetChart(arg1 string, arg2 string) ([]byte, error) {
@@ -53,8 +95,7 @@ func (fake *FakeClient) GetChart(arg1 string, arg2 string) ([]byte, error) {
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getChartReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fake.getChartReturns.result1, fake.getChartReturns.result2
 }
 
 func (fake *FakeClient) GetChartCallCount() int {
@@ -63,22 +104,13 @@ func (fake *FakeClient) GetChartCallCount() int {
 	return len(fake.getChartArgsForCall)
 }
 
-func (fake *FakeClient) GetChartCalls(stub func(string, string) ([]byte, error)) {
-	fake.getChartMutex.Lock()
-	defer fake.getChartMutex.Unlock()
-	fake.GetChartStub = stub
-}
-
 func (fake *FakeClient) GetChartArgsForCall(i int) (string, string) {
 	fake.getChartMutex.RLock()
 	defer fake.getChartMutex.RUnlock()
-	argsForCall := fake.getChartArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return fake.getChartArgsForCall[i].arg1, fake.getChartArgsForCall[i].arg2
 }
 
 func (fake *FakeClient) GetChartReturns(result1 []byte, result2 error) {
-	fake.getChartMutex.Lock()
-	defer fake.getChartMutex.Unlock()
 	fake.GetChartStub = nil
 	fake.getChartReturns = struct {
 		result1 []byte
@@ -87,8 +119,6 @@ func (fake *FakeClient) GetChartReturns(result1 []byte, result2 error) {
 }
 
 func (fake *FakeClient) GetChartReturnsOnCall(i int, result1 []byte, result2 error) {
-	fake.getChartMutex.Lock()
-	defer fake.getChartMutex.Unlock()
 	fake.GetChartStub = nil
 	if fake.getChartReturnsOnCall == nil {
 		fake.getChartReturnsOnCall = make(map[int]struct {
@@ -102,68 +132,13 @@ func (fake *FakeClient) GetChartReturnsOnCall(i int, result1 []byte, result2 err
 	}{result1, result2}
 }
 
-func (fake *FakeClient) GetIndex() (helm.Index, error) {
-	fake.getIndexMutex.Lock()
-	ret, specificReturn := fake.getIndexReturnsOnCall[len(fake.getIndexArgsForCall)]
-	fake.getIndexArgsForCall = append(fake.getIndexArgsForCall, struct {
-	}{})
-	fake.recordInvocation("GetIndex", []interface{}{})
-	fake.getIndexMutex.Unlock()
-	if fake.GetIndexStub != nil {
-		return fake.GetIndexStub()
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	fakeReturns := fake.getIndexReturns
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *FakeClient) GetIndexCallCount() int {
-	fake.getIndexMutex.RLock()
-	defer fake.getIndexMutex.RUnlock()
-	return len(fake.getIndexArgsForCall)
-}
-
-func (fake *FakeClient) GetIndexCalls(stub func() (helm.Index, error)) {
-	fake.getIndexMutex.Lock()
-	defer fake.getIndexMutex.Unlock()
-	fake.GetIndexStub = stub
-}
-
-func (fake *FakeClient) GetIndexReturns(result1 helm.Index, result2 error) {
-	fake.getIndexMutex.Lock()
-	defer fake.getIndexMutex.Unlock()
-	fake.GetIndexStub = nil
-	fake.getIndexReturns = struct {
-		result1 helm.Index
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeClient) GetIndexReturnsOnCall(i int, result1 helm.Index, result2 error) {
-	fake.getIndexMutex.Lock()
-	defer fake.getIndexMutex.Unlock()
-	fake.GetIndexStub = nil
-	if fake.getIndexReturnsOnCall == nil {
-		fake.getIndexReturnsOnCall = make(map[int]struct {
-			result1 helm.Index
-			result2 error
-		})
-	}
-	fake.getIndexReturnsOnCall[i] = struct {
-		result1 helm.Index
-		result2 error
-	}{result1, result2}
-}
-
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.getChartMutex.RLock()
-	defer fake.getChartMutex.RUnlock()
 	fake.getIndexMutex.RLock()
 	defer fake.getIndexMutex.RUnlock()
+	fake.getChartMutex.RLock()
+	defer fake.getChartMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

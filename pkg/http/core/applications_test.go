@@ -450,42 +450,18 @@ var _ = Describe("Application", func() {
 			setup()
 			uri = svr.URL + "/applications/test-application/clusters"
 			createRequest(http.MethodGet)
-			fakeSQLClient.ListKubernetesResourcesByFieldsReturns([]kubernetes.Resource{
+			fakeSQLClient.ListKubernetesClustersByApplicationReturns([]kubernetes.Resource{
 				{
-					AccountName:  "test-account1",
-					ID:           "test-id1",
-					TaskID:       "test-task-id1",
-					APIGroup:     "test-api-group1",
-					Name:         "test-name1",
-					Namespace:    "test-namespace1",
-					Resource:     "test-resource1",
-					Version:      "test-version1",
-					Kind:         "test-kind1",
-					SpinnakerApp: "test-spinnaker-app1",
+					AccountName: "test-account1",
+					Cluster:     "test-kind1 test-name1",
 				},
 				{
-					AccountName:  "test-account2",
-					ID:           "test-id2",
-					TaskID:       "test-task-id2",
-					APIGroup:     "test-api-group2",
-					Name:         "test-name2",
-					Namespace:    "test-namespace2",
-					Resource:     "test-resource2",
-					Version:      "test-version2",
-					Kind:         "test-kind2",
-					SpinnakerApp: "test-spinnaker-app2",
+					AccountName: "test-account2",
+					Cluster:     "test-kind2 test-name2",
 				},
 				{
-					AccountName:  "test-account2",
-					ID:           "test-id3",
-					TaskID:       "test-task-id3",
-					APIGroup:     "test-api-group3",
-					Name:         "test-name3",
-					Namespace:    "test-namespace3",
-					Resource:     "test-resource3",
-					Version:      "test-version3",
-					Kind:         "test-kind3",
-					SpinnakerApp: "test-spinnaker-app2",
+					AccountName: "test-account2",
+					Cluster:     "test-kind3 test-name3",
 				},
 			}, nil)
 			log.SetOutput(ioutil.Discard)
@@ -499,17 +475,41 @@ var _ = Describe("Application", func() {
 			doRequest()
 		})
 
-		When("listing resources by fields returns an error", func() {
+		When("listing clusters returns an error", func() {
 			BeforeEach(func() {
-				fakeSQLClient.ListKubernetesResourcesByFieldsReturns(nil, errors.New("error listing resources"))
+				fakeSQLClient.ListKubernetesClustersByApplicationReturns(nil, errors.New("error listing clusters"))
 			})
 
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
 				Expect(ce.Error).To(Equal("Internal Server Error"))
-				Expect(ce.Message).To(Equal("error listing resources"))
+				Expect(ce.Message).To(Equal("error listing clusters"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("there is an empty cluster", func() {
+			BeforeEach(func() {
+				fakeSQLClient.ListKubernetesClustersByApplicationReturns([]kubernetes.Resource{
+					{
+						AccountName: "test-account1",
+						Cluster:     "test-kind1 test-name1",
+					},
+					{
+						AccountName: "test-account2",
+						Cluster:     "",
+					},
+					{
+						AccountName: "test-account2",
+						Cluster:     "test-kind3 test-name3",
+					},
+				}, nil)
+			})
+
+			It("is omitted in the response", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadListClusters2)
 			})
 		})
 

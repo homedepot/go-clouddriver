@@ -149,8 +149,42 @@ var _ = Describe("Sql", func() {
 					`"resource",` +
 					`"version",` +
 					`"kind",` +
-					`"spinnaker_app"` +
-					`\) VALUES \(\?,\?,\?,\?,\?,\?,\?,\?,\?,\?\)$`).
+					`"spinnaker_app",` +
+					`"cluster"` +
+					`\) VALUES \(\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?\)$`).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Describe("#CreateReadPermission", func() {
+		var rp clouddriver.ReadPermission
+
+		BeforeEach(func() {
+			rp = clouddriver.ReadPermission{
+				ID:          "test-id",
+				AccountName: "test-account-name",
+				ReadGroup:   "test-write-group",
+			}
+		})
+
+		JustBeforeEach(func() {
+			err = c.CreateReadPermission(rp)
+		})
+
+		When("it succeeds", func() {
+			BeforeEach(func() {
+				mock.ExpectBegin()
+				mock.ExpectExec(`(?i)^INSERT INTO "provider_read_permissions" \(` +
+					`"id",` +
+					`"account_name",` +
+					`"read_group"` +
+					`\) VALUES \(\?,\?,\?\)$`).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			})
@@ -194,35 +228,36 @@ var _ = Describe("Sql", func() {
 		})
 	})
 
-	Describe("#CreateReadPermission", func() {
-		var rp clouddriver.ReadPermission
-
-		BeforeEach(func() {
-			rp = clouddriver.ReadPermission{
-				ID:          "test-id",
-				AccountName: "test-account-name",
-				ReadGroup:   "test-write-group",
-			}
-		})
+	Describe("#ListKubernetesClustersByApplication", func() {
+		var resources []kubernetes.Resource
 
 		JustBeforeEach(func() {
-			err = c.CreateReadPermission(rp)
+			resources, err = c.ListKubernetesClustersByApplication("test-application")
 		})
 
 		When("it succeeds", func() {
 			BeforeEach(func() {
-				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^INSERT INTO "provider_read_permissions" \(` +
-					`"id",` +
-					`"account_name",` +
-					`"read_group"` +
-					`\) VALUES \(\?,\?,\?\)$`).
-					WillReturnResult(sqlmock.NewResult(1, 1))
+				sqlRows := sqlmock.NewRows([]string{"account_name", "cluster"}).
+					AddRow("account1", "cluster 1").
+					AddRow("account2", "cluster 2")
+				mock.ExpectQuery(`(?i)^SELECT ` +
+					`account_name, ` +
+					`cluster ` +
+					`FROM "kubernetes_resources" ` +
+					` WHERE \(spinnaker_app = \? AND kind in \('deployment',
+						'statefulSet',
+						'replicaSet',
+						'ingress',
+						'service',
+						'daemonSet'\)\) GROUP BY
+						account_name, cluster$`).
+					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
 
 			It("succeeds", func() {
 				Expect(err).To(BeNil())
+				Expect(resources).To(HaveLen(2))
 			})
 		})
 	})

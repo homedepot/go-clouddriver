@@ -2,6 +2,9 @@ package kubernetes
 
 import (
 	"encoding/base64"
+	"fmt"
+	"strings"
+	"unicode"
 
 	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
@@ -63,6 +66,8 @@ func (d *deployManfest) Run() error {
 			return err
 		}
 
+		name := u.GetName()
+
 		err = d.kc.AddSpinnakerAnnotations(u, d.dm.Moniker.App)
 		if err != nil {
 			return err
@@ -89,6 +94,7 @@ func (d *deployManfest) Run() error {
 			Version:      meta.Version,
 			Kind:         meta.Kind,
 			SpinnakerApp: d.dm.Moniker.App,
+			Cluster:      cluster(meta.Kind, name),
 		}
 
 		err = d.sc.CreateKubernetesResource(kr)
@@ -98,4 +104,30 @@ func (d *deployManfest) Run() error {
 	}
 
 	return nil
+}
+
+// Generate the cluster that a kind is a part of.
+// A Kubernetes cluster is of kind deployment, statefulSet, replicaSet, ingress, service, and daemonSet
+// so only generate a cluster for these kinds.
+func cluster(kind, name string) string {
+	cluster := ""
+
+	if strings.EqualFold(kind, "deployment") ||
+		strings.EqualFold(kind, "statefulSet") ||
+		strings.EqualFold(kind, "replicaSet") ||
+		strings.EqualFold(kind, "ingress") ||
+		strings.EqualFold(kind, "service") ||
+		strings.EqualFold(kind, "daemonSet") {
+		cluster = fmt.Sprintf("%s %s", lowercaseFirst(kind), name)
+	}
+
+	return cluster
+}
+
+func lowercaseFirst(str string) string {
+	for i, v := range str {
+		return string(unicode.ToLower(v)) + str[i+1:]
+	}
+
+	return ""
 }

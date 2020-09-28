@@ -1529,6 +1529,15 @@ const payloadListClusters = `{
             ]
           }`
 
+const payloadListClusters2 = `{
+            "test-account1": [
+              "test-kind1 test-name1"
+            ],
+            "test-account2": [
+              "test-kind3 test-name3"
+            ]
+          }`
+
 const serverGroupsResponse = `[
   {
     "account": "gke_github-replication-sandbox_us-central1_sandbox-us-central1-agent_smoketest-dev",
