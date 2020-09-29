@@ -1,0 +1,7 @@
+{
+  "name": "helm-test",
+  "types": [
+    "helm/chart"
+  ],
+  "url": "https://kubernetes-charts.storage.googleapis.com"
+}

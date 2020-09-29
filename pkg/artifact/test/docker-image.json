@@ -1,0 +1,6 @@
+{
+  "name": "docker-registry",
+  "types": [
+    "docker/image"
+  ]
+}

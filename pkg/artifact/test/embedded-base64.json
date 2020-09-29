@@ -1,0 +1,6 @@
+{
+  "name": "embedded-artifact",
+  "types": [
+    "embedded/base64"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "gcs-spinnaker",
+  "types": [
+    "gcs/object"
+  ]
+}

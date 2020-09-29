@@ -1,0 +1,9 @@
+{
+  "name": "kubernetes",
+  "types": [
+    "kubernetes/configMap",
+    "kubernetes/deployment",
+    "kubernetes/replicaSet",
+    "kubernetes/secret"
+  ]
+}

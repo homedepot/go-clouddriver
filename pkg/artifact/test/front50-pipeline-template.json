@@ -1,0 +1,6 @@
+{
+  "name": "front50ArtifactCredentials",
+  "types": [
+    "front50/pipelineTemplate"
+  ]
+}
