@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sort"
 	"time"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
@@ -32,12 +33,13 @@ type Client interface {
 	CreateKubernetesResource(kubernetes.Resource) error
 	CreateReadPermission(clouddriver.ReadPermission) error
 	CreateWritePermission(clouddriver.WritePermission) error
+	ListKubernetesAccountsBySpinnakerApp(string) ([]string, error)
 	ListKubernetesClustersByApplication(string) ([]kubernetes.Resource, error)
 	ListKubernetesProviders() ([]kubernetes.Provider, error)
 	ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider, error)
 	ListKubernetesResourcesByFields(...string) ([]kubernetes.Resource, error)
 	ListKubernetesResourcesByTaskID(string) ([]kubernetes.Resource, error)
-	ListKubernetesAccountsBySpinnakerApp(string) ([]string, error)
+	ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(string, string, string) ([]string, error)
 	ListReadGroupsByAccountName(string) ([]string, error)
 	ListWriteGroupsByAccountName(string) ([]string, error)
 }
@@ -136,6 +138,24 @@ func (c *client) ListKubernetesClustersByApplication(spinnakerApp string) ([]kub
 	return rs, db.Error
 }
 
+func (c *client) ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(accountName,
+	kind, namespace string) ([]string, error) {
+	rs := []kubernetes.Resource{}
+	names := []string{}
+	db := c.db.Select("name").
+		Where("account_name = ? AND kind = ? AND namespace = ?",
+			accountName, kind, namespace).
+		Group("name").Find(&rs)
+
+	for _, r := range rs {
+		if r.Name != "" {
+			names = append(names, r.Name)
+		}
+	}
+
+	return names, db.Error
+}
+
 func (c *client) ListKubernetesProviders() ([]kubernetes.Provider, error) {
 	var ps []kubernetes.Provider
 	db := c.db.Select("name, host, ca_data").Find(&ps)
@@ -216,6 +236,11 @@ func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider,
 		provider.Permissions.Write = writeGroups[name]
 		ps = append(ps, provider)
 	}
+
+	// Sort ascending by name.
+	sort.Slice(ps, func(i, j int) bool {
+		return ps[i].Name < ps[j].Name
+	})
 
 	return ps, nil
 }
