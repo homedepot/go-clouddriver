@@ -227,7 +227,7 @@ var _ = Describe("Deployment", func() {
 			})
 		})
 
-		When("there are less available replicas than desired replias", func() {
+		When("there are less available replicas than desired replicas", func() {
 			BeforeEach(func() {
 				o := deployment.Object()
 				o.Status.UpdatedReplicas = int32(4)

@@ -89,4 +89,37 @@ var _ = Describe("Annotation", func() {
 			Expect(templateAnnotations[AnnotationSpinnakerMonikerCluster]).To(Equal("replicaset test-name"))
 		})
 	})
+
+	When("the object is a daemonset", func() {
+		BeforeEach(func() {
+			m := map[string]interface{}{
+				"kind":       "DaemonSet",
+				"apiVersion": "apps/v1",
+				"metadata": map[string]interface{}{
+					"namespace": "default",
+					"name":      "test-name",
+				},
+			}
+			u, err = kc.ToUnstructured(m)
+			Expect(err).To(BeNil())
+			application = "test-application"
+		})
+
+		It("adds the annotations", func() {
+			annotations := u.GetAnnotations()
+			Expect(annotations[AnnotationSpinnakerArtifactLocation]).To(Equal("default"))
+			Expect(annotations[AnnotationSpinnakerArtifactName]).To(Equal("test-name"))
+			Expect(annotations[AnnotationSpinnakerArtifactType]).To(Equal("kubernetes/daemonset"))
+			Expect(annotations[AnnotationSpinnakerMonikerApplication]).To(Equal(application))
+			Expect(annotations[AnnotationSpinnakerMonikerCluster]).To(Equal("daemonset test-name"))
+
+			d := NewDaemonSet(u.Object).Object()
+			templateAnnotations := d.Spec.Template.ObjectMeta.Annotations
+			Expect(templateAnnotations[AnnotationSpinnakerArtifactLocation]).To(Equal("default"))
+			Expect(templateAnnotations[AnnotationSpinnakerArtifactName]).To(Equal("test-name"))
+			Expect(templateAnnotations[AnnotationSpinnakerArtifactType]).To(Equal("kubernetes/daemonset"))
+			Expect(templateAnnotations[AnnotationSpinnakerMonikerApplication]).To(Equal(application))
+			Expect(templateAnnotations[AnnotationSpinnakerMonikerCluster]).To(Equal("daemonset test-name"))
+		})
+	})
 })

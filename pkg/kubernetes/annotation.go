@@ -65,6 +65,22 @@ func (c *controller) AddSpinnakerAnnotations(u *unstructured.Unstructured, appli
 		}
 	}
 
+	if strings.EqualFold(gvk.Kind, "daemonset") {
+		ds := NewReplicaSet(u.Object)
+
+		// Add spinnaker annotations to the daemonset pod template.
+		ds.AnnotateTemplate(AnnotationSpinnakerArtifactLocation, namespace)
+		ds.AnnotateTemplate(AnnotationSpinnakerArtifactName, name)
+		ds.AnnotateTemplate(AnnotationSpinnakerArtifactType, t)
+		ds.AnnotateTemplate(AnnotationSpinnakerMonikerApplication, application)
+		ds.AnnotateTemplate(AnnotationSpinnakerMonikerCluster, cluster)
+
+		*u, err = ds.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

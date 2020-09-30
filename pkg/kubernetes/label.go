@@ -51,6 +51,19 @@ func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, applicatio
 		}
 	}
 
+	if strings.EqualFold(gvk.Kind, "daemonset") {
+		ds := NewDaemonSet(u.Object)
+
+		// Add reserved labels.
+		ds.LabelTemplate(LabelKubernetesManagedBy, spinnaker)
+		ds.LabelTemplateIfNotExists(LabelKubernetesName, application)
+
+		*u, err = ds.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
