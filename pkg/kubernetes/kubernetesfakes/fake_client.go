@@ -81,6 +81,20 @@ type FakeClient struct {
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}
+	ListResourceStub        func(string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
+	listResourceMutex       sync.RWMutex
+	listResourceArgsForCall []struct {
+		arg1 string
+		arg2 metav1.ListOptions
+	}
+	listResourceReturns struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}
+	listResourceReturnsOnCall map[int]struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}
 	PatchStub        func(string, string, string, []byte) (kubernetes.Metadata, *unstructured.Unstructured, error)
 	patchMutex       sync.RWMutex
 	patchArgsForCall []struct {
@@ -381,6 +395,58 @@ func (fake *FakeClient) ListByGVRReturnsOnCall(i int, result1 *unstructured.Unst
 	}{result1, result2}
 }
 
+func (fake *FakeClient) ListResource(arg1 string, arg2 metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+	fake.listResourceMutex.Lock()
+	ret, specificReturn := fake.listResourceReturnsOnCall[len(fake.listResourceArgsForCall)]
+	fake.listResourceArgsForCall = append(fake.listResourceArgsForCall, struct {
+		arg1 string
+		arg2 metav1.ListOptions
+	}{arg1, arg2})
+	fake.recordInvocation("ListResource", []interface{}{arg1, arg2})
+	fake.listResourceMutex.Unlock()
+	if fake.ListResourceStub != nil {
+		return fake.ListResourceStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.listResourceReturns.result1, fake.listResourceReturns.result2
+}
+
+func (fake *FakeClient) ListResourceCallCount() int {
+	fake.listResourceMutex.RLock()
+	defer fake.listResourceMutex.RUnlock()
+	return len(fake.listResourceArgsForCall)
+}
+
+func (fake *FakeClient) ListResourceArgsForCall(i int) (string, metav1.ListOptions) {
+	fake.listResourceMutex.RLock()
+	defer fake.listResourceMutex.RUnlock()
+	return fake.listResourceArgsForCall[i].arg1, fake.listResourceArgsForCall[i].arg2
+}
+
+func (fake *FakeClient) ListResourceReturns(result1 *unstructured.UnstructuredList, result2 error) {
+	fake.ListResourceStub = nil
+	fake.listResourceReturns = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ListResourceReturnsOnCall(i int, result1 *unstructured.UnstructuredList, result2 error) {
+	fake.ListResourceStub = nil
+	if fake.listResourceReturnsOnCall == nil {
+		fake.listResourceReturnsOnCall = make(map[int]struct {
+			result1 *unstructured.UnstructuredList
+			result2 error
+		})
+	}
+	fake.listResourceReturnsOnCall[i] = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Patch(arg1 string, arg2 string, arg3 string, arg4 []byte) (kubernetes.Metadata, *unstructured.Unstructured, error) {
 	var arg4Copy []byte
 	if arg4 != nil {
@@ -519,6 +585,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.getMutex.RUnlock()
 	fake.listByGVRMutex.RLock()
 	defer fake.listByGVRMutex.RUnlock()
+	fake.listResourceMutex.RLock()
+	defer fake.listResourceMutex.RUnlock()
 	fake.patchMutex.RLock()
 	defer fake.patchMutex.RUnlock()
 	fake.patchUsingStrategyMutex.RLock()

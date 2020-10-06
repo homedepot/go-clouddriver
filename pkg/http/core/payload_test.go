@@ -1128,12 +1128,12 @@ const payloadServerGroupManagers = `[
               "zone": "test-application"
             },
             {
-              "account": "account2",
-              "accountName": "account2",
+              "account": "account1",
+              "accountName": "account1",
               "cloudProvider": "kubernetes",
-              "createdTime": 1581516663000,
+              "createdTime": 1581603123000,
               "key": {
-                "account": "account2",
+                "account": "account1",
                 "group": "deployment",
                 "kubernetesKind": "deployment",
                 "name": "test-deployment2",
@@ -1142,19 +1142,19 @@ const payloadServerGroupManagers = `[
               },
               "kind": "deployment",
               "labels": {
-                "label1": "test-label1"
+                "label1": "test-label2"
               },
               "manifest": {
                 "apiVersion": "apps/v1",
                 "kind": "Deployment",
                 "metadata": {
-                  "creationTimestamp": "2020-02-12T14:11:03Z",
+                  "creationTimestamp": "2020-02-13T14:12:03Z",
                   "labels": {
-                    "label1": "test-label1"
+                    "label1": "test-label2"
                   },
                   "name": "test-deployment2",
                   "namespace": "test-namespace2",
-                  "uid": "bec15437-4e6a-11ea-9788-4201ac100006"
+                  "uid": "cec15437-4e6a-11ea-9788-4201ac100006"
                 }
               },
               "moniker": {
@@ -1164,26 +1164,75 @@ const payloadServerGroupManagers = `[
               "name": "deployment test-deployment2",
               "providerType": "kubernetes",
               "region": "test-namespace2",
-              "serverGroups": [
-                {
-                  "account": "account2",
-                  "moniker": {
-                    "app": "test-application",
-                    "cluster": "deployment test-deployment2",
-                    "sequence": 19
-                  },
-                  "name": "replicaSet test-rs2",
-                  "namespace": "test-namespace2",
-                  "region": "test-namespace2"
-                }
-              ],
+              "serverGroups": [],
               "type": "kubernetes",
-              "uid": "bec15437-4e6a-11ea-9788-4201ac100006",
+              "uid": "cec15437-4e6a-11ea-9788-4201ac100006",
               "zone": "test-application"
             }
           ]`
 
 const payloadListServerGroups = `[
+            {
+              "account": "account1",
+              "accountName": "",
+              "buildInfo": {
+                "images": [
+                  "test-image1",
+                  "test-image2"
+                ]
+              },
+              "capacity": {
+                "desired": 2,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "cluster": "deployment test-deployment1",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 2,
+                "unknown": 0,
+                "up": 1
+              },
+              "instances": [],
+              "isDisabled": false,
+              "key": {
+                "account": "",
+                "group": "",
+                "kubernetesKind": "",
+                "name": "",
+                "namespace": "",
+                "provider": ""
+              },
+              "kind": "",
+              "labels": null,
+              "loadBalancers": null,
+              "manifest": null,
+              "moniker": {
+                "app": "test-deployment1",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "DaemonSet test-ds1",
+              "providerType": "",
+              "region": "test-namespace1",
+              "securityGroups": null,
+              "serverGroupManagers": [
+                {
+                  "account": "account1",
+                  "location": "test-namespace1",
+                  "name": "test-deployment1"
+                }
+              ],
+              "type": "kubernetes",
+              "uid": "",
+              "zone": "",
+              "zones": null,
+              "insightActions": null
+            },
             {
               "account": "account1",
               "accountName": "",
@@ -1257,7 +1306,7 @@ const payloadListServerGroups = `[
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
-              "name": "replicaset test-rs1",
+              "name": "ReplicaSet test-rs1",
               "providerType": "",
               "region": "test-namespace1",
               "securityGroups": null,
@@ -1275,12 +1324,12 @@ const payloadListServerGroups = `[
               "insightActions": null
             },
             {
-              "account": "account2",
+              "account": "account1",
               "accountName": "",
               "buildInfo": {
                 "images": [
-                  "test-image3",
-                  "test-image4"
+                  "test-image1",
+                  "test-image2"
                 ]
               },
               "capacity": {
@@ -1301,7 +1350,7 @@ const payloadListServerGroups = `[
               },
               "instances": [
                 {
-                  "availabilityZone": "test-namespace2",
+                  "availabilityZone": "test-namespace1",
                   "health": [
                     {
                       "state": "Down",
@@ -1326,7 +1375,7 @@ const payloadListServerGroups = `[
                     "app": "",
                     "cluster": ""
                   },
-                  "name": "pod test-pod2"
+                  "name": "pod test-pod1"
                 }
               ],
               "isDisabled": false,
@@ -1343,19 +1392,19 @@ const payloadListServerGroups = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment2",
+                "app": "test-deployment1",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
-              "name": "replicaset test-rs2",
+              "name": "StatefulSet test-rs1",
               "providerType": "",
-              "region": "test-namespace2",
+              "region": "test-namespace1",
               "securityGroups": null,
               "serverGroupManagers": [
                 {
-                  "account": "account2",
-                  "location": "test-namespace2",
-                  "name": "test-deployment2"
+                  "account": "account1",
+                  "location": "test-namespace1",
+                  "name": "test-deployment1"
                 }
               ],
               "type": "kubernetes",
@@ -1424,81 +1473,6 @@ const payloadListLoadBalancers = `[
               "createdTime": -62135596800000,
               "key": {
                 "account": "account1",
-                "group": "",
-                "kubernetesKind": "service",
-                "name": "service test-service1",
-                "namespace": "test-namespace1",
-                "provider": "kubernetes"
-              },
-              "kind": "service",
-              "manifest": {
-                "apiVersion": "v1",
-                "kind": "Service",
-                "metadata": {
-                  "name": "test-service1",
-                  "namespace": "test-namespace1"
-                }
-              },
-              "providerType": "kubernetes",
-              "zone": "test-application"
-            },
-            {
-              "account": "account2",
-              "cloudProvider": "kubernetes",
-              "labels": {
-                "label1": "test-label1"
-              },
-              "moniker": {
-                "app": "test-application",
-                "cluster": "ingress test-ingress2"
-              },
-              "name": "ingress test-ingress2",
-              "region": "test-namespace2",
-              "serverGroups": null,
-              "type": "kubernetes",
-              "accountName": "account2",
-              "createdTime": 1581603123000,
-              "key": {
-                "account": "account2",
-                "group": "networking.k8s.io",
-                "kubernetesKind": "ingress",
-                "name": "ingress test-ingress2",
-                "namespace": "test-namespace2",
-                "provider": "kubernetes"
-              },
-              "kind": "ingress",
-              "manifest": {
-                "apiVersion": "networking.k8s.io/v1beta1",
-                "kind": "Ingress",
-                "metadata": {
-                  "creationTimestamp": "2020-02-13T14:12:03Z",
-                  "labels": {
-                    "label1": "test-label1"
-                  },
-                  "name": "test-ingress2",
-                  "namespace": "test-namespace2",
-                  "uid": "cec15437-4e6a-11ea-9788-4201ac100006"
-                }
-              },
-              "providerType": "kubernetes",
-              "uid": "cec15437-4e6a-11ea-9788-4201ac100006",
-              "zone": "test-application"
-            },
-            {
-              "account": "account2",
-              "cloudProvider": "kubernetes",
-              "moniker": {
-                "app": "test-application",
-                "cluster": "service test-service1"
-              },
-              "name": "service test-service1",
-              "region": "test-namespace1",
-              "serverGroups": null,
-              "type": "kubernetes",
-              "accountName": "account2",
-              "createdTime": -62135596800000,
-              "key": {
-                "account": "account2",
                 "group": "",
                 "kubernetesKind": "service",
                 "name": "service test-service1",

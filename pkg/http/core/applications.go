@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -16,8 +18,12 @@ import (
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
+)
+
+var (
+	// Default to a timeout of 10 seconds on all lists.
+	listTimeout = int64(10)
 )
 
 type Applications []Application
@@ -149,10 +155,10 @@ type ServerGroupManagerServerGroupMoniker struct {
 // Server Group Managers for a kubernetes target are deployments.
 func ListServerGroupManagers(c *gin.Context) {
 	sc := sql.Instance(c)
-	kc := kubernetes.ControllerInstance(c)
-	ac := arcade.Instance(c)
 	application := c.Param("application")
 	response := ServerGroupManagers{}
+	wg := &sync.WaitGroup{}
+	sgms := make(chan ServerGroupManager, 100000)
 
 	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
@@ -160,80 +166,92 @@ func ListServerGroupManagers(c *gin.Context) {
 		return
 	}
 
+	wg.Add(len(accounts))
+
 	// Don't actually return while attempting to create a list of server group managers.
 	// We want to avoid the situation where a user cannot perform operations when any
 	// cluster is not available.
 	for _, account := range accounts {
-		provider, err := sc.GetKubernetesProvider(account)
-		if err != nil {
-			log.Println("unable to get kubernetes provider for account", account)
-			continue
-		}
-
-		cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-		if err != nil {
-			log.Println("error decoding ca data for account", account)
-			continue
-		}
-
-		token, err := ac.Token()
-		if err != nil {
-			log.Println("error getting token", err.Error())
-			continue
-		}
-
-		config := &rest.Config{
-			Host:        provider.Host,
-			BearerToken: token,
-			TLSClientConfig: rest.TLSClientConfig{
-				CAData: cd,
-			},
-		}
-
-		client, err := kc.NewClient(config)
-		if err != nil {
-			log.Println("error creating dynamic client for account", account)
-			continue
-		}
-
-		deployments := &unstructured.UnstructuredList{}
-		replicaSets := &unstructured.UnstructuredList{}
-
-		lo := metav1.ListOptions{
-			LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
-		}
-
-		deploymentGVR := schema.GroupVersionResource{
-			Group:    "apps",
-			Version:  "v1",
-			Resource: "deployments",
-		}
-		replicaSetGVR := schema.GroupVersionResource{
-			Group:    "apps",
-			Version:  "v1",
-			Resource: "replicasets",
-		}
-
-		deployments, err = client.ListByGVR(deploymentGVR, lo)
-		if err != nil {
-			log.Println("error listing deployments:", err.Error())
-			continue
-		}
-
-		replicaSets, err = client.ListByGVR(replicaSetGVR, lo)
-		if err != nil {
-			log.Println("error listing replicaSets:", err.Error())
-			continue
-		}
-
-		for _, deployment := range deployments.Items {
-			sgm := newServerGroupManager(deployment, account, application)
-			sgm.ServerGroups = buildServerGroups(replicaSets, deployment, account, application)
-			response = append(response, sgm)
-		}
+		go listServerGroupManagers(c, wg, sgms, account, application)
 	}
 
+	wg.Wait()
+
+	close(sgms)
+
+	for sgm := range sgms {
+		response = append(response, sgm)
+	}
+
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].Name < response[j].Name
+	})
+
 	c.JSON(http.StatusOK, response)
+}
+
+func listServerGroupManagers(c *gin.Context, wg *sync.WaitGroup, sgms chan ServerGroupManager,
+	account, application string) {
+	defer wg.Done()
+
+	sc := sql.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
+	ac := arcade.Instance(c)
+
+	provider, err := sc.GetKubernetesProvider(account)
+	if err != nil {
+		log.Println("unable to get kubernetes provider for account", account)
+		return
+	}
+
+	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
+	if err != nil {
+		log.Println("error decoding ca data for account", account)
+		return
+	}
+
+	token, err := ac.Token()
+	if err != nil {
+		log.Println("error getting token", err.Error())
+		return
+	}
+
+	config := &rest.Config{
+		Host:        provider.Host,
+		BearerToken: token,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: cd,
+		},
+	}
+
+	client, err := kc.NewClient(config)
+	if err != nil {
+		log.Println("error creating dynamic client for account", account)
+		return
+	}
+
+	lo := metav1.ListOptions{
+		LabelSelector:  kubernetes.LabelKubernetesName + "=" + application,
+		TimeoutSeconds: &listTimeout,
+	}
+
+	deployments, err := client.ListResource("deployments", lo)
+	if err != nil {
+		log.Println("error listing deployments:", err.Error())
+		return
+	}
+
+	replicaSets, err := client.ListResource("replicaSets", lo)
+	if err != nil {
+		log.Println("error listing replicaSets:", err.Error())
+		return
+	}
+
+	for _, deployment := range deployments.Items {
+		sgm := newServerGroupManager(deployment, account, application)
+		sgm.ServerGroups = buildServerGroups(replicaSets, deployment, account, application)
+		sgms <- sgm
+	}
 }
 
 func newServerGroupManager(deployment unstructured.Unstructured,
@@ -339,10 +357,10 @@ type LoadBalancerServerGroup struct {
 // List "load balancers", which for kubernetes are kinds "ingress" and "service".
 func ListLoadBalancers(c *gin.Context) {
 	sc := sql.Instance(c)
-	kc := kubernetes.ControllerInstance(c)
-	ac := arcade.Instance(c)
 	application := c.Param("application")
 	response := LoadBalancers{}
+	wg := &sync.WaitGroup{}
+	lbs := make(chan LoadBalancer, 100000)
 
 	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
@@ -350,86 +368,94 @@ func ListLoadBalancers(c *gin.Context) {
 		return
 	}
 
+	wg.Add(len(accounts))
+
 	// Don't actually return while attempting to create a list of load balancers.
 	// We want to avoid the situation where a user cannot perform operations when any
 	// cluster is not available.
 	for _, account := range accounts {
-		provider, err := sc.GetKubernetesProvider(account)
-		if err != nil {
-			log.Println("unable to get kubernetes provider for account", account)
-			continue
-		}
-
-		cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-		if err != nil {
-			log.Println("error decoding ca data for account", account)
-			continue
-		}
-
-		token, err := ac.Token()
-		if err != nil {
-			log.Println("error getting token", err.Error())
-			continue
-		}
-
-		config := &rest.Config{
-			Host:        provider.Host,
-			BearerToken: token,
-			TLSClientConfig: rest.TLSClientConfig{
-				CAData: cd,
-			},
-		}
-
-		client, err := kc.NewClient(config)
-		if err != nil {
-			log.Println("error creating dynamic client for account", account)
-			continue
-		}
-
-		// Label selector for all that we are listing in the cluster. We
-		// only want to list resources that have a label referencing the requested application.
-		lo := metav1.ListOptions{
-			LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
-		}
-
-		// TODO get these using the dynamic account.
-		// Create a GVR for ingresses.
-		ingressGVR := schema.GroupVersionResource{
-			Group:    "networking.k8s.io",
-			Version:  "v1beta1",
-			Resource: "ingresses",
-		}
-
-		ingresses, err := client.ListByGVR(ingressGVR, lo)
-		if err != nil {
-			log.Println("error listing ingresses:", err.Error())
-			continue
-		}
-
-		for _, ingress := range ingresses.Items {
-			lb := newLoadBalancer(ingress, account, application)
-			response = append(response, lb)
-		}
-
-		// Create a GVR for services.
-		serviceGVR := schema.GroupVersionResource{
-			Version:  "v1",
-			Resource: "services",
-		}
-
-		services, err := client.ListByGVR(serviceGVR, lo)
-		if err != nil {
-			log.Println("error listing services:", err.Error())
-			continue
-		}
-
-		for _, service := range services.Items {
-			lb := newLoadBalancer(service, account, application)
-			response = append(response, lb)
-		}
+		go listLoadBalancers(c, wg, lbs, account, application)
 	}
 
+	wg.Wait()
+
+	close(lbs)
+
+	for lb := range lbs {
+		response = append(response, lb)
+	}
+
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].Name < response[j].Name
+	})
+
 	c.JSON(http.StatusOK, response)
+}
+
+func listLoadBalancers(c *gin.Context, wg *sync.WaitGroup, lbs chan LoadBalancer,
+	account, application string) {
+	defer wg.Done()
+
+	sc := sql.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
+	ac := arcade.Instance(c)
+	// Load balancer resources.
+	resources := []string{
+		"services",
+		"ingresses",
+	}
+
+	provider, err := sc.GetKubernetesProvider(account)
+	if err != nil {
+		log.Println("unable to get kubernetes provider for account", account)
+		return
+	}
+
+	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
+	if err != nil {
+		log.Println("error decoding ca data for account", account)
+		return
+	}
+
+	token, err := ac.Token()
+	if err != nil {
+		log.Println("error getting token", err.Error())
+		return
+	}
+
+	config := &rest.Config{
+		Host:        provider.Host,
+		BearerToken: token,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: cd,
+		},
+	}
+
+	client, err := kc.NewClient(config)
+	if err != nil {
+		log.Println("error creating dynamic client for account", account)
+		return
+	}
+
+	// Label selector for all that we are listing in the cluster. We
+	// only want to list resources that have a label referencing the requested application.
+	lo := metav1.ListOptions{
+		LabelSelector:  kubernetes.LabelKubernetesName + "=" + application,
+		TimeoutSeconds: &listTimeout,
+	}
+
+	for _, resource := range resources {
+		results, err := client.ListResource(resource, lo)
+		if err != nil {
+			log.Printf("error listing %s: %s", resource, err.Error())
+			continue
+		}
+
+		for _, result := range results.Items {
+			lb := newLoadBalancer(result, account, application)
+			lbs <- lb
+		}
+	}
 }
 
 func newLoadBalancer(u unstructured.Unstructured, account, application string) LoadBalancer {
@@ -545,17 +571,17 @@ type BuildInfo struct {
 }
 
 type Capacity struct {
-	Desired int  `json:"desired"`
-	Pinned  bool `json:"pinned"`
+	Desired int32 `json:"desired"`
+	Pinned  bool  `json:"pinned"`
 }
 
 type InstanceCounts struct {
-	Down         int `json:"down"`
-	OutOfService int `json:"outOfService"`
-	Starting     int `json:"starting"`
-	Total        int `json:"total"`
-	Unknown      int `json:"unknown"`
-	Up           int `json:"up"`
+	Down         int   `json:"down"`
+	OutOfService int   `json:"outOfService"`
+	Starting     int   `json:"starting"`
+	Total        int32 `json:"total"`
+	Unknown      int   `json:"unknown"`
+	Up           int32 `json:"up"`
 }
 
 type Instance struct {
@@ -590,10 +616,10 @@ type InstanceHealth struct {
 
 func ListServerGroups(c *gin.Context) {
 	sc := sql.Instance(c)
-	kc := kubernetes.ControllerInstance(c)
-	ac := arcade.Instance(c)
 	application := c.Param("application")
 	response := ServerGroups{}
+	wg := &sync.WaitGroup{}
+	sgs := make(chan ServerGroup, 100000)
 
 	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
@@ -601,92 +627,107 @@ func ListServerGroups(c *gin.Context) {
 		return
 	}
 
-	// Don't actually return while attempting to create a list of server groups.
-	// We want to avoid the situation where a user cannot perform operations when any
-	// cluster is not available.
+	wg.Add(len(accounts))
+
+	// List server groups concurrently across accounts.
 	for _, account := range accounts {
-		provider, err := sc.GetKubernetesProvider(account)
-		if err != nil {
-			log.Println("unable to get kubernetes provider for account", account)
-			continue
-		}
-
-		cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-		if err != nil {
-			log.Println("error decoding ca data for account", account)
-			continue
-		}
-
-		token, err := ac.Token()
-		if err != nil {
-			log.Println("error getting token", err.Error())
-			continue
-		}
-
-		config := &rest.Config{
-			Host:        provider.Host,
-			BearerToken: token,
-			TLSClientConfig: rest.TLSClientConfig{
-				CAData: cd,
-			},
-		}
-
-		client, err := kc.NewClient(config)
-		if err != nil {
-			log.Println("error creating dynamic client for account", account)
-			continue
-		}
-
-		lo := metav1.ListOptions{
-			LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
-		}
-
-		// Create a GVR for replicasets.
-		replicaSetGVR := schema.GroupVersionResource{
-			Group:    "apps",
-			Version:  "v1",
-			Resource: "replicasets",
-		}
-		podsGVR := schema.GroupVersionResource{
-			Version:  "v1",
-			Resource: "pods",
-		}
-
-		replicaSets, err := client.ListByGVR(replicaSetGVR, lo)
-		if err != nil {
-			log.Println("error listing replicaSets:", err.Error())
-			continue
-		}
-
-		pods, err := client.ListByGVR(podsGVR, lo)
-		if err != nil {
-			log.Println("error listing pods:", err.Error())
-			continue
-		}
-
-		for _, replicaSet := range replicaSets.Items {
-			sg := newServerGroup(replicaSet, pods, account)
-			response = append(response, sg)
-		}
+		go listServerGroups(c, wg, sgs, account, application)
 	}
+
+	wg.Wait()
+
+	close(sgs)
+
+	for sg := range sgs {
+		response = append(response, sg)
+	}
+
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].Name < response[j].Name
+	})
 
 	c.JSON(http.StatusOK, response)
 }
 
-func newServerGroup(replicaSet unstructured.Unstructured,
-	pods *unstructured.UnstructuredList, account string) ServerGroup {
-	rs := kubernetes.NewReplicaSet(replicaSet.Object)
-	images := rs.ListImages()
-	spec := rs.GetReplicaSetSpec()
+func listServerGroups(c *gin.Context, wg *sync.WaitGroup, sgs chan ServerGroup,
+	account, application string) {
+	defer wg.Done()
 
-	desired := 0
-	if spec.Replicas != nil {
-		desired = int(*spec.Replicas)
+	sc := sql.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
+	ac := arcade.Instance(c)
+	// Resources which are "server groups".
+	resources := []string{
+		"replicaSets",
+		"daemonSets",
+		"statefulSets",
 	}
 
+	provider, err := sc.GetKubernetesProvider(account)
+	if err != nil {
+		log.Println("unable to get kubernetes provider for account", account)
+		return
+	}
+
+	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
+	if err != nil {
+		log.Println("error decoding ca data for account", account)
+		return
+	}
+
+	token, err := ac.Token()
+	if err != nil {
+		log.Println("error getting token", err.Error())
+		return
+	}
+
+	config := &rest.Config{
+		Host:        provider.Host,
+		BearerToken: token,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: cd,
+		},
+	}
+
+	client, err := kc.NewClient(config)
+	if err != nil {
+		log.Println("error creating dynamic client for account", account)
+		return
+	}
+
+	lo := metav1.ListOptions{
+		LabelSelector:  kubernetes.LabelKubernetesName + "=" + application,
+		TimeoutSeconds: &listTimeout,
+	}
+
+	pods, err := client.ListResource("pods", lo)
+	if err != nil {
+		log.Println("error listing pods:", err.Error())
+		return
+	}
+
+	for _, resource := range resources {
+		results, err := client.ListResource(resource, lo)
+		if err != nil {
+			log.Printf("error listing %s: %s\n", resource, err.Error())
+			continue
+		}
+
+		for _, result := range results.Items {
+			sg := newServerGroup(result, pods, account)
+			sgs <- sg
+		}
+	}
+}
+
+func newServerGroup(result unstructured.Unstructured,
+	pods *unstructured.UnstructuredList, account string) ServerGroup {
+	images := listImages(&result)
+	desired := getDesiredReplicasCount(&result)
+
 	serverGroupManagers := []ServerGroupServerGroupManager{}
-	instances := buildInstances(pods, replicaSet)
-	annotations := replicaSet.GetAnnotations()
+	instances := buildInstances(pods, result)
+	annotations := result.GetAnnotations()
 
 	// Build server group manager
 	managerName := annotations["artifact.spinnaker.io/name"]
@@ -716,14 +757,14 @@ func newServerGroup(replicaSet unstructured.Unstructured,
 		},
 		CloudProvider: "kubernetes",
 		Cluster:       cluster,
-		CreatedTime:   replicaSet.GetCreationTimestamp().Unix() * 1000,
+		CreatedTime:   result.GetCreationTimestamp().Unix() * 1000,
 		InstanceCounts: InstanceCounts{
 			Down:         0,
 			OutOfService: 0,
 			Starting:     0,
-			Total:        int(rs.GetReplicaSetStatus().Replicas),
+			Total:        getTotalReplicasCount(&result),
 			Unknown:      0,
-			Up:           int(rs.GetReplicaSetStatus().ReadyReplicas),
+			Up:           getReadyReplicasCount(&result),
 		},
 		Instances:     instances,
 		IsDisabled:    false,
@@ -733,22 +774,116 @@ func newServerGroup(replicaSet unstructured.Unstructured,
 			Cluster:  cluster,
 			Sequence: sequence,
 		},
-		Name:                fmt.Sprintf("%s %s", "replicaset", replicaSet.GetName()),
-		Region:              replicaSet.GetNamespace(),
+		Name:                fmt.Sprintf("%s %s", result.GetKind(), result.GetName()),
+		Region:              result.GetNamespace(),
 		SecurityGroups:      nil,
 		ServerGroupManagers: serverGroupManagers,
 		Type:                "kubernetes",
-		Labels:              replicaSet.GetLabels(),
+		Labels:              result.GetLabels(),
 	}
 }
 
+// List images for replicaSets, statefulSets, and daemonSets.
+func listImages(result *unstructured.Unstructured) []string {
+	images := []string{}
+
+	switch strings.ToLower(result.GetKind()) {
+	case "replicaset":
+		rs := kubernetes.NewReplicaSet(result.Object)
+		images = rs.ListImages()
+	case "daemonset":
+		ds := kubernetes.NewDaemonSet(result.Object)
+		o := ds.Object()
+		for _, container := range o.Spec.Template.Spec.Containers {
+			images = append(images, container.Image)
+		}
+	case "statefulset":
+		sts := kubernetes.NewStatefulSet(result.Object)
+		o := sts.Object()
+		for _, container := range o.Spec.Template.Spec.Containers {
+			images = append(images, container.Image)
+		}
+	}
+
+	return images
+}
+
+// Get desired replicas for replicaSets, statefulSets, and daemonSets.
+func getDesiredReplicasCount(result *unstructured.Unstructured) int32 {
+	desired := int32(0)
+
+	switch strings.ToLower(result.GetKind()) {
+	case "replicaset":
+		rs := kubernetes.NewReplicaSet(result.Object)
+		if rs.GetReplicaSetSpec().Replicas != nil {
+			desired = *rs.GetReplicaSetSpec().Replicas
+		}
+	case "daemonset":
+		ds := kubernetes.NewDaemonSet(result.Object)
+		o := ds.Object()
+		desired = o.Status.DesiredNumberScheduled
+	case "statefulset":
+		sts := kubernetes.NewStatefulSet(result.Object)
+		o := sts.Object()
+		if o.Spec.Replicas != nil {
+			desired = *o.Spec.Replicas
+		}
+	}
+
+	return desired
+}
+
+// Get total replicas for replicaSets, statefulSets, and daemonSets.
+func getTotalReplicasCount(result *unstructured.Unstructured) int32 {
+	total := int32(0)
+
+	switch strings.ToLower(result.GetKind()) {
+	case "replicaset":
+		rs := kubernetes.NewReplicaSet(result.Object)
+		total = rs.GetReplicaSetStatus().Replicas
+	case "daemonset":
+		ds := kubernetes.NewDaemonSet(result.Object)
+		o := ds.Object()
+		total = o.Status.DesiredNumberScheduled
+	case "statefulset":
+		sts := kubernetes.NewStatefulSet(result.Object)
+		o := sts.Object()
+		total = o.Status.Replicas
+	}
+
+	return total
+}
+
+// Get ready replicas for replicaSets, statefulSets, and daemonSets.
+func getReadyReplicasCount(result *unstructured.Unstructured) int32 {
+	ready := int32(0)
+
+	switch strings.ToLower(result.GetKind()) {
+	case "replicaset":
+		rs := kubernetes.NewReplicaSet(result.Object)
+		if rs.GetReplicaSetSpec().Replicas != nil {
+			ready = rs.GetReplicaSetStatus().ReadyReplicas
+		}
+	case "daemonset":
+		ds := kubernetes.NewDaemonSet(result.Object)
+		o := ds.Object()
+		ready = o.Status.NumberReady
+	case "statefulset":
+		sts := kubernetes.NewStatefulSet(result.Object)
+		o := sts.Object()
+		ready = o.Status.ReadyReplicas
+	}
+
+	return ready
+}
+
 func buildInstances(pods *unstructured.UnstructuredList,
-	replicaSet unstructured.Unstructured) []Instance {
+	serverGroup unstructured.Unstructured) []Instance {
 	instances := []Instance{}
 	for _, u := range pods.Items {
 		p := kubernetes.NewPod(u.Object)
 		for _, ownerReference := range p.GetObjectMeta().OwnerReferences {
-			if strings.EqualFold(ownerReference.Name, replicaSet.GetName()) {
+			if strings.EqualFold(ownerReference.Name, serverGroup.GetName()) {
 				state := "Up"
 				if p.GetPodStatus().Phase != "Running" {
 					state = "Down"
@@ -821,12 +956,8 @@ func GetServerGroup(c *gin.Context) {
 	}
 
 	lo := metav1.ListOptions{
-		LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
-	}
-
-	podsGVR := schema.GroupVersionResource{
-		Version:  "v1",
-		Resource: "pods",
+		LabelSelector:  kubernetes.LabelKubernetesName + "=" + application,
+		TimeoutSeconds: &listTimeout,
 	}
 
 	result, err := client.Get(kind, name, location)
@@ -836,26 +967,17 @@ func GetServerGroup(c *gin.Context) {
 	}
 
 	// "Instances" in kubernetes are pods.
-	pods, err := client.ListByGVR(podsGVR, lo)
+	pods, err := client.ListResource("pods", lo)
 	if err != nil {
 		clouddriver.WriteError(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	images := []string{}
-	desired := 0
 	instanceCounts := InstanceCounts{}
-	if strings.EqualFold(kind, "replicaset") {
-		rs := kubernetes.NewReplicaSet(result.Object)
-		spec := rs.GetReplicaSetSpec()
-		status := rs.GetReplicaSetStatus()
-		images = rs.ListImages()
-		if spec.Replicas != nil {
-			desired = int(*spec.Replicas)
-		}
-		instanceCounts.Total = int(status.Replicas)
-		instanceCounts.Up = int(status.ReadyReplicas)
-	}
+	images := listImages(result)
+	desired := getDesiredReplicasCount(result)
+	instanceCounts.Total = getTotalReplicasCount(result)
+	instanceCounts.Up = getReadyReplicasCount(result)
 
 	instances := []Instance{}
 	for _, v := range pods.Items {

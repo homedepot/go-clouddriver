@@ -98,9 +98,8 @@ var _ = Describe("Application", func() {
 			createRequest(http.MethodGet)
 			fakeSQLClient.ListKubernetesAccountsBySpinnakerAppReturns([]string{
 				"account1",
-				"account2",
 			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(0, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceReturnsOnCall(0, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -117,9 +116,24 @@ var _ = Describe("Application", func() {
 							},
 						},
 					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Deployment",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-deployment2",
+								"namespace":         "test-namespace2",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"labels": map[string]interface{}{
+									"label1": "test-label2",
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
 				},
 			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(1, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceReturnsOnCall(1, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -132,44 +146,6 @@ var _ = Describe("Application", func() {
 									"artifact.spinnaker.io/name":        "test-deployment1",
 									"artifact.spinnaker.io/type":        "kubernetes/deployment",
 									"deployment.kubernetes.io/revision": "236",
-								},
-							},
-						},
-					},
-				},
-			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(2, &unstructured.UnstructuredList{
-				Items: []unstructured.Unstructured{
-					{
-						Object: map[string]interface{}{
-							"kind":       "Deployment",
-							"apiVersion": "apps/v1",
-							"metadata": map[string]interface{}{
-								"name":              "test-deployment2",
-								"namespace":         "test-namespace2",
-								"creationTimestamp": "2020-02-12T14:11:03Z",
-								"labels": map[string]interface{}{
-									"label1": "test-label1",
-								},
-								"uid": "bec15437-4e6a-11ea-9788-4201ac100006",
-							},
-						},
-					},
-				},
-			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(3, &unstructured.UnstructuredList{
-				Items: []unstructured.Unstructured{
-					{
-						Object: map[string]interface{}{
-							"kind":       "ReplicaSet",
-							"apiVersion": "apps/v1",
-							"metadata": map[string]interface{}{
-								"name":      "test-rs2",
-								"namespace": "test-namespace2",
-								"annotations": map[string]interface{}{
-									"artifact.spinnaker.io/name":        "test-deployment2",
-									"artifact.spinnaker.io/type":        "kubernetes/deployment",
-									"deployment.kubernetes.io/revision": "19",
 								},
 							},
 						},
@@ -245,8 +221,8 @@ var _ = Describe("Application", func() {
 
 		When("listing deployments returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListByGVRReturnsOnCall(0, nil, errors.New("error listing deployments"))
-				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing deployments"))
+				fakeKubeClient.ListResourceReturnsOnCall(0, nil, errors.New("error listing deployments"))
+				fakeKubeClient.ListResourceReturnsOnCall(2, nil, errors.New("error listing deployments"))
 			})
 
 			It("continues", func() {
@@ -256,8 +232,8 @@ var _ = Describe("Application", func() {
 
 		When("listing replicasets returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing replicaSets"))
-				fakeKubeClient.ListByGVRReturnsOnCall(3, nil, errors.New("error listing replicaSets"))
+				fakeKubeClient.ListResourceReturnsOnCall(1, nil, errors.New("error listing replicaSets"))
+				fakeKubeClient.ListResourceReturnsOnCall(3, nil, errors.New("error listing replicaSets"))
 			})
 
 			It("continues", func() {
@@ -280,9 +256,9 @@ var _ = Describe("Application", func() {
 			createRequest(http.MethodGet)
 			fakeSQLClient.ListKubernetesAccountsBySpinnakerAppReturns([]string{
 				"account1",
-				"account2",
+				// "account2",
 			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(0, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceReturnsOnCall(0, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -301,40 +277,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(1, &unstructured.UnstructuredList{
-				Items: []unstructured.Unstructured{
-					{
-						Object: map[string]interface{}{
-							"kind":       "Service",
-							"apiVersion": "v1",
-							"metadata": map[string]interface{}{
-								"name":      "test-service1",
-								"namespace": "test-namespace1",
-							},
-						},
-					},
-				},
-			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(2, &unstructured.UnstructuredList{
-				Items: []unstructured.Unstructured{
-					{
-						Object: map[string]interface{}{
-							"kind":       "Ingress",
-							"apiVersion": "networking.k8s.io/v1beta1",
-							"metadata": map[string]interface{}{
-								"name":              "test-ingress2",
-								"namespace":         "test-namespace2",
-								"creationTimestamp": "2020-02-13T14:12:03Z",
-								"labels": map[string]interface{}{
-									"label1": "test-label1",
-								},
-								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
-							},
-						},
-					},
-				},
-			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(3, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceReturnsOnCall(1, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -417,8 +360,8 @@ var _ = Describe("Application", func() {
 
 		When("listing ingresses returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListByGVRReturnsOnCall(0, nil, errors.New("error listing ingresses"))
-				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing ingresses"))
+				fakeKubeClient.ListResourceReturnsOnCall(0, nil, errors.New("error listing ingresses"))
+				fakeKubeClient.ListResourceReturnsOnCall(1, nil, errors.New("error listing ingresses"))
 			})
 
 			It("continues", func() {
@@ -428,8 +371,8 @@ var _ = Describe("Application", func() {
 
 		When("listing services returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing services"))
-				fakeKubeClient.ListByGVRReturnsOnCall(3, nil, errors.New("error listing services"))
+				fakeKubeClient.ListResourceReturnsOnCall(1, nil, errors.New("error listing services"))
+				fakeKubeClient.ListResourceReturnsOnCall(3, nil, errors.New("error listing services"))
 			})
 
 			It("continues", func() {
@@ -528,9 +471,32 @@ var _ = Describe("Application", func() {
 			createRequest(http.MethodGet)
 			fakeSQLClient.ListKubernetesAccountsBySpinnakerAppReturns([]string{
 				"account1",
-				"account2",
 			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(0, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceReturnsOnCall(0, &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"labels": map[string]interface{}{
+									"label1": "test-label1",
+								},
+								"ownerReferences": []map[string]interface{}{
+									{
+										"name": "test-rs1",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+				},
+			}, nil)
+			fakeKubeClient.ListResourceReturnsOnCall(1, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -572,45 +538,21 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(1, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceReturnsOnCall(2, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
-							"kind":       "Pod",
+							"kind":       "DaemonSet",
 							"apiVersion": "v1",
 							"metadata": map[string]interface{}{
-								"name":              "test-pod1",
+								"name":              "test-ds1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
-								"labels": map[string]interface{}{
-									"label1": "test-label1",
-								},
-								"ownerReferences": []map[string]interface{}{
-									{
-										"name": "test-rs1",
-									},
-								},
-								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
-							},
-						},
-					},
-				},
-			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(2, &unstructured.UnstructuredList{
-				Items: []unstructured.Unstructured{
-					{
-						Object: map[string]interface{}{
-							"kind":       "ReplicaSet",
-							"apiVersion": "apps/v1",
-							"metadata": map[string]interface{}{
-								"name":              "test-rs2",
-								"namespace":         "test-namespace2",
-								"creationTimestamp": "2020-02-13T14:12:03Z",
 								"annotations": map[string]interface{}{
-									"artifact.spinnaker.io/name":        "test-deployment2",
+									"artifact.spinnaker.io/name":        "test-deployment1",
 									"artifact.spinnaker.io/type":        "kubernetes/deployment",
-									"artifact.spinnaker.io/location":    "test-namespace2",
-									"moniker.spinnaker.io/application":  "test-deployment2",
+									"artifact.spinnaker.io/location":    "test-namespace1",
+									"moniker.spinnaker.io/application":  "test-deployment1",
 									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 									"deployment.kubernetes.io/revision": "19",
 								},
@@ -621,10 +563,53 @@ var _ = Describe("Application", func() {
 									"spec": map[string]interface{}{
 										"containers": []map[string]interface{}{
 											{
-												"image": "test-image3",
+												"image": "test-image1",
 											},
 											{
-												"image": "test-image4",
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"desiredNumberScheduled": 2,
+								"currentNumberScheduled": 1,
+								"numberReady":            1,
+							},
+						},
+					},
+				},
+			}, nil)
+			fakeKubeClient.ListResourceReturnsOnCall(3, &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]interface{}{
+							"kind":       "StatefulSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":        "test-deployment1",
+									"artifact.spinnaker.io/type":        "kubernetes/deployment",
+									"artifact.spinnaker.io/location":    "test-namespace1",
+									"moniker.spinnaker.io/application":  "test-deployment1",
+									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+									"deployment.kubernetes.io/revision": "19",
+								},
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
 											},
 										},
 									},
@@ -633,30 +618,6 @@ var _ = Describe("Application", func() {
 							"status": map[string]interface{}{
 								"replicas":      1,
 								"readyReplicas": 0,
-							},
-						},
-					},
-				},
-			}, nil)
-			fakeKubeClient.ListByGVRReturnsOnCall(3, &unstructured.UnstructuredList{
-				Items: []unstructured.Unstructured{
-					{
-						Object: map[string]interface{}{
-							"kind":       "Pod",
-							"apiVersion": "v1",
-							"metadata": map[string]interface{}{
-								"name":              "test-pod2",
-								"namespace":         "test-namespace2",
-								"creationTimestamp": "2020-02-13T14:12:03Z",
-								"labels": map[string]interface{}{
-									"label1": "test-label1",
-								},
-								"ownerReferences": []map[string]interface{}{
-									{
-										"name": "test-rs2",
-									},
-								},
-								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 							},
 						},
 					},
@@ -731,8 +692,8 @@ var _ = Describe("Application", func() {
 
 		When("listing replicasets returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListByGVRReturnsOnCall(0, nil, errors.New("error listing replicasets"))
-				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing replicasets"))
+				fakeKubeClient.ListResourceReturnsOnCall(0, nil, errors.New("error listing replicasets"))
+				fakeKubeClient.ListResourceReturnsOnCall(2, nil, errors.New("error listing replicasets"))
 			})
 
 			It("continues", func() {
@@ -742,8 +703,8 @@ var _ = Describe("Application", func() {
 
 		When("listing pods returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListByGVRReturnsOnCall(1, nil, errors.New("error listing pods"))
-				fakeKubeClient.ListByGVRReturnsOnCall(3, nil, errors.New("error listing pods"))
+				fakeKubeClient.ListResourceReturnsOnCall(1, nil, errors.New("error listing pods"))
+				fakeKubeClient.ListResourceReturnsOnCall(3, nil, errors.New("error listing pods"))
 			})
 
 			It("continues", func() {
@@ -764,7 +725,7 @@ var _ = Describe("Application", func() {
 			setup()
 			uri = svr.URL + "/applications/test-application/serverGroups/test-account/test-namespace/replicaSet test-rs1"
 			createRequest(http.MethodGet)
-			fakeKubeClient.ListByGVRReturns(&unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceReturns(&unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -931,7 +892,7 @@ var _ = Describe("Application", func() {
 
 		When("listing pods returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListByGVRReturns(nil, errors.New("error listing pods"))
+				fakeKubeClient.ListResourceReturns(nil, errors.New("error listing pods"))
 			})
 
 			It("returns an error", func() {

@@ -77,6 +77,28 @@ func setup() {
 			},
 		},
 	}, nil)
+	fakeKubeClient.ListResourceReturns(&unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerMonikerCluster: "deployment test-deployment",
+						},
+					},
+				},
+			},
+			{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerMonikerCluster: "deployment test-deployment",
+						},
+					},
+				},
+			},
+		},
+	}, nil)
 
 	fakeKubeController = &kubernetesfakes.FakeController{}
 	fakeKubeController.NewClientReturns(fakeKubeClient, nil)

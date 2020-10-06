@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	listTimeout = int64(30)
+	manifestListTimeout = int64(30)
 )
 
 func GetManifest(c *gin.Context) {
@@ -171,7 +171,7 @@ func GetManifestByTarget(c *gin.Context) {
 		},
 		LabelSelector:  kubernetes.LabelKubernetesName + "=" + application,
 		FieldSelector:  "metadata.namespace=" + namespace,
-		TimeoutSeconds: &listTimeout,
+		TimeoutSeconds: &manifestListTimeout,
 		// Limit:          0,
 	}
 
