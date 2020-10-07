@@ -40,6 +40,7 @@ type Client interface {
 	ListByGVR(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	Patch(string, string, string, []byte) (Metadata, *unstructured.Unstructured, error)
 	PatchUsingStrategy(string, string, string, []byte, types.PatchType) (Metadata, *unstructured.Unstructured, error)
+	ListResourcesByKindAndNamespace(string, string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 }
 
 type client struct {
@@ -198,6 +199,40 @@ func (c *client) GVRForKind(kind string) (schema.GroupVersionResource, error) {
 // List all resources by their GVR and list options.
 func (c *client) ListByGVR(gvr schema.GroupVersionResource, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	return c.c.Resource(gvr).List(context.TODO(), lo)
+}
+
+func (c *client) ListResourcesByKindAndNamespace(kind, namespace string, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+	gvk, err := c.mapper.KindFor(schema.GroupVersionResource{Resource: kind})
+	if err != nil {
+		return nil, err
+	}
+
+	restMapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	restClient, err := newRestClient(*c.config, gvk.GroupVersion())
+	if err != nil {
+		return nil, err
+	}
+
+	helper := resource.NewHelper(restClient, restMapping)
+
+	var ul *unstructured.UnstructuredList
+
+	if helper.NamespaceScoped {
+		ul, err = c.c.
+			Resource(restMapping.Resource).
+			Namespace(namespace).
+			List(context.TODO(), lo)
+	} else {
+		ul, err = c.c.
+			Resource(restMapping.Resource).
+			List(context.TODO(), lo)
+	}
+
+	return ul, err
 }
 
 func (c *client) Patch(kind, name, namespace string, p []byte) (Metadata, *unstructured.Unstructured, error) {

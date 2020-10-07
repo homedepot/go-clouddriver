@@ -10,25 +10,32 @@ import (
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/google/uuid"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+)
+
+var (
+	listTimeout = int64(30)
 )
 
 func (ah *actionHandler) NewDeployManifestAction(ac ActionConfig) Action {
 	return &deployManfest{
-		ac: ac.ArcadeClient,
-		sc: ac.SQLClient,
-		kc: ac.KubeController,
-		id: ac.ID,
-		dm: ac.Operation.DeployManifest,
+		ac:  ac.ArcadeClient,
+		sc:  ac.SQLClient,
+		kc:  ac.KubeController,
+		id:  ac.ID,
+		dm:  ac.Operation.DeployManifest,
+		app: ac.Application,
 	}
 }
 
 type deployManfest struct {
-	ac arcade.Client
-	sc sql.Client
-	kc kubernetes.Controller
-	id string
-	dm *DeployManifestRequest
+	ac  arcade.Client
+	sc  sql.Client
+	kc  kubernetes.Controller
+	id  string
+	dm  *DeployManifestRequest
+	app string
 }
 
 func (d *deployManfest) Run() error {
@@ -65,23 +72,53 @@ func (d *deployManfest) Run() error {
 		if err != nil {
 			return err
 		}
+		application := d.dm.Moniker.App
 
-		name := u.GetName()
-
-		err = d.kc.AddSpinnakerAnnotations(u, d.dm.Moniker.App)
+		err = d.kc.AddSpinnakerAnnotations(u, application)
 		if err != nil {
 			return err
 		}
 
-		err = d.kc.AddSpinnakerLabels(u, d.dm.Moniker.App)
+		err = d.kc.AddSpinnakerLabels(u, application)
 		if err != nil {
 			return err
+		}
+
+		if d.kc.IsVersioned(u) == "true" {
+			kind := strings.ToLower(u.GetKind())
+			namespace := u.GetNamespace()
+			name := u.GetName()
+			lo := metav1.ListOptions{
+				LabelSelector:  kubernetes.LabelKubernetesName + "=" + application,
+				TimeoutSeconds: &listTimeout,
+			}
+
+			// "Instances" in kubernetes are pods.
+			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
+			if err != nil {
+				return err
+			}
+
+			currentVersion, err := d.kc.GetCurrentVersion(results, kind, name, client)
+			if err != nil {
+				return err
+			}
+			latestVersion := d.kc.IncrementVersion(currentVersion)
+
+			u.SetName(u.GetName() + "-" + latestVersion.ShortVersion)
+
+			err = d.kc.AddSpinnakerVersionAnnotations(u, application, latestVersion)
+			if err != nil {
+				return err
+			}
 		}
 
 		meta, err := client.ApplyWithNamespaceOverride(u, d.dm.NamespaceOverride)
 		if err != nil {
 			return err
 		}
+
+		name := u.GetName()
 
 		kr := kubernetes.Resource{
 			AccountName:  d.dm.Account,
