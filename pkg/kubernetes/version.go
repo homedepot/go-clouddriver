@@ -71,7 +71,7 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 func (c *controller) IsVersioned(u *unstructured.Unstructured) bool {
 	annotations := u.GetAnnotations()
 	if annotations != nil {
-		if _, ok := annotations[AnnotationSpinnakerVersioned]; ok {
+		if _, ok := annotations[AnnotationSpinnakerStrategyVersioned]; ok {
 			return true
 		}
 	}

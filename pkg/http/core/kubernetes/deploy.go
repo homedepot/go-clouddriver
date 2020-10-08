@@ -20,22 +20,20 @@ var (
 
 func (ah *actionHandler) NewDeployManifestAction(ac ActionConfig) Action {
 	return &deployManifest{
-		ac:  ac.ArcadeClient,
-		sc:  ac.SQLClient,
-		kc:  ac.KubeController,
-		id:  ac.ID,
-		dm:  ac.Operation.DeployManifest,
-		app: ac.Application,
+		ac: ac.ArcadeClient,
+		sc: ac.SQLClient,
+		kc: ac.KubeController,
+		id: ac.ID,
+		dm: ac.Operation.DeployManifest,
 	}
 }
 
 type deployManifest struct {
-	ac  arcade.Client
-	sc  sql.Client
-	kc  kubernetes.Controller
-	id  string
-	dm  *DeployManifestRequest
-	app string
+	ac arcade.Client
+	sc sql.Client
+	kc kubernetes.Controller
+	id string
+	dm *DeployManifestRequest
 }
 
 func (d *deployManifest) Run() error {
