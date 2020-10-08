@@ -74,16 +74,16 @@ type FakeController struct {
 	incrementVersionReturnsOnCall map[int]struct {
 		result1 kubernetes.SpinnakerVersion
 	}
-	IsVersionedStub        func(*unstructured.Unstructured) string
+	IsVersionedStub        func(*unstructured.Unstructured) bool
 	isVersionedMutex       sync.RWMutex
 	isVersionedArgsForCall []struct {
 		arg1 *unstructured.Unstructured
 	}
 	isVersionedReturns struct {
-		result1 string
+		result1 bool
 	}
 	isVersionedReturnsOnCall map[int]struct {
-		result1 string
+		result1 bool
 	}
 	NewClientStub        func(*rest.Config) (kubernetes.Client, error)
 	newClientMutex       sync.RWMutex
@@ -425,7 +425,7 @@ func (fake *FakeController) IncrementVersionReturnsOnCall(i int, result1 kuberne
 	}{result1}
 }
 
-func (fake *FakeController) IsVersioned(arg1 *unstructured.Unstructured) string {
+func (fake *FakeController) IsVersioned(arg1 *unstructured.Unstructured) bool {
 	fake.isVersionedMutex.Lock()
 	ret, specificReturn := fake.isVersionedReturnsOnCall[len(fake.isVersionedArgsForCall)]
 	fake.isVersionedArgsForCall = append(fake.isVersionedArgsForCall, struct {
@@ -449,7 +449,7 @@ func (fake *FakeController) IsVersionedCallCount() int {
 	return len(fake.isVersionedArgsForCall)
 }
 
-func (fake *FakeController) IsVersionedCalls(stub func(*unstructured.Unstructured) string) {
+func (fake *FakeController) IsVersionedCalls(stub func(*unstructured.Unstructured) bool) {
 	fake.isVersionedMutex.Lock()
 	defer fake.isVersionedMutex.Unlock()
 	fake.IsVersionedStub = stub
@@ -462,26 +462,26 @@ func (fake *FakeController) IsVersionedArgsForCall(i int) *unstructured.Unstruct
 	return argsForCall.arg1
 }
 
-func (fake *FakeController) IsVersionedReturns(result1 string) {
+func (fake *FakeController) IsVersionedReturns(result1 bool) {
 	fake.isVersionedMutex.Lock()
 	defer fake.isVersionedMutex.Unlock()
 	fake.IsVersionedStub = nil
 	fake.isVersionedReturns = struct {
-		result1 string
+		result1 bool
 	}{result1}
 }
 
-func (fake *FakeController) IsVersionedReturnsOnCall(i int, result1 string) {
+func (fake *FakeController) IsVersionedReturnsOnCall(i int, result1 bool) {
 	fake.isVersionedMutex.Lock()
 	defer fake.isVersionedMutex.Unlock()
 	fake.IsVersionedStub = nil
 	if fake.isVersionedReturnsOnCall == nil {
 		fake.isVersionedReturnsOnCall = make(map[int]struct {
-			result1 string
+			result1 bool
 		})
 	}
 	fake.isVersionedReturnsOnCall[i] = struct {
-		result1 string
+		result1 bool
 	}{result1}
 }
 

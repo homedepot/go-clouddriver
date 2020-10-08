@@ -19,7 +19,7 @@ var (
 )
 
 func (ah *actionHandler) NewDeployManifestAction(ac ActionConfig) Action {
-	return &deployManfest{
+	return &deployManifest{
 		ac:  ac.ArcadeClient,
 		sc:  ac.SQLClient,
 		kc:  ac.KubeController,
@@ -29,7 +29,7 @@ func (ah *actionHandler) NewDeployManifestAction(ac ActionConfig) Action {
 	}
 }
 
-type deployManfest struct {
+type deployManifest struct {
 	ac  arcade.Client
 	sc  sql.Client
 	kc  kubernetes.Controller
@@ -38,7 +38,7 @@ type deployManfest struct {
 	app string
 }
 
-func (d *deployManfest) Run() error {
+func (d *deployManifest) Run() error {
 	provider, err := d.sc.GetKubernetesProvider(d.dm.Account)
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (d *deployManfest) Run() error {
 			return err
 		}
 
-		if d.kc.IsVersioned(u) == "true" {
+		if d.kc.IsVersioned(u) {
 			kind := strings.ToLower(u.GetKind())
 			namespace := u.GetNamespace()
 			name := u.GetName()

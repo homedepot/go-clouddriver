@@ -68,11 +68,11 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 	return currentVersion, nil
 }
 
-func (c *controller) IsVersioned(u *unstructured.Unstructured) string {
+func (c *controller) IsVersioned(u *unstructured.Unstructured) bool {
 	annotations := u.GetAnnotations()
 	if annotations != nil {
-		if versioned, ok := annotations[AnnotationSpinnakerVersioned]; ok {
-			return versioned
+		if _, ok := annotations[AnnotationSpinnakerVersioned]; ok {
+			return true
 		}
 	}
 	kind := strings.ToLower(u.GetKind())
@@ -80,9 +80,9 @@ func (c *controller) IsVersioned(u *unstructured.Unstructured) string {
 		strings.EqualFold(kind, "replicaSet") ||
 		strings.EqualFold(kind, "ConfigMap") ||
 		strings.EqualFold(kind, "Secret") {
-		return "true"
+		return true
 	}
-	return "false"
+	return false
 }
 
 func (c *controller) IncrementVersion(currentVersion string) SpinnakerVersion {
