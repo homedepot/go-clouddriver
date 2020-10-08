@@ -7,34 +7,14 @@ import (
 	"strings"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
+	"github.com/billiford/go-clouddriver/pkg/artifact"
 	"github.com/billiford/go-clouddriver/pkg/helm"
 	"github.com/gin-gonic/gin"
 )
 
-type ArtifactsCredentials []ArtifactsCredential
-
-type ArtifactsCredential struct {
-	Name  string   `json:"name"`
-	Types []string `json:"types"`
-}
-
-// TODO store artifact credentials in some config and pull from there.
 func ListArtifactCredentials(c *gin.Context) {
-	response := ArtifactsCredentials{
-		ArtifactsCredential{
-			Name: "helm-stable",
-			Types: []string{
-				"helm/chart",
-			},
-		},
-		ArtifactsCredential{
-			Name: "embedded-artifact",
-			Types: []string{
-				"embedded/base64",
-			},
-		},
-	}
-	c.JSON(http.StatusOK, response)
+	acc := artifact.CredentialsControllerInstance(c)
+	c.JSON(http.StatusOK, acc.ListArtifactCredentialsNamesAndTypes())
 }
 
 func ListHelmArtifactAccountNames(c *gin.Context) {

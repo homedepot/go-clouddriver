@@ -10,6 +10,8 @@ import (
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"github.com/billiford/go-clouddriver/pkg/arcade/arcadefakes"
+	"github.com/billiford/go-clouddriver/pkg/artifact"
+	"github.com/billiford/go-clouddriver/pkg/artifact/artifactfakes"
 	"github.com/billiford/go-clouddriver/pkg/helm/helmfakes"
 	kubefakes "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes/kubernetesfakes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
@@ -24,19 +26,20 @@ import (
 )
 
 var (
-	err                   error
-	svr                   *httptest.Server
-	uri                   string
-	req                   *http.Request
-	body                  *bytes.Buffer
-	res                   *http.Response
-	fakeArcadeClient      *arcadefakes.FakeClient
-	fakeHelmClient        *helmfakes.FakeClient
-	fakeSQLClient         *sqlfakes.FakeClient
-	fakeKubeClient        *kubernetesfakes.FakeClient
-	fakeKubeController    *kubernetesfakes.FakeController
-	fakeKubeActionHandler *kubefakes.FakeActionHandler
-	fakeAction            *kubefakes.FakeAction
+	err                               error
+	svr                               *httptest.Server
+	uri                               string
+	req                               *http.Request
+	body                              *bytes.Buffer
+	res                               *http.Response
+	fakeArcadeClient                  *arcadefakes.FakeClient
+	fakeArtifactCredentialsController *artifactfakes.FakeCredentialsController
+	fakeHelmClient                    *helmfakes.FakeClient
+	fakeSQLClient                     *sqlfakes.FakeClient
+	fakeKubeClient                    *kubernetesfakes.FakeClient
+	fakeKubeController                *kubernetesfakes.FakeController
+	fakeKubeActionHandler             *kubefakes.FakeActionHandler
+	fakeAction                        *kubefakes.FakeAction
 )
 
 func setup() {
@@ -104,8 +107,8 @@ func setup() {
 	fakeKubeController.NewClientReturns(fakeKubeClient, nil)
 
 	fakeAction = &kubefakes.FakeAction{}
-	fakeKubeActionHandler = &kubefakes.FakeActionHandler{}
 
+	fakeKubeActionHandler = &kubefakes.FakeActionHandler{}
 	fakeKubeActionHandler.NewDeployManifestActionReturns(fakeAction)
 	fakeKubeActionHandler.NewScaleManifestActionReturns(fakeAction)
 	fakeKubeActionHandler.NewRollingRestartActionReturns(fakeAction)
@@ -113,6 +116,22 @@ func setup() {
 	fakeKubeActionHandler.NewRunJobActionReturns(fakeAction)
 
 	fakeArcadeClient = &arcadefakes.FakeClient{}
+
+	fakeArtifactCredentialsController = &artifactfakes.FakeCredentialsController{}
+	fakeArtifactCredentialsController.ListArtifactCredentialsNamesAndTypesReturns([]artifact.Credentials{
+		{
+			Name: "helm-stable",
+			Types: []artifact.Type{
+				artifact.TypeHelmChart,
+			},
+		},
+		{
+			Name: "embedded-artifact",
+			Types: []artifact.Type{
+				artifact.TypeEmbeddedBase64,
+			},
+		},
+	})
 
 	fakeHelmClient = &helmfakes.FakeClient{}
 
@@ -125,11 +144,12 @@ func setup() {
 	r.Use(gin.Recovery())
 
 	c := &server.Config{
-		ArcadeClient:      fakeArcadeClient,
-		HelmClient:        fakeHelmClient,
-		SQLClient:         fakeSQLClient,
-		KubeController:    fakeKubeController,
-		KubeActionHandler: fakeKubeActionHandler,
+		ArcadeClient:                  fakeArcadeClient,
+		ArtifactCredentialsController: fakeArtifactCredentialsController,
+		HelmClient:                    fakeHelmClient,
+		SQLClient:                     fakeSQLClient,
+		KubeController:                fakeKubeController,
+		KubeActionHandler:             fakeKubeActionHandler,
 	}
 
 	// Create server.

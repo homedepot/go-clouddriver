@@ -8,26 +8,29 @@ import (
 	"strings"
 
 	"github.com/billiford/go-clouddriver/pkg/helm"
+	"github.com/gin-gonic/gin"
 	// "github.com/google/go-github/v32/github"
 )
 
 type Type string
 
 const (
-	TypeHelmChart               Type = "helm/chart"
-	TypeGitRepo                 Type = "git/repo"
-	TypeFront50PipelineTemplate Type = "front50/pipelineTemplate"
-	TypeEmbeddedBase64          Type = "embedded/base64"
-	TypeCustomerObject          Type = "custom/object"
-	TypeGCSObject               Type = "gcs/object"
-	TypeDockerImage             Type = "docker/image"
-	TypeKubernetesConfigMap     Type = "kubernetes/configMap"
-	TypeKubernetesDeployment    Type = "kubernetes/deployment"
-	TypeKubernetesReplicaSet    Type = "kubernetes/replicaSet"
-	TypeKubernetesSecret        Type = "kubernetes/secret"
-	TypeGithubFile              Type = "github/file"
+	CredentialsControllerInstanceKey      = "ArtifactCredentialsController"
+	TypeHelmChart                    Type = "helm/chart"
+	TypeGitRepo                      Type = "git/repo"
+	TypeFront50PipelineTemplate      Type = "front50/pipelineTemplate"
+	TypeEmbeddedBase64               Type = "embedded/base64"
+	TypeCustomerObject               Type = "custom/object"
+	TypeGCSObject                    Type = "gcs/object"
+	TypeDockerImage                  Type = "docker/image"
+	TypeKubernetesConfigMap          Type = "kubernetes/configMap"
+	TypeKubernetesDeployment         Type = "kubernetes/deployment"
+	TypeKubernetesReplicaSet         Type = "kubernetes/replicaSet"
+	TypeKubernetesSecret             Type = "kubernetes/secret"
+	TypeGithubFile                   Type = "github/file"
 )
 
+//go:generate counterfeiter . CredentialsController
 type CredentialsController interface {
 	ListArtifactCredentialsNamesAndTypes() []Credentials
 	HelmClientForAccountName(string) (helm.Client, error)
@@ -131,4 +134,8 @@ func (cc *credentialsController) HelmClientForAccountName(accountName string) (h
 	}
 
 	return cc.helmClients[accountName], nil
+}
+
+func CredentialsControllerInstance(c *gin.Context) CredentialsController {
+	return c.MustGet(CredentialsControllerInstanceKey).(CredentialsController)
 }

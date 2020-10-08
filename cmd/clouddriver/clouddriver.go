@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/billiford/go-clouddriver/pkg/arcade"
+	"github.com/billiford/go-clouddriver/pkg/artifact"
 	"github.com/billiford/go-clouddriver/pkg/helm"
 	kube "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
@@ -45,6 +46,12 @@ func init() {
 		log.Fatal(err.Error())
 	}
 
+	// Grab our artifact credentials from /opt/spinnaker/artifacts/config.
+	artifactCredentialsController, err := artifact.NewDefaultCredentialsController()
+	if err != nil {
+		log.Println("[CLOUDDRIVER] error setting up artifact credentials controller:", err.Error())
+	}
+
 	sqlClient := sql.NewClient(db)
 	kubeController := kubernetes.NewController()
 	helmClient := helm.NewClient("https://kubernetes-charts.storage.googleapis.com")
@@ -52,17 +59,18 @@ func init() {
 
 	arcadeAPIKey := os.Getenv("ARCADE_API_KEY")
 	if arcadeAPIKey == "" {
-		log.Println("WARNING: ARCADE_API_KEY not set")
+		log.Println("[CLOUDDRIVER] WARNING: ARCADE_API_KEY not set")
 	}
 
 	arcadeClient.WithAPIKey(arcadeAPIKey)
 
 	c := &server.Config{
-		ArcadeClient:      arcadeClient,
-		SQLClient:         sqlClient,
-		KubeController:    kubeController,
-		KubeActionHandler: kube.NewActionHandler(),
-		HelmClient:        helmClient,
+		ArcadeClient:                  arcadeClient,
+		ArtifactCredentialsController: artifactCredentialsController,
+		SQLClient:                     sqlClient,
+		KubeController:                kubeController,
+		KubeActionHandler:             kube.NewActionHandler(),
+		HelmClient:                    helmClient,
 	}
 	if os.Getenv("VERBOSE_REQUEST_LOGGING") == "true" {
 		c.VerboseRequestLogging = true

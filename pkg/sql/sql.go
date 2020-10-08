@@ -92,7 +92,7 @@ type Config struct {
 // Get driver and connection string to the DB.
 func Connection(c Config) (string, string) {
 	if c.User == "" || c.Password == "" || c.Host == "" || c.Name == "" {
-		log.Println("SQL config missing field - defaulting to local sqlite DB.")
+		log.Println("[CLOUDDRIVER] SQL config missing field - defaulting to local sqlite DB.")
 		return "sqlite3", "clouddriver.db"
 	}
 

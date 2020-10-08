@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"github.com/billiford/go-clouddriver/pkg/arcade"
+	"github.com/billiford/go-clouddriver/pkg/artifact"
 	"github.com/billiford/go-clouddriver/pkg/helm"
 	kube "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
@@ -26,6 +27,13 @@ func SetSQLClient(r sql.Client) gin.HandlerFunc {
 func SetKubeController(k kubernetes.Controller) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set(kubernetes.ControllerInstanceKey, k)
+		c.Next()
+	}
+}
+
+func SetArtifactCredentialsController(a artifact.CredentialsController) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set(artifact.CredentialsControllerInstanceKey, a)
 		c.Next()
 	}
 }
