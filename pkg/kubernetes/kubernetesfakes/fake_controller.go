@@ -47,13 +47,12 @@ type FakeController struct {
 	addSpinnakerVersionAnnotationsReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetCurrentVersionStub        func(*unstructured.UnstructuredList, string, string, kubernetes.Client) (string, error)
+	GetCurrentVersionStub        func(*unstructured.UnstructuredList, string, string) (string, error)
 	getCurrentVersionMutex       sync.RWMutex
 	getCurrentVersionArgsForCall []struct {
 		arg1 *unstructured.UnstructuredList
 		arg2 string
 		arg3 string
-		arg4 kubernetes.Client
 	}
 	getCurrentVersionReturns struct {
 		result1 string
@@ -299,19 +298,18 @@ func (fake *FakeController) AddSpinnakerVersionAnnotationsReturnsOnCall(i int, r
 	}{result1}
 }
 
-func (fake *FakeController) GetCurrentVersion(arg1 *unstructured.UnstructuredList, arg2 string, arg3 string, arg4 kubernetes.Client) (string, error) {
+func (fake *FakeController) GetCurrentVersion(arg1 *unstructured.UnstructuredList, arg2 string, arg3 string) (string, error) {
 	fake.getCurrentVersionMutex.Lock()
 	ret, specificReturn := fake.getCurrentVersionReturnsOnCall[len(fake.getCurrentVersionArgsForCall)]
 	fake.getCurrentVersionArgsForCall = append(fake.getCurrentVersionArgsForCall, struct {
 		arg1 *unstructured.UnstructuredList
 		arg2 string
 		arg3 string
-		arg4 kubernetes.Client
-	}{arg1, arg2, arg3, arg4})
-	fake.recordInvocation("GetCurrentVersion", []interface{}{arg1, arg2, arg3, arg4})
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("GetCurrentVersion", []interface{}{arg1, arg2, arg3})
 	fake.getCurrentVersionMutex.Unlock()
 	if fake.GetCurrentVersionStub != nil {
-		return fake.GetCurrentVersionStub(arg1, arg2, arg3, arg4)
+		return fake.GetCurrentVersionStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -326,17 +324,17 @@ func (fake *FakeController) GetCurrentVersionCallCount() int {
 	return len(fake.getCurrentVersionArgsForCall)
 }
 
-func (fake *FakeController) GetCurrentVersionCalls(stub func(*unstructured.UnstructuredList, string, string, kubernetes.Client) (string, error)) {
+func (fake *FakeController) GetCurrentVersionCalls(stub func(*unstructured.UnstructuredList, string, string) (string, error)) {
 	fake.getCurrentVersionMutex.Lock()
 	defer fake.getCurrentVersionMutex.Unlock()
 	fake.GetCurrentVersionStub = stub
 }
 
-func (fake *FakeController) GetCurrentVersionArgsForCall(i int) (*unstructured.UnstructuredList, string, string, kubernetes.Client) {
+func (fake *FakeController) GetCurrentVersionArgsForCall(i int) (*unstructured.UnstructuredList, string, string) {
 	fake.getCurrentVersionMutex.RLock()
 	defer fake.getCurrentVersionMutex.RUnlock()
 	argsForCall := fake.getCurrentVersionArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeController) GetCurrentVersionReturns(result1 string, result2 error) {

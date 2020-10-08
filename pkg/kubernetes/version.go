@@ -43,7 +43,7 @@ func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured
 	return nil
 }
 
-func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string, client Client) (string, error) {
+func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) (string, error) {
 
 	cluster := kind + " " + name
 	currentVersion := "0"

@@ -93,13 +93,12 @@ func (d *deployManifest) Run() error {
 				TimeoutSeconds: &listTimeout,
 			}
 
-			// "Instances" in kubernetes are pods.
 			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
 			if err != nil {
 				return err
 			}
 
-			currentVersion, err := d.kc.GetCurrentVersion(results, kind, name, client)
+			currentVersion, err := d.kc.GetCurrentVersion(results, kind, name)
 			if err != nil {
 				return err
 			}
