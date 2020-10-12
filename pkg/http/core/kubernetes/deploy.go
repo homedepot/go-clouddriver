@@ -96,10 +96,7 @@ func (d *deployManifest) Run() error {
 				return err
 			}
 
-			currentVersion, err := d.kc.GetCurrentVersion(results, kind, name)
-			if err != nil {
-				return err
-			}
+			currentVersion := d.kc.GetCurrentVersion(results, kind, name)
 			latestVersion := d.kc.IncrementVersion(currentVersion)
 
 			u.SetName(u.GetName() + "-" + latestVersion.ShortVersion)

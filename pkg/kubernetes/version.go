@@ -43,20 +43,23 @@ func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured
 	return nil
 }
 
-func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) (string, error) {
+func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string {
 
 	cluster := kind + " " + name
 	currentVersion := "0"
+	if len(ul.Items) == 0 {
+		return currentVersion
+	}
 	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
 	results := FilterOnCluster(ul.Items, cluster)
 	if len(results) == 0 {
-		return currentVersion, nil
+		return currentVersion
 	}
 
 	//filter out empty moniker.spinnaker.io/sequence labels
 	results = FilterWhereLabelDoesNotExist(results, LabelSpinnakerSequence)
 	if len(results) == 0 {
-		return currentVersion, nil
+		return currentVersion
 	}
 
 	// For now, we sort on creation timestamp to grab the manifest.
@@ -65,7 +68,7 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 	})
 	currentVersion = results[0].GetResourceVersion()
 
-	return currentVersion, nil
+	return currentVersion
 }
 
 func (c *controller) IsVersioned(u *unstructured.Unstructured) bool {

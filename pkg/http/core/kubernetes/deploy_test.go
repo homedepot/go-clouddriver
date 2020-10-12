@@ -96,6 +96,34 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
+	When("The manifest is versioned", func() {
+		BeforeEach(func() {
+			fakeKubeController.IsVersionedReturns(true)
+		})
+
+		When("Listing resources by kind and namespace returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ListResourcesByKindAndNamespaceReturns(nil, errors.New("ListResourcesByKindAndNamespaceReturns fake error"))
+			})
+
+			It("returns ListResourcesByKindAndNamespace returns fake error", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("ListResourcesByKindAndNamespaceReturns fake error"))
+			})
+		})
+
+		When("Get ListResourcesByKindAndNamespace returns an empty list", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ListResourcesByKindAndNamespaceReturns(nil, errors.New("ListResourcesByKindAndNamespaceReturns fake error"))
+			})
+
+			It("Spinnaker version to be 1", func() {
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.Version).To(Equal("1"))
+			})
+		})
+	})
+
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
 			fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))

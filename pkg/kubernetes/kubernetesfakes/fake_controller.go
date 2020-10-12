@@ -47,7 +47,7 @@ type FakeController struct {
 	addSpinnakerVersionAnnotationsReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetCurrentVersionStub        func(*unstructured.UnstructuredList, string, string) (string, error)
+	GetCurrentVersionStub        func(*unstructured.UnstructuredList, string, string) string
 	getCurrentVersionMutex       sync.RWMutex
 	getCurrentVersionArgsForCall []struct {
 		arg1 *unstructured.UnstructuredList
@@ -56,11 +56,9 @@ type FakeController struct {
 	}
 	getCurrentVersionReturns struct {
 		result1 string
-		result2 error
 	}
 	getCurrentVersionReturnsOnCall map[int]struct {
 		result1 string
-		result2 error
 	}
 	IncrementVersionStub        func(string) kubernetes.SpinnakerVersion
 	incrementVersionMutex       sync.RWMutex
@@ -298,7 +296,7 @@ func (fake *FakeController) AddSpinnakerVersionAnnotationsReturnsOnCall(i int, r
 	}{result1}
 }
 
-func (fake *FakeController) GetCurrentVersion(arg1 *unstructured.UnstructuredList, arg2 string, arg3 string) (string, error) {
+func (fake *FakeController) GetCurrentVersion(arg1 *unstructured.UnstructuredList, arg2 string, arg3 string) string {
 	fake.getCurrentVersionMutex.Lock()
 	ret, specificReturn := fake.getCurrentVersionReturnsOnCall[len(fake.getCurrentVersionArgsForCall)]
 	fake.getCurrentVersionArgsForCall = append(fake.getCurrentVersionArgsForCall, struct {
@@ -312,10 +310,10 @@ func (fake *FakeController) GetCurrentVersion(arg1 *unstructured.UnstructuredLis
 		return fake.GetCurrentVersionStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
 	fakeReturns := fake.getCurrentVersionReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1
 }
 
 func (fake *FakeController) GetCurrentVersionCallCount() int {
@@ -324,7 +322,7 @@ func (fake *FakeController) GetCurrentVersionCallCount() int {
 	return len(fake.getCurrentVersionArgsForCall)
 }
 
-func (fake *FakeController) GetCurrentVersionCalls(stub func(*unstructured.UnstructuredList, string, string) (string, error)) {
+func (fake *FakeController) GetCurrentVersionCalls(stub func(*unstructured.UnstructuredList, string, string) string) {
 	fake.getCurrentVersionMutex.Lock()
 	defer fake.getCurrentVersionMutex.Unlock()
 	fake.GetCurrentVersionStub = stub
@@ -337,30 +335,27 @@ func (fake *FakeController) GetCurrentVersionArgsForCall(i int) (*unstructured.U
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeController) GetCurrentVersionReturns(result1 string, result2 error) {
+func (fake *FakeController) GetCurrentVersionReturns(result1 string) {
 	fake.getCurrentVersionMutex.Lock()
 	defer fake.getCurrentVersionMutex.Unlock()
 	fake.GetCurrentVersionStub = nil
 	fake.getCurrentVersionReturns = struct {
 		result1 string
-		result2 error
-	}{result1, result2}
+	}{result1}
 }
 
-func (fake *FakeController) GetCurrentVersionReturnsOnCall(i int, result1 string, result2 error) {
+func (fake *FakeController) GetCurrentVersionReturnsOnCall(i int, result1 string) {
 	fake.getCurrentVersionMutex.Lock()
 	defer fake.getCurrentVersionMutex.Unlock()
 	fake.GetCurrentVersionStub = nil
 	if fake.getCurrentVersionReturnsOnCall == nil {
 		fake.getCurrentVersionReturnsOnCall = make(map[int]struct {
 			result1 string
-			result2 error
 		})
 	}
 	fake.getCurrentVersionReturnsOnCall[i] = struct {
 		result1 string
-		result2 error
-	}{result1, result2}
+	}{result1}
 }
 
 func (fake *FakeController) IncrementVersion(arg1 string) kubernetes.SpinnakerVersion {
