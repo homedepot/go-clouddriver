@@ -64,9 +64,22 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 
 	for _, f := range files {
 		if !f.IsDir() {
-			b, err := ioutil.ReadFile(filepath.Join(dir, f.Name()))
+			path := filepath.Join(dir, f.Name())
+
+			// Handle symlinks for ConfigMaps.
+			ln, err := filepath.EvalSymlinks(path)
+			if err == nil {
+				path = ln
+			}
+
+			b, err := ioutil.ReadFile(path)
 			if err != nil {
-				return nil, err
+				// Just continue if we're not able to read the 'file' as the file might be a symlink to
+				// a dir when using kubernetes ConfigMaps, for example:
+				//
+				// drwxr-xr-x    2 root     root          4096 Oct  8 20:38 ..2020_10_08_20_38_50.434422700
+				// lrwxrwxrwx    1 root     root            31 Oct  8 20:38 ..data -> ..2020_10_08_20_38_50.434422700
+				continue
 			}
 
 			ac := Credentials{}
@@ -77,7 +90,7 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 			}
 
 			if ac.Name == "" {
-				return nil, fmt.Errorf("no \"name\" found in artifact config file %s", filepath.Join(dir, f.Name()))
+				return nil, fmt.Errorf("no \"name\" found in artifact config file %s", path)
 			}
 
 			for _, c := range cc.artifactCredentials {
