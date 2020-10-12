@@ -11,14 +11,21 @@ import (
 func GetStatus(kind string, m map[string]interface{}) manifest.Status {
 	status := manifest.DefaultStatus
 
-	// TODO need to fill in statuses for all kinds here.
 	switch strings.ToLower(kind) {
+	case "daemonset":
+		status = NewDaemonSet(m).Status()
 	case "deployment":
 		status = NewDeployment(m).Status()
+	case "horizontalpodautoscaler":
+		status = NewHorizontalPodAutoscaler(m).Status()
+	case "job":
+		status = NewJob(m).Status()
 	case "pod":
 		status = NewPod(m).Status()
 	case "replicaset":
 		status = NewReplicaSet(m).Status()
+	case "statefulset":
+		status = NewStatefulSet(m).Status()
 	}
 
 	return status
