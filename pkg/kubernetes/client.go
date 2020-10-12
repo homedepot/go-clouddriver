@@ -92,7 +92,6 @@ func (c *client) ApplyWithNamespaceOverride(u *unstructured.Unstructured, namesp
 		Source:          "",
 		Object:          u,
 		ResourceVersion: restMapping.Resource.Version,
-		Export:          false,
 	}
 
 	patcher, err := patcher.New(info, helper)

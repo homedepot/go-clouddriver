@@ -8,10 +8,13 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/gdexlab/go-render v1.0.1
 	github.com/gin-gonic/gin v1.6.3
+	github.com/go-playground/assert/v2 v2.0.1
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/gddo v0.0.0-20200715224205-051695c33a3f
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/uuid v1.1.1
+	github.com/googleapis/gnostic v0.5.1
+	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jonboulle/clockwork v0.1.0
 	github.com/lib/pq v1.2.0 // indirect
@@ -21,20 +24,25 @@ require (
 	github.com/mitchellh/mapstructure v1.3.3
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.2
+	github.com/peterbourgon/diskv v2.0.1+incompatible
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/sirupsen/logrus v1.6.0 // indirect
+	github.com/stretchr/testify v1.5.1
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/sys v0.0.0-20200814200057-3d37ad5750ed // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	google.golang.org/api v0.4.0
+	google.golang.org/api v0.15.0
 	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.18.8
-	k8s.io/apimachinery v0.18.8
-	k8s.io/cli-runtime v0.18.8
+	k8s.io/api v0.19.2
+	k8s.io/apimachinery v0.19.2
+	k8s.io/cli-runtime v0.19.2
 	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
-	k8s.io/kubectl v0.18.8
+	k8s.io/klog v0.0.0-20181102134211-b9b56d5dfc92 // indirect
+	k8s.io/klog/v2 v2.3.0
+	k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6
+	k8s.io/kubectl v0.19.2
+	sigs.k8s.io/structured-merge-diff/v3 v3.0.0-20200116222232-67a7b8c61874 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
-replace k8s.io/client-go => k8s.io/client-go v0.18.8
+replace k8s.io/client-go => k8s.io/client-go v0.19.2
