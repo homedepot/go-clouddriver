@@ -1108,6 +1108,7 @@ const payloadServerGroupManagers = `[
                 "cluster": "deployment test-deployment1"
               },
               "name": "deployment test-deployment1",
+              "namespace": "test-namespace1",
               "providerType": "kubernetes",
               "region": "test-namespace1",
               "serverGroups": [
@@ -1162,6 +1163,7 @@ const payloadServerGroupManagers = `[
                 "cluster": "deployment test-deployment2"
               },
               "name": "deployment test-deployment2",
+              "namespace": "test-namespace2",
               "providerType": "kubernetes",
               "region": "test-namespace2",
               "serverGroups": [],
@@ -1217,6 +1219,7 @@ const payloadListServerGroups = `[
                 "sequence": 19
               },
               "name": "DaemonSet test-ds1",
+              "namespace": "test-namespace1",
               "providerType": "",
               "region": "test-namespace1",
               "securityGroups": null,
@@ -1307,6 +1310,7 @@ const payloadListServerGroups = `[
                 "sequence": 19
               },
               "name": "ReplicaSet test-rs1",
+              "namespace": "test-namespace1",
               "providerType": "",
               "region": "test-namespace1",
               "securityGroups": null,
@@ -1397,6 +1401,7 @@ const payloadListServerGroups = `[
                 "sequence": 19
               },
               "name": "StatefulSet test-rs1",
+              "namespace": "test-namespace1",
               "providerType": "",
               "region": "test-namespace1",
               "securityGroups": null,
@@ -2365,6 +2370,7 @@ const payloadGetServerGroup = `{
               "sequence": 19
             },
             "name": "ReplicaSet test-rs1",
+            "namespace": "test-namespace1",
             "providerType": "kubernetes",
             "region": "test-namespace1",
             "securityGroups": [],

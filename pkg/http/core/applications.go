@@ -116,6 +116,7 @@ type ServerGroupManager struct {
 	Manifest      map[string]interface{}          `json:"manifest"`
 	Moniker       Moniker                         `json:"moniker"`
 	Name          string                          `json:"name"`
+	Namespace     string                          `json:"namespace"`
 	ProviderType  string                          `json:"providerType"`
 	Region        string                          `json:"region"`
 	ServerGroups  []ServerGroupManagerServerGroup `json:"serverGroups"`
@@ -277,6 +278,7 @@ func newServerGroupManager(deployment unstructured.Unstructured,
 			Cluster: fmt.Sprintf("%s %s", "deployment", deployment.GetName()),
 		},
 		Name:         fmt.Sprintf("%s %s", "deployment", deployment.GetName()),
+		Namespace:    deployment.GetNamespace(),
 		ProviderType: "kubernetes",
 		Region:       deployment.GetNamespace(),
 		Type:         "kubernetes",
@@ -543,6 +545,7 @@ type ServerGroup struct {
 	Manifest            map[string]interface{}          `json:"manifest"`
 	Moniker             ServerGroupMoniker              `json:"moniker"`
 	Name                string                          `json:"name"`
+	Namespace           string                          `json:"namespace"`
 	ProviderType        string                          `json:"providerType"`
 	Region              string                          `json:"region"`
 	SecurityGroups      []interface{}                   `json:"securityGroups"`
@@ -775,6 +778,7 @@ func newServerGroup(result unstructured.Unstructured,
 			Sequence: sequence,
 		},
 		Name:                fmt.Sprintf("%s %s", result.GetKind(), result.GetName()),
+		Namespace:           result.GetNamespace(),
 		Region:              result.GetNamespace(),
 		SecurityGroups:      nil,
 		ServerGroupManagers: serverGroupManagers,
@@ -1085,6 +1089,7 @@ func GetServerGroup(c *gin.Context) {
 			Sequence: sequence,
 		},
 		Name:                fmt.Sprintf("%s %s", result.GetKind(), result.GetName()),
+		Namespace:           result.GetNamespace(),
 		ProviderType:        "kubernetes",
 		Region:              result.GetNamespace(),
 		SecurityGroups:      []interface{}{},
