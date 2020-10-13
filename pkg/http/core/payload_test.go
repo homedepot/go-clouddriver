@@ -83,6 +83,10 @@ const payloadRequestFetchBase64Artifact = `{
 	"reference": "aGVsbG93b3JsZAo="
 }`
 
+const payloadRequestFetchNotImplementedArtifact = `{
+  "type": "unknown/type"
+}`
+
 const payloadRequestKubernetesOpsScaleManifest = `[
   {
     "scaleManifest": {

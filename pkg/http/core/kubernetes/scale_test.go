@@ -11,10 +11,10 @@ import (
 var _ = Describe("Scale", func() {
 	BeforeEach(func() {
 		setup()
-		action = actionHandler.NewScaleManifestAction(actionConfig)
 	})
 
 	JustBeforeEach(func() {
+		action = actionHandler.NewScaleManifestAction(actionConfig)
 		err = action.Run()
 	})
 
@@ -81,6 +81,17 @@ var _ = Describe("Scale", func() {
 		It("returns an error", func() {
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(Equal("error applying manifest"))
+		})
+	})
+
+	When("the kind is not supported to scale", func() {
+		BeforeEach(func() {
+			actionConfig.Operation.ScaleManifest.ManifestName = "not-supported-kind test-name"
+		})
+
+		It("returns an error", func() {
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("scaling kind not-supported-kind not currently supported"))
 		})
 	})
 

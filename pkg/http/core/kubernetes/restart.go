@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"encoding/base64"
+	"fmt"
 	"strings"
 	"time"
 
@@ -87,6 +88,9 @@ func (rr *rollingRestart) Run() error {
 		if err != nil {
 			return err
 		}
+
+	default:
+		return fmt.Errorf("restarting kind %s not currently supported", kind)
 	}
 
 	return nil

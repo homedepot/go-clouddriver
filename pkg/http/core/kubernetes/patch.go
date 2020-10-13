@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/billiford/go-clouddriver/pkg/arcade"
@@ -83,6 +84,8 @@ func (p *patchManfest) Run() error {
 		strategy = types.JSONPatchType
 	case "merge":
 		strategy = types.MergePatchType
+	default:
+		return fmt.Errorf("invalid merge strategy %s", p.pm.Options.MergeStrategy)
 	}
 
 	meta, _, err := client.PatchUsingStrategy(p.pm.Kind, name, p.pm.Location, b, strategy)

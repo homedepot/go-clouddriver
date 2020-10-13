@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"sort"
 	"strings"
@@ -115,6 +116,9 @@ func GetArtifact(c *gin.Context) {
 			clouddriver.WriteError(c, http.StatusInternalServerError, err)
 			return
 		}
+
+	default:
+		clouddriver.WriteError(c, http.StatusNotImplemented, fmt.Errorf("getting artifact of type %s not implemented", a.Type))
 	}
 
 	c.Writer.Write(b)

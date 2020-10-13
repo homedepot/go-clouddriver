@@ -84,7 +84,7 @@ var _ = Describe("Patch", func() {
 		})
 	})
 
-	Context("when it succeeds", func() {
+	Context("merge strategies", func() {
 		Context("json patch type", func() {
 			BeforeEach(func() {
 				actionConfig.Operation.PatchManifest.Options.MergeStrategy = "json"
@@ -102,6 +102,17 @@ var _ = Describe("Patch", func() {
 
 			It("succeeds", func() {
 				Expect(err).To(BeNil())
+			})
+		})
+
+		Context("unknown patch type", func() {
+			BeforeEach(func() {
+				actionConfig.Operation.PatchManifest.Options.MergeStrategy = "unknown"
+			})
+
+			It("returns an error", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("invalid merge strategy unknown"))
 			})
 		})
 

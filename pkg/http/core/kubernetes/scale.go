@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"encoding/base64"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -89,6 +90,9 @@ func (s *scaleManifest) Run() error {
 		if err != nil {
 			return err
 		}
+
+	default:
+		return fmt.Errorf("scaling kind %s not currently supported", kind)
 	}
 
 	return nil

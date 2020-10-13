@@ -11,10 +11,10 @@ import (
 var _ = Describe("Restart", func() {
 	BeforeEach(func() {
 		setup()
-		action = actionHandler.NewRollingRestartAction(actionConfig)
 	})
 
 	JustBeforeEach(func() {
+		action = actionHandler.NewRollingRestartAction(actionConfig)
 		err = action.Run()
 	})
 
@@ -70,6 +70,17 @@ var _ = Describe("Restart", func() {
 		It("returns an error", func() {
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(Equal("error applying manifest"))
+		})
+	})
+
+	When("the kind is not supported to restarted", func() {
+		BeforeEach(func() {
+			actionConfig.Operation.RollingRestartManifest.ManifestName = "not-supported-kind test-name"
+		})
+
+		It("returns an error", func() {
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("restarting kind not-supported-kind not currently supported"))
 		})
 	})
 

@@ -221,5 +221,20 @@ var _ = Describe("Artifacts", func() {
 				})
 			})
 		})
+
+		Context("when the artifact is not an implemented type", func() {
+			BeforeEach(func() {
+				body.Write([]byte(payloadRequestFetchNotImplementedArtifact))
+				createRequest(http.MethodPut)
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusNotImplemented))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Not Implemented"))
+				Expect(ce.Message).To(Equal("getting artifact of type unknown/type not implemented"))
+				Expect(ce.Status).To(Equal(http.StatusNotImplemented))
+			})
+		})
 	})
 })
