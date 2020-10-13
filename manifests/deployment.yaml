@@ -76,6 +76,11 @@ spec:
             requests:
               cpu: '1'
               memory: 1Gi
+          volumeMounts:
+            - mountPath: /opt/spinnaker/artifacts/config
+              name: artifacts-config-volume
+            - mountPath: /var/kube/cache
+              name: kube-cache-volume
         - args:
             - for f in /vault/secrets/*.env; do source $f; done; arcade
           command:
@@ -96,3 +101,9 @@ spec:
       serviceAccount: spinnaker-onboarding
       serviceAccountName: spinnaker-onboarding
       terminationGracePeriodSeconds: 720
+      volumes:
+        - configMap:
+            name: artifacts-config
+          name: artifacts-config-volume
+        - emptyDir: {}
+          name: kube-cache-volume
