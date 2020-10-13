@@ -48,6 +48,8 @@ func LogRequest() gin.HandlerFunc {
 			buffer.WriteByte('\n')
 			buffer.WriteString(fmt.Sprintf("User-Agent: %s", clone.Header.Get("User-Agent")))
 			buffer.WriteByte('\n')
+			buffer.WriteString(fmt.Sprintf("Headers: %s", clone.Header))
+			buffer.WriteByte('\n')
 			if len(b) > 0 {
 				j, err := json.MarshalIndent(b, "", "    ")
 				if err != nil {

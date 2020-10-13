@@ -39,6 +39,20 @@ type FakeClient struct {
 		result1 kubernetes.Metadata
 		result2 error
 	}
+	DeleteResourceByKindAndNameAndNamespaceStub        func(string, string, string, metav1.DeleteOptions) error
+	deleteResourceByKindAndNameAndNamespaceMutex       sync.RWMutex
+	deleteResourceByKindAndNameAndNamespaceArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 metav1.DeleteOptions
+	}
+	deleteResourceByKindAndNameAndNamespaceReturns struct {
+		result1 error
+	}
+	deleteResourceByKindAndNameAndNamespaceReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GVRForKindStub        func(string) (schema.GroupVersionResource, error)
 	gVRForKindMutex       sync.RWMutex
 	gVRForKindArgsForCall []struct {
@@ -237,6 +251,57 @@ func (fake *FakeClient) ApplyWithNamespaceOverrideReturnsOnCall(i int, result1 k
 		result1 kubernetes.Metadata
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespace(arg1 string, arg2 string, arg3 string, arg4 metav1.DeleteOptions) error {
+	fake.deleteResourceByKindAndNameAndNamespaceMutex.Lock()
+	ret, specificReturn := fake.deleteResourceByKindAndNameAndNamespaceReturnsOnCall[len(fake.deleteResourceByKindAndNameAndNamespaceArgsForCall)]
+	fake.deleteResourceByKindAndNameAndNamespaceArgsForCall = append(fake.deleteResourceByKindAndNameAndNamespaceArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 metav1.DeleteOptions
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("DeleteResourceByKindAndNameAndNamespace", []interface{}{arg1, arg2, arg3, arg4})
+	fake.deleteResourceByKindAndNameAndNamespaceMutex.Unlock()
+	if fake.DeleteResourceByKindAndNameAndNamespaceStub != nil {
+		return fake.DeleteResourceByKindAndNameAndNamespaceStub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.deleteResourceByKindAndNameAndNamespaceReturns.result1
+}
+
+func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceCallCount() int {
+	fake.deleteResourceByKindAndNameAndNamespaceMutex.RLock()
+	defer fake.deleteResourceByKindAndNameAndNamespaceMutex.RUnlock()
+	return len(fake.deleteResourceByKindAndNameAndNamespaceArgsForCall)
+}
+
+func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceArgsForCall(i int) (string, string, string, metav1.DeleteOptions) {
+	fake.deleteResourceByKindAndNameAndNamespaceMutex.RLock()
+	defer fake.deleteResourceByKindAndNameAndNamespaceMutex.RUnlock()
+	return fake.deleteResourceByKindAndNameAndNamespaceArgsForCall[i].arg1, fake.deleteResourceByKindAndNameAndNamespaceArgsForCall[i].arg2, fake.deleteResourceByKindAndNameAndNamespaceArgsForCall[i].arg3, fake.deleteResourceByKindAndNameAndNamespaceArgsForCall[i].arg4
+}
+
+func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceReturns(result1 error) {
+	fake.DeleteResourceByKindAndNameAndNamespaceStub = nil
+	fake.deleteResourceByKindAndNameAndNamespaceReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceReturnsOnCall(i int, result1 error) {
+	fake.DeleteResourceByKindAndNameAndNamespaceStub = nil
+	if fake.deleteResourceByKindAndNameAndNamespaceReturnsOnCall == nil {
+		fake.deleteResourceByKindAndNameAndNamespaceReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteResourceByKindAndNameAndNamespaceReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeClient) GVRForKind(arg1 string) (schema.GroupVersionResource, error) {
@@ -579,6 +644,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.applyMutex.RUnlock()
 	fake.applyWithNamespaceOverrideMutex.RLock()
 	defer fake.applyWithNamespaceOverrideMutex.RUnlock()
+	fake.deleteResourceByKindAndNameAndNamespaceMutex.RLock()
+	defer fake.deleteResourceByKindAndNameAndNamespaceMutex.RUnlock()
 	fake.gVRForKindMutex.RLock()
 	defer fake.gVRForKindMutex.RUnlock()
 	fake.getMutex.RLock()

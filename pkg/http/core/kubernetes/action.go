@@ -24,6 +24,7 @@ type ActionConfig struct {
 //go:generate counterfeiter . ActionHandler
 type ActionHandler interface {
 	NewDeployManifestAction(ActionConfig) Action
+	NewDeleteManifestAction(ActionConfig) Action
 	NewRollingRestartAction(ActionConfig) Action
 	NewRollbackAction(ActionConfig) Action
 	NewRunJobAction(ActionConfig) Action

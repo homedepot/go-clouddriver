@@ -23,19 +23,6 @@ type FakeController struct {
 		result1 kubernetes.Client
 		result2 error
 	}
-	NewClientWithDefaultDiskCacheStub        func(*rest.Config) (kubernetes.Client, error)
-	newClientWithDefaultDiskCacheMutex       sync.RWMutex
-	newClientWithDefaultDiskCacheArgsForCall []struct {
-		arg1 *rest.Config
-	}
-	newClientWithDefaultDiskCacheReturns struct {
-		result1 kubernetes.Client
-		result2 error
-	}
-	newClientWithDefaultDiskCacheReturnsOnCall map[int]struct {
-		result1 kubernetes.Client
-		result2 error
-	}
 	ToUnstructuredStub        func(map[string]interface{}) (*unstructured.Unstructured, error)
 	toUnstructuredMutex       sync.RWMutex
 	toUnstructuredArgsForCall []struct {
@@ -123,57 +110,6 @@ func (fake *FakeController) NewClientReturnsOnCall(i int, result1 kubernetes.Cli
 		})
 	}
 	fake.newClientReturnsOnCall[i] = struct {
-		result1 kubernetes.Client
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeController) NewClientWithDefaultDiskCache(arg1 *rest.Config) (kubernetes.Client, error) {
-	fake.newClientWithDefaultDiskCacheMutex.Lock()
-	ret, specificReturn := fake.newClientWithDefaultDiskCacheReturnsOnCall[len(fake.newClientWithDefaultDiskCacheArgsForCall)]
-	fake.newClientWithDefaultDiskCacheArgsForCall = append(fake.newClientWithDefaultDiskCacheArgsForCall, struct {
-		arg1 *rest.Config
-	}{arg1})
-	fake.recordInvocation("NewClientWithDefaultDiskCache", []interface{}{arg1})
-	fake.newClientWithDefaultDiskCacheMutex.Unlock()
-	if fake.NewClientWithDefaultDiskCacheStub != nil {
-		return fake.NewClientWithDefaultDiskCacheStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.newClientWithDefaultDiskCacheReturns.result1, fake.newClientWithDefaultDiskCacheReturns.result2
-}
-
-func (fake *FakeController) NewClientWithDefaultDiskCacheCallCount() int {
-	fake.newClientWithDefaultDiskCacheMutex.RLock()
-	defer fake.newClientWithDefaultDiskCacheMutex.RUnlock()
-	return len(fake.newClientWithDefaultDiskCacheArgsForCall)
-}
-
-func (fake *FakeController) NewClientWithDefaultDiskCacheArgsForCall(i int) *rest.Config {
-	fake.newClientWithDefaultDiskCacheMutex.RLock()
-	defer fake.newClientWithDefaultDiskCacheMutex.RUnlock()
-	return fake.newClientWithDefaultDiskCacheArgsForCall[i].arg1
-}
-
-func (fake *FakeController) NewClientWithDefaultDiskCacheReturns(result1 kubernetes.Client, result2 error) {
-	fake.NewClientWithDefaultDiskCacheStub = nil
-	fake.newClientWithDefaultDiskCacheReturns = struct {
-		result1 kubernetes.Client
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeController) NewClientWithDefaultDiskCacheReturnsOnCall(i int, result1 kubernetes.Client, result2 error) {
-	fake.NewClientWithDefaultDiskCacheStub = nil
-	if fake.newClientWithDefaultDiskCacheReturnsOnCall == nil {
-		fake.newClientWithDefaultDiskCacheReturnsOnCall = make(map[int]struct {
-			result1 kubernetes.Client
-			result2 error
-		})
-	}
-	fake.newClientWithDefaultDiskCacheReturnsOnCall[i] = struct {
 		result1 kubernetes.Client
 		result2 error
 	}{result1, result2}
@@ -333,8 +269,6 @@ func (fake *FakeController) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.newClientMutex.RLock()
 	defer fake.newClientMutex.RUnlock()
-	fake.newClientWithDefaultDiskCacheMutex.RLock()
-	defer fake.newClientWithDefaultDiskCacheMutex.RUnlock()
 	fake.toUnstructuredMutex.RLock()
 	defer fake.toUnstructuredMutex.RUnlock()
 	fake.addSpinnakerAnnotationsMutex.RLock()

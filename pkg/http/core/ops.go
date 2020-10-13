@@ -1,8 +1,10 @@
 package core
 
 import (
+	"errors"
 	"log"
 	"net/http"
+	"strings"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"github.com/billiford/go-clouddriver/pkg/arcade"
@@ -62,6 +64,22 @@ func CreateKubernetesOperation(c *gin.Context) {
 
 		if req.DeployManifest != nil {
 			err = ah.NewDeployManifestAction(config).Run()
+			if err != nil {
+				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				return
+			}
+		}
+
+		if req.DeleteManifest != nil {
+			// Deleting a manifest by label is not currently supported, so respond
+			// with a status not implemented
+			if strings.EqualFold(req.DeleteManifest.Mode, "label") {
+				clouddriver.WriteError(c, http.StatusNotImplemented,
+					errors.New("deleting a manifest by label is not currently implemented"))
+				return
+			}
+
+			err = ah.NewDeleteManifestAction(config).Run()
 			if err != nil {
 				clouddriver.WriteError(c, http.StatusInternalServerError, err)
 				return

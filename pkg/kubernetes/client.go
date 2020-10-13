@@ -35,6 +35,7 @@ type Metadata struct {
 type Client interface {
 	Apply(*unstructured.Unstructured) (Metadata, error)
 	ApplyWithNamespaceOverride(*unstructured.Unstructured, string) (Metadata, error)
+	DeleteResourceByKindAndNameAndNamespace(string, string, string, metav1.DeleteOptions) error
 	GVRForKind(string) (schema.GroupVersionResource, error)
 	Get(string, string, string) (*unstructured.Unstructured, error)
 	ListByGVR(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
@@ -153,6 +154,37 @@ func newRestClient(restConfig rest.Config, gv schema.GroupVersion) (rest.Interfa
 	}
 
 	return rest.RESTClientFor(&restConfig)
+}
+
+func (c *client) DeleteResourceByKindAndNameAndNamespace(kind, name, namespace string, do metav1.DeleteOptions) error {
+	gvk, err := c.mapper.KindFor(schema.GroupVersionResource{Resource: kind})
+	if err != nil {
+		return err
+	}
+
+	restMapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return err
+	}
+
+	restClient, err := newRestClient(*c.config, gvk.GroupVersion())
+	if err != nil {
+		return err
+	}
+
+	helper := resource.NewHelper(restClient, restMapping)
+	if helper.NamespaceScoped {
+		err = c.c.
+			Resource(restMapping.Resource).
+			Namespace(namespace).
+			Delete(context.TODO(), name, do)
+	} else {
+		err = c.c.
+			Resource(restMapping.Resource).
+			Delete(context.TODO(), name, do)
+	}
+
+	return err
 }
 
 // Get a manifest by resource/kind (example: 'pods' or 'pod'),

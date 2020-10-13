@@ -67,6 +67,7 @@ func setup() {
 }
 
 func newActionConfig() ActionConfig {
+	gps := int64(10)
 	return ActionConfig{
 		ArcadeClient:   fakeArcadeClient,
 		KubeController: fakeKubeController,
@@ -88,7 +89,13 @@ func newActionConfig() ActionConfig {
 			},
 			CleanupArtifacts: &CleanupArtifactsRequest{},
 			DeleteManifest: &DeleteManifestRequest{
+				Location:     "test-namespace",
+				Mode:         "static",
 				ManifestName: "deployment test-deployment",
+				Options: DeleteManifestRequestOptions{
+					Cascading:          true,
+					GracePeriodSeconds: &gps,
+				},
 			},
 			UndoRolloutManifest: &UndoRolloutManifestRequest{
 				ManifestName: "deployment test-deployment",

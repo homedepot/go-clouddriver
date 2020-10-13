@@ -117,15 +117,30 @@ type CleanupArtifactsRequest struct {
 }
 
 type DeleteManifestRequest struct {
-	ManifestName  string `json:"manifestName"`
-	CloudProvider string `json:"cloudProvider"`
-	Options       struct {
-		OrphanDependants   bool `json:"orphanDependants"`
-		GracePeriodSeconds int  `json:"gracePeriodSeconds"`
-	} `json:"options"`
-	Location string `json:"location"`
-	User     string `json:"user"`
-	Account  string `json:"account"`
+	App            string                              `json:"app"`
+	Mode           string                              `json:"mode"`
+	LabelSelectors DeleteManifestRequestLabelSelectors `json:"labelSelectors"`
+	ManifestName   string                              `json:"manifestName"`
+	CloudProvider  string                              `json:"cloudProvider"`
+	Options        DeleteManifestRequestOptions        `json:"options"`
+	Location       string                              `json:"location"`
+	User           string                              `json:"user"`
+	Account        string                              `json:"account"`
+}
+
+type DeleteManifestRequestLabelSelectors struct {
+	Selectors []DeleteManifestRequestLabelSelector `json:"selectors"`
+}
+
+type DeleteManifestRequestLabelSelector struct {
+	Kind   string   `json:"kind"`
+	Values []string `json:"values"`
+	Key    string   `json:"key"`
+}
+
+type DeleteManifestRequestOptions struct {
+	Cascading          bool   `json:"cascading"`
+	GracePeriodSeconds *int64 `json:"gracePeriodSeconds"`
 }
 
 type UndoRolloutManifestRequest struct {
