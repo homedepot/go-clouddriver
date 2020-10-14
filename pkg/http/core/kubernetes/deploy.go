@@ -99,7 +99,7 @@ func (d *deployManifest) Run() error {
 			currentVersion := d.kc.GetCurrentVersion(results, kind, name)
 			latestVersion := d.kc.IncrementVersion(currentVersion)
 
-			u.SetName(u.GetName() + "-" + latestVersion.ShortVersion)
+			u.SetName(u.GetName() + "-" + latestVersion.Short)
 
 			err = d.kc.AddSpinnakerVersionAnnotations(u, application, latestVersion)
 			if err != nil {

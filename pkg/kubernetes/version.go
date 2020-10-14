@@ -16,16 +16,16 @@ const (
 )
 
 type SpinnakerVersion struct {
-	LongVersion  string
-	ShortVersion string
+	Long  string
+	Short string
 }
 
 //Create a similar function for labels
 func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, application string, version SpinnakerVersion) error {
 	// var err error
 
-	annotate(u, AnnotationSpinnakerArtifactVersion, version.LongVersion)
-	annotate(u, AnnotationSpinnakerMonikerSequence, version.ShortVersion)
+	annotate(u, AnnotationSpinnakerArtifactVersion, version.Long)
+	annotate(u, AnnotationSpinnakerMonikerSequence, version.Short)
 
 	//ToDo
 	// Add spinnaker versioning labels and annotations.
@@ -94,7 +94,7 @@ func (c *controller) IncrementVersion(currentVersion string) SpinnakerVersion {
 	latestVersionShortFormat := strconv.Itoa(latestVersionInt)
 	latestVersionLongFormat := fmt.Sprintf("v%03d", latestVersionInt)
 	return SpinnakerVersion{
-		ShortVersion: latestVersionShortFormat,
-		LongVersion:  latestVersionLongFormat,
+		Short: latestVersionShortFormat,
+		Long:  latestVersionLongFormat,
 	}
 }

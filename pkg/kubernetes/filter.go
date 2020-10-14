@@ -25,7 +25,7 @@ func FilterWhereLabelDoesNotExist(items []unstructured.Unstructured, label strin
 	for _, item := range items {
 		labels := item.GetLabels()
 		if labels != nil {
-			if _, ok := labels[label]; !ok {
+			if _, ok := labels[label]; ok {
 				filtered = append(filtered, item)
 			}
 		}

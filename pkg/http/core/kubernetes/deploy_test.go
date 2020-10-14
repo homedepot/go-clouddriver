@@ -106,7 +106,7 @@ var _ = Describe("Deploy", func() {
 				fakeKubeClient.ListResourcesByKindAndNamespaceReturns(nil, errors.New("ListResourcesByKindAndNamespaceReturns fake error"))
 			})
 
-			It("returns ListResourcesByKindAndNamespace returns fake error", func() {
+			It("ListResourcesByKindAndNamespace returns a fake error", func() {
 				Expect(err).ToNot(BeNil())
 				Expect(err.Error()).To(Equal("ListResourcesByKindAndNamespaceReturns fake error"))
 			})
@@ -114,12 +114,22 @@ var _ = Describe("Deploy", func() {
 
 		When("Get ListResourcesByKindAndNamespace returns an empty list", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourcesByKindAndNamespaceReturns(nil, errors.New("ListResourcesByKindAndNamespaceReturns fake error"))
+				fakeKubeController.GetCurrentVersionReturns("0")
 			})
 
-			It("Spinnaker version to be 1", func() {
-				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
-				Expect(kr.Version).To(Equal("1"))
+			It("Increment version function is called with version 0", func() {
+				Expect(fakeKubeController.IncrementVersionArgsForCall(0)).To(Equal("0"))
+			})
+		})
+
+		When("AddSpinnakerVersionAnnotations returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeController.AddSpinnakerVersionAnnotationsReturns(errors.New("AddSpinnakerVersionAnnotations fake error"))
+			})
+
+			It("AddSpinnakerVersionAnnotations returns a fake error", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("AddSpinnakerVersionAnnotations fake error"))
 			})
 		})
 	})
