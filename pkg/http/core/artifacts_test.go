@@ -55,6 +55,20 @@ var _ = Describe("Artifacts", func() {
 			doRequest()
 		})
 
+		When("getting the helm client returns an error", func() {
+			BeforeEach(func() {
+				fakeArtifactCredentialsController.HelmClientForAccountNameReturns(nil, errors.New("error getting helm client"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Message).To(Equal("error getting helm client"))
+				Expect(ce.Status).To(Equal(http.StatusBadRequest))
+			})
+		})
+
 		When("getting the index returns an error", func() {
 			BeforeEach(func() {
 				fakeHelmClient.GetIndexReturns(helm.Index{}, errors.New("error getting index"))
@@ -109,6 +123,20 @@ var _ = Describe("Artifacts", func() {
 
 		JustBeforeEach(func() {
 			doRequest()
+		})
+
+		When("getting the helm client returns an error", func() {
+			BeforeEach(func() {
+				fakeArtifactCredentialsController.HelmClientForAccountNameReturns(nil, errors.New("error getting helm client"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Message).To(Equal("error getting helm client"))
+				Expect(ce.Status).To(Equal(http.StatusBadRequest))
+			})
 		})
 
 		When("getting the index returns an error", func() {
@@ -168,6 +196,20 @@ var _ = Describe("Artifacts", func() {
 				body.Write([]byte(payloadRequestFetchHelmArtifact))
 				createRequest(http.MethodPut)
 				fakeHelmClient.GetChartReturns([]byte("some-binary-data"), nil)
+			})
+
+			When("getting the helm client returns an error", func() {
+				BeforeEach(func() {
+					fakeArtifactCredentialsController.HelmClientForAccountNameReturns(nil, errors.New("error getting helm client"))
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Message).To(Equal("error getting helm client"))
+					Expect(ce.Status).To(Equal(http.StatusBadRequest))
+				})
 			})
 
 			When("getting the chart returns an error", func() {

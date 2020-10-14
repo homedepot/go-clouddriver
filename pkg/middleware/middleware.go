@@ -3,7 +3,6 @@ package middleware
 import (
 	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/artifact"
-	"github.com/billiford/go-clouddriver/pkg/helm"
 	kube "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
@@ -41,13 +40,6 @@ func SetArtifactCredentialsController(a artifact.CredentialsController) gin.Hand
 func SetKubeActionHandler(k kube.ActionHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set(kube.ActionHandlerInstanceKey, k)
-		c.Next()
-	}
-}
-
-func SetHelmClient(h helm.Client) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Set(helm.ClientInstanceKey, h)
 		c.Next()
 	}
 }

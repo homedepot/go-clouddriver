@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/artifact"
-	"github.com/billiford/go-clouddriver/pkg/helm"
 	"github.com/billiford/go-clouddriver/pkg/http"
 	kube "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
@@ -18,7 +17,6 @@ type Config struct {
 	SQLClient                     sql.Client
 	KubeController                kubernetes.Controller
 	KubeActionHandler             kube.ActionHandler
-	HelmClient                    helm.Client
 	VerboseRequestLogging         bool
 }
 
@@ -29,7 +27,6 @@ func Setup(r *gin.Engine, c *Config) {
 	r.Use(middleware.SetKubeController(c.KubeController))
 	r.Use(middleware.SetArtifactCredentialsController(c.ArtifactCredentialsController))
 	r.Use(middleware.SetKubeActionHandler(c.KubeActionHandler))
-	r.Use(middleware.SetHelmClient(c.HelmClient))
 	r.Use(middleware.HandleError())
 
 	if c.VerboseRequestLogging {

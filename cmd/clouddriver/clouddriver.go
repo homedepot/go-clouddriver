@@ -6,7 +6,6 @@ import (
 
 	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/artifact"
-	"github.com/billiford/go-clouddriver/pkg/helm"
 	kube "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/server"
@@ -54,7 +53,6 @@ func init() {
 
 	sqlClient := sql.NewClient(db)
 	kubeController := kubernetes.NewController()
-	helmClient := helm.NewClient("https://kubernetes-charts.storage.googleapis.com")
 	arcadeClient := arcade.NewDefaultClient()
 
 	arcadeAPIKey := os.Getenv("ARCADE_API_KEY")
@@ -70,7 +68,6 @@ func init() {
 		SQLClient:                     sqlClient,
 		KubeController:                kubeController,
 		KubeActionHandler:             kube.NewActionHandler(),
-		HelmClient:                    helmClient,
 	}
 	if os.Getenv("VERBOSE_REQUEST_LOGGING") == "true" {
 		c.VerboseRequestLogging = true

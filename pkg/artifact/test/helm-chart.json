@@ -3,5 +3,5 @@
   "types": [
     "helm/chart"
   ],
-  "url": "https://kubernetes-charts.storage.googleapis.com"
+  "repository": "https://kubernetes-charts.storage.googleapis.com"
 }

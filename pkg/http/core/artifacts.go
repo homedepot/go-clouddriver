@@ -9,18 +9,23 @@ import (
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"github.com/billiford/go-clouddriver/pkg/artifact"
-	"github.com/billiford/go-clouddriver/pkg/helm"
 	"github.com/gin-gonic/gin"
 )
 
 func ListArtifactCredentials(c *gin.Context) {
-	acc := artifact.CredentialsControllerInstance(c)
-	c.JSON(http.StatusOK, acc.ListArtifactCredentialsNamesAndTypes())
+	cc := artifact.CredentialsControllerInstance(c)
+	c.JSON(http.StatusOK, cc.ListArtifactCredentialsNamesAndTypes())
 }
 
 func ListHelmArtifactAccountNames(c *gin.Context) {
-	hc := helm.Instance(c)
 	names := []string{}
+	cc := artifact.CredentialsControllerInstance(c)
+
+	hc, err := cc.HelmClientForAccountName(c.Param("accountName"))
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		return
+	}
 
 	i, err := hc.GetIndex()
 	if err != nil {
@@ -38,9 +43,15 @@ func ListHelmArtifactAccountNames(c *gin.Context) {
 }
 
 func ListHelmArtifactAccountVersions(c *gin.Context) {
-	hc := helm.Instance(c)
+	cc := artifact.CredentialsControllerInstance(c)
 	versions := []string{}
 	artifactName := c.Query("artifactName")
+
+	hc, err := cc.HelmClientForAccountName(c.Param("accountName"))
+	if err != nil {
+		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		return
+	}
 
 	i, err := hc.GetIndex()
 	if err != nil {
@@ -89,7 +100,7 @@ type Metadata struct {
 // I named it "GetArtifact" since that's what it's doing.
 func GetArtifact(c *gin.Context) {
 	a := Artifact{}
-	hc := helm.Instance(c)
+	cc := artifact.CredentialsControllerInstance(c)
 
 	err := c.ShouldBindJSON(&a)
 	if err != nil {
@@ -101,6 +112,12 @@ func GetArtifact(c *gin.Context) {
 
 	switch a.Type {
 	case "helm/chart":
+		hc, err := cc.HelmClientForAccountName(a.ArtifactAccount)
+		if err != nil {
+			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			return
+		}
+
 		b, err = hc.GetChart(a.Name, a.Version)
 		if err != nil {
 			clouddriver.WriteError(c, http.StatusInternalServerError, err)

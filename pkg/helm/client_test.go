@@ -5,7 +5,6 @@ import (
 
 	"github.com/billiford/go-clouddriver/pkg/helm"
 	. "github.com/billiford/go-clouddriver/pkg/helm"
-	"github.com/gin-gonic/gin"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -185,26 +184,6 @@ entries:
 			It("succeeds", func() {
 				Expect(err).To(BeNil())
 				Expect(string(b)).To(Equal("some-binary-data"))
-			})
-		})
-	})
-
-	Describe("#Instance", func() {
-		var c *gin.Context
-		var c2 Client
-
-		BeforeEach(func() {
-			c = &gin.Context{}
-			c.Set(ClientInstanceKey, client)
-		})
-
-		When("it succeeds", func() {
-			BeforeEach(func() {
-				c2 = Instance(c)
-			})
-
-			It("succeeds", func() {
-				Expect(c2).ToNot(BeNil())
 			})
 		})
 	})

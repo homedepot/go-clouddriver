@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 )
 
@@ -119,8 +118,4 @@ func (c *client) GetChart(name, version string) ([]byte, error) {
 	}
 
 	return b, nil
-}
-
-func Instance(c *gin.Context) Client {
-	return c.MustGet(ClientInstanceKey).(Client)
 }

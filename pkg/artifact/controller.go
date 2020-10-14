@@ -38,9 +38,9 @@ type CredentialsController interface {
 }
 
 type Credentials struct {
-	Name  string `json:"name"`
-	Types []Type `json:"types"`
-	URL   string `json:"url,omitempty"`
+	Name       string `json:"name"`
+	Types      []Type `json:"types"`
+	Repository string `json:"repository,omitempty"`
 }
 
 var (
@@ -104,11 +104,11 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 				t := ac.Types[0]
 				switch t {
 				case TypeHelmChart:
-					if ac.URL == "" {
-						return nil, fmt.Errorf("helm chart %s missing required \"url\" attribute", ac.Name)
+					if ac.Repository == "" {
+						return nil, fmt.Errorf("helm chart %s missing required \"repository\" attribute", ac.Name)
 					}
 
-					helmClient := helm.NewClient(ac.URL)
+					helmClient := helm.NewClient(ac.Repository)
 					cc.helmClients[ac.Name] = helmClient
 				}
 			}

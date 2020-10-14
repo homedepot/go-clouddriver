@@ -117,6 +117,8 @@ func setup() {
 
 	fakeArcadeClient = &arcadefakes.FakeClient{}
 
+	fakeHelmClient = &helmfakes.FakeClient{}
+
 	fakeArtifactCredentialsController = &artifactfakes.FakeCredentialsController{}
 	fakeArtifactCredentialsController.ListArtifactCredentialsNamesAndTypesReturns([]artifact.Credentials{
 		{
@@ -132,8 +134,7 @@ func setup() {
 			},
 		},
 	})
-
-	fakeHelmClient = &helmfakes.FakeClient{}
+	fakeArtifactCredentialsController.HelmClientForAccountNameReturns(fakeHelmClient, nil)
 
 	// Disable debug logging.
 	gin.SetMode(gin.ReleaseMode)
@@ -146,7 +147,6 @@ func setup() {
 	c := &server.Config{
 		ArcadeClient:                  fakeArcadeClient,
 		ArtifactCredentialsController: fakeArtifactCredentialsController,
-		HelmClient:                    fakeHelmClient,
 		SQLClient:                     fakeSQLClient,
 		KubeController:                fakeKubeController,
 		KubeActionHandler:             fakeKubeActionHandler,

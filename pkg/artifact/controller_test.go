@@ -96,7 +96,7 @@ var _ = Describe("Controller", func() {
 			})
 		})
 
-		When("a type helm/chart is missing the url attribute", func() {
+		When("a type helm/chart is missing the repository attribute", func() {
 			var tmpFile *os.File
 
 			BeforeEach(func() {
@@ -116,7 +116,7 @@ var _ = Describe("Controller", func() {
 
 			It("returns an error", func() {
 				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(HavePrefix(`helm chart helm-test2 missing required "url" attribute`))
+				Expect(err.Error()).To(HavePrefix(`helm chart helm-test2 missing required "repository" attribute`))
 			})
 		})
 
@@ -132,6 +132,7 @@ var _ = Describe("Controller", func() {
 
 		BeforeEach(func() {
 			cc, err = NewCredentialsController(dir)
+			Expect(err).To(BeNil())
 		})
 
 		JustBeforeEach(func() {
@@ -142,7 +143,7 @@ var _ = Describe("Controller", func() {
 			It("succeeds", func() {
 				Expect(artifactCredentials).To(HaveLen(9))
 				for _, ac := range artifactCredentials {
-					Expect(ac.URL).To(BeEmpty())
+					Expect(ac.Repository).To(BeEmpty())
 				}
 			})
 		})
@@ -157,6 +158,7 @@ var _ = Describe("Controller", func() {
 		BeforeEach(func() {
 			accountName = "helm-test"
 			cc, err = NewCredentialsController(dir)
+			Expect(err).To(BeNil())
 		})
 
 		JustBeforeEach(func() {
