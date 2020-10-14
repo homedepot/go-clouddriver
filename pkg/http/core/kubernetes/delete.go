@@ -74,7 +74,13 @@ func (d *deleteManfest) Run() error {
 
 	do.PropagationPolicy = &propagationPolicy
 
-	switch strings.ToLower(d.dm.Mode) {
+	// Default to the static mode.
+	mode := "static"
+	if d.dm.Mode != "" {
+		mode = d.dm.Mode
+	}
+
+	switch strings.ToLower(mode) {
 	// Both dynamic and static use the same logic. For 'dynamic' the manifest has already been resolved and passed in.
 	case "dynamic", "static":
 		a := strings.Split(d.dm.ManifestName, " ")
@@ -110,9 +116,9 @@ func (d *deleteManfest) Run() error {
 			return err
 		}
 	case "label":
-		return fmt.Errorf("requested to delete manifest %s using mode %s which is not implemented", d.dm.ManifestName, d.dm.Mode)
+		return fmt.Errorf("requested to delete manifest %s using mode %s which is not implemented", d.dm.ManifestName, mode)
 	default:
-		return fmt.Errorf("requested to delete manifest %s using mode %s which is not implemented", d.dm.ManifestName, d.dm.Mode)
+		return fmt.Errorf("requested to delete manifest %s using mode %s which is not implemented", d.dm.ManifestName, mode)
 	}
 
 	return nil
