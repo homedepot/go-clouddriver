@@ -82,10 +82,11 @@ func (d *deployManifest) Run() error {
 			return err
 		}
 
+		name := u.GetName()
+
 		if d.kc.IsVersioned(u) {
 			kind := strings.ToLower(u.GetKind())
 			namespace := u.GetNamespace()
-			name := u.GetName()
 			lo := metav1.ListOptions{
 				LabelSelector:  kubernetes.LabelKubernetesName + "=" + application,
 				TimeoutSeconds: &listTimeout,
@@ -111,8 +112,6 @@ func (d *deployManifest) Run() error {
 		if err != nil {
 			return err
 		}
-
-		name := u.GetName()
 
 		kr := kubernetes.Resource{
 			AccountName:  d.dm.Account,
