@@ -27,9 +27,20 @@ func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured
 
 	//ToDo
 	// Add spinnaker versioning labels and annotations.
-	// 		.metadata.annotations:
+
+	// .metadata.labels:
+	//   moniker.spinnaker.io/sequence: "N"
+	// .spec.template.metadata.annotations:
 	//   artifact.spinnaker.io/version: vNNN
 	//   moniker.spinnaker.io/sequence: "N"
+	// .spec.template.metadata.labels:
+	//   moniker.spinnaker.io/sequence: "N"
+
+	return nil
+}
+
+func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, application string, version SpinnakerVersion) error {
+	label(u)
 	// .metadata.labels:
 	//   moniker.spinnaker.io/sequence: "N"
 	// .spec.template.metadata.annotations:
