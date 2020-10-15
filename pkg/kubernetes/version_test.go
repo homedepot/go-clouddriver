@@ -13,8 +13,8 @@ var (
 	currentVersion    string
 )
 
-var _ = Describe("Pkg/Kubernetes/Version", func() {
-	Context("GetCurrentVersion", func() {
+var _ = Describe("Version", func() {
+	Context("#GetCurrentVersion", func() {
 		BeforeEach(func() {
 			kc = kubernetes.NewController()
 		})
