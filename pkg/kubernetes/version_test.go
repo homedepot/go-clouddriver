@@ -79,7 +79,7 @@ var _ = Describe("Pkg/Kubernetes/Version", func() {
 			})
 
 			It("return 4 as the current version", func() {
-				Expect(currentVersion).To(Equal("3"))
+				Expect(currentVersion).To(Equal("4"))
 			})
 		})
 	})
