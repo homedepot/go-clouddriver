@@ -42,7 +42,6 @@ func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured
 }
 
 func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string {
-
 	cluster := kind + " " + name
 	currentVersion := "0"
 	if len(ul.Items) == 0 {
@@ -73,7 +72,11 @@ func (c *controller) IsVersioned(u *unstructured.Unstructured) bool {
 	annotations := u.GetAnnotations()
 	if annotations != nil {
 		if _, ok := annotations[AnnotationSpinnakerStrategyVersioned]; ok {
-			return true
+			if annotations[AnnotationSpinnakerStrategyVersioned] == "true" {
+				return true
+			} else {
+				return false
+			}
 		}
 	}
 	kind := strings.ToLower(u.GetKind())
