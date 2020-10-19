@@ -181,7 +181,8 @@ func GetManifestByTarget(c *gin.Context) {
 	}
 
 	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
-	items := kubernetes.FilterOnCluster(list.Items, cluster)
+	manifestFilter := kubernetes.NewManifestFilter(list.Items)
+	items := manifestFilter.FilterOnCluster(cluster)
 	if len(items) == 0 {
 		clouddriver.WriteError(c, http.StatusNotFound, errors.New("no resources found for cluster "+cluster))
 		return

@@ -24,25 +24,13 @@ type SpinnakerVersion struct {
 func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, application string, version SpinnakerVersion) error {
 	annotate(u, AnnotationSpinnakerArtifactVersion, version.Long)
 	annotate(u, AnnotationSpinnakerMonikerSequence, version.Short)
-
-	//ToDo
-	// Add spinnaker versioning labels and annotations.
-
-	// .metadata.labels:
-	//   moniker.spinnaker.io/sequence: "N"
-	// .spec.template.metadata.annotations:
-	//   artifact.spinnaker.io/version: vNNN
-	//   moniker.spinnaker.io/sequence: "N"
-	// .spec.template.metadata.labels:
-	//   moniker.spinnaker.io/sequence: "N"
-
 	return nil
 }
 
 func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, application string, version SpinnakerVersion) error {
-	label(u)
-	// .metadata.labels:
-	//   moniker.spinnaker.io/sequence: "N"
+	label(u, LabelSpinnakerSequence, version.Short)
+	// u.Spec.Template.ObjectMeta
+
 	// .spec.template.metadata.annotations:
 	//   artifact.spinnaker.io/version: vNNN
 	//   moniker.spinnaker.io/sequence: "N"
@@ -59,13 +47,14 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 		return currentVersion
 	}
 	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
-	results := FilterOnCluster(ul.Items, cluster)
+	manifestFilter := NewManifestFilter(ul.Items)
+	results := manifestFilter.FilterOnCluster(cluster)
 	if len(results) == 0 {
 		return currentVersion
 	}
 
 	//filter out empty moniker.spinnaker.io/sequence labels
-	results = FilterWhereLabelDoesNotExist(results, LabelSpinnakerSequence)
+	results = manifestFilter.FilterWhereLabelDoesNotExist(LabelSpinnakerSequence)
 	if len(results) == 0 {
 		return currentVersion
 	}

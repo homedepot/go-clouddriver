@@ -6,9 +6,23 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func FilterOnCluster(items []unstructured.Unstructured, cluster string) []unstructured.Unstructured {
+//go:generate counterfeiter . ManifestFilter
+type ManifestFilter interface {
+	FilterOnCluster([]unstructured.Unstructured, string) []unstructured.Unstructured
+	FilterWhereLabelDoesNotExist([]unstructured.Unstructured, string) []unstructured.Unstructured
+}
+
+type manifestFilter struct {
+	items []unstructured.Unstructured
+}
+
+func NewManifestFilter(items []unstructured.Unstructured) manifestFilter {
+	return manifestFilter{items: items}
+}
+
+func (f *manifestFilter) FilterOnCluster(cluster string) []unstructured.Unstructured {
 	filtered := []unstructured.Unstructured{}
-	for _, item := range items {
+	for _, item := range f.items {
 		annotations := item.GetAnnotations()
 		if annotations != nil {
 			if strings.EqualFold(annotations[AnnotationSpinnakerMonikerCluster], cluster) {
@@ -20,9 +34,9 @@ func FilterOnCluster(items []unstructured.Unstructured, cluster string) []unstru
 	return filtered
 }
 
-func FilterWhereLabelDoesNotExist(items []unstructured.Unstructured, label string) []unstructured.Unstructured {
+func (f *manifestFilter) FilterWhereLabelDoesNotExist(label string) []unstructured.Unstructured {
 	filtered := []unstructured.Unstructured{}
-	for _, item := range items {
+	for _, item := range f.items {
 		labels := item.GetLabels()
 		if labels != nil {
 			if _, ok := labels[label]; ok {
