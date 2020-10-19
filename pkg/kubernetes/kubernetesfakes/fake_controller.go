@@ -47,6 +47,19 @@ type FakeController struct {
 	addSpinnakerVersionAnnotationsReturnsOnCall map[int]struct {
 		result1 error
 	}
+	AddSpinnakerVersionLabelsStub        func(*unstructured.Unstructured, string, kubernetes.SpinnakerVersion) error
+	addSpinnakerVersionLabelsMutex       sync.RWMutex
+	addSpinnakerVersionLabelsArgsForCall []struct {
+		arg1 *unstructured.Unstructured
+		arg2 string
+		arg3 kubernetes.SpinnakerVersion
+	}
+	addSpinnakerVersionLabelsReturns struct {
+		result1 error
+	}
+	addSpinnakerVersionLabelsReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GetCurrentVersionStub        func(*unstructured.UnstructuredList, string, string) string
 	getCurrentVersionMutex       sync.RWMutex
 	getCurrentVersionArgsForCall []struct {
@@ -292,6 +305,68 @@ func (fake *FakeController) AddSpinnakerVersionAnnotationsReturnsOnCall(i int, r
 		})
 	}
 	fake.addSpinnakerVersionAnnotationsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) AddSpinnakerVersionLabels(arg1 *unstructured.Unstructured, arg2 string, arg3 kubernetes.SpinnakerVersion) error {
+	fake.addSpinnakerVersionLabelsMutex.Lock()
+	ret, specificReturn := fake.addSpinnakerVersionLabelsReturnsOnCall[len(fake.addSpinnakerVersionLabelsArgsForCall)]
+	fake.addSpinnakerVersionLabelsArgsForCall = append(fake.addSpinnakerVersionLabelsArgsForCall, struct {
+		arg1 *unstructured.Unstructured
+		arg2 string
+		arg3 kubernetes.SpinnakerVersion
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("AddSpinnakerVersionLabels", []interface{}{arg1, arg2, arg3})
+	fake.addSpinnakerVersionLabelsMutex.Unlock()
+	if fake.AddSpinnakerVersionLabelsStub != nil {
+		return fake.AddSpinnakerVersionLabelsStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.addSpinnakerVersionLabelsReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeController) AddSpinnakerVersionLabelsCallCount() int {
+	fake.addSpinnakerVersionLabelsMutex.RLock()
+	defer fake.addSpinnakerVersionLabelsMutex.RUnlock()
+	return len(fake.addSpinnakerVersionLabelsArgsForCall)
+}
+
+func (fake *FakeController) AddSpinnakerVersionLabelsCalls(stub func(*unstructured.Unstructured, string, kubernetes.SpinnakerVersion) error) {
+	fake.addSpinnakerVersionLabelsMutex.Lock()
+	defer fake.addSpinnakerVersionLabelsMutex.Unlock()
+	fake.AddSpinnakerVersionLabelsStub = stub
+}
+
+func (fake *FakeController) AddSpinnakerVersionLabelsArgsForCall(i int) (*unstructured.Unstructured, string, kubernetes.SpinnakerVersion) {
+	fake.addSpinnakerVersionLabelsMutex.RLock()
+	defer fake.addSpinnakerVersionLabelsMutex.RUnlock()
+	argsForCall := fake.addSpinnakerVersionLabelsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeController) AddSpinnakerVersionLabelsReturns(result1 error) {
+	fake.addSpinnakerVersionLabelsMutex.Lock()
+	defer fake.addSpinnakerVersionLabelsMutex.Unlock()
+	fake.AddSpinnakerVersionLabelsStub = nil
+	fake.addSpinnakerVersionLabelsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) AddSpinnakerVersionLabelsReturnsOnCall(i int, result1 error) {
+	fake.addSpinnakerVersionLabelsMutex.Lock()
+	defer fake.addSpinnakerVersionLabelsMutex.Unlock()
+	fake.AddSpinnakerVersionLabelsStub = nil
+	if fake.addSpinnakerVersionLabelsReturnsOnCall == nil {
+		fake.addSpinnakerVersionLabelsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.addSpinnakerVersionLabelsReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -613,6 +688,8 @@ func (fake *FakeController) Invocations() map[string][][]interface{} {
 	defer fake.addSpinnakerLabelsMutex.RUnlock()
 	fake.addSpinnakerVersionAnnotationsMutex.RLock()
 	defer fake.addSpinnakerVersionAnnotationsMutex.RUnlock()
+	fake.addSpinnakerVersionLabelsMutex.RLock()
+	defer fake.addSpinnakerVersionLabelsMutex.RUnlock()
 	fake.getCurrentVersionMutex.RLock()
 	defer fake.getCurrentVersionMutex.RUnlock()
 	fake.incrementVersionMutex.RLock()

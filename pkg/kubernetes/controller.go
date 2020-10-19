@@ -21,6 +21,7 @@ type Controller interface {
 	AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error
 	AddSpinnakerLabels(u *unstructured.Unstructured, application string) error
 	AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, application string, version SpinnakerVersion) error
+	AddSpinnakerVersionLabels(u *unstructured.Unstructured, application string, version SpinnakerVersion) error
 	GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string
 	IsVersioned(u *unstructured.Unstructured) bool
 	IncrementVersion(currentVersion string) SpinnakerVersion

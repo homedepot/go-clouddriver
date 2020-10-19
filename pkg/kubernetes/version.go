@@ -13,6 +13,7 @@ const (
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	AnnotationSpinnakerArtifactVersion = `artifact.spinnaker.io/version`
 	AnnotationSpinnakerMonikerSequence = `moniker.spinnaker.io/sequence`
+	Annotation
 )
 
 type SpinnakerVersion struct {
@@ -24,19 +25,107 @@ type SpinnakerVersion struct {
 func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, application string, version SpinnakerVersion) error {
 	annotate(u, AnnotationSpinnakerArtifactVersion, version.Long)
 	annotate(u, AnnotationSpinnakerMonikerSequence, version.Short)
+	var err error
+	gvk := u.GroupVersionKind()
+	if strings.EqualFold(gvk.Kind, "deployment") {
+		d := NewDeployment(u.Object)
+
+		d.AnnotateTemplate(AnnotationSpinnakerArtifactVersion, version.Long)
+		d.AnnotateTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+		*u, err = d.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	if strings.EqualFold(gvk.Kind, "replicaset") {
+		rs := NewReplicaSet(u.Object)
+
+		rs.AnnotateTemplate(AnnotationSpinnakerArtifactVersion, version.Long)
+		rs.AnnotateTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+		*u, err = rs.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	if strings.EqualFold(gvk.Kind, "daemonset") {
+		ds := NewReplicaSet(u.Object)
+
+		ds.AnnotateTemplate(AnnotationSpinnakerArtifactVersion, version.Long)
+		ds.AnnotateTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+		*u, err = ds.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	//Todo: create statefulset.go with all the needed functions
+	// if strings.EqualFold(gvk.Kind, "statefulset") {
+	// 	ss := NewStatefulSet(u.Object)
+
+	// 	ss.AnnotateTemplate(AnnotationSpinnakerArtifactVersion, version.Long)
+	// 	ss.AnnotateTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+	// 	*u, err = ds.ToUnstructured()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
 func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, application string, version SpinnakerVersion) error {
 	label(u, LabelSpinnakerMonikerSequence, version.Short)
-	// u.Spec.Template.ObjectMeta
+	var err error
+	gvk := u.GroupVersionKind()
+	if strings.EqualFold(gvk.Kind, "deployment") {
+		d := NewDeployment(u.Object)
 
-	// .spec.template.metadata.annotations:
-	//   artifact.spinnaker.io/version: vNNN
-	//   moniker.spinnaker.io/sequence: "N"
-	// .spec.template.metadata.labels:
-	//   moniker.spinnaker.io/sequence: "N"
+		d.LabelTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
 
+		*u, err = d.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	if strings.EqualFold(gvk.Kind, "replicaset") {
+		rs := NewReplicaSet(u.Object)
+
+		rs.LabelTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+		*u, err = rs.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	if strings.EqualFold(gvk.Kind, "demonset") {
+		ds := NewReplicaSet(u.Object)
+
+		ds.LabelTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+		*u, err = ds.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	//Todo: create statefulset.go with all the needed functions
+	// if strings.EqualFold(gvk.Kind, "statefulset") {
+	// 	ss := NewStatefulSet(u.Object)
+
+	// 	ss.LabelTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+	// 	*u, err = ss.ToUnstructured()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
@@ -54,7 +143,7 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 	}
 
 	//filter out empty moniker.spinnaker.io/sequence labels
-	results = manifestFilter.FilterWhereLabelDoesNotExist(LabelSpinnakerSequence)
+	results = manifestFilter.FilterWhereLabelDoesNotExist(LabelSpinnakerMonikerSequence)
 	if len(results) == 0 {
 		return currentVersion
 	}
