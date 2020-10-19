@@ -113,7 +113,7 @@ var _ = Describe("Version", func() {
 				Expect(currentVersion).To(Equal("0"))
 			})
 		})
-		When("#FilterWhereLabelDoesNotExist returns 0 items", func() {
+		When("#FilterOnLabel returns 0 items", func() {
 			BeforeEach(func() {
 				fakeResourcesList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{{
 					Object: map[string]interface{}{
@@ -135,7 +135,7 @@ var _ = Describe("Version", func() {
 				},
 				}}
 				FakeManifestFilter := kubernetesfakes.FakeManifestFilter{}
-				FakeManifestFilter.FilterWhereLabelDoesNotExistReturns([]unstructured.Unstructured{})
+				FakeManifestFilter.FilterOnLabelReturns([]unstructured.Unstructured{})
 				currentVersion = kc.GetCurrentVersion(fakeResourcesList, "test-kind", "test-name")
 			})
 

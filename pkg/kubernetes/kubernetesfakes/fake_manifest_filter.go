@@ -21,16 +21,16 @@ type FakeManifestFilter struct {
 	filterOnClusterReturnsOnCall map[int]struct {
 		result1 []unstructured.Unstructured
 	}
-	FilterWhereLabelDoesNotExistStub        func([]unstructured.Unstructured, string) []unstructured.Unstructured
-	filterWhereLabelDoesNotExistMutex       sync.RWMutex
-	filterWhereLabelDoesNotExistArgsForCall []struct {
+	FilterOnLabelStub        func([]unstructured.Unstructured, string) []unstructured.Unstructured
+	filterOnLabelMutex       sync.RWMutex
+	filterOnLabelArgsForCall []struct {
 		arg1 []unstructured.Unstructured
 		arg2 string
 	}
-	filterWhereLabelDoesNotExistReturns struct {
+	filterOnLabelReturns struct {
 		result1 []unstructured.Unstructured
 	}
-	filterWhereLabelDoesNotExistReturnsOnCall map[int]struct {
+	filterOnLabelReturnsOnCall map[int]struct {
 		result1 []unstructured.Unstructured
 	}
 	invocations      map[string][][]interface{}
@@ -103,68 +103,68 @@ func (fake *FakeManifestFilter) FilterOnClusterReturnsOnCall(i int, result1 []un
 	}{result1}
 }
 
-func (fake *FakeManifestFilter) FilterWhereLabelDoesNotExist(arg1 []unstructured.Unstructured, arg2 string) []unstructured.Unstructured {
+func (fake *FakeManifestFilter) FilterOnLabel(arg1 []unstructured.Unstructured, arg2 string) []unstructured.Unstructured {
 	var arg1Copy []unstructured.Unstructured
 	if arg1 != nil {
 		arg1Copy = make([]unstructured.Unstructured, len(arg1))
 		copy(arg1Copy, arg1)
 	}
-	fake.filterWhereLabelDoesNotExistMutex.Lock()
-	ret, specificReturn := fake.filterWhereLabelDoesNotExistReturnsOnCall[len(fake.filterWhereLabelDoesNotExistArgsForCall)]
-	fake.filterWhereLabelDoesNotExistArgsForCall = append(fake.filterWhereLabelDoesNotExistArgsForCall, struct {
+	fake.filterOnLabelMutex.Lock()
+	ret, specificReturn := fake.filterOnLabelReturnsOnCall[len(fake.filterOnLabelArgsForCall)]
+	fake.filterOnLabelArgsForCall = append(fake.filterOnLabelArgsForCall, struct {
 		arg1 []unstructured.Unstructured
 		arg2 string
 	}{arg1Copy, arg2})
-	fake.recordInvocation("FilterWhereLabelDoesNotExist", []interface{}{arg1Copy, arg2})
-	fake.filterWhereLabelDoesNotExistMutex.Unlock()
-	if fake.FilterWhereLabelDoesNotExistStub != nil {
-		return fake.FilterWhereLabelDoesNotExistStub(arg1, arg2)
+	fake.recordInvocation("FilterOnLabel", []interface{}{arg1Copy, arg2})
+	fake.filterOnLabelMutex.Unlock()
+	if fake.FilterOnLabelStub != nil {
+		return fake.FilterOnLabelStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.filterWhereLabelDoesNotExistReturns
+	fakeReturns := fake.filterOnLabelReturns
 	return fakeReturns.result1
 }
 
-func (fake *FakeManifestFilter) FilterWhereLabelDoesNotExistCallCount() int {
-	fake.filterWhereLabelDoesNotExistMutex.RLock()
-	defer fake.filterWhereLabelDoesNotExistMutex.RUnlock()
-	return len(fake.filterWhereLabelDoesNotExistArgsForCall)
+func (fake *FakeManifestFilter) FilterOnLabelCallCount() int {
+	fake.filterOnLabelMutex.RLock()
+	defer fake.filterOnLabelMutex.RUnlock()
+	return len(fake.filterOnLabelArgsForCall)
 }
 
-func (fake *FakeManifestFilter) FilterWhereLabelDoesNotExistCalls(stub func([]unstructured.Unstructured, string) []unstructured.Unstructured) {
-	fake.filterWhereLabelDoesNotExistMutex.Lock()
-	defer fake.filterWhereLabelDoesNotExistMutex.Unlock()
-	fake.FilterWhereLabelDoesNotExistStub = stub
+func (fake *FakeManifestFilter) FilterOnLabelCalls(stub func([]unstructured.Unstructured, string) []unstructured.Unstructured) {
+	fake.filterOnLabelMutex.Lock()
+	defer fake.filterOnLabelMutex.Unlock()
+	fake.FilterOnLabelStub = stub
 }
 
-func (fake *FakeManifestFilter) FilterWhereLabelDoesNotExistArgsForCall(i int) ([]unstructured.Unstructured, string) {
-	fake.filterWhereLabelDoesNotExistMutex.RLock()
-	defer fake.filterWhereLabelDoesNotExistMutex.RUnlock()
-	argsForCall := fake.filterWhereLabelDoesNotExistArgsForCall[i]
+func (fake *FakeManifestFilter) FilterOnLabelArgsForCall(i int) ([]unstructured.Unstructured, string) {
+	fake.filterOnLabelMutex.RLock()
+	defer fake.filterOnLabelMutex.RUnlock()
+	argsForCall := fake.filterOnLabelArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeManifestFilter) FilterWhereLabelDoesNotExistReturns(result1 []unstructured.Unstructured) {
-	fake.filterWhereLabelDoesNotExistMutex.Lock()
-	defer fake.filterWhereLabelDoesNotExistMutex.Unlock()
-	fake.FilterWhereLabelDoesNotExistStub = nil
-	fake.filterWhereLabelDoesNotExistReturns = struct {
+func (fake *FakeManifestFilter) FilterOnLabelReturns(result1 []unstructured.Unstructured) {
+	fake.filterOnLabelMutex.Lock()
+	defer fake.filterOnLabelMutex.Unlock()
+	fake.FilterOnLabelStub = nil
+	fake.filterOnLabelReturns = struct {
 		result1 []unstructured.Unstructured
 	}{result1}
 }
 
-func (fake *FakeManifestFilter) FilterWhereLabelDoesNotExistReturnsOnCall(i int, result1 []unstructured.Unstructured) {
-	fake.filterWhereLabelDoesNotExistMutex.Lock()
-	defer fake.filterWhereLabelDoesNotExistMutex.Unlock()
-	fake.FilterWhereLabelDoesNotExistStub = nil
-	if fake.filterWhereLabelDoesNotExistReturnsOnCall == nil {
-		fake.filterWhereLabelDoesNotExistReturnsOnCall = make(map[int]struct {
+func (fake *FakeManifestFilter) FilterOnLabelReturnsOnCall(i int, result1 []unstructured.Unstructured) {
+	fake.filterOnLabelMutex.Lock()
+	defer fake.filterOnLabelMutex.Unlock()
+	fake.FilterOnLabelStub = nil
+	if fake.filterOnLabelReturnsOnCall == nil {
+		fake.filterOnLabelReturnsOnCall = make(map[int]struct {
 			result1 []unstructured.Unstructured
 		})
 	}
-	fake.filterWhereLabelDoesNotExistReturnsOnCall[i] = struct {
+	fake.filterOnLabelReturnsOnCall[i] = struct {
 		result1 []unstructured.Unstructured
 	}{result1}
 }
@@ -174,8 +174,8 @@ func (fake *FakeManifestFilter) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.filterOnClusterMutex.RLock()
 	defer fake.filterOnClusterMutex.RUnlock()
-	fake.filterWhereLabelDoesNotExistMutex.RLock()
-	defer fake.filterWhereLabelDoesNotExistMutex.RUnlock()
+	fake.filterOnLabelMutex.RLock()
+	defer fake.filterOnLabelMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

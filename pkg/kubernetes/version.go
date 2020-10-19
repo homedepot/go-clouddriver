@@ -143,7 +143,7 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 	}
 
 	//filter out empty moniker.spinnaker.io/sequence labels
-	results = manifestFilter.FilterWhereLabelDoesNotExist(LabelSpinnakerMonikerSequence)
+	results = manifestFilter.FilterOnLabel(LabelSpinnakerMonikerSequence)
 	if len(results) == 0 {
 		return currentVersion
 	}

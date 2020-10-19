@@ -9,7 +9,7 @@ import (
 //go:generate counterfeiter . ManifestFilter
 type ManifestFilter interface {
 	FilterOnCluster([]unstructured.Unstructured, string) []unstructured.Unstructured
-	FilterWhereLabelDoesNotExist([]unstructured.Unstructured, string) []unstructured.Unstructured
+	FilterOnLabel([]unstructured.Unstructured, string) []unstructured.Unstructured
 }
 
 type manifestFilter struct {
@@ -34,7 +34,7 @@ func (f *manifestFilter) FilterOnCluster(cluster string) []unstructured.Unstruct
 	return filtered
 }
 
-func (f *manifestFilter) FilterWhereLabelDoesNotExist(label string) []unstructured.Unstructured {
+func (f *manifestFilter) FilterOnLabel(label string) []unstructured.Unstructured {
 	filtered := []unstructured.Unstructured{}
 	for _, item := range f.items {
 		labels := item.GetLabels()
