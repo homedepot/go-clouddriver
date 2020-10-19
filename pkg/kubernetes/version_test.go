@@ -88,6 +88,24 @@ var _ = Describe("Version", func() {
 			BeforeEach(func() {
 				FakeManifestFilter := kubernetesfakes.FakeManifestFilter{}
 				FakeManifestFilter.FilterOnClusterReturns([]unstructured.Unstructured{})
+				fakeResourcesList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{{
+					Object: map[string]interface{}{
+						"kind": "fakeKind",
+						"metadata": map[string]interface{}{
+							"name":              "fakeName",
+							"namespace":         "test-namespace2",
+							"creationTimestamp": "2020-02-13T14:12:03Z",
+							"labels": map[string]interface{}{
+								"label1": "test-label1",
+							},
+							"annotations": map[string]interface{}{
+								"strategy.spinnaker.io/versioned": "true",
+							},
+							"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+						},
+					},
+				},
+				}}
 				currentVersion = kc.GetCurrentVersion(fakeResourcesList, "test-kind", "test-name")
 			})
 
@@ -97,6 +115,25 @@ var _ = Describe("Version", func() {
 		})
 		When("#FilterWhereLabelDoesNotExist returns 0 items", func() {
 			BeforeEach(func() {
+				fakeResourcesList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{{
+					Object: map[string]interface{}{
+						"kind": "test-kind",
+						"metadata": map[string]interface{}{
+							"name":              "test-name",
+							"namespace":         "test-namespace2",
+							"creationTimestamp": "2020-02-13T14:12:03Z",
+							"labels": map[string]interface{}{
+								"label1": "test-label1",
+							},
+							"annotations": map[string]interface{}{
+								"strategy.spinnaker.io/versioned": "true",
+								"moniker.spinnaker.io/cluster":    "test-kind test-name",
+							},
+							"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+						},
+					},
+				},
+				}}
 				FakeManifestFilter := kubernetesfakes.FakeManifestFilter{}
 				FakeManifestFilter.FilterWhereLabelDoesNotExistReturns([]unstructured.Unstructured{})
 				currentVersion = kc.GetCurrentVersion(fakeResourcesList, "test-kind", "test-name")
