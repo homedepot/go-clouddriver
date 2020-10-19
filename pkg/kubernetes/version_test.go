@@ -9,11 +9,12 @@ import (
 )
 
 var (
-	kc                 kubernetes.Controller
-	fakeResourcesList  *unstructured.UnstructuredList
-	currentVersion     string
-	FakeManifestFilter kubernetesfakes.FakeManifestFilter
-	isVersioned        bool
+	kc                              kubernetes.Controller
+	fakeResourcesList               *unstructured.UnstructuredList
+	currentVersion                  string
+	FakeManifestFilter              kubernetesfakes.FakeManifestFilter
+	isVersioned                     bool
+	updatedVersion, expectedVersion kubernetes.SpinnakerVersion
 )
 
 var _ = Describe("Version", func() {
@@ -239,6 +240,36 @@ var _ = Describe("Version", func() {
 				It("returns false", func() {
 					Expect(isVersioned).To(Equal(false))
 				})
+			})
+		})
+	})
+
+	Context("#IncrementVersion", func() {
+		When("current version is 1", func() {
+			BeforeEach(func() {
+				kc = kubernetes.NewController()
+				updatedVersion = kc.IncrementVersion("1")
+				expectedVersion = kubernetes.SpinnakerVersion{
+					Long:  "v002",
+					Short: "2",
+				}
+			})
+			It("returns expected version", func() {
+				Expect(updatedVersion).To(Equal(expectedVersion))
+			})
+		})
+
+		When("current version is 999", func() {
+			BeforeEach(func() {
+				kc = kubernetes.NewController()
+				updatedVersion = kc.IncrementVersion("999")
+				expectedVersion = kubernetes.SpinnakerVersion{
+					Long:  "v000",
+					Short: "0",
+				}
+			})
+			It("returns expected version", func() {
+				Expect(updatedVersion).To(Equal(expectedVersion))
 			})
 		})
 	})
