@@ -28,7 +28,7 @@ func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured
 }
 
 func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, application string, version SpinnakerVersion) error {
-	label(u, LabelSpinnakerSequence, version.Short)
+	label(u, LabelSpinnakerMonikerSequence, version.Short)
 	// u.Spec.Template.ObjectMeta
 
 	// .spec.template.metadata.annotations:
