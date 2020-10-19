@@ -181,13 +181,14 @@ func (c *controller) IsVersioned(u *unstructured.Unstructured) bool {
 func (c *controller) IncrementVersion(currentVersion string) SpinnakerVersion {
 	currentVersionInt, _ := strconv.Atoi(currentVersion)
 	latestVersionInt := currentVersionInt + 1
+
+	if latestVersionInt > 999 {
+		latestVersionInt = 0
+	}
+
 	latestVersionShortFormat := strconv.Itoa(latestVersionInt)
 	latestVersionLongFormat := ""
-	if latestVersionInt < 999 {
-		latestVersionLongFormat = fmt.Sprintf("v%03d", latestVersionInt)
-	} else {
-		latestVersionLongFormat = fmt.Sprintf("v%d", latestVersionInt)
-	}
+	latestVersionLongFormat = fmt.Sprintf("v%03d", latestVersionInt)
 
 	return SpinnakerVersion{
 		Short: latestVersionShortFormat,
