@@ -77,9 +77,11 @@ func (p *patchManfest) Run() error {
 	}
 
 	// Merge strategy can be "strategic", "json", or "merge".
-	strategy := types.StrategicMergePatchType
+	var strategy types.PatchType
 
 	switch p.pm.Options.MergeStrategy {
+	case "strategic":
+		strategy = types.StrategicMergePatchType
 	case "json":
 		strategy = types.JSONPatchType
 	case "merge":

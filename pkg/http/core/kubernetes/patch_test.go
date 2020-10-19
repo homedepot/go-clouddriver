@@ -85,6 +85,16 @@ var _ = Describe("Patch", func() {
 	})
 
 	Context("merge strategies", func() {
+		Context("strategic patch type", func() {
+			BeforeEach(func() {
+				actionConfig.Operation.PatchManifest.Options.MergeStrategy = "strategic"
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+
 		Context("json patch type", func() {
 			BeforeEach(func() {
 				actionConfig.Operation.PatchManifest.Options.MergeStrategy = "json"
