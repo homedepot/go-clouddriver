@@ -10,6 +10,7 @@ import (
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/google/uuid"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/rest"
 )
 
@@ -64,6 +65,18 @@ func (d *deployManfest) Run() error {
 		u, err := d.kc.ToUnstructured(manifest)
 		if err != nil {
 			return err
+		}
+
+		// If the kind is a job, its name is not set, and generateName is set,
+		// generate a name for the job as `apply` will throw the error
+		// `resource name may not be empty`.
+		if strings.EqualFold(u.GetKind(), "job") {
+			name := u.GetName()
+			generateName := u.GetGenerateName()
+
+			if name == "" && generateName != "" {
+				u.SetName(generateName + rand.String(randNameNumber))
+			}
 		}
 
 		name := u.GetName()

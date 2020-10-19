@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	. "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var _ = Describe("Deploy", func() {
@@ -71,6 +73,40 @@ var _ = Describe("Deploy", func() {
 		It("returns an error", func() {
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(Equal("error converting to unstructured"))
+		})
+	})
+
+	When("the kind is a job and generateName is set", func() {
+		BeforeEach(func() {
+			actionConfig.Operation.DeployManifest = &DeployManifestRequest{
+				Manifests: []map[string]interface{}{
+					{
+						"kind":       "Job",
+						"apiVersion": "v1/batch",
+						"metadata": map[string]interface{}{
+							"generateName": "test-",
+						},
+					},
+				},
+			}
+			fakeUnstructured := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind": "Job",
+					"metadata": map[string]interface{}{
+						"generateName": "test-",
+					},
+				},
+			}
+			fakeKubeController.ToUnstructuredReturns(&fakeUnstructured, nil)
+		})
+
+		It("generates a unique name for the job", func() {
+			Expect(err).To(BeNil())
+			u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			Expect(u.GetKind()).To(Equal("Job"))
+			Expect(u.GetName()).ToNot(BeEmpty())
+			Expect(u.GetName()).To(HavePrefix("test-"))
+			Expect(u.GetName()).To(HaveLen(10))
 		})
 	})
 
