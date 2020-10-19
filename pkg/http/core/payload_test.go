@@ -83,6 +83,17 @@ const payloadRequestFetchBase64Artifact = `{
 	"reference": "aGVsbG93b3JsZAo="
 }`
 
+const payloadRequestFetchGithubFileArtifact = `{
+  "type": "github/file",
+	"reference": "%s/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml"
+}`
+
+const payloadRequestFetchGithubFileArtifactTestBranch = `{
+  "type": "github/file",
+	"reference": "%s/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml",
+	"version": "test"
+}`
+
 const payloadRequestFetchNotImplementedArtifact = `{
   "type": "unknown/type"
 }`

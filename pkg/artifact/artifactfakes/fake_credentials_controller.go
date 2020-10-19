@@ -6,6 +6,7 @@ import (
 
 	"github.com/billiford/go-clouddriver/pkg/artifact"
 	"github.com/billiford/go-clouddriver/pkg/helm"
+	"github.com/google/go-github/v32/github"
 )
 
 type FakeCredentialsController struct {
@@ -29,6 +30,19 @@ type FakeCredentialsController struct {
 	}
 	helmClientForAccountNameReturnsOnCall map[int]struct {
 		result1 helm.Client
+		result2 error
+	}
+	GitClientForAccountNameStub        func(string) (*github.Client, error)
+	gitClientForAccountNameMutex       sync.RWMutex
+	gitClientForAccountNameArgsForCall []struct {
+		arg1 string
+	}
+	gitClientForAccountNameReturns struct {
+		result1 *github.Client
+		result2 error
+	}
+	gitClientForAccountNameReturnsOnCall map[int]struct {
+		result1 *github.Client
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -126,6 +140,57 @@ func (fake *FakeCredentialsController) HelmClientForAccountNameReturnsOnCall(i i
 	}{result1, result2}
 }
 
+func (fake *FakeCredentialsController) GitClientForAccountName(arg1 string) (*github.Client, error) {
+	fake.gitClientForAccountNameMutex.Lock()
+	ret, specificReturn := fake.gitClientForAccountNameReturnsOnCall[len(fake.gitClientForAccountNameArgsForCall)]
+	fake.gitClientForAccountNameArgsForCall = append(fake.gitClientForAccountNameArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("GitClientForAccountName", []interface{}{arg1})
+	fake.gitClientForAccountNameMutex.Unlock()
+	if fake.GitClientForAccountNameStub != nil {
+		return fake.GitClientForAccountNameStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.gitClientForAccountNameReturns.result1, fake.gitClientForAccountNameReturns.result2
+}
+
+func (fake *FakeCredentialsController) GitClientForAccountNameCallCount() int {
+	fake.gitClientForAccountNameMutex.RLock()
+	defer fake.gitClientForAccountNameMutex.RUnlock()
+	return len(fake.gitClientForAccountNameArgsForCall)
+}
+
+func (fake *FakeCredentialsController) GitClientForAccountNameArgsForCall(i int) string {
+	fake.gitClientForAccountNameMutex.RLock()
+	defer fake.gitClientForAccountNameMutex.RUnlock()
+	return fake.gitClientForAccountNameArgsForCall[i].arg1
+}
+
+func (fake *FakeCredentialsController) GitClientForAccountNameReturns(result1 *github.Client, result2 error) {
+	fake.GitClientForAccountNameStub = nil
+	fake.gitClientForAccountNameReturns = struct {
+		result1 *github.Client
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCredentialsController) GitClientForAccountNameReturnsOnCall(i int, result1 *github.Client, result2 error) {
+	fake.GitClientForAccountNameStub = nil
+	if fake.gitClientForAccountNameReturnsOnCall == nil {
+		fake.gitClientForAccountNameReturnsOnCall = make(map[int]struct {
+			result1 *github.Client
+			result2 error
+		})
+	}
+	fake.gitClientForAccountNameReturnsOnCall[i] = struct {
+		result1 *github.Client
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCredentialsController) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -133,6 +198,8 @@ func (fake *FakeCredentialsController) Invocations() map[string][][]interface{} 
 	defer fake.listArtifactCredentialsNamesAndTypesMutex.RUnlock()
 	fake.helmClientForAccountNameMutex.RLock()
 	defer fake.helmClientForAccountNameMutex.RUnlock()
+	fake.gitClientForAccountNameMutex.RLock()
+	defer fake.gitClientForAccountNameMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

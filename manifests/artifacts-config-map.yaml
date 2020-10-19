@@ -49,6 +49,17 @@ data:
   github-file.json: |-
     {
       "name": "github.com",
+      "token": "some-token",
+      "types": [
+        "github/file"
+      ]
+    }
+  github-enterprise-file.json: |-
+    {
+      "baseURL": "https://github.example.com",
+      "enterprise": true,
+      "name": "github.example.com",
+      "token": "some-token",
       "types": [
         "github/file"
       ]

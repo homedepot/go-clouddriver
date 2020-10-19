@@ -1,7 +1,10 @@
 package core
 
 import (
+	"bytes"
+	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -80,14 +83,14 @@ func ListHelmArtifactAccountVersions(c *gin.Context) {
 }
 
 type Artifact struct {
-	Type            string   `json:"type"`
-	CustomKind      bool     `json:"customKind"`
-	Name            string   `json:"name"`
-	Version         string   `json:"version"`
-	Location        string   `json:"location"`
-	Reference       string   `json:"reference"`
-	Metadata        Metadata `json:"metadata"`
-	ArtifactAccount string   `json:"artifactAccount"`
+	Type            artifact.Type `json:"type"`
+	CustomKind      bool          `json:"customKind"`
+	Name            string        `json:"name"`
+	Version         string        `json:"version"`
+	Location        string        `json:"location"`
+	Reference       string        `json:"reference"`
+	Metadata        Metadata      `json:"metadata"`
+	ArtifactAccount string        `json:"artifactAccount"`
 	// Provenance      interface{} `json:"provenance"`
 	// UUID            interface{} `json:"uuid"`
 }
@@ -111,7 +114,7 @@ func GetArtifact(c *gin.Context) {
 	b := []byte{}
 
 	switch a.Type {
-	case "helm/chart":
+	case artifact.TypeHelmChart:
 		hc, err := cc.HelmClientForAccountName(a.ArtifactAccount)
 		if err != nil {
 			clouddriver.WriteError(c, http.StatusBadRequest, err)
@@ -124,7 +127,7 @@ func GetArtifact(c *gin.Context) {
 			return
 		}
 
-	case "embedded/base64":
+	case artifact.TypeEmbeddedBase64:
 		// TODO when a base64 encoded helm templated manifest makes its way here, it sometimes starts
 		// with "WARNING":"This chart is deprecated" - we should either handle that here by removing
 		// the prefix, or handle it in the deploy manifest operation.
@@ -134,8 +137,63 @@ func GetArtifact(c *gin.Context) {
 			return
 		}
 
+	case artifact.TypeGithubFile:
+		gc, err := cc.GitClientForAccountName(a.ArtifactAccount)
+		if err != nil {
+			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			return
+		}
+
+		if !strings.HasPrefix(a.Reference, gc.BaseURL.String()) {
+			clouddriver.WriteError(c, http.StatusBadRequest, fmt.Errorf("content URL %s should have base URL %s",
+				a.Reference, gc.BaseURL.String()))
+			return
+		}
+
+		urlStr := strings.TrimPrefix(a.Reference, gc.BaseURL.String())
+
+		req, err := gc.NewRequest(http.MethodGet, urlStr, nil)
+		if err != nil {
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
+		}
+
+		branch := "master"
+		if a.Version != "" {
+			branch = a.Version
+		}
+
+		q := req.URL.Query()
+		q.Set("ref", branch)
+		req.URL.RawQuery = q.Encode()
+
+		var buf bytes.Buffer
+
+		_, err = gc.Do(context.TODO(), req, &buf)
+		if err != nil {
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
+		}
+
+		var response struct {
+			Content  string `json:"content"`
+			Encoding string `json:"encoding"`
+		}
+		json.Unmarshal(buf.Bytes(), &response)
+
+		if strings.EqualFold(response.Encoding, "base64") {
+			b, err = base64.StdEncoding.DecodeString(response.Content)
+			if err != nil {
+				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				return
+			}
+		} else {
+			b = []byte(response.Content)
+		}
+
 	default:
 		clouddriver.WriteError(c, http.StatusNotImplemented, fmt.Errorf("getting artifact of type %s not implemented", a.Type))
+		return
 	}
 
 	c.Writer.Write(b)

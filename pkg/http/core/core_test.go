@@ -19,10 +19,12 @@ import (
 	"github.com/billiford/go-clouddriver/pkg/server"
 	"github.com/billiford/go-clouddriver/pkg/sql/sqlfakes"
 	"github.com/gin-gonic/gin"
+	"github.com/google/go-github/v32/github"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	// . "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/ghttp"
 )
 
 var (
@@ -34,12 +36,14 @@ var (
 	res                               *http.Response
 	fakeArcadeClient                  *arcadefakes.FakeClient
 	fakeArtifactCredentialsController *artifactfakes.FakeCredentialsController
+	fakeGithubClient                  *github.Client
 	fakeHelmClient                    *helmfakes.FakeClient
 	fakeSQLClient                     *sqlfakes.FakeClient
 	fakeKubeClient                    *kubernetesfakes.FakeClient
 	fakeKubeController                *kubernetesfakes.FakeController
 	fakeKubeActionHandler             *kubefakes.FakeActionHandler
 	fakeAction                        *kubefakes.FakeAction
+	fakeGithubServer                  *ghttp.Server
 )
 
 func setup() {
@@ -119,6 +123,10 @@ func setup() {
 
 	fakeHelmClient = &helmfakes.FakeClient{}
 
+	fakeGithubServer = ghttp.NewServer()
+	fakeGithubClient, err = github.NewEnterpriseClient(fakeGithubServer.URL(), fakeGithubServer.URL(), nil)
+	Expect(err).To(BeNil())
+
 	fakeArtifactCredentialsController = &artifactfakes.FakeCredentialsController{}
 	fakeArtifactCredentialsController.ListArtifactCredentialsNamesAndTypesReturns([]artifact.Credentials{
 		{
@@ -135,6 +143,7 @@ func setup() {
 		},
 	})
 	fakeArtifactCredentialsController.HelmClientForAccountNameReturns(fakeHelmClient, nil)
+	fakeArtifactCredentialsController.GitClientForAccountNameReturns(fakeGithubClient, nil)
 
 	// Disable debug logging.
 	gin.SetMode(gin.ReleaseMode)

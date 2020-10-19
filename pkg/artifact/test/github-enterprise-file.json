@@ -1,0 +1,9 @@
+{
+  "baseURL": "https://github.example.com",
+  "enterprise": true,
+  "token": "some-token",
+  "name": "github.example.com",
+  "types": [
+    "github/file"
+  ]
+}

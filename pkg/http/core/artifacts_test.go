@@ -3,11 +3,15 @@ package core_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/billiford/go-clouddriver/pkg/helm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/ghttp"
 )
 
 var _ = Describe("Artifacts", func() {
@@ -260,6 +264,208 @@ var _ = Describe("Artifacts", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
 					validateTextResponse("helloworld\n")
+				})
+			})
+		})
+
+		Context("when the artifact is type github/file", func() {
+			BeforeEach(func() {
+				body.Write([]byte(fmt.Sprintf(payloadRequestFetchGithubFileArtifact, fakeGithubServer.URL())))
+				createRequest(http.MethodPut)
+			})
+
+			When("getting the client returns an error", func() {
+				BeforeEach(func() {
+					fakeArtifactCredentialsController.GitClientForAccountNameReturns(nil, errors.New("error getting git client"))
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Message).To(Equal("error getting git client"))
+					Expect(ce.Status).To(Equal(http.StatusBadRequest))
+				})
+			})
+
+			When("the reference is incorrect", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(fmt.Sprintf(payloadRequestFetchGithubFileArtifact, "https://bad-reference")))
+					createRequest(http.MethodPut)
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Message).To(Equal(fmt.Sprintf("content URL https://bad-reference/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml should have base URL %s",
+						fakeGithubClient.BaseURL.String())))
+					Expect(ce.Status).To(Equal(http.StatusBadRequest))
+				})
+			})
+
+			When("creating the github request returns an error", func() {
+				BeforeEach(func() {
+					fakeGithubClient.BaseURL, err = url.Parse(strings.TrimSuffix(fakeGithubClient.BaseURL.String(), "/"))
+					Expect(err).To(BeNil())
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Message).To(Equal(fmt.Sprintf(`BaseURL must have a trailing slash, but "%s" does not`, fakeGithubClient.BaseURL.String())))
+					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+				})
+			})
+
+			When("the branch is set in the version", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(fmt.Sprintf(payloadRequestFetchGithubFileArtifactTestBranch, fakeGithubServer.URL())))
+					createRequest(http.MethodPut)
+					fakeGithubServer.AppendHandlers(ghttp.CombineHandlers(
+						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=test"),
+						ghttp.RespondWith(http.StatusOK, `{
+							"name": "helloweb-deployment.yaml",
+							"path": "hello-app/manifests/helloweb-deployment.yaml",
+							"sha": "53de8cefaaadead83771a4e7ec0e3024510a8969",
+							"size": 1035,
+							"url": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master",
+							"html_url": "https://github.com/GoogleCloudPlatform/kubernetes-engine-samples/blob/master/hello-app/manifests/helloweb-deployment.yaml",
+							"git_url": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/git/blobs/53de8cefaaadead83771a4e7ec0e3024510a8969",
+							"download_url": "https://raw.githubusercontent.com/GoogleCloudPlatform/kubernetes-engine-samples/master/hello-app/manifests/helloweb-deployment.yaml",
+							"type": "file",
+							"content": "IyBDb3B5cmlnaHQgMjAyMCBHb29nbGUgTExDCiMKIyBMaWNlbnNlZCB1bmRl\nciB0aGUgQXBhY2hlIExpY2Vuc2UsIFZlcnNpb24gMi4wICh0aGUgIkxpY2Vu\nc2UiKTsKIyB5b3UgbWF5IG5vdCB1c2UgdGhpcyBmaWxlIGV4Y2VwdCBpbiBj\nb21wbGlhbmNlIHdpdGggdGhlIExpY2Vuc2UuCiMgWW91IG1heSBvYnRhaW4g\nYSBjb3B5IG9mIHRoZSBMaWNlbnNlIGF0CiMKIyAgICAgaHR0cDovL3d3dy5h\ncGFjaGUub3JnL2xpY2Vuc2VzL0xJQ0VOU0UtMi4wCiMKIyBVbmxlc3MgcmVx\ndWlyZWQgYnkgYXBwbGljYWJsZSBsYXcgb3IgYWdyZWVkIHRvIGluIHdyaXRp\nbmcsIHNvZnR3YXJlCiMgZGlzdHJpYnV0ZWQgdW5kZXIgdGhlIExpY2Vuc2Ug\naXMgZGlzdHJpYnV0ZWQgb24gYW4gIkFTIElTIiBCQVNJUywKIyBXSVRIT1VU\nIFdBUlJBTlRJRVMgT1IgQ09ORElUSU9OUyBPRiBBTlkgS0lORCwgZWl0aGVy\nIGV4cHJlc3Mgb3IgaW1wbGllZC4KIyBTZWUgdGhlIExpY2Vuc2UgZm9yIHRo\nZSBzcGVjaWZpYyBsYW5ndWFnZSBnb3Zlcm5pbmcgcGVybWlzc2lvbnMgYW5k\nCiMgbGltaXRhdGlvbnMgdW5kZXIgdGhlIExpY2Vuc2UuCgojIFtTVEFSVCBj\nb250YWluZXJfaGVsbG9hcHBfZGVwbG95bWVudF0KYXBpVmVyc2lvbjogYXBw\ncy92MQpraW5kOiBEZXBsb3ltZW50Cm1ldGFkYXRhOgogIG5hbWU6IGhlbGxv\nd2ViCiAgbGFiZWxzOgogICAgYXBwOiBoZWxsbwpzcGVjOgogIHNlbGVjdG9y\nOgogICAgbWF0Y2hMYWJlbHM6CiAgICAgIGFwcDogaGVsbG8KICAgICAgdGll\ncjogd2ViCiAgdGVtcGxhdGU6CiAgICBtZXRhZGF0YToKICAgICAgbGFiZWxz\nOgogICAgICAgIGFwcDogaGVsbG8KICAgICAgICB0aWVyOiB3ZWIKICAgIHNw\nZWM6CiAgICAgIGNvbnRhaW5lcnM6CiAgICAgIC0gbmFtZTogaGVsbG8tYXBw\nCiAgICAgICAgaW1hZ2U6IGdjci5pby9nb29nbGUtc2FtcGxlcy9oZWxsby1h\ncHA6MS4wCiAgICAgICAgcG9ydHM6CiAgICAgICAgLSBjb250YWluZXJQb3J0\nOiA4MDgwCiMgW0VORCBjb250YWluZXJfaGVsbG9hcHBfZGVwbG95bWVudF0K\n",
+							"encoding": "base64",
+							"_links": {
+								"self": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master",
+								"git": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/git/blobs/53de8cefaaadead83771a4e7ec0e3024510a8969",
+								"html": "https://github.com/GoogleCloudPlatform/kubernetes-engine-samples/blob/master/hello-app/manifests/helloweb-deployment.yaml"
+							}
+						}`),
+					))
+				})
+
+				It("succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateTextResponse("# Copyright 2020 Google LLC\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n# [START container_helloapp_deployment]\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: helloweb\n  labels:\n    app: hello\nspec:\n  selector:\n    matchLabels:\n      app: hello\n      tier: web\n  template:\n    metadata:\n      labels:\n        app: hello\n        tier: web\n    spec:\n      containers:\n      - name: hello-app\n        image: gcr.io/google-samples/hello-app:1.0\n        ports:\n        - containerPort: 8080\n# [END container_helloapp_deployment]\n")
+				})
+			})
+
+			When("the server is not reachable", func() {
+				var url, addr string
+				BeforeEach(func() {
+					url = fakeGithubServer.URL()
+					addr = fakeGithubServer.Addr()
+					fakeGithubServer.Close()
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Message).To(Equal(fmt.Sprintf(`Get "%s/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master": dial tcp %s: connect: connection refused`, url, addr)))
+					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+				})
+			})
+
+			When("the base64 encoded content is bad", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(fmt.Sprintf(payloadRequestFetchGithubFileArtifactTestBranch, fakeGithubServer.URL())))
+					createRequest(http.MethodPut)
+					fakeGithubServer.AppendHandlers(ghttp.CombineHandlers(
+						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=test"),
+						ghttp.RespondWith(http.StatusOK, `{
+							"name": "helloweb-deployment.yaml",
+							"path": "hello-app/manifests/helloweb-deployment.yaml",
+							"sha": "53de8cefaaadead83771a4e7ec0e3024510a8969",
+							"size": 1035,
+							"url": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master",
+							"html_url": "https://github.com/GoogleCloudPlatform/kubernetes-engine-samples/blob/master/hello-app/manifests/helloweb-deployment.yaml",
+							"git_url": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/git/blobs/53de8cefaaadead83771a4e7ec0e3024510a8969",
+							"download_url": "https://raw.githubusercontent.com/GoogleCloudPlatform/kubernetes-engine-samples/master/hello-app/manifests/helloweb-deployment.yaml",
+							"type": "file",
+							"content": "{}",
+							"encoding": "base64",
+							"_links": {
+								"self": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master",
+								"git": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/git/blobs/53de8cefaaadead83771a4e7ec0e3024510a8969",
+								"html": "https://github.com/GoogleCloudPlatform/kubernetes-engine-samples/blob/master/hello-app/manifests/helloweb-deployment.yaml"
+							}
+						}`),
+					))
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Message).To(Equal("illegal base64 data at input byte 0"))
+					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+				})
+			})
+
+			When("the content is not encoded", func() {
+				BeforeEach(func() {
+					fakeGithubServer.AppendHandlers(ghttp.CombineHandlers(
+						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=master"),
+						ghttp.RespondWith(http.StatusOK, `{
+							"name": "helloweb-deployment.yaml",
+							"path": "hello-app/manifests/helloweb-deployment.yaml",
+							"sha": "53de8cefaaadead83771a4e7ec0e3024510a8969",
+							"size": 1035,
+							"url": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master",
+							"html_url": "https://github.com/GoogleCloudPlatform/kubernetes-engine-samples/blob/master/hello-app/manifests/helloweb-deployment.yaml",
+							"git_url": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/git/blobs/53de8cefaaadead83771a4e7ec0e3024510a8969",
+							"download_url": "https://raw.githubusercontent.com/GoogleCloudPlatform/kubernetes-engine-samples/master/hello-app/manifests/helloweb-deployment.yaml",
+							"type": "file",
+							"content": "helloworld",
+							"_links": {
+								"self": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master",
+								"git": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/git/blobs/53de8cefaaadead83771a4e7ec0e3024510a8969",
+								"html": "https://github.com/GoogleCloudPlatform/kubernetes-engine-samples/blob/master/hello-app/manifests/helloweb-deployment.yaml"
+							}
+						}`),
+					))
+				})
+
+				It("succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateTextResponse("helloworld")
+				})
+			})
+
+			When("it succeeds", func() {
+				BeforeEach(func() {
+					fakeGithubServer.AppendHandlers(ghttp.CombineHandlers(
+						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=master"),
+						ghttp.RespondWith(http.StatusOK, `{
+							"name": "helloweb-deployment.yaml",
+							"path": "hello-app/manifests/helloweb-deployment.yaml",
+							"sha": "53de8cefaaadead83771a4e7ec0e3024510a8969",
+							"size": 1035,
+							"url": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master",
+							"html_url": "https://github.com/GoogleCloudPlatform/kubernetes-engine-samples/blob/master/hello-app/manifests/helloweb-deployment.yaml",
+							"git_url": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/git/blobs/53de8cefaaadead83771a4e7ec0e3024510a8969",
+							"download_url": "https://raw.githubusercontent.com/GoogleCloudPlatform/kubernetes-engine-samples/master/hello-app/manifests/helloweb-deployment.yaml",
+							"type": "file",
+							"content": "IyBDb3B5cmlnaHQgMjAyMCBHb29nbGUgTExDCiMKIyBMaWNlbnNlZCB1bmRl\nciB0aGUgQXBhY2hlIExpY2Vuc2UsIFZlcnNpb24gMi4wICh0aGUgIkxpY2Vu\nc2UiKTsKIyB5b3UgbWF5IG5vdCB1c2UgdGhpcyBmaWxlIGV4Y2VwdCBpbiBj\nb21wbGlhbmNlIHdpdGggdGhlIExpY2Vuc2UuCiMgWW91IG1heSBvYnRhaW4g\nYSBjb3B5IG9mIHRoZSBMaWNlbnNlIGF0CiMKIyAgICAgaHR0cDovL3d3dy5h\ncGFjaGUub3JnL2xpY2Vuc2VzL0xJQ0VOU0UtMi4wCiMKIyBVbmxlc3MgcmVx\ndWlyZWQgYnkgYXBwbGljYWJsZSBsYXcgb3IgYWdyZWVkIHRvIGluIHdyaXRp\nbmcsIHNvZnR3YXJlCiMgZGlzdHJpYnV0ZWQgdW5kZXIgdGhlIExpY2Vuc2Ug\naXMgZGlzdHJpYnV0ZWQgb24gYW4gIkFTIElTIiBCQVNJUywKIyBXSVRIT1VU\nIFdBUlJBTlRJRVMgT1IgQ09ORElUSU9OUyBPRiBBTlkgS0lORCwgZWl0aGVy\nIGV4cHJlc3Mgb3IgaW1wbGllZC4KIyBTZWUgdGhlIExpY2Vuc2UgZm9yIHRo\nZSBzcGVjaWZpYyBsYW5ndWFnZSBnb3Zlcm5pbmcgcGVybWlzc2lvbnMgYW5k\nCiMgbGltaXRhdGlvbnMgdW5kZXIgdGhlIExpY2Vuc2UuCgojIFtTVEFSVCBj\nb250YWluZXJfaGVsbG9hcHBfZGVwbG95bWVudF0KYXBpVmVyc2lvbjogYXBw\ncy92MQpraW5kOiBEZXBsb3ltZW50Cm1ldGFkYXRhOgogIG5hbWU6IGhlbGxv\nd2ViCiAgbGFiZWxzOgogICAgYXBwOiBoZWxsbwpzcGVjOgogIHNlbGVjdG9y\nOgogICAgbWF0Y2hMYWJlbHM6CiAgICAgIGFwcDogaGVsbG8KICAgICAgdGll\ncjogd2ViCiAgdGVtcGxhdGU6CiAgICBtZXRhZGF0YToKICAgICAgbGFiZWxz\nOgogICAgICAgIGFwcDogaGVsbG8KICAgICAgICB0aWVyOiB3ZWIKICAgIHNw\nZWM6CiAgICAgIGNvbnRhaW5lcnM6CiAgICAgIC0gbmFtZTogaGVsbG8tYXBw\nCiAgICAgICAgaW1hZ2U6IGdjci5pby9nb29nbGUtc2FtcGxlcy9oZWxsby1h\ncHA6MS4wCiAgICAgICAgcG9ydHM6CiAgICAgICAgLSBjb250YWluZXJQb3J0\nOiA4MDgwCiMgW0VORCBjb250YWluZXJfaGVsbG9hcHBfZGVwbG95bWVudF0K\n",
+							"encoding": "base64",
+							"_links": {
+								"self": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master",
+								"git": "https://api.github.com/repos/GoogleCloudPlatform/kubernetes-engine-samples/git/blobs/53de8cefaaadead83771a4e7ec0e3024510a8969",
+								"html": "https://github.com/GoogleCloudPlatform/kubernetes-engine-samples/blob/master/hello-app/manifests/helloweb-deployment.yaml"
+							}
+						}`),
+					))
+				})
+
+				It("succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateTextResponse("# Copyright 2020 Google LLC\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n# [START container_helloapp_deployment]\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: helloweb\n  labels:\n    app: hello\nspec:\n  selector:\n    matchLabels:\n      app: hello\n      tier: web\n  template:\n    metadata:\n      labels:\n        app: hello\n        tier: web\n    spec:\n      containers:\n      - name: hello-app\n        image: gcr.io/google-samples/hello-app:1.0\n        ports:\n        - containerPort: 8080\n# [END container_helloapp_deployment]\n")
 				})
 			})
 		})
