@@ -88,6 +88,11 @@ const payloadRequestFetchGithubFileArtifact = `{
 	"reference": "%s/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml"
 }`
 
+const payloadRequestFetchHTTPFileArtifact = `{
+  "type": "http/file",
+	"reference": "%s/hello"
+}`
+
 const payloadRequestFetchGithubFileArtifactTestBranch = `{
   "type": "github/file",
 	"reference": "%s/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml",

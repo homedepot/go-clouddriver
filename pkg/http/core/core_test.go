@@ -44,6 +44,7 @@ var (
 	fakeKubeActionHandler             *kubefakes.FakeActionHandler
 	fakeAction                        *kubefakes.FakeAction
 	fakeGithubServer                  *ghttp.Server
+	fakeFileServer                    *ghttp.Server
 )
 
 func setup() {
@@ -124,6 +125,8 @@ func setup() {
 	fakeHelmClient = &helmfakes.FakeClient{}
 
 	fakeGithubServer = ghttp.NewServer()
+	fakeFileServer = ghttp.NewServer()
+
 	fakeGithubClient, err = github.NewEnterpriseClient(fakeGithubServer.URL(), fakeGithubServer.URL(), nil)
 	Expect(err).To(BeNil())
 
@@ -144,6 +147,7 @@ func setup() {
 	})
 	fakeArtifactCredentialsController.HelmClientForAccountNameReturns(fakeHelmClient, nil)
 	fakeArtifactCredentialsController.GitClientForAccountNameReturns(fakeGithubClient, nil)
+	fakeArtifactCredentialsController.HTTPClientForAccountNameReturns(http.DefaultClient, nil)
 
 	// Disable debug logging.
 	gin.SetMode(gin.ReleaseMode)
