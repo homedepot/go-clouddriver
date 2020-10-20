@@ -30,7 +30,6 @@ func (f *manifestFilter) FilterOnCluster(cluster string) []unstructured.Unstruct
 			}
 		}
 	}
-
 	return filtered
 }
 

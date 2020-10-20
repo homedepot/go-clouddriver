@@ -10,7 +10,7 @@ import (
 
 var (
 	kc                                           kubernetes.Controller
-	fakeResourcesList                            *unstructured.UnstructuredList
+	fakeUnstructuredList                         *unstructured.UnstructuredList
 	fakeResource                                 unstructured.Unstructured
 	currentVersion                               string
 	FakeManifestFilter                           kubernetesfakes.FakeManifestFilter
@@ -23,12 +23,12 @@ var _ = Describe("Version", func() {
 	Context("#GetCurrentVersion", func() {
 		BeforeEach(func() {
 			kc = kubernetes.NewController()
-			fakeResourcesList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{}}
+			fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{}}
 		})
 
 		When("called with empty resources list", func() {
 			BeforeEach(func() {
-				currentVersion = kc.GetCurrentVersion(fakeResourcesList, "test-kind", "test-name")
+				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "test-kind", "test-name")
 			})
 
 			It("returns 0 as the current version", func() {
@@ -37,7 +37,7 @@ var _ = Describe("Version", func() {
 		})
 		When("The higest version number in the cluster is 4", func() {
 			BeforeEach(func() {
-				fakeResourcesList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{
+				fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
 							"kind":       "Pod",
@@ -80,7 +80,7 @@ var _ = Describe("Version", func() {
 					},
 				},
 				}
-				currentVersion = kc.GetCurrentVersion(fakeResourcesList, "pod", "fakeName")
+				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "pod", "fakeName")
 			})
 
 			It("return 4 as the current version", func() {
@@ -91,7 +91,7 @@ var _ = Describe("Version", func() {
 			BeforeEach(func() {
 				FakeManifestFilter := kubernetesfakes.FakeManifestFilter{}
 				FakeManifestFilter.FilterOnClusterReturns([]unstructured.Unstructured{})
-				fakeResourcesList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{{
+				fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{{
 					Object: map[string]interface{}{
 						"kind": "fakeKind",
 						"metadata": map[string]interface{}{
@@ -109,7 +109,7 @@ var _ = Describe("Version", func() {
 					},
 				},
 				}}
-				currentVersion = kc.GetCurrentVersion(fakeResourcesList, "test-kind", "test-name")
+				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "test-kind", "test-name")
 			})
 
 			It("returns 0 as the current version", func() {
@@ -118,7 +118,7 @@ var _ = Describe("Version", func() {
 		})
 		When("#FilterOnLabel returns 0 items", func() {
 			BeforeEach(func() {
-				fakeResourcesList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{{
+				fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{{
 					Object: map[string]interface{}{
 						"kind": "test-kind",
 						"metadata": map[string]interface{}{
@@ -139,7 +139,7 @@ var _ = Describe("Version", func() {
 				}}
 				FakeManifestFilter := kubernetesfakes.FakeManifestFilter{}
 				FakeManifestFilter.FilterOnLabelReturns([]unstructured.Unstructured{})
-				currentVersion = kc.GetCurrentVersion(fakeResourcesList, "test-kind", "test-name")
+				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "test-kind", "test-name")
 			})
 
 			It("returns 0 as the current version", func() {
@@ -311,6 +311,46 @@ var _ = Describe("Version", func() {
 
 			// })
 			// It("#annotate was called with AnnotationSpinnakerMonikerSequence and 2 version number", func() {
+
+			// })
+		})
+	})
+
+	Context("#AddSpinnakerVersionLabels", func() {
+		When("kind is a replicaset", func() {
+			BeforeEach(func() {
+				fakeResource = unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind": "test-kind",
+						"metadata": map[string]interface{}{
+							"name":              "test-name",
+							"namespace":         "test-namespace2",
+							"creationTimestamp": "2020-02-13T14:12:03Z",
+							"labels": map[string]interface{}{
+								"label1": "test-label1",
+							},
+							"annotations": map[string]interface{}{
+								"strategy.spinnaker.io/versioned": "true",
+								"moniker.spinnaker.io/cluster":    "test-kind test-name",
+							},
+							"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+						},
+					},
+				}
+
+				fakeVersion = kubernetes.SpinnakerVersion{
+					Long:  "v002",
+					Short: "2",
+				}
+
+				kc = kubernetes.NewController()
+				err = kc.AddSpinnakerVersionLabels(&fakeResource, fakeVersion)
+
+			})
+			It("expect error not to have occured", func() {
+				Expect(err).To(BeNil())
+			})
+			// It("#Label was called with LabelSpinnakerMonikerSequence and 2 version number", func() {
 
 			// })
 		})
