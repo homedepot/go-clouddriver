@@ -102,12 +102,12 @@ func (d *deployManifest) Run() error {
 
 			u.SetName(u.GetName() + "-" + latestVersion.Long)
 
-			err = d.kc.AddSpinnakerVersionAnnotations(u, application, latestVersion)
+			err = d.kc.AddSpinnakerVersionAnnotations(u, latestVersion)
 			if err != nil {
 				return err
 			}
 
-			err = d.kc.AddSpinnakerVersionLabels(u, application, latestVersion)
+			err = d.kc.AddSpinnakerVersionLabels(u, latestVersion)
 			if err != nil {
 				return err
 			}
