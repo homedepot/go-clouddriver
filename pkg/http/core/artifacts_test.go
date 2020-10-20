@@ -478,14 +478,14 @@ var _ = Describe("Artifacts", func() {
 
 			When("getting the client returns an error", func() {
 				BeforeEach(func() {
-					fakeArtifactCredentialsController.HTTPClientForAccountNameReturns(nil, errors.New("error getting git client"))
+					fakeArtifactCredentialsController.HTTPClientForAccountNameReturns(nil, errors.New("error getting http client"))
 				})
 
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 					ce := getClouddriverError()
 					Expect(ce.Error).To(Equal("Bad Request"))
-					Expect(ce.Message).To(Equal("error getting git client"))
+					Expect(ce.Message).To(Equal("error getting http client"))
 					Expect(ce.Status).To(Equal(http.StatusBadRequest))
 				})
 			})
