@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"sort"
 	"strings"
@@ -114,6 +115,26 @@ func GetArtifact(c *gin.Context) {
 	b := []byte{}
 
 	switch a.Type {
+	case artifact.TypeHTTPFile:
+		hc, err := cc.HTTPClientForAccountName(a.ArtifactAccount)
+		if err != nil {
+			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			return
+		}
+
+		resp, err := hc.Get(a.Reference)
+		if err != nil {
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
+		}
+		defer resp.Body.Close()
+
+		b, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
+		}
+
 	case artifact.TypeHelmChart:
 		hc, err := cc.HelmClientForAccountName(a.ArtifactAccount)
 		if err != nil {

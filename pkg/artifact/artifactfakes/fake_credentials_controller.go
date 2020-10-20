@@ -2,6 +2,7 @@
 package artifactfakes
 
 import (
+	"net/http"
 	"sync"
 
 	"github.com/billiford/go-clouddriver/pkg/artifact"
@@ -43,6 +44,19 @@ type FakeCredentialsController struct {
 	}
 	gitClientForAccountNameReturnsOnCall map[int]struct {
 		result1 *github.Client
+		result2 error
+	}
+	HTTPClientForAccountNameStub        func(string) (*http.Client, error)
+	hTTPClientForAccountNameMutex       sync.RWMutex
+	hTTPClientForAccountNameArgsForCall []struct {
+		arg1 string
+	}
+	hTTPClientForAccountNameReturns struct {
+		result1 *http.Client
+		result2 error
+	}
+	hTTPClientForAccountNameReturnsOnCall map[int]struct {
+		result1 *http.Client
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -191,6 +205,57 @@ func (fake *FakeCredentialsController) GitClientForAccountNameReturnsOnCall(i in
 	}{result1, result2}
 }
 
+func (fake *FakeCredentialsController) HTTPClientForAccountName(arg1 string) (*http.Client, error) {
+	fake.hTTPClientForAccountNameMutex.Lock()
+	ret, specificReturn := fake.hTTPClientForAccountNameReturnsOnCall[len(fake.hTTPClientForAccountNameArgsForCall)]
+	fake.hTTPClientForAccountNameArgsForCall = append(fake.hTTPClientForAccountNameArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("HTTPClientForAccountName", []interface{}{arg1})
+	fake.hTTPClientForAccountNameMutex.Unlock()
+	if fake.HTTPClientForAccountNameStub != nil {
+		return fake.HTTPClientForAccountNameStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.hTTPClientForAccountNameReturns.result1, fake.hTTPClientForAccountNameReturns.result2
+}
+
+func (fake *FakeCredentialsController) HTTPClientForAccountNameCallCount() int {
+	fake.hTTPClientForAccountNameMutex.RLock()
+	defer fake.hTTPClientForAccountNameMutex.RUnlock()
+	return len(fake.hTTPClientForAccountNameArgsForCall)
+}
+
+func (fake *FakeCredentialsController) HTTPClientForAccountNameArgsForCall(i int) string {
+	fake.hTTPClientForAccountNameMutex.RLock()
+	defer fake.hTTPClientForAccountNameMutex.RUnlock()
+	return fake.hTTPClientForAccountNameArgsForCall[i].arg1
+}
+
+func (fake *FakeCredentialsController) HTTPClientForAccountNameReturns(result1 *http.Client, result2 error) {
+	fake.HTTPClientForAccountNameStub = nil
+	fake.hTTPClientForAccountNameReturns = struct {
+		result1 *http.Client
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCredentialsController) HTTPClientForAccountNameReturnsOnCall(i int, result1 *http.Client, result2 error) {
+	fake.HTTPClientForAccountNameStub = nil
+	if fake.hTTPClientForAccountNameReturnsOnCall == nil {
+		fake.hTTPClientForAccountNameReturnsOnCall = make(map[int]struct {
+			result1 *http.Client
+			result2 error
+		})
+	}
+	fake.hTTPClientForAccountNameReturnsOnCall[i] = struct {
+		result1 *http.Client
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCredentialsController) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -200,6 +265,8 @@ func (fake *FakeCredentialsController) Invocations() map[string][][]interface{} 
 	defer fake.helmClientForAccountNameMutex.RUnlock()
 	fake.gitClientForAccountNameMutex.RLock()
 	defer fake.gitClientForAccountNameMutex.RUnlock()
+	fake.hTTPClientForAccountNameMutex.RLock()
+	defer fake.hTTPClientForAccountNameMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

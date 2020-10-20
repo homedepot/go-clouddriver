@@ -470,6 +470,59 @@ var _ = Describe("Artifacts", func() {
 			})
 		})
 
+		Context("when the artifact is type http/file", func() {
+			BeforeEach(func() {
+				body.Write([]byte(fmt.Sprintf(payloadRequestFetchHTTPFileArtifact, fakeFileServer.URL())))
+				createRequest(http.MethodPut)
+			})
+
+			When("getting the client returns an error", func() {
+				BeforeEach(func() {
+					fakeArtifactCredentialsController.HTTPClientForAccountNameReturns(nil, errors.New("error getting git client"))
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Message).To(Equal("error getting git client"))
+					Expect(ce.Status).To(Equal(http.StatusBadRequest))
+				})
+			})
+
+			When("the server is not reachable", func() {
+				var url, addr string
+
+				BeforeEach(func() {
+					url = fakeFileServer.URL()
+					addr = fakeFileServer.Addr()
+					fakeFileServer.Close()
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Message).To(Equal(fmt.Sprintf(`Get "%s/hello": dial tcp %s: connect: connection refused`, url, addr)))
+					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+				})
+			})
+
+			When("it succeeds", func() {
+				BeforeEach(func() {
+					fakeFileServer.AppendHandlers(ghttp.CombineHandlers(
+						ghttp.VerifyRequest(http.MethodGet, "/hello"),
+						ghttp.RespondWith(http.StatusOK, `world`),
+					))
+				})
+
+				It("succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateTextResponse("world")
+				})
+			})
+		})
+
 		Context("when the artifact is not an implemented type", func() {
 			BeforeEach(func() {
 				body.Write([]byte(payloadRequestFetchNotImplementedArtifact))

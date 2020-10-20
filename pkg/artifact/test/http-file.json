@@ -1,0 +1,6 @@
+{
+  "name": "http",
+  "types": [
+    "http/file"
+  ]
+}

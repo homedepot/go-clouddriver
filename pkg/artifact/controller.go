@@ -25,6 +25,7 @@ const (
 	TypeEmbeddedBase64               Type = "embedded/base64"
 	TypeCustomerObject               Type = "custom/object"
 	TypeGCSObject                    Type = "gcs/object"
+	TypeHTTPFile                     Type = "http/file"
 	TypeDockerImage                  Type = "docker/image"
 	TypeKubernetesConfigMap          Type = "kubernetes/configMap"
 	TypeKubernetesDeployment         Type = "kubernetes/deployment"
@@ -38,6 +39,7 @@ type CredentialsController interface {
 	ListArtifactCredentialsNamesAndTypes() []Credentials
 	HelmClientForAccountName(string) (helm.Client, error)
 	GitClientForAccountName(string) (*github.Client, error)
+	HTTPClientForAccountName(string) (*http.Client, error)
 }
 
 type Credentials struct {
@@ -65,6 +67,7 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 		artifactCredentials: []Credentials{},
 		helmClients:         map[string]helm.Client{},
 		gitClients:          map[string]*github.Client{},
+		httpClients:         map[string]*http.Client{},
 	}
 
 	files, err := ioutil.ReadDir(dir)
@@ -113,6 +116,8 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 			if len(ac.Types) == 1 {
 				t := ac.Types[0]
 				switch t {
+				case TypeHTTPFile:
+					cc.httpClients[ac.Name] = http.DefaultClient
 				case TypeHelmChart:
 					if ac.Repository == "" {
 						return nil, fmt.Errorf("helm chart %s missing required \"repository\" attribute", ac.Name)
@@ -158,6 +163,7 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 
 type credentialsController struct {
 	artifactCredentials []Credentials
+	httpClients         map[string]*http.Client
 	helmClients         map[string]helm.Client
 	gitClients          map[string]*github.Client
 }
@@ -192,6 +198,14 @@ func (cc *credentialsController) GitClientForAccountName(accountName string) (*g
 	}
 
 	return cc.gitClients[accountName], nil
+}
+
+func (cc *credentialsController) HTTPClientForAccountName(accountName string) (*http.Client, error) {
+	if _, ok := cc.httpClients[accountName]; !ok {
+		return nil, fmt.Errorf("http account %s not found", accountName)
+	}
+
+	return cc.httpClients[accountName], nil
 }
 
 func CredentialsControllerInstance(c *gin.Context) CredentialsController {
