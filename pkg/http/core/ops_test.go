@@ -70,6 +70,23 @@ var _ = Describe("Kubernetes", func() {
 			})
 		})
 
+		When("delete manifest returns an error", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesOpsDeleteManifest))
+				createRequest(http.MethodPost)
+				fakeAction.RunReturns(errors.New("error deleting manifest"))
+			})
+
+			It("returns status internal server error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error deleting manifest"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
 		When("scaling the manifest returns an error", func() {
 			BeforeEach(func() {
 				body = &bytes.Buffer{}
@@ -83,6 +100,23 @@ var _ = Describe("Kubernetes", func() {
 				ce := getClouddriverError()
 				Expect(ce.Error).To(Equal("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error scaling manifest"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("cleaning up artifacts returns an error", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesOpsCleanupArtifacts))
+				createRequest(http.MethodPost)
+				fakeAction.RunReturns(errors.New("error cleaning up artifacts"))
+			})
+
+			It("returns status internal server error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error cleaning up artifacts"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
 		})
@@ -134,6 +168,23 @@ var _ = Describe("Kubernetes", func() {
 				ce := getClouddriverError()
 				Expect(ce.Error).To(Equal("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error undoing rollout"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("patch manifest returns an error", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesOpsPatchManifest))
+				createRequest(http.MethodPost)
+				fakeAction.RunReturns(errors.New("error patching manifest"))
+			})
+
+			It("returns status internal server error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error patching manifest"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
 		})
