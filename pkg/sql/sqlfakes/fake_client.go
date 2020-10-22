@@ -7,23 +7,9 @@ import (
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type FakeClient struct {
-	GetKubernetesProviderStub        func(string) (kubernetes.Provider, error)
-	getKubernetesProviderMutex       sync.RWMutex
-	getKubernetesProviderArgsForCall []struct {
-		arg1 string
-	}
-	getKubernetesProviderReturns struct {
-		result1 kubernetes.Provider
-		result2 error
-	}
-	getKubernetesProviderReturnsOnCall map[int]struct {
-		result1 kubernetes.Provider
-		result2 error
-	}
 	CreateKubernetesProviderStub        func(kubernetes.Provider) error
 	createKubernetesProviderMutex       sync.RWMutex
 	createKubernetesProviderArgsForCall []struct {
@@ -68,6 +54,19 @@ type FakeClient struct {
 	createWritePermissionReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetKubernetesProviderStub        func(string) (kubernetes.Provider, error)
+	getKubernetesProviderMutex       sync.RWMutex
+	getKubernetesProviderArgsForCall []struct {
+		arg1 string
+	}
+	getKubernetesProviderReturns struct {
+		result1 kubernetes.Provider
+		result2 error
+	}
+	getKubernetesProviderReturnsOnCall map[int]struct {
+		result1 kubernetes.Provider
+		result2 error
+	}
 	ListKubernetesAccountsBySpinnakerAppStub        func(string) ([]string, error)
 	listKubernetesAccountsBySpinnakerAppMutex       sync.RWMutex
 	listKubernetesAccountsBySpinnakerAppArgsForCall []struct {
@@ -96,8 +95,9 @@ type FakeClient struct {
 	}
 	ListKubernetesProvidersStub        func() ([]kubernetes.Provider, error)
 	listKubernetesProvidersMutex       sync.RWMutex
-	listKubernetesProvidersArgsForCall []struct{}
-	listKubernetesProvidersReturns     struct {
+	listKubernetesProvidersArgsForCall []struct {
+	}
+	listKubernetesProvidersReturns struct {
 		result1 []kubernetes.Provider
 		result2 error
 	}
@@ -107,13 +107,29 @@ type FakeClient struct {
 	}
 	ListKubernetesProvidersAndPermissionsStub        func() ([]kubernetes.Provider, error)
 	listKubernetesProvidersAndPermissionsMutex       sync.RWMutex
-	listKubernetesProvidersAndPermissionsArgsForCall []struct{}
-	listKubernetesProvidersAndPermissionsReturns     struct {
+	listKubernetesProvidersAndPermissionsArgsForCall []struct {
+	}
+	listKubernetesProvidersAndPermissionsReturns struct {
 		result1 []kubernetes.Provider
 		result2 error
 	}
 	listKubernetesProvidersAndPermissionsReturnsOnCall map[int]struct {
 		result1 []kubernetes.Provider
+		result2 error
+	}
+	ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub        func(string, string, string) ([]string, error)
+	listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex       sync.RWMutex
+	listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}
+	listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns struct {
+		result1 []string
+		result2 error
+	}
+	listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall map[int]struct {
+		result1 []string
 		result2 error
 	}
 	ListKubernetesResourcesByFieldsStub        func(...string) ([]kubernetes.Resource, error)
@@ -140,21 +156,6 @@ type FakeClient struct {
 	}
 	listKubernetesResourcesByTaskIDReturnsOnCall map[int]struct {
 		result1 []kubernetes.Resource
-		result2 error
-	}
-	ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub        func(string, string, string) ([]string, error)
-	listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex       sync.RWMutex
-	listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall []struct {
-		arg1 string
-		arg2 string
-		arg3 string
-	}
-	listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns struct {
-		result1 []string
-		result2 error
-	}
-	listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall map[int]struct {
-		result1 []string
 		result2 error
 	}
 	ListReadGroupsByAccountNameStub        func(string) ([]string, error)
@@ -187,57 +188,6 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) GetKubernetesProvider(arg1 string) (kubernetes.Provider, error) {
-	fake.getKubernetesProviderMutex.Lock()
-	ret, specificReturn := fake.getKubernetesProviderReturnsOnCall[len(fake.getKubernetesProviderArgsForCall)]
-	fake.getKubernetesProviderArgsForCall = append(fake.getKubernetesProviderArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("GetKubernetesProvider", []interface{}{arg1})
-	fake.getKubernetesProviderMutex.Unlock()
-	if fake.GetKubernetesProviderStub != nil {
-		return fake.GetKubernetesProviderStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.getKubernetesProviderReturns.result1, fake.getKubernetesProviderReturns.result2
-}
-
-func (fake *FakeClient) GetKubernetesProviderCallCount() int {
-	fake.getKubernetesProviderMutex.RLock()
-	defer fake.getKubernetesProviderMutex.RUnlock()
-	return len(fake.getKubernetesProviderArgsForCall)
-}
-
-func (fake *FakeClient) GetKubernetesProviderArgsForCall(i int) string {
-	fake.getKubernetesProviderMutex.RLock()
-	defer fake.getKubernetesProviderMutex.RUnlock()
-	return fake.getKubernetesProviderArgsForCall[i].arg1
-}
-
-func (fake *FakeClient) GetKubernetesProviderReturns(result1 kubernetes.Provider, result2 error) {
-	fake.GetKubernetesProviderStub = nil
-	fake.getKubernetesProviderReturns = struct {
-		result1 kubernetes.Provider
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeClient) GetKubernetesProviderReturnsOnCall(i int, result1 kubernetes.Provider, result2 error) {
-	fake.GetKubernetesProviderStub = nil
-	if fake.getKubernetesProviderReturnsOnCall == nil {
-		fake.getKubernetesProviderReturnsOnCall = make(map[int]struct {
-			result1 kubernetes.Provider
-			result2 error
-		})
-	}
-	fake.getKubernetesProviderReturnsOnCall[i] = struct {
-		result1 kubernetes.Provider
-		result2 error
-	}{result1, result2}
-}
-
 func (fake *FakeClient) CreateKubernetesProvider(arg1 kubernetes.Provider) error {
 	fake.createKubernetesProviderMutex.Lock()
 	ret, specificReturn := fake.createKubernetesProviderReturnsOnCall[len(fake.createKubernetesProviderArgsForCall)]
@@ -252,7 +202,8 @@ func (fake *FakeClient) CreateKubernetesProvider(arg1 kubernetes.Provider) error
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.createKubernetesProviderReturns.result1
+	fakeReturns := fake.createKubernetesProviderReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) CreateKubernetesProviderCallCount() int {
@@ -261,13 +212,22 @@ func (fake *FakeClient) CreateKubernetesProviderCallCount() int {
 	return len(fake.createKubernetesProviderArgsForCall)
 }
 
+func (fake *FakeClient) CreateKubernetesProviderCalls(stub func(kubernetes.Provider) error) {
+	fake.createKubernetesProviderMutex.Lock()
+	defer fake.createKubernetesProviderMutex.Unlock()
+	fake.CreateKubernetesProviderStub = stub
+}
+
 func (fake *FakeClient) CreateKubernetesProviderArgsForCall(i int) kubernetes.Provider {
 	fake.createKubernetesProviderMutex.RLock()
 	defer fake.createKubernetesProviderMutex.RUnlock()
-	return fake.createKubernetesProviderArgsForCall[i].arg1
+	argsForCall := fake.createKubernetesProviderArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) CreateKubernetesProviderReturns(result1 error) {
+	fake.createKubernetesProviderMutex.Lock()
+	defer fake.createKubernetesProviderMutex.Unlock()
 	fake.CreateKubernetesProviderStub = nil
 	fake.createKubernetesProviderReturns = struct {
 		result1 error
@@ -275,6 +235,8 @@ func (fake *FakeClient) CreateKubernetesProviderReturns(result1 error) {
 }
 
 func (fake *FakeClient) CreateKubernetesProviderReturnsOnCall(i int, result1 error) {
+	fake.createKubernetesProviderMutex.Lock()
+	defer fake.createKubernetesProviderMutex.Unlock()
 	fake.CreateKubernetesProviderStub = nil
 	if fake.createKubernetesProviderReturnsOnCall == nil {
 		fake.createKubernetesProviderReturnsOnCall = make(map[int]struct {
@@ -300,7 +262,8 @@ func (fake *FakeClient) CreateKubernetesResource(arg1 kubernetes.Resource) error
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.createKubernetesResourceReturns.result1
+	fakeReturns := fake.createKubernetesResourceReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) CreateKubernetesResourceCallCount() int {
@@ -309,13 +272,22 @@ func (fake *FakeClient) CreateKubernetesResourceCallCount() int {
 	return len(fake.createKubernetesResourceArgsForCall)
 }
 
+func (fake *FakeClient) CreateKubernetesResourceCalls(stub func(kubernetes.Resource) error) {
+	fake.createKubernetesResourceMutex.Lock()
+	defer fake.createKubernetesResourceMutex.Unlock()
+	fake.CreateKubernetesResourceStub = stub
+}
+
 func (fake *FakeClient) CreateKubernetesResourceArgsForCall(i int) kubernetes.Resource {
 	fake.createKubernetesResourceMutex.RLock()
 	defer fake.createKubernetesResourceMutex.RUnlock()
-	return fake.createKubernetesResourceArgsForCall[i].arg1
+	argsForCall := fake.createKubernetesResourceArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) CreateKubernetesResourceReturns(result1 error) {
+	fake.createKubernetesResourceMutex.Lock()
+	defer fake.createKubernetesResourceMutex.Unlock()
 	fake.CreateKubernetesResourceStub = nil
 	fake.createKubernetesResourceReturns = struct {
 		result1 error
@@ -323,6 +295,8 @@ func (fake *FakeClient) CreateKubernetesResourceReturns(result1 error) {
 }
 
 func (fake *FakeClient) CreateKubernetesResourceReturnsOnCall(i int, result1 error) {
+	fake.createKubernetesResourceMutex.Lock()
+	defer fake.createKubernetesResourceMutex.Unlock()
 	fake.CreateKubernetesResourceStub = nil
 	if fake.createKubernetesResourceReturnsOnCall == nil {
 		fake.createKubernetesResourceReturnsOnCall = make(map[int]struct {
@@ -348,7 +322,8 @@ func (fake *FakeClient) CreateReadPermission(arg1 clouddriver.ReadPermission) er
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.createReadPermissionReturns.result1
+	fakeReturns := fake.createReadPermissionReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) CreateReadPermissionCallCount() int {
@@ -357,13 +332,22 @@ func (fake *FakeClient) CreateReadPermissionCallCount() int {
 	return len(fake.createReadPermissionArgsForCall)
 }
 
+func (fake *FakeClient) CreateReadPermissionCalls(stub func(clouddriver.ReadPermission) error) {
+	fake.createReadPermissionMutex.Lock()
+	defer fake.createReadPermissionMutex.Unlock()
+	fake.CreateReadPermissionStub = stub
+}
+
 func (fake *FakeClient) CreateReadPermissionArgsForCall(i int) clouddriver.ReadPermission {
 	fake.createReadPermissionMutex.RLock()
 	defer fake.createReadPermissionMutex.RUnlock()
-	return fake.createReadPermissionArgsForCall[i].arg1
+	argsForCall := fake.createReadPermissionArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) CreateReadPermissionReturns(result1 error) {
+	fake.createReadPermissionMutex.Lock()
+	defer fake.createReadPermissionMutex.Unlock()
 	fake.CreateReadPermissionStub = nil
 	fake.createReadPermissionReturns = struct {
 		result1 error
@@ -371,6 +355,8 @@ func (fake *FakeClient) CreateReadPermissionReturns(result1 error) {
 }
 
 func (fake *FakeClient) CreateReadPermissionReturnsOnCall(i int, result1 error) {
+	fake.createReadPermissionMutex.Lock()
+	defer fake.createReadPermissionMutex.Unlock()
 	fake.CreateReadPermissionStub = nil
 	if fake.createReadPermissionReturnsOnCall == nil {
 		fake.createReadPermissionReturnsOnCall = make(map[int]struct {
@@ -396,7 +382,8 @@ func (fake *FakeClient) CreateWritePermission(arg1 clouddriver.WritePermission) 
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.createWritePermissionReturns.result1
+	fakeReturns := fake.createWritePermissionReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) CreateWritePermissionCallCount() int {
@@ -405,13 +392,22 @@ func (fake *FakeClient) CreateWritePermissionCallCount() int {
 	return len(fake.createWritePermissionArgsForCall)
 }
 
+func (fake *FakeClient) CreateWritePermissionCalls(stub func(clouddriver.WritePermission) error) {
+	fake.createWritePermissionMutex.Lock()
+	defer fake.createWritePermissionMutex.Unlock()
+	fake.CreateWritePermissionStub = stub
+}
+
 func (fake *FakeClient) CreateWritePermissionArgsForCall(i int) clouddriver.WritePermission {
 	fake.createWritePermissionMutex.RLock()
 	defer fake.createWritePermissionMutex.RUnlock()
-	return fake.createWritePermissionArgsForCall[i].arg1
+	argsForCall := fake.createWritePermissionArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) CreateWritePermissionReturns(result1 error) {
+	fake.createWritePermissionMutex.Lock()
+	defer fake.createWritePermissionMutex.Unlock()
 	fake.CreateWritePermissionStub = nil
 	fake.createWritePermissionReturns = struct {
 		result1 error
@@ -419,6 +415,8 @@ func (fake *FakeClient) CreateWritePermissionReturns(result1 error) {
 }
 
 func (fake *FakeClient) CreateWritePermissionReturnsOnCall(i int, result1 error) {
+	fake.createWritePermissionMutex.Lock()
+	defer fake.createWritePermissionMutex.Unlock()
 	fake.CreateWritePermissionStub = nil
 	if fake.createWritePermissionReturnsOnCall == nil {
 		fake.createWritePermissionReturnsOnCall = make(map[int]struct {
@@ -428,6 +426,69 @@ func (fake *FakeClient) CreateWritePermissionReturnsOnCall(i int, result1 error)
 	fake.createWritePermissionReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeClient) GetKubernetesProvider(arg1 string) (kubernetes.Provider, error) {
+	fake.getKubernetesProviderMutex.Lock()
+	ret, specificReturn := fake.getKubernetesProviderReturnsOnCall[len(fake.getKubernetesProviderArgsForCall)]
+	fake.getKubernetesProviderArgsForCall = append(fake.getKubernetesProviderArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("GetKubernetesProvider", []interface{}{arg1})
+	fake.getKubernetesProviderMutex.Unlock()
+	if fake.GetKubernetesProviderStub != nil {
+		return fake.GetKubernetesProviderStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.getKubernetesProviderReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) GetKubernetesProviderCallCount() int {
+	fake.getKubernetesProviderMutex.RLock()
+	defer fake.getKubernetesProviderMutex.RUnlock()
+	return len(fake.getKubernetesProviderArgsForCall)
+}
+
+func (fake *FakeClient) GetKubernetesProviderCalls(stub func(string) (kubernetes.Provider, error)) {
+	fake.getKubernetesProviderMutex.Lock()
+	defer fake.getKubernetesProviderMutex.Unlock()
+	fake.GetKubernetesProviderStub = stub
+}
+
+func (fake *FakeClient) GetKubernetesProviderArgsForCall(i int) string {
+	fake.getKubernetesProviderMutex.RLock()
+	defer fake.getKubernetesProviderMutex.RUnlock()
+	argsForCall := fake.getKubernetesProviderArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClient) GetKubernetesProviderReturns(result1 kubernetes.Provider, result2 error) {
+	fake.getKubernetesProviderMutex.Lock()
+	defer fake.getKubernetesProviderMutex.Unlock()
+	fake.GetKubernetesProviderStub = nil
+	fake.getKubernetesProviderReturns = struct {
+		result1 kubernetes.Provider
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetKubernetesProviderReturnsOnCall(i int, result1 kubernetes.Provider, result2 error) {
+	fake.getKubernetesProviderMutex.Lock()
+	defer fake.getKubernetesProviderMutex.Unlock()
+	fake.GetKubernetesProviderStub = nil
+	if fake.getKubernetesProviderReturnsOnCall == nil {
+		fake.getKubernetesProviderReturnsOnCall = make(map[int]struct {
+			result1 kubernetes.Provider
+			result2 error
+		})
+	}
+	fake.getKubernetesProviderReturnsOnCall[i] = struct {
+		result1 kubernetes.Provider
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeClient) ListKubernetesAccountsBySpinnakerApp(arg1 string) ([]string, error) {
@@ -444,7 +505,8 @@ func (fake *FakeClient) ListKubernetesAccountsBySpinnakerApp(arg1 string) ([]str
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.listKubernetesAccountsBySpinnakerAppReturns.result1, fake.listKubernetesAccountsBySpinnakerAppReturns.result2
+	fakeReturns := fake.listKubernetesAccountsBySpinnakerAppReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeClient) ListKubernetesAccountsBySpinnakerAppCallCount() int {
@@ -453,13 +515,22 @@ func (fake *FakeClient) ListKubernetesAccountsBySpinnakerAppCallCount() int {
 	return len(fake.listKubernetesAccountsBySpinnakerAppArgsForCall)
 }
 
+func (fake *FakeClient) ListKubernetesAccountsBySpinnakerAppCalls(stub func(string) ([]string, error)) {
+	fake.listKubernetesAccountsBySpinnakerAppMutex.Lock()
+	defer fake.listKubernetesAccountsBySpinnakerAppMutex.Unlock()
+	fake.ListKubernetesAccountsBySpinnakerAppStub = stub
+}
+
 func (fake *FakeClient) ListKubernetesAccountsBySpinnakerAppArgsForCall(i int) string {
 	fake.listKubernetesAccountsBySpinnakerAppMutex.RLock()
 	defer fake.listKubernetesAccountsBySpinnakerAppMutex.RUnlock()
-	return fake.listKubernetesAccountsBySpinnakerAppArgsForCall[i].arg1
+	argsForCall := fake.listKubernetesAccountsBySpinnakerAppArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) ListKubernetesAccountsBySpinnakerAppReturns(result1 []string, result2 error) {
+	fake.listKubernetesAccountsBySpinnakerAppMutex.Lock()
+	defer fake.listKubernetesAccountsBySpinnakerAppMutex.Unlock()
 	fake.ListKubernetesAccountsBySpinnakerAppStub = nil
 	fake.listKubernetesAccountsBySpinnakerAppReturns = struct {
 		result1 []string
@@ -468,6 +539,8 @@ func (fake *FakeClient) ListKubernetesAccountsBySpinnakerAppReturns(result1 []st
 }
 
 func (fake *FakeClient) ListKubernetesAccountsBySpinnakerAppReturnsOnCall(i int, result1 []string, result2 error) {
+	fake.listKubernetesAccountsBySpinnakerAppMutex.Lock()
+	defer fake.listKubernetesAccountsBySpinnakerAppMutex.Unlock()
 	fake.ListKubernetesAccountsBySpinnakerAppStub = nil
 	if fake.listKubernetesAccountsBySpinnakerAppReturnsOnCall == nil {
 		fake.listKubernetesAccountsBySpinnakerAppReturnsOnCall = make(map[int]struct {
@@ -495,7 +568,8 @@ func (fake *FakeClient) ListKubernetesClustersByApplication(arg1 string) ([]kube
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.listKubernetesClustersByApplicationReturns.result1, fake.listKubernetesClustersByApplicationReturns.result2
+	fakeReturns := fake.listKubernetesClustersByApplicationReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeClient) ListKubernetesClustersByApplicationCallCount() int {
@@ -504,13 +578,22 @@ func (fake *FakeClient) ListKubernetesClustersByApplicationCallCount() int {
 	return len(fake.listKubernetesClustersByApplicationArgsForCall)
 }
 
+func (fake *FakeClient) ListKubernetesClustersByApplicationCalls(stub func(string) ([]kubernetes.Resource, error)) {
+	fake.listKubernetesClustersByApplicationMutex.Lock()
+	defer fake.listKubernetesClustersByApplicationMutex.Unlock()
+	fake.ListKubernetesClustersByApplicationStub = stub
+}
+
 func (fake *FakeClient) ListKubernetesClustersByApplicationArgsForCall(i int) string {
 	fake.listKubernetesClustersByApplicationMutex.RLock()
 	defer fake.listKubernetesClustersByApplicationMutex.RUnlock()
-	return fake.listKubernetesClustersByApplicationArgsForCall[i].arg1
+	argsForCall := fake.listKubernetesClustersByApplicationArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) ListKubernetesClustersByApplicationReturns(result1 []kubernetes.Resource, result2 error) {
+	fake.listKubernetesClustersByApplicationMutex.Lock()
+	defer fake.listKubernetesClustersByApplicationMutex.Unlock()
 	fake.ListKubernetesClustersByApplicationStub = nil
 	fake.listKubernetesClustersByApplicationReturns = struct {
 		result1 []kubernetes.Resource
@@ -519,6 +602,8 @@ func (fake *FakeClient) ListKubernetesClustersByApplicationReturns(result1 []kub
 }
 
 func (fake *FakeClient) ListKubernetesClustersByApplicationReturnsOnCall(i int, result1 []kubernetes.Resource, result2 error) {
+	fake.listKubernetesClustersByApplicationMutex.Lock()
+	defer fake.listKubernetesClustersByApplicationMutex.Unlock()
 	fake.ListKubernetesClustersByApplicationStub = nil
 	if fake.listKubernetesClustersByApplicationReturnsOnCall == nil {
 		fake.listKubernetesClustersByApplicationReturnsOnCall = make(map[int]struct {
@@ -535,7 +620,8 @@ func (fake *FakeClient) ListKubernetesClustersByApplicationReturnsOnCall(i int, 
 func (fake *FakeClient) ListKubernetesProviders() ([]kubernetes.Provider, error) {
 	fake.listKubernetesProvidersMutex.Lock()
 	ret, specificReturn := fake.listKubernetesProvidersReturnsOnCall[len(fake.listKubernetesProvidersArgsForCall)]
-	fake.listKubernetesProvidersArgsForCall = append(fake.listKubernetesProvidersArgsForCall, struct{}{})
+	fake.listKubernetesProvidersArgsForCall = append(fake.listKubernetesProvidersArgsForCall, struct {
+	}{})
 	fake.recordInvocation("ListKubernetesProviders", []interface{}{})
 	fake.listKubernetesProvidersMutex.Unlock()
 	if fake.ListKubernetesProvidersStub != nil {
@@ -544,7 +630,8 @@ func (fake *FakeClient) ListKubernetesProviders() ([]kubernetes.Provider, error)
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.listKubernetesProvidersReturns.result1, fake.listKubernetesProvidersReturns.result2
+	fakeReturns := fake.listKubernetesProvidersReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeClient) ListKubernetesProvidersCallCount() int {
@@ -553,7 +640,15 @@ func (fake *FakeClient) ListKubernetesProvidersCallCount() int {
 	return len(fake.listKubernetesProvidersArgsForCall)
 }
 
+func (fake *FakeClient) ListKubernetesProvidersCalls(stub func() ([]kubernetes.Provider, error)) {
+	fake.listKubernetesProvidersMutex.Lock()
+	defer fake.listKubernetesProvidersMutex.Unlock()
+	fake.ListKubernetesProvidersStub = stub
+}
+
 func (fake *FakeClient) ListKubernetesProvidersReturns(result1 []kubernetes.Provider, result2 error) {
+	fake.listKubernetesProvidersMutex.Lock()
+	defer fake.listKubernetesProvidersMutex.Unlock()
 	fake.ListKubernetesProvidersStub = nil
 	fake.listKubernetesProvidersReturns = struct {
 		result1 []kubernetes.Provider
@@ -562,6 +657,8 @@ func (fake *FakeClient) ListKubernetesProvidersReturns(result1 []kubernetes.Prov
 }
 
 func (fake *FakeClient) ListKubernetesProvidersReturnsOnCall(i int, result1 []kubernetes.Provider, result2 error) {
+	fake.listKubernetesProvidersMutex.Lock()
+	defer fake.listKubernetesProvidersMutex.Unlock()
 	fake.ListKubernetesProvidersStub = nil
 	if fake.listKubernetesProvidersReturnsOnCall == nil {
 		fake.listKubernetesProvidersReturnsOnCall = make(map[int]struct {
@@ -578,7 +675,8 @@ func (fake *FakeClient) ListKubernetesProvidersReturnsOnCall(i int, result1 []ku
 func (fake *FakeClient) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider, error) {
 	fake.listKubernetesProvidersAndPermissionsMutex.Lock()
 	ret, specificReturn := fake.listKubernetesProvidersAndPermissionsReturnsOnCall[len(fake.listKubernetesProvidersAndPermissionsArgsForCall)]
-	fake.listKubernetesProvidersAndPermissionsArgsForCall = append(fake.listKubernetesProvidersAndPermissionsArgsForCall, struct{}{})
+	fake.listKubernetesProvidersAndPermissionsArgsForCall = append(fake.listKubernetesProvidersAndPermissionsArgsForCall, struct {
+	}{})
 	fake.recordInvocation("ListKubernetesProvidersAndPermissions", []interface{}{})
 	fake.listKubernetesProvidersAndPermissionsMutex.Unlock()
 	if fake.ListKubernetesProvidersAndPermissionsStub != nil {
@@ -587,7 +685,8 @@ func (fake *FakeClient) ListKubernetesProvidersAndPermissions() ([]kubernetes.Pr
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.listKubernetesProvidersAndPermissionsReturns.result1, fake.listKubernetesProvidersAndPermissionsReturns.result2
+	fakeReturns := fake.listKubernetesProvidersAndPermissionsReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeClient) ListKubernetesProvidersAndPermissionsCallCount() int {
@@ -596,7 +695,15 @@ func (fake *FakeClient) ListKubernetesProvidersAndPermissionsCallCount() int {
 	return len(fake.listKubernetesProvidersAndPermissionsArgsForCall)
 }
 
+func (fake *FakeClient) ListKubernetesProvidersAndPermissionsCalls(stub func() ([]kubernetes.Provider, error)) {
+	fake.listKubernetesProvidersAndPermissionsMutex.Lock()
+	defer fake.listKubernetesProvidersAndPermissionsMutex.Unlock()
+	fake.ListKubernetesProvidersAndPermissionsStub = stub
+}
+
 func (fake *FakeClient) ListKubernetesProvidersAndPermissionsReturns(result1 []kubernetes.Provider, result2 error) {
+	fake.listKubernetesProvidersAndPermissionsMutex.Lock()
+	defer fake.listKubernetesProvidersAndPermissionsMutex.Unlock()
 	fake.ListKubernetesProvidersAndPermissionsStub = nil
 	fake.listKubernetesProvidersAndPermissionsReturns = struct {
 		result1 []kubernetes.Provider
@@ -605,6 +712,8 @@ func (fake *FakeClient) ListKubernetesProvidersAndPermissionsReturns(result1 []k
 }
 
 func (fake *FakeClient) ListKubernetesProvidersAndPermissionsReturnsOnCall(i int, result1 []kubernetes.Provider, result2 error) {
+	fake.listKubernetesProvidersAndPermissionsMutex.Lock()
+	defer fake.listKubernetesProvidersAndPermissionsMutex.Unlock()
 	fake.ListKubernetesProvidersAndPermissionsStub = nil
 	if fake.listKubernetesProvidersAndPermissionsReturnsOnCall == nil {
 		fake.listKubernetesProvidersAndPermissionsReturnsOnCall = make(map[int]struct {
@@ -614,6 +723,71 @@ func (fake *FakeClient) ListKubernetesProvidersAndPermissionsReturnsOnCall(i int
 	}
 	fake.listKubernetesProvidersAndPermissionsReturnsOnCall[i] = struct {
 		result1 []kubernetes.Provider
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(arg1 string, arg2 string, arg3 string) ([]string, error) {
+	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.Lock()
+	ret, specificReturn := fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall[len(fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall)]
+	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall = append(fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("ListKubernetesResourceNamesByAccountNameAndKindAndNamespace", []interface{}{arg1, arg2, arg3})
+	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.Unlock()
+	if fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub != nil {
+		return fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceCallCount() int {
+	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RLock()
+	defer fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RUnlock()
+	return len(fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall)
+}
+
+func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceCalls(stub func(string, string, string) ([]string, error)) {
+	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.Lock()
+	defer fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.Unlock()
+	fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub = stub
+}
+
+func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall(i int) (string, string, string) {
+	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RLock()
+	defer fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RUnlock()
+	argsForCall := fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns(result1 []string, result2 error) {
+	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.Lock()
+	defer fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.Unlock()
+	fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub = nil
+	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall(i int, result1 []string, result2 error) {
+	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.Lock()
+	defer fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.Unlock()
+	fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub = nil
+	if fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall == nil {
+		fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall = make(map[int]struct {
+			result1 []string
+			result2 error
+		})
+	}
+	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall[i] = struct {
+		result1 []string
 		result2 error
 	}{result1, result2}
 }
@@ -632,7 +806,8 @@ func (fake *FakeClient) ListKubernetesResourcesByFields(arg1 ...string) ([]kuber
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.listKubernetesResourcesByFieldsReturns.result1, fake.listKubernetesResourcesByFieldsReturns.result2
+	fakeReturns := fake.listKubernetesResourcesByFieldsReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeClient) ListKubernetesResourcesByFieldsCallCount() int {
@@ -641,13 +816,22 @@ func (fake *FakeClient) ListKubernetesResourcesByFieldsCallCount() int {
 	return len(fake.listKubernetesResourcesByFieldsArgsForCall)
 }
 
+func (fake *FakeClient) ListKubernetesResourcesByFieldsCalls(stub func(...string) ([]kubernetes.Resource, error)) {
+	fake.listKubernetesResourcesByFieldsMutex.Lock()
+	defer fake.listKubernetesResourcesByFieldsMutex.Unlock()
+	fake.ListKubernetesResourcesByFieldsStub = stub
+}
+
 func (fake *FakeClient) ListKubernetesResourcesByFieldsArgsForCall(i int) []string {
 	fake.listKubernetesResourcesByFieldsMutex.RLock()
 	defer fake.listKubernetesResourcesByFieldsMutex.RUnlock()
-	return fake.listKubernetesResourcesByFieldsArgsForCall[i].arg1
+	argsForCall := fake.listKubernetesResourcesByFieldsArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) ListKubernetesResourcesByFieldsReturns(result1 []kubernetes.Resource, result2 error) {
+	fake.listKubernetesResourcesByFieldsMutex.Lock()
+	defer fake.listKubernetesResourcesByFieldsMutex.Unlock()
 	fake.ListKubernetesResourcesByFieldsStub = nil
 	fake.listKubernetesResourcesByFieldsReturns = struct {
 		result1 []kubernetes.Resource
@@ -656,6 +840,8 @@ func (fake *FakeClient) ListKubernetesResourcesByFieldsReturns(result1 []kuberne
 }
 
 func (fake *FakeClient) ListKubernetesResourcesByFieldsReturnsOnCall(i int, result1 []kubernetes.Resource, result2 error) {
+	fake.listKubernetesResourcesByFieldsMutex.Lock()
+	defer fake.listKubernetesResourcesByFieldsMutex.Unlock()
 	fake.ListKubernetesResourcesByFieldsStub = nil
 	if fake.listKubernetesResourcesByFieldsReturnsOnCall == nil {
 		fake.listKubernetesResourcesByFieldsReturnsOnCall = make(map[int]struct {
@@ -683,7 +869,8 @@ func (fake *FakeClient) ListKubernetesResourcesByTaskID(arg1 string) ([]kubernet
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.listKubernetesResourcesByTaskIDReturns.result1, fake.listKubernetesResourcesByTaskIDReturns.result2
+	fakeReturns := fake.listKubernetesResourcesByTaskIDReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeClient) ListKubernetesResourcesByTaskIDCallCount() int {
@@ -692,13 +879,22 @@ func (fake *FakeClient) ListKubernetesResourcesByTaskIDCallCount() int {
 	return len(fake.listKubernetesResourcesByTaskIDArgsForCall)
 }
 
+func (fake *FakeClient) ListKubernetesResourcesByTaskIDCalls(stub func(string) ([]kubernetes.Resource, error)) {
+	fake.listKubernetesResourcesByTaskIDMutex.Lock()
+	defer fake.listKubernetesResourcesByTaskIDMutex.Unlock()
+	fake.ListKubernetesResourcesByTaskIDStub = stub
+}
+
 func (fake *FakeClient) ListKubernetesResourcesByTaskIDArgsForCall(i int) string {
 	fake.listKubernetesResourcesByTaskIDMutex.RLock()
 	defer fake.listKubernetesResourcesByTaskIDMutex.RUnlock()
-	return fake.listKubernetesResourcesByTaskIDArgsForCall[i].arg1
+	argsForCall := fake.listKubernetesResourcesByTaskIDArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) ListKubernetesResourcesByTaskIDReturns(result1 []kubernetes.Resource, result2 error) {
+	fake.listKubernetesResourcesByTaskIDMutex.Lock()
+	defer fake.listKubernetesResourcesByTaskIDMutex.Unlock()
 	fake.ListKubernetesResourcesByTaskIDStub = nil
 	fake.listKubernetesResourcesByTaskIDReturns = struct {
 		result1 []kubernetes.Resource
@@ -707,6 +903,8 @@ func (fake *FakeClient) ListKubernetesResourcesByTaskIDReturns(result1 []kuberne
 }
 
 func (fake *FakeClient) ListKubernetesResourcesByTaskIDReturnsOnCall(i int, result1 []kubernetes.Resource, result2 error) {
+	fake.listKubernetesResourcesByTaskIDMutex.Lock()
+	defer fake.listKubernetesResourcesByTaskIDMutex.Unlock()
 	fake.ListKubernetesResourcesByTaskIDStub = nil
 	if fake.listKubernetesResourcesByTaskIDReturnsOnCall == nil {
 		fake.listKubernetesResourcesByTaskIDReturnsOnCall = make(map[int]struct {
@@ -716,59 +914,6 @@ func (fake *FakeClient) ListKubernetesResourcesByTaskIDReturnsOnCall(i int, resu
 	}
 	fake.listKubernetesResourcesByTaskIDReturnsOnCall[i] = struct {
 		result1 []kubernetes.Resource
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(arg1 string, arg2 string, arg3 string) ([]string, error) {
-	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.Lock()
-	ret, specificReturn := fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall[len(fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall)]
-	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall = append(fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall, struct {
-		arg1 string
-		arg2 string
-		arg3 string
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("ListKubernetesResourceNamesByAccountNameAndKindAndNamespace", []interface{}{arg1, arg2, arg3})
-	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.Unlock()
-	if fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub != nil {
-		return fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub(arg1, arg2, arg3)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns.result1, fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns.result2
-}
-
-func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceCallCount() int {
-	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RLock()
-	defer fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RUnlock()
-	return len(fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall)
-}
-
-func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall(i int) (string, string, string) {
-	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RLock()
-	defer fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RUnlock()
-	return fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall[i].arg1, fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall[i].arg2, fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceArgsForCall[i].arg3
-}
-
-func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns(result1 []string, result2 error) {
-	fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub = nil
-	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns = struct {
-		result1 []string
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall(i int, result1 []string, result2 error) {
-	fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub = nil
-	if fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall == nil {
-		fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall = make(map[int]struct {
-			result1 []string
-			result2 error
-		})
-	}
-	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturnsOnCall[i] = struct {
-		result1 []string
 		result2 error
 	}{result1, result2}
 }
@@ -787,7 +932,8 @@ func (fake *FakeClient) ListReadGroupsByAccountName(arg1 string) ([]string, erro
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.listReadGroupsByAccountNameReturns.result1, fake.listReadGroupsByAccountNameReturns.result2
+	fakeReturns := fake.listReadGroupsByAccountNameReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeClient) ListReadGroupsByAccountNameCallCount() int {
@@ -796,13 +942,22 @@ func (fake *FakeClient) ListReadGroupsByAccountNameCallCount() int {
 	return len(fake.listReadGroupsByAccountNameArgsForCall)
 }
 
+func (fake *FakeClient) ListReadGroupsByAccountNameCalls(stub func(string) ([]string, error)) {
+	fake.listReadGroupsByAccountNameMutex.Lock()
+	defer fake.listReadGroupsByAccountNameMutex.Unlock()
+	fake.ListReadGroupsByAccountNameStub = stub
+}
+
 func (fake *FakeClient) ListReadGroupsByAccountNameArgsForCall(i int) string {
 	fake.listReadGroupsByAccountNameMutex.RLock()
 	defer fake.listReadGroupsByAccountNameMutex.RUnlock()
-	return fake.listReadGroupsByAccountNameArgsForCall[i].arg1
+	argsForCall := fake.listReadGroupsByAccountNameArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) ListReadGroupsByAccountNameReturns(result1 []string, result2 error) {
+	fake.listReadGroupsByAccountNameMutex.Lock()
+	defer fake.listReadGroupsByAccountNameMutex.Unlock()
 	fake.ListReadGroupsByAccountNameStub = nil
 	fake.listReadGroupsByAccountNameReturns = struct {
 		result1 []string
@@ -811,6 +966,8 @@ func (fake *FakeClient) ListReadGroupsByAccountNameReturns(result1 []string, res
 }
 
 func (fake *FakeClient) ListReadGroupsByAccountNameReturnsOnCall(i int, result1 []string, result2 error) {
+	fake.listReadGroupsByAccountNameMutex.Lock()
+	defer fake.listReadGroupsByAccountNameMutex.Unlock()
 	fake.ListReadGroupsByAccountNameStub = nil
 	if fake.listReadGroupsByAccountNameReturnsOnCall == nil {
 		fake.listReadGroupsByAccountNameReturnsOnCall = make(map[int]struct {
@@ -838,7 +995,8 @@ func (fake *FakeClient) ListWriteGroupsByAccountName(arg1 string) ([]string, err
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.listWriteGroupsByAccountNameReturns.result1, fake.listWriteGroupsByAccountNameReturns.result2
+	fakeReturns := fake.listWriteGroupsByAccountNameReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeClient) ListWriteGroupsByAccountNameCallCount() int {
@@ -847,13 +1005,22 @@ func (fake *FakeClient) ListWriteGroupsByAccountNameCallCount() int {
 	return len(fake.listWriteGroupsByAccountNameArgsForCall)
 }
 
+func (fake *FakeClient) ListWriteGroupsByAccountNameCalls(stub func(string) ([]string, error)) {
+	fake.listWriteGroupsByAccountNameMutex.Lock()
+	defer fake.listWriteGroupsByAccountNameMutex.Unlock()
+	fake.ListWriteGroupsByAccountNameStub = stub
+}
+
 func (fake *FakeClient) ListWriteGroupsByAccountNameArgsForCall(i int) string {
 	fake.listWriteGroupsByAccountNameMutex.RLock()
 	defer fake.listWriteGroupsByAccountNameMutex.RUnlock()
-	return fake.listWriteGroupsByAccountNameArgsForCall[i].arg1
+	argsForCall := fake.listWriteGroupsByAccountNameArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) ListWriteGroupsByAccountNameReturns(result1 []string, result2 error) {
+	fake.listWriteGroupsByAccountNameMutex.Lock()
+	defer fake.listWriteGroupsByAccountNameMutex.Unlock()
 	fake.ListWriteGroupsByAccountNameStub = nil
 	fake.listWriteGroupsByAccountNameReturns = struct {
 		result1 []string
@@ -862,6 +1029,8 @@ func (fake *FakeClient) ListWriteGroupsByAccountNameReturns(result1 []string, re
 }
 
 func (fake *FakeClient) ListWriteGroupsByAccountNameReturnsOnCall(i int, result1 []string, result2 error) {
+	fake.listWriteGroupsByAccountNameMutex.Lock()
+	defer fake.listWriteGroupsByAccountNameMutex.Unlock()
 	fake.ListWriteGroupsByAccountNameStub = nil
 	if fake.listWriteGroupsByAccountNameReturnsOnCall == nil {
 		fake.listWriteGroupsByAccountNameReturnsOnCall = make(map[int]struct {
@@ -878,8 +1047,6 @@ func (fake *FakeClient) ListWriteGroupsByAccountNameReturnsOnCall(i int, result1
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.getKubernetesProviderMutex.RLock()
-	defer fake.getKubernetesProviderMutex.RUnlock()
 	fake.createKubernetesProviderMutex.RLock()
 	defer fake.createKubernetesProviderMutex.RUnlock()
 	fake.createKubernetesResourceMutex.RLock()
@@ -888,6 +1055,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.createReadPermissionMutex.RUnlock()
 	fake.createWritePermissionMutex.RLock()
 	defer fake.createWritePermissionMutex.RUnlock()
+	fake.getKubernetesProviderMutex.RLock()
+	defer fake.getKubernetesProviderMutex.RUnlock()
 	fake.listKubernetesAccountsBySpinnakerAppMutex.RLock()
 	defer fake.listKubernetesAccountsBySpinnakerAppMutex.RUnlock()
 	fake.listKubernetesClustersByApplicationMutex.RLock()
@@ -896,12 +1065,12 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.listKubernetesProvidersMutex.RUnlock()
 	fake.listKubernetesProvidersAndPermissionsMutex.RLock()
 	defer fake.listKubernetesProvidersAndPermissionsMutex.RUnlock()
+	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RLock()
+	defer fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RUnlock()
 	fake.listKubernetesResourcesByFieldsMutex.RLock()
 	defer fake.listKubernetesResourcesByFieldsMutex.RUnlock()
 	fake.listKubernetesResourcesByTaskIDMutex.RLock()
 	defer fake.listKubernetesResourcesByTaskIDMutex.RUnlock()
-	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RLock()
-	defer fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.RUnlock()
 	fake.listReadGroupsByAccountNameMutex.RLock()
 	defer fake.listReadGroupsByAccountNameMutex.RUnlock()
 	fake.listWriteGroupsByAccountNameMutex.RLock()
