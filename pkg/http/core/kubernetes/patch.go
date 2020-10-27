@@ -61,7 +61,6 @@ func (p *patchManfest) Run() error {
 		return err
 	}
 
-	// TODO how will this work with other merge types?
 	b, err := json.Marshal(p.pm.PatchBody)
 	if err != nil {
 		return err
@@ -69,10 +68,12 @@ func (p *patchManfest) Run() error {
 
 	// Manifest name is *really* the Spinnaker cluster - i.e. "deployment test-deployment", so we
 	// need to split on a whitespace and get the actual name of the manifest.
+	kind := ""
 	name := p.pm.ManifestName
 
 	a := strings.Split(p.pm.ManifestName, " ")
 	if len(a) > 1 {
+		kind = a[0]
 		name = a[1]
 	}
 
@@ -90,7 +91,7 @@ func (p *patchManfest) Run() error {
 		return fmt.Errorf("invalid merge strategy %s", p.pm.Options.MergeStrategy)
 	}
 
-	meta, _, err := client.PatchUsingStrategy(p.pm.Kind, name, p.pm.Location, b, strategy)
+	meta, _, err := client.PatchUsingStrategy(kind, name, p.pm.Location, b, strategy)
 	if err != nil {
 		return err
 	}

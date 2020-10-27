@@ -42,10 +42,10 @@ type DeployManifestRequest struct {
 }
 
 type PatchManifestRequest struct {
-	App           string                         `json:"app"`
-	Cluster       string                         `json:"cluster"`
-	Criteria      string                         `json:"criteria"`
-	Kind          string                         `json:"kind"`
+	App      string `json:"app"`
+	Cluster  string `json:"cluster"`
+	Criteria string `json:"criteria"`
+	// Kind          string                         `json:"kind"`
 	ManifestName  string                         `json:"manifestName"`
 	Source        string                         `json:"source"`
 	Mode          string                         `json:"mode"`
