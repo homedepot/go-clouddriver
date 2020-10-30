@@ -28,11 +28,12 @@ const (
 //go:generate counterfeiter . Client
 
 type Client interface {
-	GetKubernetesProvider(string) (kubernetes.Provider, error)
 	CreateKubernetesProvider(kubernetes.Provider) error
 	CreateKubernetesResource(kubernetes.Resource) error
 	CreateReadPermission(clouddriver.ReadPermission) error
 	CreateWritePermission(clouddriver.WritePermission) error
+	DeleteKubernetesProvider(string) error
+	GetKubernetesProvider(string) (kubernetes.Provider, error)
 	ListKubernetesAccountsBySpinnakerApp(string) ([]string, error)
 	ListKubernetesClustersByApplication(string) ([]kubernetes.Resource, error)
 	ListKubernetesProviders() ([]kubernetes.Provider, error)
@@ -100,13 +101,6 @@ func Connection(c Config) (string, string) {
 		c.User, c.Password, c.Host, c.Name)
 }
 
-func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error) {
-	var p kubernetes.Provider
-	db := c.db.Select("host, ca_data, bearer_token").Where("name = ?", name).First(&p)
-
-	return p, db.Error
-}
-
 func (c *client) CreateKubernetesProvider(p kubernetes.Provider) error {
 	db := c.db.Create(&p)
 	return db.Error
@@ -125,6 +119,32 @@ func (c *client) CreateWritePermission(w clouddriver.WritePermission) error {
 func (c *client) CreateReadPermission(r clouddriver.ReadPermission) error {
 	db := c.db.Create(&r)
 	return db.Error
+}
+
+func (c *client) DeleteKubernetesProvider(name string) error {
+	err := c.db.Delete(&kubernetes.Provider{Name: name}).Error
+	if err != nil {
+		return err
+	}
+
+	err = c.db.Where("account_name = ?", name).Delete(&clouddriver.ReadPermission{}).Error
+	if err != nil {
+		return err
+	}
+
+	err = c.db.Where("account_name = ?", name).Delete(&clouddriver.WritePermission{}).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error) {
+	var p kubernetes.Provider
+	db := c.db.Select("host, ca_data, bearer_token").Where("name = ?", name).First(&p)
+
+	return p, db.Error
 }
 
 // A Kubernetes cluster is of kind deployment, statefulSet, replicaSet, ingress, service, and daemonSet.

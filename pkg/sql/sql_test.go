@@ -87,36 +87,6 @@ var _ = Describe("Sql", func() {
 		})
 	})
 
-	Describe("#GetKubernetesProvider", func() {
-		var provider kubernetes.Provider
-
-		BeforeEach(func() {
-			provider = kubernetes.Provider{}
-		})
-
-		JustBeforeEach(func() {
-			provider, err = c.GetKubernetesProvider("test-name")
-		})
-
-		When("it succeeds", func() {
-			BeforeEach(func() {
-				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data"}).
-					AddRow("test-name", "test-host", "test-ca-data")
-				mock.ExpectQuery(`(?i)^SELECT host, ca_data, bearer_token FROM "kubernetes_providers" ` +
-					` WHERE \(name = \?\) ORDER BY "kubernetes_providers"."name" ASC LIMIT 1$`).
-					WillReturnRows(sqlRows)
-				mock.ExpectCommit()
-			})
-
-			It("succeeds", func() {
-				Expect(err).To(BeNil())
-				Expect(provider.Name).To(Equal("test-name"))
-				Expect(provider.Host).To(Equal("test-host"))
-				Expect(provider.CAData).To(Equal("test-ca-data"))
-			})
-		})
-	})
-
 	Describe("#CreateKubernetesResource", func() {
 		var resource kubernetes.Resource
 
@@ -224,6 +194,74 @@ var _ = Describe("Sql", func() {
 
 			It("succeeds", func() {
 				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Describe("#DeleteKubernetesProvider", func() {
+		var name string
+
+		BeforeEach(func() {
+			name = "test-name"
+		})
+
+		JustBeforeEach(func() {
+			err = c.DeleteKubernetesProvider(name)
+		})
+
+		When("it succeeds", func() {
+			BeforeEach(func() {
+				mock.ExpectBegin()
+				mock.ExpectExec(`(?i)^DELETE FROM "kubernetes_providers" WHERE
+				"kubernetes_providers"."name" = \?$`).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+
+				mock.ExpectBegin()
+				mock.ExpectExec(`(?i)^DELETE FROM "provider_read_permissions" WHERE
+				\(account_name = \?\)$`).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+
+				mock.ExpectBegin()
+				mock.ExpectExec(`(?i)^DELETE FROM "provider_write_permissions" WHERE
+				\(account_name = \?\)$`).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Describe("#GetKubernetesProvider", func() {
+		var provider kubernetes.Provider
+
+		BeforeEach(func() {
+			provider = kubernetes.Provider{}
+		})
+
+		JustBeforeEach(func() {
+			provider, err = c.GetKubernetesProvider("test-name")
+		})
+
+		When("it succeeds", func() {
+			BeforeEach(func() {
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data"}).
+					AddRow("test-name", "test-host", "test-ca-data")
+				mock.ExpectQuery(`(?i)^SELECT host, ca_data, bearer_token FROM "kubernetes_providers" ` +
+					` WHERE \(name = \?\) ORDER BY "kubernetes_providers"."name" ASC LIMIT 1$`).
+					WillReturnRows(sqlRows)
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+				Expect(provider.Name).To(Equal("test-name"))
+				Expect(provider.Host).To(Equal("test-host"))
+				Expect(provider.CAData).To(Equal("test-ca-data"))
 			})
 		})
 	})
