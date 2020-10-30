@@ -278,3 +278,21 @@ paths:
           description: "Conflict"
         "500":
           description: "Internal Server Error"
+  /v1/kubernetes/providers/{name}:
+    delete:
+      tags:
+      - "kubernetes"
+      parameters:
+      - name: "name"
+        in: "path"
+        required: true
+        type: "string"
+      summary: "Delete a Kubernetes account (provider)"
+      responses:
+        "204":
+          description: "No Content"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Internal Server Error"
+
