@@ -113,6 +113,7 @@ var _ = Describe("Sql", func() {
 					`"account_name",` +
 					`"id",` +
 					`"task_id",` +
+					`"task_type",` +
 					`"api_group",` +
 					`"name",` +
 					`"namespace",` +
@@ -121,7 +122,7 @@ var _ = Describe("Sql", func() {
 					`"kind",` +
 					`"spinnaker_app",` +
 					`"cluster"` +
-					`\) VALUES \(\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?\)$`).
+					`\) VALUES \(\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?\)$`).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			})
@@ -349,6 +350,7 @@ var _ = Describe("Sql", func() {
 					`name, ` +
 					`namespace, ` +
 					`resource, ` +
+					`task_type, ` +
 					`version ` +
 					`FROM "kubernetes_resources" ` +
 					` WHERE \(task_id = \?\)$`).

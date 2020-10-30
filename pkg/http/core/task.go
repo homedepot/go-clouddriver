@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 
 	clouddriver "github.com/billiford/go-clouddriver/pkg"
 	"k8s.io/client-go/rest"
@@ -70,6 +71,12 @@ func GetTask(c *gin.Context) {
 	}
 
 	for _, r := range resources {
+		// Ignore getting the manifest if task type is "cleanup".
+		if strings.EqualFold(r.TaskType, "cleanup") {
+			manifests = append(manifests, map[string]interface{}{})
+			continue
+		}
+
 		result, err := client.Get(r.Resource, r.Name, r.Namespace)
 		if err != nil {
 			clouddriver.WriteError(c, http.StatusInternalServerError, err)

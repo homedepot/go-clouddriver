@@ -277,7 +277,7 @@ func contains(s []string, e string) bool {
 
 func (c *client) ListKubernetesResourcesByTaskID(taskID string) ([]kubernetes.Resource, error) {
 	var rs []kubernetes.Resource
-	db := c.db.Select("account_name, api_group, kind, name, namespace, resource, version").
+	db := c.db.Select("account_name, api_group, kind, name, namespace, resource, task_type, version").
 		Where("task_id = ?", taskID).Find(&rs)
 
 	return rs, db.Error

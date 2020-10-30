@@ -74,6 +74,7 @@ func (c *cleanupArtifacts) Run() error {
 			AccountName:  c.ca.Account,
 			ID:           uuid.New().String(),
 			TaskID:       c.id,
+			TaskType:     "cleanup",
 			APIGroup:     gvr.Group,
 			Name:         u.GetName(),
 			Namespace:    u.GetNamespace(),

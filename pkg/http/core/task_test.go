@@ -93,6 +93,36 @@ var _ = Describe("Task", func() {
 			})
 		})
 
+		When("getting a token returns an error", func() {
+			BeforeEach(func() {
+				fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
+			})
+
+			It("returns status internal server error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error getting token"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("the task type is cleanup", func() {
+			BeforeEach(func() {
+				fakeSQLClient.ListKubernetesResourcesByTaskIDReturns([]kubernetes.Resource{
+					{
+						AccountName: "test-account-name",
+						TaskType:    "cleanup",
+					},
+				}, nil)
+			})
+
+			It("does not call make calls to the server", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetCallCount()).To(Equal(0))
+			})
+		})
+
 		When("getting the manifest returns an error", func() {
 			BeforeEach(func() {
 				fakeKubeClient.GetReturns(nil, errors.New("error getting resource"))
