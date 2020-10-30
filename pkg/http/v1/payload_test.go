@@ -47,3 +47,15 @@ const payloadKubernetesProviderCreated = `{
               ]
             }
           }`
+
+const payloadKubernetesProviderNotFound = `{
+						"error": "provider not found"
+					}`
+
+const payloadKubernetesProviderGetGenericError = `{
+            "error": "error getting provider"
+          }`
+
+const payloadKubernetesProviderDeleteGenericError = `{
+            "error": "error deleting provider"
+          }`

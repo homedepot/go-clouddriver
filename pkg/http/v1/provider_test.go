@@ -7,6 +7,7 @@ import (
 
 	// . "github.com/billiford/go-clouddriver/pkg/http/v1"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
+	"github.com/jinzhu/gorm"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -91,6 +92,61 @@ var _ = Describe("Provider", func() {
 			It("returns status created", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusCreated))
 				validateResponse(payloadKubernetesProviderCreated)
+			})
+		})
+	})
+
+	Describe("#DeleteKubernetesProvider", func() {
+		BeforeEach(func() {
+			setup()
+			uri = svr.URL + "/v1/kubernetes/providers/test-name"
+			createRequest(http.MethodDelete)
+		})
+
+		AfterEach(func() {
+			teardown()
+		})
+
+		JustBeforeEach(func() {
+			doRequest()
+		})
+
+		When("the record is not found", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, gorm.ErrRecordNotFound)
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusNotFound))
+				validateResponse(payloadKubernetesProviderNotFound)
+			})
+		})
+
+		When("getting the provider returns a generic error", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				validateResponse(payloadKubernetesProviderGetGenericError)
+			})
+		})
+
+		When("deleting the provider returns an error", func() {
+			BeforeEach(func() {
+				fakeSQLClient.DeleteKubernetesProviderReturns(errors.New("error deleting provider"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				validateResponse(payloadKubernetesProviderDeleteGenericError)
+			})
+		})
+
+		When("it succeeds", func() {
+			It("returns status no content", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusNoContent))
 			})
 		})
 	})

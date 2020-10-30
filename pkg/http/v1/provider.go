@@ -8,6 +8,7 @@ import (
 	"github.com/billiford/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jinzhu/gorm"
 )
 
 func CreateKubernetesProvider(c *gin.Context) {
@@ -59,4 +60,28 @@ func CreateKubernetesProvider(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, p)
+}
+
+func DeleteKubernetesProvider(c *gin.Context) {
+	sc := sql.Instance(c)
+	name := c.Param("name")
+
+	_, err := sc.GetKubernetesProvider(name)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "provider not found"})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = sc.DeleteKubernetesProvider(name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusNoContent, nil)
 }

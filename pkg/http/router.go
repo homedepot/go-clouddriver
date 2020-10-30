@@ -9,8 +9,8 @@ import (
 // Define the API.
 func Initialize(r *gin.Engine) {
 	// API endpoints without a version will go under "core".
-	api := r.Group("")
 	{
+		api := r.Group("")
 		api.GET("/health", core.OK)
 
 		// Force cache refresh.
@@ -40,7 +40,7 @@ func Initialize(r *gin.Engine) {
 		api.GET("/task/:id", core.GetTask)
 
 		// Generic search endpoint.
-		r.GET("/search", core.Search)
+		api.GET("/search", core.Search)
 
 		// Not implemented.
 		api.GET("/securityGroups", core.ListSecurityGroups)
@@ -56,9 +56,10 @@ func Initialize(r *gin.Engine) {
 	}
 
 	// New endpoint.
-	api = r.Group("/v1")
 	{
+		api := r.Group("/v1")
 		// Providers endpoint for kubernetes.
 		api.POST("/kubernetes/providers", v1.CreateKubernetesProvider)
+		api.DELETE("/kubernetes/providers/:name", v1.DeleteKubernetesProvider)
 	}
 }
