@@ -12,6 +12,7 @@ import (
 	"github.com/billiford/go-clouddriver/pkg/arcade/arcadefakes"
 	"github.com/billiford/go-clouddriver/pkg/artifact"
 	"github.com/billiford/go-clouddriver/pkg/artifact/artifactfakes"
+	"github.com/billiford/go-clouddriver/pkg/fiat/fiatfakes"
 	"github.com/billiford/go-clouddriver/pkg/helm/helmfakes"
 	kubefakes "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes/kubernetesfakes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
@@ -36,6 +37,7 @@ var (
 	res                               *http.Response
 	fakeArcadeClient                  *arcadefakes.FakeClient
 	fakeArtifactCredentialsController *artifactfakes.FakeCredentialsController
+	fakeFiatClient                    *fiatfakes.FakeClient
 	fakeGithubClient                  *github.Client
 	fakeHelmClient                    *helmfakes.FakeClient
 	fakeSQLClient                     *sqlfakes.FakeClient
@@ -125,6 +127,8 @@ func setup() {
 
 	fakeArcadeClient = &arcadefakes.FakeClient{}
 
+	fakeFiatClient = &fiatfakes.FakeClient{}
+
 	fakeHelmClient = &helmfakes.FakeClient{}
 
 	fakeGithubServer = ghttp.NewServer()
@@ -163,6 +167,7 @@ func setup() {
 	c := &server.Config{
 		ArcadeClient:                  fakeArcadeClient,
 		ArtifactCredentialsController: fakeArtifactCredentialsController,
+		FiatClient:                    fakeFiatClient,
 		SQLClient:                     fakeSQLClient,
 		KubeController:                fakeKubeController,
 		KubeActionHandler:             fakeKubeActionHandler,

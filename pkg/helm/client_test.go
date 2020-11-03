@@ -103,13 +103,13 @@ entries:
     created: 2020-03-20T13:13:42.956Z
     description: A Helm chart for deploying hello-app to Kuberntes
     digest: a934a39ba7f77e8e16b609d01c493d7ead5ec24c78d2918d3a00ebaa3c3fdfd2
-    home: https://pages.github.homedepot.com/cd
+    home: https://pages.github.com/test
     maintainers:
-    - email: ContinuousDeployment@homedepot.com
+    - email: me@test.com
       name: CD Team
     name: hello-app
     urls:
-    - https://helm.artifactory.homedepot.com/artifactory/helm/thd-cd-hello-app-1.0.0.tgz
+    - https://helm..com/artifactory/helm/test-1.0.0.tgz
     version: 1.0.0
   thd-cd-hello-app:
   - apiVersion: v2
@@ -117,13 +117,13 @@ entries:
     created: 2020-08-14T22:11:19.894Z
     description: A Helm chart for deploying hello-app to Kubernetes
     digest: c9c2663958ffdf2c790ebfd0f502176c3ac663014e9d6ce49955c4178c2f43d7
-    home: https://pages.github.homedepot.com/cd
+    home: https://pages.github.com/test
     maintainers:
-    - email: ContinuousDeployment@homedepot.com
+    - email: me@test.com
       name: CD Team
     name: thd-cd-hello-app
     urls:
-    - https://helm.artifactory.homedepot.com/artifactory/helm/thd-cd-hello-app-3.0.2.tgz
+    - https://helm..com/artifactory/helm/test-3.0.2.tgz
     version: 3.0.2`),
 				))
 			})

@@ -40,7 +40,7 @@ func AuthApplication(permissions ...string) gin.HandlerFunc {
 				for _, p := range permissions {
 					found := find(auth.Authorizations, p)
 					if !found {
-						clouddriver.WriteError(c, http.StatusForbidden, fmt.Errorf("Access denied to application %s - required authorization: %s", app, auth.Authorizations))
+						clouddriver.WriteError(c, http.StatusForbidden, fmt.Errorf("Access denied to application %s - required authorization: %s", app, p))
 						return
 					}
 				}
@@ -74,7 +74,7 @@ func AuthAccount(permissions ...string) gin.HandlerFunc {
 				for _, p := range permissions {
 					found := find(auth.Authorizations, p)
 					if !found {
-						clouddriver.WriteError(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, auth.Authorizations))
+						clouddriver.WriteError(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
 						return
 					}
 				}

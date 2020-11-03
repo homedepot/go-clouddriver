@@ -93,7 +93,7 @@ var _ = Describe("Client", func() {
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				fakeResponse = `{
-					"name" : "gg_cloud_gcp_spinnaker_admins@homedepot.com",
+					"name" : "test_group",
 					"accounts" : [ {
 					  "name" : "gke_github-replication-sandbox_us-central1_sandbox-us-central1-agent_smoketest-dev",
 					  "authorizations" : [ "READ", "WRITE", "EXECUTE", "CREATE" ]
@@ -109,7 +109,7 @@ var _ = Describe("Client", func() {
 					  "name" : "gg_cloud_gcp_spinnaker_admins",
 					  "source" : "EXTERNAL"
 					}, {
-					  "name" : "gg_cloud_gcp_spinnaker_admins@homedepot.com",
+					  "name" : "test_group",
 					  "source" : "EXTERNAL"
 					} ],
 					"buildServices" : [ ],
