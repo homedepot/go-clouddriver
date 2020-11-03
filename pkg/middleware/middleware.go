@@ -3,6 +3,7 @@ package middleware
 import (
 	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/artifact"
+	"github.com/billiford/go-clouddriver/pkg/fiat"
 	kube "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/sql"
@@ -19,6 +20,13 @@ func SetArcadeClient(a arcade.Client) gin.HandlerFunc {
 func SetSQLClient(r sql.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set(sql.ClientInstanceKey, r)
+		c.Next()
+	}
+}
+
+func SetFiatClient(f fiat.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set(fiat.ClientInstanceKey, f)
 		c.Next()
 	}
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/artifact"
+	"github.com/billiford/go-clouddriver/pkg/fiat"
 	kube "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/server"
@@ -52,6 +53,7 @@ func init() {
 	}
 
 	sqlClient := sql.NewClient(db)
+	fiatClient := fiat.NewDefaultClient()
 	kubeController := kubernetes.NewController()
 	arcadeClient := arcade.NewDefaultClient()
 
@@ -66,6 +68,7 @@ func init() {
 		ArcadeClient:                  arcadeClient,
 		ArtifactCredentialsController: artifactCredentialsController,
 		SQLClient:                     sqlClient,
+		FiatClient:                    fiatClient,
 		KubeController:                kubeController,
 		KubeActionHandler:             kube.NewActionHandler(),
 	}

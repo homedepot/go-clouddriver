@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/artifact"
+	"github.com/billiford/go-clouddriver/pkg/fiat"
 	"github.com/billiford/go-clouddriver/pkg/http"
 	kube "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/billiford/go-clouddriver/pkg/kubernetes"
@@ -15,6 +16,7 @@ type Config struct {
 	ArcadeClient                  arcade.Client
 	ArtifactCredentialsController artifact.CredentialsController
 	SQLClient                     sql.Client
+	FiatClient                    fiat.Client
 	KubeController                kubernetes.Controller
 	KubeActionHandler             kube.ActionHandler
 	VerboseRequestLogging         bool
@@ -27,6 +29,7 @@ func Setup(r *gin.Engine, c *Config) {
 	r.Use(middleware.SetKubeController(c.KubeController))
 	r.Use(middleware.SetArtifactCredentialsController(c.ArtifactCredentialsController))
 	r.Use(middleware.SetKubeActionHandler(c.KubeActionHandler))
+	r.Use(middleware.SetFiatClient(c.FiatClient))
 	r.Use(middleware.HandleError())
 
 	if c.VerboseRequestLogging {

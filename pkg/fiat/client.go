@@ -5,9 +5,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-const fiatUrl = "http://spin-fiat.spinnaker:7003"
+const (
+	ClientInstanceKey = `FiatClient`
+	fiatUrl           = "http://spin-fiat.spinnaker:7003"
+)
 
 //go:generate counterfeiter . Client
 type Client interface {
@@ -29,29 +34,37 @@ type client struct {
 }
 
 type Response struct {
-	Name     string `json:"name"`
-	Accounts []struct {
-		Name           string   `json:"name"`
-		Authorizations []string `json:"authorizations"`
-	} `json:"accounts"`
-	Applications []struct {
-		Name           string   `json:"name"`
-		Authorizations []string `json:"authorizations"`
-	} `json:"applications"`
-	ServiceAccounts []struct {
-		Name     string   `json:"name"`
-		MemberOf []string `json:"memberOf"`
-	} `json:"serviceAccounts"`
-	Roles []struct {
-		Name   string `json:"name"`
-		Source string `json:"source"`
-	} `json:"roles"`
-	BuildServices      []interface{} `json:"buildServices"`
+	Name               string           `json:"name"`
+	Accounts           []Account        `json:"accounts"`
+	Applications       []Application    `json:"applications"`
+	ServiceAccounts    []ServiceAccount `json:"serviceAccounts"`
+	Roles              []Role           `json:"roles"`
+	BuildServices      []interface{}    `json:"buildServices"`
 	ExtensionResources struct {
 	} `json:"extensionResources"`
 	Admin                            bool `json:"admin"`
 	LegacyFallback                   bool `json:"legacyFallback"`
 	AllowAccessToUnknownApplications bool `json:"allowAccessToUnknownApplications"`
+}
+
+type Account struct {
+	Name           string   `json:"name"`
+	Authorizations []string `json:"authorizations"`
+}
+
+type Application struct {
+	Name           string   `json:"name"`
+	Authorizations []string `json:"authorizations"`
+}
+
+type ServiceAccount struct {
+	Name     string   `json:"name"`
+	MemberOf []string `json:"memberOf"`
+}
+
+type Role struct {
+	Name   string `json:"name"`
+	Source string `json:"source"`
 }
 
 func (c *client) Authorize(account string) (Response, error) {
@@ -82,4 +95,8 @@ func (c *client) Authorize(account string) (Response, error) {
 		return response, err
 	}
 	return response, nil
+}
+
+func Instance(c *gin.Context) Client {
+	return c.MustGet(ClientInstanceKey).(Client)
 }
