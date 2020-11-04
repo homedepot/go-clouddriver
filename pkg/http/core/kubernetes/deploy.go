@@ -93,7 +93,8 @@ func (d *deployManfest) Run() error {
 
 		meta, err := client.ApplyWithNamespaceOverride(u, d.dm.NamespaceOverride)
 		if err != nil {
-			return err
+			return fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
+				u.GetKind(), u.GroupVersionKind().Version, u.GetName(), err.Error())
 		}
 
 		kr := kubernetes.Resource{

@@ -139,7 +139,7 @@ var _ = Describe("Deploy", func() {
 
 		It("returns an error", func() {
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error applying manifest"))
+			Expect(err.Error()).To(Equal("error applying manifest (kind: test-kind, apiVersion: test-api-version, name: test-name): error applying manifest"))
 		})
 	})
 

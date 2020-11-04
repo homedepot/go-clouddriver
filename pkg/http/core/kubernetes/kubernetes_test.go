@@ -38,6 +38,8 @@ func setup() {
 
 	fakeUnstructured := unstructured.Unstructured{
 		Object: map[string]interface{}{
+			"kind":       "test-kind",
+			"apiVersion": "test-api-version",
 			"metadata": map[string]interface{}{
 				"annotations": map[string]interface{}{
 					kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
