@@ -8,6 +8,7 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/gdexlab/go-render v1.0.1
 	github.com/gin-gonic/gin v1.6.3
+	github.com/go-git/go-git/v5 v5.2.0 // indirect
 	github.com/go-playground/assert/v2 v2.0.1
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/gddo v0.0.0-20200715224205-051695c33a3f

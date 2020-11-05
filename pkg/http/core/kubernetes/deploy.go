@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"unicode"
@@ -61,7 +62,35 @@ func (d *deployManfest) Run() error {
 		return err
 	}
 
+	manifests := []map[string]interface{}{}
+
+	// Merge all list element items into the manifest list.
 	for _, manifest := range d.dm.Manifests {
+		u, err := d.kc.ToUnstructured(manifest)
+		if err != nil {
+			return err
+		}
+
+		if strings.EqualFold(u.GetKind(), "list") {
+			listElement := kubernetes.ListElement{}
+
+			b, err := json.Marshal(u.Object)
+			if err != nil {
+				return err
+			}
+
+			err = json.Unmarshal(b, &listElement)
+			if err != nil {
+				return err
+			}
+
+			manifests = append(manifests, listElement.Items...)
+		} else {
+			manifests = append(manifests, u.Object)
+		}
+	}
+
+	for _, manifest := range manifests {
 		u, err := d.kc.ToUnstructured(manifest)
 		if err != nil {
 			return err

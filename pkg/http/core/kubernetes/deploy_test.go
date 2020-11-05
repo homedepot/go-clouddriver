@@ -76,6 +76,83 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
+	Context("the kind is a list", func() {
+		var fakeUnstructured unstructured.Unstructured
+
+		BeforeEach(func() {
+			fakeUnstructured = unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "list",
+					"apiVersion": "test-api-version",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":        "100",
+						},
+						"name": "test-name",
+					},
+					"items": []map[string]interface{}{
+						{
+							"kind":       "ServiceMonitor",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+									kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+									"deployment.kubernetes.io/revision":        "100",
+								},
+								"name": "test-list-name",
+							},
+						},
+						{
+							"kind":       "ServiceMonitor",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+									kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+									"deployment.kubernetes.io/revision":        "100",
+								},
+								"name": "test-list-name2",
+							},
+						},
+					},
+				},
+			}
+			fakeKubeController.ToUnstructuredReturns(&fakeUnstructured, nil)
+		})
+
+		When("the list element is invalid", func() {
+			BeforeEach(func() {
+				fakeUnstructured.Object["items"] = "bad"
+			})
+
+			It("returns an error", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("json: cannot unmarshal string into Go struct field ListElement.items of type []map[string]interface {}"))
+			})
+		})
+
+		When("it succeeds", func() {
+			It("merges the list items", func() {
+				Expect(err).To(BeNil())
+				Expect(fakeKubeClient.ApplyWithNamespaceOverrideCallCount()).To(Equal(2))
+			})
+		})
+	})
+
+	When("getting the unstructured manifest returns an error before apply", func() {
+		BeforeEach(func() {
+			fakeKubeController.ToUnstructuredReturnsOnCall(1, nil, errors.New("error converting to unstructured"))
+		})
+
+		It("returns an error", func() {
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal("error converting to unstructured"))
+		})
+	})
+
 	When("the kind is a job and generateName is set", func() {
 		BeforeEach(func() {
 			actionConfig.Operation.DeployManifest = &DeployManifestRequest{
