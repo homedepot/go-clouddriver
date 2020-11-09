@@ -2,12 +2,14 @@ package middleware_test
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/billiford/go-clouddriver/pkg/fiat"
 	"github.com/billiford/go-clouddriver/pkg/fiat/fiatfakes"
 	"github.com/billiford/go-clouddriver/pkg/http/core"
+	"github.com/billiford/go-clouddriver/pkg/middleware"
 	. "github.com/billiford/go-clouddriver/pkg/middleware"
 	"github.com/gin-gonic/gin"
 	. "github.com/onsi/ginkgo"
@@ -21,7 +23,8 @@ var (
 	r                                                       *http.Request
 	err                                                     error
 	testUser, testApplication, testAccount, authorizeErrMsg string
-	allApps                                                 core.Applications
+	allApps, filteredApps                                   core.Applications
+	authorizedAppsMap                                       map[string]fiat.Application
 )
 
 var _ = Describe("Auth", func() {
@@ -226,6 +229,17 @@ var _ = Describe("Auth", func() {
 			c.Abort()
 		})
 
+		When("There is an error attached to the context", func() {
+			BeforeEach(func() {
+				c.Errors = append(c.Errors, c.Error(errors.New("fake error")))
+			})
+
+			It("returns", func() {
+
+			})
+
+		})
+
 		When("user is missing from header", func() {
 			BeforeEach(func() {
 				r.Header.Del("X-Spinnaker-User")
@@ -252,6 +266,82 @@ var _ = Describe("Auth", func() {
 			It("returns an error", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusUnauthorized))
 				Expect(c.Errors[0].Error()).To(Equal(authorizeErrMsg))
+			})
+		})
+	})
+
+	Describe("#FilterAuthorizedApps", func() {
+		BeforeEach(func() {
+			allApps = []core.Application{}
+			authorizedAppsMap = make(map[string]fiat.Application)
+		})
+
+		When("allApps is empty", func() {
+			BeforeEach(func() {
+				allApps = []core.Application{}
+				filteredApps = middleware.FilterAuthorizedApps(authorizedAppsMap, allApps, "READ")
+			})
+
+			It("returns and empty list", func() {
+				Expect(len(filteredApps)).To(BeZero())
+			})
+		})
+
+		When("authorizedAppsMap is empty", func() {
+			BeforeEach(func() {
+				allApps = append(allApps, core.Application{
+					Name: "app1",
+				})
+				allApps = append(allApps, core.Application{
+					Name: "app2",
+				})
+				filteredApps = middleware.FilterAuthorizedApps(authorizedAppsMap, allApps, "READ")
+			})
+
+			It("returns and empty list", func() {
+				Expect(len(filteredApps)).To(BeZero())
+			})
+		})
+
+		When("the user doesn't have the required permission", func() {
+			BeforeEach(func() {
+				authorizedAppsMap["app1"] = fiat.Application{
+					Name:           "app1",
+					Authorizations: []string{"READ"},
+				}
+				allApps = append(allApps, core.Application{
+					Name: "app1",
+				})
+				allApps = append(allApps, core.Application{
+					Name: "app2",
+				})
+				filteredApps = middleware.FilterAuthorizedApps(authorizedAppsMap, allApps, "WRITE")
+			})
+
+			It("returns and empty list", func() {
+				Expect(len(filteredApps)).To(BeZero())
+			})
+		})
+
+		When("the user has the required permission", func() {
+			BeforeEach(func() {
+				authorizedAppsMap = make(map[string]fiat.Application)
+				authorizedAppsMap["app1"] = fiat.Application{
+					Name:           "app1",
+					Authorizations: []string{"READ"},
+				}
+				allApps = append(allApps, core.Application{
+					Name: "app1",
+				})
+				allApps = append(allApps, core.Application{
+					Name: "app2",
+				})
+				filteredApps = middleware.FilterAuthorizedApps(authorizedAppsMap, allApps, "READ")
+			})
+
+			It("returns and empty list", func() {
+				fmt.Printf("filteredApps %+v", filteredApps)
+				Expect(len(filteredApps)).To(Equal(1))
 			})
 		})
 	})
