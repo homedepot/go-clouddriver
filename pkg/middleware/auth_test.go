@@ -7,6 +7,7 @@ import (
 
 	"github.com/billiford/go-clouddriver/pkg/fiat"
 	"github.com/billiford/go-clouddriver/pkg/fiat/fiatfakes"
+	"github.com/billiford/go-clouddriver/pkg/http/core"
 	. "github.com/billiford/go-clouddriver/pkg/middleware"
 	"github.com/gin-gonic/gin"
 	. "github.com/onsi/ginkgo"
@@ -14,12 +15,13 @@ import (
 )
 
 var (
-	c                                      *gin.Context
-	hf                                     gin.HandlerFunc
-	fakeFiatClient                         *fiatfakes.FakeClient
-	r                                      *http.Request
-	err                                    error
-	testUser, testApplication, testAccount string
+	c                                                       *gin.Context
+	hf                                                      gin.HandlerFunc
+	fakeFiatClient                                          *fiatfakes.FakeClient
+	r                                                       *http.Request
+	err                                                     error
+	testUser, testApplication, testAccount, authorizeErrMsg string
+	allApps                                                 core.Applications
 )
 
 var _ = Describe("Auth", func() {
@@ -201,8 +203,52 @@ var _ = Describe("Auth", func() {
 				fakeFiatClient.AuthorizeReturns(fakeResp, nil)
 			})
 
-			It("returns status Forbidden", func() {
+			It("returns status OK", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			})
+		})
+	})
+
+	Describe("#FilterAuthorizedApplications", func() {
+		BeforeEach(func() {
+			c.Abort()
+			hf = PostFilterAuthorizedApplications("READ")
+			allApps = append(allApps, core.Application{
+				Name: "test-app1",
+			})
+			c.Set(core.KeyAllApplications, allApps)
+		})
+
+		JustBeforeEach(func() {
+			hf(c)
+		})
+
+		When("user is missing from header", func() {
+			BeforeEach(func() {
+				r.Header.Del("X-Spinnaker-User")
+			})
+
+			It("returns the list of all apps without filtering", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			})
+		})
+
+		When("fiate Authorize function returns an error", func() {
+			BeforeEach(func() {
+				fakeApplication := fiat.Application{
+					Name:           testApplication,
+					Authorizations: []string{"WRITE"},
+				}
+				fakeResp := fiat.Response{}
+				fakeResp.Name = testApplication
+				fakeResp.Applications = []fiat.Application{fakeApplication}
+				authorizeErrMsg = "user authorization error: 401"
+				fakeFiatClient.AuthorizeReturns(fiat.Response{}, errors.New(authorizeErrMsg))
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusUnauthorized))
+				Expect(c.Errors[0].Error()).To(Equal(authorizeErrMsg))
 			})
 		})
 	})

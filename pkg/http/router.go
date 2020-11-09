@@ -27,7 +27,7 @@ func Initialize(r *gin.Engine) {
 		// @PreAuthorize("#restricted ? @fiatPermissionEvaluator.storeWholePermission() : true")
 		// @PostFilter("#restricted ? hasPermission(filterObject.name, 'APPLICATION', 'READ') : true")
 		// middleware.authApplication()
-		api.GET("/applications", core.ListApplications)
+		api.GET("/applications", middleware.PostFilterAuthorizedApplications("READ"), core.ListApplications)
 
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ServerGroupManagerController.java#L39
 		// @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
