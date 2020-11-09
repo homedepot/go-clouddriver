@@ -211,7 +211,6 @@ var _ = Describe("Auth", func() {
 
 	Describe("#FilterAuthorizedApplications", func() {
 		BeforeEach(func() {
-			c.Abort()
 			hf = PostFilterAuthorizedApplications("READ")
 			allApps = append(allApps, core.Application{
 				Name: "test-app1",
@@ -221,6 +220,10 @@ var _ = Describe("Auth", func() {
 
 		JustBeforeEach(func() {
 			hf(c)
+		})
+
+		AfterEach(func() {
+			c.Abort()
 		})
 
 		When("user is missing from header", func() {

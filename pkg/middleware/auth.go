@@ -89,6 +89,10 @@ func PostFilterAuthorizedApplications(permissions ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 
+		if len(c.Errors) > 0 {
+			return
+		}
+
 		allApps := core.Applications{}
 		allApps = c.MustGet(core.KeyAllApplications).(core.Applications)
 
@@ -110,7 +114,7 @@ func PostFilterAuthorizedApplications(permissions ...string) gin.HandlerFunc {
 			authorizedAppsMap[app.Name] = app
 		}
 
-		filteredApps := filterAuthorizedApps(authorizedAppsMap, allApps, permissions...)
+		filteredApps := FilterAuthorizedApps(authorizedAppsMap, allApps, permissions...)
 
 		c.JSON(http.StatusOK, filteredApps)
 	}
@@ -125,7 +129,7 @@ func find(slice []string, val string) bool {
 	return false
 }
 
-func filterAuthorizedApps(authorizedAppsMap map[string]fiat.Application, allApps core.Applications, permissions ...string) []core.Application {
+func FilterAuthorizedApps(authorizedAppsMap map[string]fiat.Application, allApps core.Applications, permissions ...string) []core.Application {
 	filteredApps := []core.Application{}
 	for _, app := range allApps {
 		if authorizedApp, ok := authorizedAppsMap[app.Name]; ok {
