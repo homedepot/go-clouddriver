@@ -29,7 +29,6 @@ func NewError(e, m string, s int) Error {
 	}
 }
 
-//Todo refactor to Error
 func WriteError(c *gin.Context, status int, err error) {
 	c.Status(status)
 	c.Error(err).SetType(gin.ErrorTypePublic)

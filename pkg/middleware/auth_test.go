@@ -2,7 +2,6 @@ package middleware_test
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 
@@ -229,7 +228,7 @@ var _ = Describe("Auth", func() {
 			c.Abort()
 		})
 
-		When("There is an error attached to the context", func() {
+		When("there is an error attached to the context", func() {
 			BeforeEach(func() {
 				c.Errors = append(c.Errors, c.Error(errors.New("fake error")))
 			})
@@ -250,7 +249,7 @@ var _ = Describe("Auth", func() {
 			})
 		})
 
-		When("fiate Authorize function returns an error", func() {
+		When("fiat returns an error", func() {
 			BeforeEach(func() {
 				fakeApplication := fiat.Application{
 					Name:           testApplication,
@@ -282,7 +281,7 @@ var _ = Describe("Auth", func() {
 				filteredApps = middleware.FilterAuthorizedApps(authorizedAppsMap, allApps, "READ")
 			})
 
-			It("returns and empty list", func() {
+			It("returns an empty list", func() {
 				Expect(len(filteredApps)).To(BeZero())
 			})
 		})
@@ -298,7 +297,7 @@ var _ = Describe("Auth", func() {
 				filteredApps = middleware.FilterAuthorizedApps(authorizedAppsMap, allApps, "READ")
 			})
 
-			It("returns and empty list", func() {
+			It("returns an empty list", func() {
 				Expect(len(filteredApps)).To(BeZero())
 			})
 		})
@@ -318,7 +317,7 @@ var _ = Describe("Auth", func() {
 				filteredApps = middleware.FilterAuthorizedApps(authorizedAppsMap, allApps, "WRITE")
 			})
 
-			It("returns and empty list", func() {
+			It("returns an empty list", func() {
 				Expect(len(filteredApps)).To(BeZero())
 			})
 		})
@@ -339,8 +338,7 @@ var _ = Describe("Auth", func() {
 				filteredApps = middleware.FilterAuthorizedApps(authorizedAppsMap, allApps, "READ")
 			})
 
-			It("returns and empty list", func() {
-				fmt.Printf("filteredApps %+v", filteredApps)
+			It("returns an empty list", func() {
 				Expect(len(filteredApps)).To(Equal(1))
 			})
 		})
