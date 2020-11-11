@@ -1146,6 +1146,7 @@ const payloadServerGroupManagers = `[
                 "cluster": "deployment test-deployment1"
               },
               "name": "deployment test-deployment1",
+              "displayName": "test-deployment1",
               "namespace": "test-namespace1",
               "providerType": "kubernetes",
               "region": "test-namespace1",
@@ -1201,6 +1202,7 @@ const payloadServerGroupManagers = `[
                 "cluster": "deployment test-deployment2"
               },
               "name": "deployment test-deployment2",
+              "displayName": "test-deployment2",
               "namespace": "test-namespace2",
               "providerType": "kubernetes",
               "region": "test-namespace2",
@@ -1229,6 +1231,7 @@ const payloadListServerGroups = `[
               "cluster": "deployment test-deployment1",
               "createdTime": 1581603123000,
               "disabled": false,
+              "displayName": "test-ds1",
               "instanceCounts": {
                 "down": 0,
                 "outOfService": 0,
@@ -1291,6 +1294,7 @@ const payloadListServerGroups = `[
               "cluster": "deployment test-deployment1",
               "createdTime": 1581603123000,
               "disabled": false,
+              "displayName": "test-rs1",
               "instanceCounts": {
                 "down": 0,
                 "outOfService": 0,
@@ -1382,6 +1386,7 @@ const payloadListServerGroups = `[
               "cluster": "deployment test-deployment1",
               "createdTime": 1581603123000,
               "disabled": false,
+              "displayName": "test-rs1",
               "instanceCounts": {
                 "down": 0,
                 "outOfService": 0,
@@ -1470,6 +1475,7 @@ const payloadListLoadBalancers = `[
                 "cluster": "ingress test-ingress1"
               },
               "name": "ingress test-ingress1",
+              "displayName": "test-ingress1",
               "region": "test-namespace1",
               "serverGroups": null,
               "type": "kubernetes",
@@ -1509,6 +1515,7 @@ const payloadListLoadBalancers = `[
                 "cluster": "service test-service1"
               },
               "name": "service test-service1",
+              "displayName": "test-service1",
               "region": "test-namespace1",
               "serverGroups": null,
               "type": "kubernetes",
@@ -2224,6 +2231,7 @@ const payloadGetServerGroup = `{
             "cloudProvider": "kubernetes",
             "createdTime": 1581603123000,
             "disabled": false,
+            "displayName": "test-rs1",
             "instanceCounts": {
               "down": 0,
               "outOfService": 0,
