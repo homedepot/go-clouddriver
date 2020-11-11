@@ -38,6 +38,8 @@ type ApplicationAttributes struct {
 	Name string `json:"name"`
 }
 
+const KeyAllApplications = `AllApplications`
+
 func ListApplications(c *gin.Context) {
 	sc := sql.Instance(c)
 
@@ -62,7 +64,7 @@ func ListApplications(c *gin.Context) {
 		response = append(response, application)
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.Set(KeyAllApplications, response)
 }
 
 func uniqueSpinnakerApps(rs []kubernetes.Resource) []string {
