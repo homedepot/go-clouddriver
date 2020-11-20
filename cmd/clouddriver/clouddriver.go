@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/billiford/go-clouddriver/pkg/arcade"
 	"github.com/billiford/go-clouddriver/pkg/artifact"
@@ -28,6 +29,10 @@ func init() {
 	p := ginprometheus.NewPrometheus("gin")
 	p.MetricsPath = "/metrics"
 	p.Use(r)
+
+	// Preserve low cardinality for the request counter.
+	// See https://github.com/zsais/go-gin-prometheus#preserving-a-low-cardinality-for-the-request-counter.
+	p.ReqCntURLLabelMappingFn = reqCntURLLabelMappingFn
 
 	gin.ForceConsoleColor()
 	// Ignore logging of certain endpoints.
@@ -77,4 +82,31 @@ func init() {
 	}
 
 	server.Setup(r, c)
+}
+
+func reqCntURLLabelMappingFn(c *gin.Context) string {
+	// Setting the url to the path will remove query params, which sometimes have a GUID.
+	url := c.Request.URL.Path
+
+	for _, p := range c.Params {
+		// The following replaces certain path params with a generic name.
+		switch p.Key {
+		case "application":
+			url = strings.Replace(url, p.Value, ":"+p.Key, 1)
+		case "location":
+			url = strings.Replace(url, p.Value, ":"+p.Key, 1)
+		case "name":
+			url = strings.Replace(url, p.Value, ":"+p.Key, 1)
+		case "kind":
+			url = strings.Replace(url, p.Value, ":"+p.Key, 1)
+		case "cluster":
+			url = strings.Replace(url, p.Value, ":"+p.Key, 1)
+		case "target":
+			url = strings.Replace(url, p.Value, ":"+p.Key, 1)
+		case "id":
+			url = strings.Replace(url, p.Value, ":"+p.Key, 1)
+		}
+	}
+
+	return url
 }
