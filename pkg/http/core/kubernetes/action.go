@@ -1,9 +1,9 @@
 package kubernetes
 
 import (
-	"github.com/billiford/go-clouddriver/pkg/arcade"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/sql"
+	"github.com/homedepot/go-clouddriver/pkg/arcade"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	"github.com/homedepot/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
 )
 

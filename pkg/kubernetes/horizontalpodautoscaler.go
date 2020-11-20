@@ -2,7 +2,7 @@ package kubernetes
 
 import (
 	"encoding/json"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 	v1 "k8s.io/api/autoscaling/v1"
 	"fmt"
 )

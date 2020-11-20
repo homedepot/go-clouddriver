@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	clouddriver "github.com/billiford/go-clouddriver/pkg"
-	"github.com/billiford/go-clouddriver/pkg/fiat"
-	"github.com/billiford/go-clouddriver/pkg/http/core"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	"github.com/homedepot/go-clouddriver/pkg/fiat"
+	"github.com/homedepot/go-clouddriver/pkg/http/core"
 	"github.com/gin-gonic/gin"
 )
 

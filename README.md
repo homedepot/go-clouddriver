@@ -1,4 +1,4 @@
-<img src="https://github.com/billiford/go-clouddriver/blob/media/clouddriver.png" width="125" align="left">
+<img src="https://github.com/homedepot/go-clouddriver/blob/media/clouddriver.png" width="125" align="left">
 
 # go-clouddriver
 

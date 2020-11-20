@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )

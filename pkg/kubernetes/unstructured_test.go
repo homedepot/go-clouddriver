@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
 
-	. "github.com/billiford/go-clouddriver/pkg/kubernetes"
+	. "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 )
 
 var _ = Describe("Unstructured", func() {

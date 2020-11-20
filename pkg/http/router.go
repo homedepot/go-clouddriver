@@ -1,9 +1,9 @@
 package http
 
 import (
-	"github.com/billiford/go-clouddriver/pkg/http/core"
-	v1 "github.com/billiford/go-clouddriver/pkg/http/v1"
-	"github.com/billiford/go-clouddriver/pkg/middleware"
+	"github.com/homedepot/go-clouddriver/pkg/http/core"
+	v1 "github.com/homedepot/go-clouddriver/pkg/http/v1"
+	"github.com/homedepot/go-clouddriver/pkg/middleware"
 	"github.com/gin-gonic/gin"
 )
 

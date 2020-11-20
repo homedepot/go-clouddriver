@@ -3,7 +3,7 @@ package arcade_test
 import (
 	"net/http"
 
-	. "github.com/billiford/go-clouddriver/pkg/arcade"
+	. "github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/gin-gonic/gin"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

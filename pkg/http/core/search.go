@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	clouddriver "github.com/billiford/go-clouddriver/pkg"
-	"github.com/billiford/go-clouddriver/pkg/sql"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	"github.com/homedepot/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
 )
 

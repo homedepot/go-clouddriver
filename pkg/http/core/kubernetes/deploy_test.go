@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	. "github.com/billiford/go-clouddriver/pkg/http/core/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
+	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

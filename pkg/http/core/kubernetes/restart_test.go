@@ -3,7 +3,7 @@ package kubernetes_test
 import (
 	"errors"
 
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

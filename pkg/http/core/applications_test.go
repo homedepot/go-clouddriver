@@ -1,14 +1,14 @@
 package core_test
 
 import (
-	// . "github.com/billiford/go-clouddriver/pkg/http/v0"
+	// . "github.com/homedepot/go-clouddriver/pkg/http/v0"
 
 	"errors"
 	"io/ioutil"
 	"log"
 	"net/http"
 
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

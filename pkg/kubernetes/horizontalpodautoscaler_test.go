@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/billiford/go-clouddriver/pkg/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
+	. "github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 )
 
 var _ = Describe("HorizontalPodAutoscaler", func() {

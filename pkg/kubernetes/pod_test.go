@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 
-	. "github.com/billiford/go-clouddriver/pkg/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
+	. "github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 )
 
 var _ = Describe("Pod", func() {

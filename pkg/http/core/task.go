@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"strings"
 
-	clouddriver "github.com/billiford/go-clouddriver/pkg"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"k8s.io/client-go/rest"
 
-	"github.com/billiford/go-clouddriver/pkg/arcade"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/sql"
+	"github.com/homedepot/go-clouddriver/pkg/arcade"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	"github.com/homedepot/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
 )
 

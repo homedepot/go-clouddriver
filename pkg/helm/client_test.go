@@ -3,8 +3,8 @@ package helm_test
 import (
 	"net/http"
 
-	"github.com/billiford/go-clouddriver/pkg/helm"
-	. "github.com/billiford/go-clouddriver/pkg/helm"
+	"github.com/homedepot/go-clouddriver/pkg/helm"
+	. "github.com/homedepot/go-clouddriver/pkg/helm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"

@@ -11,8 +11,8 @@ import (
 	"sort"
 	"strings"
 
-	clouddriver "github.com/billiford/go-clouddriver/pkg"
-	"github.com/billiford/go-clouddriver/pkg/artifact"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	"github.com/homedepot/go-clouddriver/pkg/artifact"
 	"github.com/gin-gonic/gin"
 )
 

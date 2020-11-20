@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	// . "github.com/billiford/go-clouddriver/pkg/http/v1"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
+	// . "github.com/homedepot/go-clouddriver/pkg/http/v1"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/jinzhu/gorm"
 
 	. "github.com/onsi/ginkgo"

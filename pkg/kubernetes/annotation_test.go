@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	. "github.com/billiford/go-clouddriver/pkg/kubernetes"
+	. "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 )
 
 var _ = Describe("Annotation", func() {
