@@ -1,7 +1,7 @@
 package core_test
 
 import (
-	// . "github.com/billiford/go-clouddriver/pkg/http/v0"
+	// . "github.com/homedepot/go-clouddriver/pkg/http/v0"
 
 	"bytes"
 	"errors"

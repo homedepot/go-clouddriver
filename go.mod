@@ -1,4 +1,4 @@
-module github.com/billiford/go-clouddriver
+module github.com/homedepot/go-clouddriver
 
 go 1.14
 

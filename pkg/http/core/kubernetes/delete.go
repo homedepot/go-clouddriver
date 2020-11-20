@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/billiford/go-clouddriver/pkg/arcade"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/sql"
+	"github.com/homedepot/go-clouddriver/pkg/arcade"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	"github.com/homedepot/go-clouddriver/pkg/sql"
 	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

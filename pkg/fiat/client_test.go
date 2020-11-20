@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	. "github.com/billiford/go-clouddriver/pkg/fiat"
+	. "github.com/homedepot/go-clouddriver/pkg/fiat"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/billiford/go-clouddriver/pkg/server"
-	"github.com/billiford/go-clouddriver/pkg/sql/sqlfakes"
+	"github.com/homedepot/go-clouddriver/pkg/server"
+	"github.com/homedepot/go-clouddriver/pkg/sql/sqlfakes"
 	"github.com/gin-gonic/gin"
 
 	// . "github.com/onsi/ginkgo"

@@ -1,6 +1,6 @@
 package kubernetes
 
-import "github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
+import "github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 
 type OperationsResponse struct {
 	ID          string `json:"id"`

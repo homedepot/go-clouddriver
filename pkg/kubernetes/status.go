@@ -3,7 +3,7 @@ package kubernetes
 import (
 	"strings"
 
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 )
 
 // Status definitions of kinds can be found at

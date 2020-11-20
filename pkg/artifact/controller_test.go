@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"os"
 
-	. "github.com/billiford/go-clouddriver/pkg/artifact"
-	"github.com/billiford/go-clouddriver/pkg/helm"
+	. "github.com/homedepot/go-clouddriver/pkg/artifact"
+	"github.com/homedepot/go-clouddriver/pkg/helm"
 	"github.com/google/go-github/v32/github"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

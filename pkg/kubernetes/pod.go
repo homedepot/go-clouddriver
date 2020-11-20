@@ -3,7 +3,7 @@ package kubernetes
 import (
 	"encoding/json"
 
-	"github.com/billiford/go-clouddriver/pkg/kubernetes/manifest"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

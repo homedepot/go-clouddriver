@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/billiford/go-clouddriver/pkg/helm"
+	"github.com/homedepot/go-clouddriver/pkg/helm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -299,7 +299,7 @@ var _ = Describe("Artifacts", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 					ce := getClouddriverError()
 					Expect(ce.Error).To(Equal("Bad Request"))
-					Expect(ce.Message).To(Equal(fmt.Sprintf("content URL https://bad-reference/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml should have base URL %s",
+					Expect(ce.Message).To(Equal(fmt.Sprintf("content URL https://bad-reference/api/v3/repos/homedepot/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml should have base URL %s",
 						fakeGithubClient.BaseURL.String())))
 					Expect(ce.Status).To(Equal(http.StatusBadRequest))
 				})
@@ -326,7 +326,7 @@ var _ = Describe("Artifacts", func() {
 					body.Write([]byte(fmt.Sprintf(payloadRequestFetchGithubFileArtifactTestBranch, fakeGithubServer.URL())))
 					createRequest(http.MethodPut)
 					fakeGithubServer.AppendHandlers(ghttp.CombineHandlers(
-						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=test"),
+						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/homedepot/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=test"),
 						ghttp.RespondWith(http.StatusOK, `{
 							"name": "helloweb-deployment.yaml",
 							"path": "hello-app/manifests/helloweb-deployment.yaml",
@@ -366,7 +366,7 @@ var _ = Describe("Artifacts", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					ce := getClouddriverError()
 					Expect(ce.Error).To(Equal("Internal Server Error"))
-					Expect(ce.Message).To(Equal(fmt.Sprintf(`Get "%s/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master": dial tcp %s: connect: connection refused`, url, addr)))
+					Expect(ce.Message).To(Equal(fmt.Sprintf(`Get "%s/api/v3/repos/homedepot/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master": dial tcp %s: connect: connection refused`, url, addr)))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
 			})
@@ -377,7 +377,7 @@ var _ = Describe("Artifacts", func() {
 					body.Write([]byte(fmt.Sprintf(payloadRequestFetchGithubFileArtifactTestBranch, fakeGithubServer.URL())))
 					createRequest(http.MethodPut)
 					fakeGithubServer.AppendHandlers(ghttp.CombineHandlers(
-						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=test"),
+						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/homedepot/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=test"),
 						ghttp.RespondWith(http.StatusOK, `{
 							"name": "helloweb-deployment.yaml",
 							"path": "hello-app/manifests/helloweb-deployment.yaml",
@@ -411,7 +411,7 @@ var _ = Describe("Artifacts", func() {
 			When("the content is not encoded", func() {
 				BeforeEach(func() {
 					fakeGithubServer.AppendHandlers(ghttp.CombineHandlers(
-						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=master"),
+						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/homedepot/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=master"),
 						ghttp.RespondWith(http.StatusOK, `{
 							"name": "helloweb-deployment.yaml",
 							"path": "hello-app/manifests/helloweb-deployment.yaml",
@@ -441,7 +441,7 @@ var _ = Describe("Artifacts", func() {
 			When("it succeeds", func() {
 				BeforeEach(func() {
 					fakeGithubServer.AppendHandlers(ghttp.CombineHandlers(
-						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/billiford/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=master"),
+						ghttp.VerifyRequest(http.MethodGet, "/api/v3/repos/homedepot/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml", "ref=master"),
 						ghttp.RespondWith(http.StatusOK, `{
 							"name": "helloweb-deployment.yaml",
 							"path": "hello-app/manifests/helloweb-deployment.yaml",

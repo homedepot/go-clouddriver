@@ -7,8 +7,8 @@ import (
 	"sort"
 	"time"
 
-	clouddriver "github.com/billiford/go-clouddriver/pkg"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 

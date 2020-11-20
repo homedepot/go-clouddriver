@@ -5,9 +5,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/billiford/go-clouddriver/pkg/arcade"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/sql"
+	"github.com/homedepot/go-clouddriver/pkg/arcade"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	"github.com/homedepot/go-clouddriver/pkg/sql"
 
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/billiford/go-clouddriver/pkg/arcade"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/sql"
+	"github.com/homedepot/go-clouddriver/pkg/arcade"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	"github.com/homedepot/go-clouddriver/pkg/sql"
 	"github.com/google/uuid"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
