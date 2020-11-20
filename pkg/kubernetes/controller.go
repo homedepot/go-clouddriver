@@ -38,7 +38,8 @@ func (c *controller) NewClient(config *rest.Config) (Client, error) {
 
 const (
 	// Default cache directory.
-	cacheDir = "/var/kube/cache"
+	cacheDir       = "/var/kube/cache"
+	defaultTimeout = 180 * time.Second
 )
 
 var (
@@ -46,6 +47,8 @@ var (
 )
 
 func newClientWithDefaultDiskCache(config *rest.Config) (Client, error) {
+	config.Timeout = defaultTimeout
+
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return nil, err
