@@ -155,6 +155,7 @@ func setup() {
 	fakeArtifactCredentialsController.HelmClientForAccountNameReturns(fakeHelmClient, nil)
 	fakeArtifactCredentialsController.GitClientForAccountNameReturns(fakeGithubClient, nil)
 	fakeArtifactCredentialsController.HTTPClientForAccountNameReturns(http.DefaultClient, nil)
+	fakeArtifactCredentialsController.GitRepoClientForAccountNameReturns(http.DefaultClient, nil)
 
 	// Disable debug logging.
 	gin.SetMode(gin.ReleaseMode)
@@ -206,6 +207,13 @@ func validateTextResponse(expected string) {
 	Expect(mtp["charset"]).To(Equal("utf-8"), "charset")
 	actual, _ := ioutil.ReadAll(res.Body)
 	Expect(string(actual)).To(Equal(expected), "correct body")
+}
+
+func validateGZipResponse(expected []byte) {
+	mt, _, _ := mime.ParseMediaType(res.Header.Get("content-type"))
+	Expect(mt).To(Equal("application/x-gzip"), "content-type")
+	actual, _ := ioutil.ReadAll(res.Body)
+	Expect(actual).To(Equal(expected), "correct body")
 }
 
 func getClouddriverError() clouddriver.Error {

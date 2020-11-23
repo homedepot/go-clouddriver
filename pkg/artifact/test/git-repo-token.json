@@ -1,0 +1,7 @@
+{
+    "name": "ghe-spinnaker",
+    "token": "fake-token",
+    "types": [
+      "git/repo"
+    ]
+  }
