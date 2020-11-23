@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -466,6 +467,130 @@ var _ = Describe("Artifacts", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
 					validateTextResponse("# Copyright 2020 Google LLC\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n# [START container_helloapp_deployment]\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: helloweb\n  labels:\n    app: hello\nspec:\n  selector:\n    matchLabels:\n      app: hello\n      tier: web\n  template:\n    metadata:\n      labels:\n        app: hello\n        tier: web\n    spec:\n      containers:\n      - name: hello-app\n        image: gcr.io/google-samples/hello-app:1.0\n        ports:\n        - containerPort: 8080\n# [END container_helloapp_deployment]\n")
+				})
+			})
+		})
+
+		Context("when the artifact is type git/repo", func() {
+			BeforeEach(func() {
+				body.Write([]byte(fmt.Sprintf(payloadRequestFetchGitRepoArtifact, fakeFileServer.URL())))
+				createRequest(http.MethodPut)
+			})
+
+			When("getting the client returns an error", func() {
+				BeforeEach(func() {
+					fakeArtifactCredentialsController.GitRepoClientForAccountNameReturns(nil, errors.New("error getting http client"))
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Message).To(Equal("error getting http client"))
+					Expect(ce.Status).To(Equal(http.StatusBadRequest))
+				})
+			})
+
+			When("the server is not reachable", func() {
+				var url, addr string
+
+				BeforeEach(func() {
+					url = fakeFileServer.URL()
+					addr = fakeFileServer.Addr()
+					fakeFileServer.Close()
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Message).To(Equal(fmt.Sprintf(`Get "%s/git-repo/archive/master.tar.gz": dial tcp %s: connect: connection refused`, url, addr)))
+					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+				})
+			})
+
+			When("the repo is not readable", func() {
+				var url string
+
+				BeforeEach(func() {
+					url = fakeFileServer.URL()
+					fakeFileServer.AppendHandlers(ghttp.CombineHandlers(
+						ghttp.VerifyRequest(http.MethodGet, "/git-repo/archive/master.tar.gz"),
+						ghttp.RespondWith(http.StatusNotFound, ""),
+					))
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Message).To(Equal(fmt.Sprintf(`error getting git/repo (repo: %s/git-repo, branch: master): 404 Not Found`, url)))
+					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+				})
+			})
+
+			When("the branch is set in the version", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(fmt.Sprintf(payloadRequestFetchGitRepoArtifactBranch, fakeFileServer.URL())))
+					createRequest(http.MethodPut)
+
+					actual, err := ioutil.ReadFile("test/git-repo-test.tar.gz")
+					Expect(err).To(BeNil())
+					fakeFileServer.AppendHandlers(ghttp.CombineHandlers(
+						ghttp.VerifyRequest(http.MethodGet, "/git-repo/archive/test.tar.gz"),
+						ghttp.RespondWith(http.StatusOK, actual),
+					))
+				})
+
+				It("succeeds", func() {
+					expected, err := ioutil.ReadFile("test/expected-git-repo-test.tar.gz")
+					Expect(err).To(BeNil())
+
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateGZipResponse(expected)
+				})
+			})
+
+			When("the subpath is set in the location", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(fmt.Sprintf(payloadRequestFetchGitRepoArtifactSubPath, fakeFileServer.URL())))
+					createRequest(http.MethodPut)
+
+					actual, err := ioutil.ReadFile("test/git-repo-master.tar.gz")
+					Expect(err).To(BeNil())
+					fakeFileServer.AppendHandlers(ghttp.CombineHandlers(
+						ghttp.VerifyRequest(http.MethodGet, "/git-repo/archive/master.tar.gz"),
+						ghttp.RespondWith(http.StatusOK, actual),
+					))
+				})
+
+				It("succeeds", func() {
+					expected, err := ioutil.ReadFile("test/expected-git-repo-master-subpath.tar.gz")
+					Expect(err).To(BeNil())
+
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateGZipResponse(expected)
+				})
+			})
+
+			When("it succeeds", func() {
+				BeforeEach(func() {
+					actual, err := ioutil.ReadFile("test/git-repo-master.tar.gz")
+					Expect(err).To(BeNil())
+					fakeFileServer.AppendHandlers(ghttp.CombineHandlers(
+						ghttp.VerifyRequest(http.MethodGet, "/git-repo/archive/master.tar.gz"),
+						ghttp.RespondWith(http.StatusOK, actual),
+					))
+				})
+
+				It("succeeds", func() {
+					expected, err := ioutil.ReadFile("test/expected-git-repo-master.tar.gz")
+					Expect(err).To(BeNil())
+
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateGZipResponse(expected)
 				})
 			})
 		})
