@@ -13,6 +13,7 @@ const (
 	AnnotationSpinnakerArtifactType       = `artifact.spinnaker.io/type`
 	AnnotationSpinnakerMonikerApplication = `moniker.spinnaker.io/application`
 	AnnotationSpinnakerMonikerCluster     = `moniker.spinnaker.io/cluster`
+	AnnotationSpinnakerStrategyVersioned  = `strategy.spinnaker.io/versioned`
 )
 
 func (c *controller) AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error {

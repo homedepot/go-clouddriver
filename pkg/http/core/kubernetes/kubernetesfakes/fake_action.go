@@ -10,8 +10,9 @@ import (
 type FakeAction struct {
 	RunStub        func() error
 	runMutex       sync.RWMutex
-	runArgsForCall []struct{}
-	runReturns     struct {
+	runArgsForCall []struct {
+	}
+	runReturns struct {
 		result1 error
 	}
 	runReturnsOnCall map[int]struct {
@@ -24,7 +25,8 @@ type FakeAction struct {
 func (fake *FakeAction) Run() error {
 	fake.runMutex.Lock()
 	ret, specificReturn := fake.runReturnsOnCall[len(fake.runArgsForCall)]
-	fake.runArgsForCall = append(fake.runArgsForCall, struct{}{})
+	fake.runArgsForCall = append(fake.runArgsForCall, struct {
+	}{})
 	fake.recordInvocation("Run", []interface{}{})
 	fake.runMutex.Unlock()
 	if fake.RunStub != nil {
@@ -33,7 +35,8 @@ func (fake *FakeAction) Run() error {
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.runReturns.result1
+	fakeReturns := fake.runReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeAction) RunCallCount() int {
@@ -42,7 +45,15 @@ func (fake *FakeAction) RunCallCount() int {
 	return len(fake.runArgsForCall)
 }
 
+func (fake *FakeAction) RunCalls(stub func() error) {
+	fake.runMutex.Lock()
+	defer fake.runMutex.Unlock()
+	fake.RunStub = stub
+}
+
 func (fake *FakeAction) RunReturns(result1 error) {
+	fake.runMutex.Lock()
+	defer fake.runMutex.Unlock()
 	fake.RunStub = nil
 	fake.runReturns = struct {
 		result1 error
@@ -50,6 +61,8 @@ func (fake *FakeAction) RunReturns(result1 error) {
 }
 
 func (fake *FakeAction) RunReturnsOnCall(i int, result1 error) {
+	fake.runMutex.Lock()
+	defer fake.runMutex.Unlock()
 	fake.RunStub = nil
 	if fake.runReturnsOnCall == nil {
 		fake.runReturnsOnCall = make(map[int]struct {

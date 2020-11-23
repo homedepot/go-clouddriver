@@ -8,8 +8,9 @@ import (
 
 const (
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
-	LabelKubernetesName      = `app.kubernetes.io/name`
-	LabelKubernetesManagedBy = `app.kubernetes.io/managed-by`
+	LabelKubernetesName           = `app.kubernetes.io/name`
+	LabelKubernetesManagedBy      = `app.kubernetes.io/managed-by`
+	LabelSpinnakerMonikerSequence = `moniker.spinnaker.io/sequence`
 )
 
 func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, application string) error {

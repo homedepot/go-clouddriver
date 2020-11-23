@@ -11,12 +11,20 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 	"github.com/google/uuid"
+<<<<<<< HEAD
 	"k8s.io/apimachinery/pkg/util/rand"
+=======
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+>>>>>>> go-clouddriver-1/spinnaker-versioning
 	"k8s.io/client-go/rest"
 )
 
+var (
+	listTimeout = int64(30)
+)
+
 func (ah *actionHandler) NewDeployManifestAction(ac ActionConfig) Action {
-	return &deployManfest{
+	return &deployManifest{
 		ac: ac.ArcadeClient,
 		sc: ac.SQLClient,
 		kc: ac.KubeController,
@@ -25,7 +33,7 @@ func (ah *actionHandler) NewDeployManifestAction(ac ActionConfig) Action {
 	}
 }
 
-type deployManfest struct {
+type deployManifest struct {
 	ac arcade.Client
 	sc sql.Client
 	kc kubernetes.Controller
@@ -33,7 +41,7 @@ type deployManfest struct {
 	dm *DeployManifestRequest
 }
 
-func (d *deployManfest) Run() error {
+func (d *deployManifest) Run() error {
 	provider, err := d.sc.GetKubernetesProvider(d.dm.Account)
 	if err != nil {
 		return err
@@ -70,7 +78,9 @@ func (d *deployManfest) Run() error {
 		if err != nil {
 			return err
 		}
+		application := d.dm.Moniker.App
 
+<<<<<<< HEAD
 		if strings.EqualFold(u.GetKind(), "list") {
 			listElement := kubernetes.ListElement{}
 
@@ -111,13 +121,47 @@ func (d *deployManfest) Run() error {
 		name := u.GetName()
 
 		err = d.kc.AddSpinnakerAnnotations(u, d.dm.Moniker.App)
+=======
+		err = d.kc.AddSpinnakerAnnotations(u, application)
+>>>>>>> go-clouddriver-1/spinnaker-versioning
 		if err != nil {
 			return err
 		}
 
-		err = d.kc.AddSpinnakerLabels(u, d.dm.Moniker.App)
+		err = d.kc.AddSpinnakerLabels(u, application)
 		if err != nil {
 			return err
+		}
+
+		name := u.GetName()
+
+		if d.kc.IsVersioned(u) {
+			kind := strings.ToLower(u.GetKind())
+			namespace := u.GetNamespace()
+			lo := metav1.ListOptions{
+				LabelSelector:  kubernetes.LabelKubernetesName + "=" + application,
+				TimeoutSeconds: &listTimeout,
+			}
+
+			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
+			if err != nil {
+				return err
+			}
+
+			currentVersion := d.kc.GetCurrentVersion(results, kind, name)
+			latestVersion := d.kc.IncrementVersion(currentVersion)
+
+			u.SetName(u.GetName() + "-" + latestVersion.Long)
+
+			err = d.kc.AddSpinnakerVersionAnnotations(u, latestVersion)
+			if err != nil {
+				return err
+			}
+
+			err = d.kc.AddSpinnakerVersionLabels(u, latestVersion)
+			if err != nil {
+				return err
+			}
 		}
 
 		meta, err := client.ApplyWithNamespaceOverride(u, d.dm.NamespaceOverride)
