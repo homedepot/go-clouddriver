@@ -88,6 +88,23 @@ const payloadRequestFetchGithubFileArtifact = `{
 	"reference": "%s/api/v3/repos/homedepot/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml"
 }`
 
+const payloadRequestFetchGitRepoArtifact = `{
+  "type": "git/repo",
+	"reference": "%s/git-repo"
+}`
+
+const payloadRequestFetchGitRepoArtifactBranch = `{
+  "type": "git/repo",
+  "reference": "%s/git-repo",
+  "version": "test"
+}`
+
+const payloadRequestFetchGitRepoArtifactSubPath = `{
+  "type": "git/repo",
+  "reference": "%s/git-repo",
+  "location": "kustomize"
+}`
+
 const payloadRequestFetchHTTPFileArtifact = `{
   "type": "http/file",
 	"reference": "%s/hello"
