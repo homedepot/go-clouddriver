@@ -8,19 +8,18 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/go-github/v32/github"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade/arcadefakes"
 	"github.com/homedepot/go-clouddriver/pkg/artifact"
 	"github.com/homedepot/go-clouddriver/pkg/artifact/artifactfakes"
 	"github.com/homedepot/go-clouddriver/pkg/fiat/fiatfakes"
 	"github.com/homedepot/go-clouddriver/pkg/helm/helmfakes"
-	kubefakes "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes/kubernetesfakes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/kubernetesfakes"
 	"github.com/homedepot/go-clouddriver/pkg/server"
 	"github.com/homedepot/go-clouddriver/pkg/sql/sqlfakes"
-	"github.com/gin-gonic/gin"
-	"github.com/google/go-github/v32/github"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	// . "github.com/onsi/ginkgo"
@@ -43,8 +42,6 @@ var (
 	fakeSQLClient                     *sqlfakes.FakeClient
 	fakeKubeClient                    *kubernetesfakes.FakeClient
 	fakeKubeController                *kubernetesfakes.FakeController
-	fakeKubeActionHandler             *kubefakes.FakeActionHandler
-	fakeAction                        *kubefakes.FakeAction
 	fakeGithubServer                  *ghttp.Server
 	fakeFileServer                    *ghttp.Server
 )
@@ -112,18 +109,21 @@ func setup() {
 
 	fakeKubeController = &kubernetesfakes.FakeController{}
 	fakeKubeController.NewClientReturns(fakeKubeClient, nil)
-
-	fakeAction = &kubefakes.FakeAction{}
-
-	fakeKubeActionHandler = &kubefakes.FakeActionHandler{}
-	fakeKubeActionHandler.NewCleanupArtifactsActionReturns(fakeAction)
-	fakeKubeActionHandler.NewDeleteManifestActionReturns(fakeAction)
-	fakeKubeActionHandler.NewDeployManifestActionReturns(fakeAction)
-	fakeKubeActionHandler.NewPatchManifestActionReturns(fakeAction)
-	fakeKubeActionHandler.NewScaleManifestActionReturns(fakeAction)
-	fakeKubeActionHandler.NewRollingRestartActionReturns(fakeAction)
-	fakeKubeActionHandler.NewRollbackActionReturns(fakeAction)
-	fakeKubeActionHandler.NewRunJobActionReturns(fakeAction)
+	fakeUnstructured := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"kind":       "test-kind",
+			"apiVersion": "test-api-version",
+			"metadata": map[string]interface{}{
+				"annotations": map[string]interface{}{
+					kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+					kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+					"deployment.kubernetes.io/revision":        "100",
+				},
+				"name": "test-name",
+			},
+		},
+	}
+	fakeKubeController.ToUnstructuredReturns(&fakeUnstructured, nil)
 
 	fakeArcadeClient = &arcadefakes.FakeClient{}
 
@@ -170,7 +170,6 @@ func setup() {
 		FiatClient:                    fakeFiatClient,
 		SQLClient:                     fakeSQLClient,
 		KubeController:                fakeKubeController,
-		KubeActionHandler:             fakeKubeActionHandler,
 	}
 
 	// Create server.

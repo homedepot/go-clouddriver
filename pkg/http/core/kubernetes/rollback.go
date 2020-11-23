@@ -3,10 +3,14 @@ package kubernetes
 import (
 	"encoding/base64"
 	"errors"
+	"net/http"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 
 	apps "k8s.io/api/apps/v1"
@@ -37,48 +41,37 @@ var (
 	errRevisionNotFound      = errors.New("revision not found")
 )
 
-func (ah *actionHandler) NewRollbackAction(ac ActionConfig) Action {
-	return &rollback{
-		ac:          ac.ArcadeClient,
-		sc:          ac.SQLClient,
-		kc:          ac.KubeController,
-		id:          ac.ID,
-		application: ac.Application,
-		rb:          ac.Operation.UndoRolloutManifest,
-	}
-}
+func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
+	ac := arcade.Instance(c)
+	kc := kube.ControllerInstance(c)
+	sc := sql.Instance(c)
+	app := c.GetHeader("X-Spinnaker-Application")
 
-type rollback struct {
-	ac          arcade.Client
-	sc          sql.Client
-	kc          kubernetes.Controller
-	id          string
-	rb          *UndoRolloutManifestRequest
-	application string
-}
-
-func (r *rollback) Run() error {
-	a := strings.Split(r.rb.ManifestName, " ")
+	a := strings.Split(ur.ManifestName, " ")
 	manifestKind := a[0]
 	manifestName := a[1]
 
-	if r.application == "" {
-		return errNoApplicationProvided
+	if app == "" {
+		clouddriver.WriteError(c, http.StatusBadRequest, errNoApplicationProvided)
+		return
 	}
 
-	provider, err := r.sc.GetKubernetesProvider(r.rb.Account)
+	provider, err := sc.GetKubernetesProvider(ur.Account)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		return
 	}
 
-	token, err := r.ac.Token()
+	token, err := ac.Token()
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	config := &rest.Config{
@@ -89,28 +82,32 @@ func (r *rollback) Run() error {
 		},
 	}
 
-	client, err := r.kc.NewClient(config)
+	client, err := kc.NewClient(config)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
-	d, err := client.Get(manifestKind, manifestName, r.rb.Location)
+	d, err := client.Get(manifestKind, manifestName, ur.Location)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	replicaSetGVR, err := client.GVRForKind("ReplicaSet")
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	lo := metav1.ListOptions{
-		LabelSelector: kubernetes.LabelKubernetesName + "=" + r.application,
+		LabelSelector: kubernetes.LabelKubernetesName + "=" + app,
 	}
 
 	replicaSets, err := client.ListByGVR(replicaSetGVR, lo)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	var targetRS *unstructured.Unstructured
@@ -126,7 +123,7 @@ func (r *rollback) Run() error {
 				strings.EqualFold(t, "kubernetes/"+manifestKind) {
 				sequence := annotations["deployment.kubernetes.io/revision"]
 
-				if sequence != "" && sequence == r.rb.Revision {
+				if sequence != "" && sequence == ur.Revision {
 					targetRS = &replicaSets.Items[i]
 					break
 				}
@@ -135,7 +132,8 @@ func (r *rollback) Run() error {
 	}
 
 	if targetRS == nil {
-		return errRevisionNotFound
+		clouddriver.WriteError(c, http.StatusInternalServerError, errRevisionNotFound)
+		return
 	}
 
 	deployment := kubernetes.NewDeployment(d.Object)
@@ -162,15 +160,15 @@ func (r *rollback) Run() error {
 
 	u, err := deployment.ToUnstructured()
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	_, err = client.Apply(&u)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
-
-	return nil
 }
 
 // https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/deployment/util/deployment_util.go#L679

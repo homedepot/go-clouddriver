@@ -3,49 +3,42 @@ package kubernetes
 import (
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 	"k8s.io/client-go/rest"
 )
 
-func (ah *actionHandler) NewRollingRestartAction(ac ActionConfig) Action {
-	return &rollingRestart{
-		ac: ac.ArcadeClient,
-		sc: ac.SQLClient,
-		kc: ac.KubeController,
-		id: ac.ID,
-		rr: ac.Operation.RollingRestartManifest,
-	}
-}
-
-type rollingRestart struct {
-	ac arcade.Client
-	sc sql.Client
-	kc kubernetes.Controller
-	id string
-	rr *RollingRestartManifestRequest
-}
-
-// Perform a `kubectl rollout restart` by setting an annotation on a pod template
+// RollingRestart performs a `kubectl rollout restart` by setting an annotation on a pod template
 // to the current time in RFC3339.
-func (rr *rollingRestart) Run() error {
-	provider, err := rr.sc.GetKubernetesProvider(rr.rr.Account)
+func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
+	ac := arcade.Instance(c)
+	kc := kube.ControllerInstance(c)
+	sc := sql.Instance(c)
+
+	provider, err := sc.GetKubernetesProvider(rr.Account)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		return
 	}
 
-	token, err := rr.ac.Token()
+	token, err := ac.Token()
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	config := &rest.Config{
@@ -56,18 +49,20 @@ func (rr *rollingRestart) Run() error {
 		},
 	}
 
-	client, err := rr.kc.NewClient(config)
+	client, err := kc.NewClient(config)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
-	a := strings.Split(rr.rr.ManifestName, " ")
+	a := strings.Split(rr.ManifestName, " ")
 	kind := a[0]
 	name := a[1]
 
-	u, err := client.Get(kind, name, rr.rr.Location)
+	u, err := client.Get(kind, name, rr.Location)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	switch strings.ToLower(kind) {
@@ -81,17 +76,18 @@ func (rr *rollingRestart) Run() error {
 
 		annotatedObject, err := d.ToUnstructured()
 		if err != nil {
-			return err
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
 		}
 
 		_, err = client.Apply(&annotatedObject)
 		if err != nil {
-			return err
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
 		}
 
 	default:
-		return fmt.Errorf("restarting kind %s not currently supported", kind)
+		clouddriver.WriteError(c, http.StatusBadRequest, fmt.Errorf("restarting kind %s not currently supported", kind))
+		return
 	}
-
-	return nil
 }

@@ -3,49 +3,43 @@ package kubernetes
 import (
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
 
-func (ah *actionHandler) NewDeleteManifestAction(ac ActionConfig) Action {
-	return &deleteManfest{
-		ac: ac.ArcadeClient,
-		sc: ac.SQLClient,
-		kc: ac.KubeController,
-		id: ac.ID,
-		dm: ac.Operation.DeleteManifest,
-	}
-}
+func Delete(c *gin.Context, dm DeleteManifestRequest) {
+	ac := arcade.Instance(c)
+	kc := kube.ControllerInstance(c)
+	sc := sql.Instance(c)
+	taskID := clouddriver.TaskIDFromContext(c)
 
-type deleteManfest struct {
-	ac arcade.Client
-	sc sql.Client
-	kc kubernetes.Controller
-	id string
-	dm *DeleteManifestRequest
-}
-
-func (d *deleteManfest) Run() error {
-	provider, err := d.sc.GetKubernetesProvider(d.dm.Account)
+	provider, err := sc.GetKubernetesProvider(dm.Account)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		return
 	}
 
-	token, err := d.ac.Token()
+	token, err := ac.Token()
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	config := &rest.Config{
@@ -56,19 +50,20 @@ func (d *deleteManfest) Run() error {
 		},
 	}
 
-	client, err := d.kc.NewClient(config)
+	client, err := kc.NewClient(config)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	do := metav1.DeleteOptions{}
 
-	if d.dm.Options.GracePeriodSeconds != nil {
-		do.GracePeriodSeconds = d.dm.Options.GracePeriodSeconds
+	if dm.Options.GracePeriodSeconds != nil {
+		do.GracePeriodSeconds = dm.Options.GracePeriodSeconds
 	}
 
 	propagationPolicy := v1.DeletePropagationOrphan
-	if d.dm.Options.Cascading {
+	if dm.Options.Cascading {
 		propagationPolicy = v1.DeletePropagationForeground
 	}
 
@@ -76,50 +71,55 @@ func (d *deleteManfest) Run() error {
 
 	// Default to the static mode.
 	mode := "static"
-	if d.dm.Mode != "" {
-		mode = d.dm.Mode
+	if dm.Mode != "" {
+		mode = dm.Mode
 	}
 
 	switch strings.ToLower(mode) {
 	// Both dynamic and static use the same logic. For 'dynamic' the manifest has already been resolved and passed in.
 	case "dynamic", "static":
-		a := strings.Split(d.dm.ManifestName, " ")
+		a := strings.Split(dm.ManifestName, " ")
 		kind := a[0]
 		name := a[1]
 
 		gvr, err := client.GVRForKind(kind)
 		if err != nil {
-			return err
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
 		}
 
-		err = client.DeleteResourceByKindAndNameAndNamespace(kind, name, d.dm.Location, do)
+		err = client.DeleteResourceByKindAndNameAndNamespace(kind, name, dm.Location, do)
 		if err != nil {
-			return err
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
 		}
 
 		kr := kubernetes.Resource{
-			AccountName:  d.dm.Account,
+			AccountName:  dm.Account,
 			ID:           uuid.New().String(),
-			TaskID:       d.id,
+			TaskID:       taskID,
 			APIGroup:     gvr.Group,
 			Name:         name,
-			Namespace:    d.dm.Location,
+			Namespace:    dm.Location,
 			Resource:     gvr.Resource,
 			Version:      gvr.Version,
 			Kind:         kind,
-			SpinnakerApp: d.dm.App,
+			SpinnakerApp: dm.App,
 			Cluster:      cluster(kind, name),
 		}
 
-		err = d.sc.CreateKubernetesResource(kr)
+		err = sc.CreateKubernetesResource(kr)
 		if err != nil {
-			return err
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
 		}
 	case "label":
-		return fmt.Errorf("requested to delete manifest %s using mode %s which is not implemented", d.dm.ManifestName, mode)
+		clouddriver.WriteError(c, http.StatusNotImplemented,
+			fmt.Errorf("requested to delete manifest %s using mode %s which is not implemented", dm.ManifestName, mode))
+		return
 	default:
-		return fmt.Errorf("requested to delete manifest %s using mode %s which is not implemented", d.dm.ManifestName, mode)
+		clouddriver.WriteError(c, http.StatusNotImplemented,
+			fmt.Errorf("requested to delete manifest %s using mode %s which is not implemented", dm.ManifestName, mode))
+		return
 	}
-
-	return nil
 }

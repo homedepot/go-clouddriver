@@ -3,13 +3,9 @@ package core
 import (
 	"net/http"
 
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	"github.com/homedepot/go-clouddriver/pkg/arcade"
-	"github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
-	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
-	"github.com/homedepot/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	"github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 )
 
 // CreateKubernetesOperation is the main function that starts a kubernetes operation.
@@ -24,12 +20,7 @@ import (
 func CreateKubernetesOperation(c *gin.Context) {
 	// All operations are bound to a task ID and stored in the database.
 	ko := kubernetes.Operations{}
-	taskID := uuid.New().String()
-	ac := arcade.Instance(c)
-	ah := kubernetes.ActionHandlerInstance(c)
-	kc := kube.ControllerInstance(c)
-	sc := sql.Instance(c)
-	application := c.GetHeader("X-Spinnaker-Application")
+	taskID := clouddriver.TaskIDFromContext(c)
 
 	err := c.ShouldBindJSON(&ko)
 	if err != nil {
@@ -37,90 +28,43 @@ func CreateKubernetesOperation(c *gin.Context) {
 		return
 	}
 
-	// Handle unknown operations.
-	if len(ko) == 0 {
-		or := kubernetes.OperationsResponse{
-			ID:          taskID,
-			ResourceURI: "/task/" + taskID,
-		}
-		c.JSON(http.StatusOK, or)
-		return
-	}
-
 	// Loop through each request in the kubernetes operations and perform
 	// each requested action.
 	for _, req := range ko {
-		config := kubernetes.ActionConfig{
-			ArcadeClient:   ac,
-			KubeController: kc,
-			SQLClient:      sc,
-			ID:             taskID,
-			Application:    application,
-			Operation:      req,
-		}
-
 		if req.DeployManifest != nil {
-			err = ah.NewDeployManifestAction(config).Run()
-			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
-				return
-			}
+			kubernetes.Deploy(c, *req.DeployManifest)
 		}
 
 		if req.DeleteManifest != nil {
-			err = ah.NewDeleteManifestAction(config).Run()
-			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
-				return
-			}
+			kubernetes.Delete(c, *req.DeleteManifest)
 		}
 
 		if req.ScaleManifest != nil {
-			err = ah.NewScaleManifestAction(config).Run()
-			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
-				return
-			}
+			kubernetes.Scale(c, *req.ScaleManifest)
 		}
 
 		if req.CleanupArtifacts != nil {
-			err = ah.NewCleanupArtifactsAction(config).Run()
-			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
-				return
-			}
+			kubernetes.CleanupArtifacts(c, *req.CleanupArtifacts)
 		}
 
 		if req.RollingRestartManifest != nil {
-			err = ah.NewRollingRestartAction(config).Run()
-			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
-				return
-			}
+			kubernetes.RollingRestart(c, *req.RollingRestartManifest)
 		}
 
 		if req.RunJob != nil {
-			err = ah.NewRunJobAction(config).Run()
-			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
-				return
-			}
+			kubernetes.RunJob(c, *req.RunJob)
 		}
 
 		if req.UndoRolloutManifest != nil {
-			err = ah.NewRollbackAction(config).Run()
-			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
-				return
-			}
+			kubernetes.Rollback(c, *req.UndoRolloutManifest)
 		}
 
 		if req.PatchManifest != nil {
-			err = ah.NewPatchManifestAction(config).Run()
-			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
-				return
-			}
+			kubernetes.Patch(c, *req.PatchManifest)
+		}
+
+		if c.Errors != nil {
+			return
 		}
 	}
 

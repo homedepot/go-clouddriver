@@ -3,47 +3,40 @@ package kubernetes
 import (
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 	"k8s.io/client-go/rest"
 )
 
-func (ah *actionHandler) NewScaleManifestAction(ac ActionConfig) Action {
-	return &scaleManifest{
-		ac: ac.ArcadeClient,
-		sc: ac.SQLClient,
-		kc: ac.KubeController,
-		id: ac.ID,
-		sm: ac.Operation.ScaleManifest,
-	}
-}
+func Scale(c *gin.Context, sm ScaleManifestRequest) {
+	ac := arcade.Instance(c)
+	kc := kube.ControllerInstance(c)
+	sc := sql.Instance(c)
 
-type scaleManifest struct {
-	ac arcade.Client
-	sc sql.Client
-	kc kubernetes.Controller
-	id string
-	sm *ScaleManifestRequest
-}
-
-func (s *scaleManifest) Run() error {
-	provider, err := s.sc.GetKubernetesProvider(s.sm.Account)
+	provider, err := sc.GetKubernetesProvider(sm.Account)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		return
 	}
 
-	token, err := s.ac.Token()
+	token, err := ac.Token()
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	config := &rest.Config{
@@ -54,18 +47,20 @@ func (s *scaleManifest) Run() error {
 		},
 	}
 
-	client, err := s.kc.NewClient(config)
+	client, err := kc.NewClient(config)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
-	a := strings.Split(s.sm.ManifestName, " ")
+	a := strings.Split(sm.ManifestName, " ")
 	kind := a[0]
 	name := a[1]
 
-	u, err := client.Get(kind, name, s.sm.Location)
+	u, err := client.Get(kind, name, sm.Location)
 	if err != nil {
-		return err
+		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	// TODO need to allow scaling for other kinds.
@@ -73,9 +68,10 @@ func (s *scaleManifest) Run() error {
 	case "deployment":
 		d := kubernetes.NewDeployment(u.Object)
 
-		replicas, err := strconv.Atoi(s.sm.Replicas)
+		replicas, err := strconv.Atoi(sm.Replicas)
 		if err != nil {
-			return err
+			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			return
 		}
 
 		desiredReplicas := int32(replicas)
@@ -83,17 +79,19 @@ func (s *scaleManifest) Run() error {
 
 		scaledManifestObject, err := d.ToUnstructured()
 		if err != nil {
-			return err
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
 		}
 
 		_, err = client.Apply(&scaledManifestObject)
 		if err != nil {
-			return err
+			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			return
 		}
 
 	default:
-		return fmt.Errorf("scaling kind %s not currently supported", kind)
+		clouddriver.WriteError(c, http.StatusBadRequest,
+			fmt.Errorf("scaling kind %s not currently supported", kind))
+		return
 	}
-
-	return nil
 }
