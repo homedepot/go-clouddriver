@@ -19,18 +19,6 @@ type FakeActionHandler struct {
 	newCleanupArtifactsActionReturnsOnCall map[int]struct {
 		result1 kubernetes.Action
 	}
-	NewDeployManifestActionStub        func(kubernetes.ActionConfig) kubernetes.Action
-	newDeployManifestActionMutex       sync.RWMutex
-	newDeployManifestActionArgsForCall []struct {
-		arg1 kubernetes.ActionConfig
-	}
-	newDeployManifestActionReturns struct {
-		result1 kubernetes.Action
-	}
-	newDeployManifestActionReturnsOnCall map[int]struct {
-		result1 kubernetes.Action
-	}
-<<<<<<< HEAD
 	NewDeleteManifestActionStub        func(kubernetes.ActionConfig) kubernetes.Action
 	newDeleteManifestActionMutex       sync.RWMutex
 	newDeleteManifestActionArgsForCall []struct {
@@ -42,14 +30,20 @@ type FakeActionHandler struct {
 	newDeleteManifestActionReturnsOnCall map[int]struct {
 		result1 kubernetes.Action
 	}
-	NewRollingRestartActionStub        func(kubernetes.ActionConfig) kubernetes.Action
-	newRollingRestartActionMutex       sync.RWMutex
-	newRollingRestartActionArgsForCall []struct {
-=======
+	NewDeployManifestActionStub        func(kubernetes.ActionConfig) kubernetes.Action
+	newDeployManifestActionMutex       sync.RWMutex
+	newDeployManifestActionArgsForCall []struct {
+		arg1 kubernetes.ActionConfig
+	}
+	newDeployManifestActionReturns struct {
+		result1 kubernetes.Action
+	}
+	newDeployManifestActionReturnsOnCall map[int]struct {
+		result1 kubernetes.Action
+	}
 	NewPatchManifestActionStub        func(kubernetes.ActionConfig) kubernetes.Action
 	newPatchManifestActionMutex       sync.RWMutex
 	newPatchManifestActionArgsForCall []struct {
->>>>>>> go-clouddriver-1/spinnaker-versioning
 		arg1 kubernetes.ActionConfig
 	}
 	newPatchManifestActionReturns struct {
@@ -120,7 +114,8 @@ func (fake *FakeActionHandler) NewCleanupArtifactsAction(arg1 kubernetes.ActionC
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.newCleanupArtifactsActionReturns.result1
+	fakeReturns := fake.newCleanupArtifactsActionReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeActionHandler) NewCleanupArtifactsActionCallCount() int {
@@ -129,13 +124,22 @@ func (fake *FakeActionHandler) NewCleanupArtifactsActionCallCount() int {
 	return len(fake.newCleanupArtifactsActionArgsForCall)
 }
 
+func (fake *FakeActionHandler) NewCleanupArtifactsActionCalls(stub func(kubernetes.ActionConfig) kubernetes.Action) {
+	fake.newCleanupArtifactsActionMutex.Lock()
+	defer fake.newCleanupArtifactsActionMutex.Unlock()
+	fake.NewCleanupArtifactsActionStub = stub
+}
+
 func (fake *FakeActionHandler) NewCleanupArtifactsActionArgsForCall(i int) kubernetes.ActionConfig {
 	fake.newCleanupArtifactsActionMutex.RLock()
 	defer fake.newCleanupArtifactsActionMutex.RUnlock()
-	return fake.newCleanupArtifactsActionArgsForCall[i].arg1
+	argsForCall := fake.newCleanupArtifactsActionArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeActionHandler) NewCleanupArtifactsActionReturns(result1 kubernetes.Action) {
+	fake.newCleanupArtifactsActionMutex.Lock()
+	defer fake.newCleanupArtifactsActionMutex.Unlock()
 	fake.NewCleanupArtifactsActionStub = nil
 	fake.newCleanupArtifactsActionReturns = struct {
 		result1 kubernetes.Action
@@ -143,6 +147,8 @@ func (fake *FakeActionHandler) NewCleanupArtifactsActionReturns(result1 kubernet
 }
 
 func (fake *FakeActionHandler) NewCleanupArtifactsActionReturnsOnCall(i int, result1 kubernetes.Action) {
+	fake.newCleanupArtifactsActionMutex.Lock()
+	defer fake.newCleanupArtifactsActionMutex.Unlock()
 	fake.NewCleanupArtifactsActionStub = nil
 	if fake.newCleanupArtifactsActionReturnsOnCall == nil {
 		fake.newCleanupArtifactsActionReturnsOnCall = make(map[int]struct {
@@ -150,6 +156,66 @@ func (fake *FakeActionHandler) NewCleanupArtifactsActionReturnsOnCall(i int, res
 		})
 	}
 	fake.newCleanupArtifactsActionReturnsOnCall[i] = struct {
+		result1 kubernetes.Action
+	}{result1}
+}
+
+func (fake *FakeActionHandler) NewDeleteManifestAction(arg1 kubernetes.ActionConfig) kubernetes.Action {
+	fake.newDeleteManifestActionMutex.Lock()
+	ret, specificReturn := fake.newDeleteManifestActionReturnsOnCall[len(fake.newDeleteManifestActionArgsForCall)]
+	fake.newDeleteManifestActionArgsForCall = append(fake.newDeleteManifestActionArgsForCall, struct {
+		arg1 kubernetes.ActionConfig
+	}{arg1})
+	fake.recordInvocation("NewDeleteManifestAction", []interface{}{arg1})
+	fake.newDeleteManifestActionMutex.Unlock()
+	if fake.NewDeleteManifestActionStub != nil {
+		return fake.NewDeleteManifestActionStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.newDeleteManifestActionReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeActionHandler) NewDeleteManifestActionCallCount() int {
+	fake.newDeleteManifestActionMutex.RLock()
+	defer fake.newDeleteManifestActionMutex.RUnlock()
+	return len(fake.newDeleteManifestActionArgsForCall)
+}
+
+func (fake *FakeActionHandler) NewDeleteManifestActionCalls(stub func(kubernetes.ActionConfig) kubernetes.Action) {
+	fake.newDeleteManifestActionMutex.Lock()
+	defer fake.newDeleteManifestActionMutex.Unlock()
+	fake.NewDeleteManifestActionStub = stub
+}
+
+func (fake *FakeActionHandler) NewDeleteManifestActionArgsForCall(i int) kubernetes.ActionConfig {
+	fake.newDeleteManifestActionMutex.RLock()
+	defer fake.newDeleteManifestActionMutex.RUnlock()
+	argsForCall := fake.newDeleteManifestActionArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeActionHandler) NewDeleteManifestActionReturns(result1 kubernetes.Action) {
+	fake.newDeleteManifestActionMutex.Lock()
+	defer fake.newDeleteManifestActionMutex.Unlock()
+	fake.NewDeleteManifestActionStub = nil
+	fake.newDeleteManifestActionReturns = struct {
+		result1 kubernetes.Action
+	}{result1}
+}
+
+func (fake *FakeActionHandler) NewDeleteManifestActionReturnsOnCall(i int, result1 kubernetes.Action) {
+	fake.newDeleteManifestActionMutex.Lock()
+	defer fake.newDeleteManifestActionMutex.Unlock()
+	fake.NewDeleteManifestActionStub = nil
+	if fake.newDeleteManifestActionReturnsOnCall == nil {
+		fake.newDeleteManifestActionReturnsOnCall = make(map[int]struct {
+			result1 kubernetes.Action
+		})
+	}
+	fake.newDeleteManifestActionReturnsOnCall[i] = struct {
 		result1 kubernetes.Action
 	}{result1}
 }
@@ -214,65 +280,10 @@ func (fake *FakeActionHandler) NewDeployManifestActionReturnsOnCall(i int, resul
 	}{result1}
 }
 
-<<<<<<< HEAD
-func (fake *FakeActionHandler) NewDeleteManifestAction(arg1 kubernetes.ActionConfig) kubernetes.Action {
-	fake.newDeleteManifestActionMutex.Lock()
-	ret, specificReturn := fake.newDeleteManifestActionReturnsOnCall[len(fake.newDeleteManifestActionArgsForCall)]
-	fake.newDeleteManifestActionArgsForCall = append(fake.newDeleteManifestActionArgsForCall, struct {
-		arg1 kubernetes.ActionConfig
-	}{arg1})
-	fake.recordInvocation("NewDeleteManifestAction", []interface{}{arg1})
-	fake.newDeleteManifestActionMutex.Unlock()
-	if fake.NewDeleteManifestActionStub != nil {
-		return fake.NewDeleteManifestActionStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.newDeleteManifestActionReturns.result1
-}
-
-func (fake *FakeActionHandler) NewDeleteManifestActionCallCount() int {
-	fake.newDeleteManifestActionMutex.RLock()
-	defer fake.newDeleteManifestActionMutex.RUnlock()
-	return len(fake.newDeleteManifestActionArgsForCall)
-}
-
-func (fake *FakeActionHandler) NewDeleteManifestActionArgsForCall(i int) kubernetes.ActionConfig {
-	fake.newDeleteManifestActionMutex.RLock()
-	defer fake.newDeleteManifestActionMutex.RUnlock()
-	return fake.newDeleteManifestActionArgsForCall[i].arg1
-}
-
-func (fake *FakeActionHandler) NewDeleteManifestActionReturns(result1 kubernetes.Action) {
-	fake.NewDeleteManifestActionStub = nil
-	fake.newDeleteManifestActionReturns = struct {
-		result1 kubernetes.Action
-	}{result1}
-}
-
-func (fake *FakeActionHandler) NewDeleteManifestActionReturnsOnCall(i int, result1 kubernetes.Action) {
-	fake.NewDeleteManifestActionStub = nil
-	if fake.newDeleteManifestActionReturnsOnCall == nil {
-		fake.newDeleteManifestActionReturnsOnCall = make(map[int]struct {
-			result1 kubernetes.Action
-		})
-	}
-	fake.newDeleteManifestActionReturnsOnCall[i] = struct {
-		result1 kubernetes.Action
-	}{result1}
-}
-
-func (fake *FakeActionHandler) NewRollingRestartAction(arg1 kubernetes.ActionConfig) kubernetes.Action {
-	fake.newRollingRestartActionMutex.Lock()
-	ret, specificReturn := fake.newRollingRestartActionReturnsOnCall[len(fake.newRollingRestartActionArgsForCall)]
-	fake.newRollingRestartActionArgsForCall = append(fake.newRollingRestartActionArgsForCall, struct {
-=======
 func (fake *FakeActionHandler) NewPatchManifestAction(arg1 kubernetes.ActionConfig) kubernetes.Action {
 	fake.newPatchManifestActionMutex.Lock()
 	ret, specificReturn := fake.newPatchManifestActionReturnsOnCall[len(fake.newPatchManifestActionArgsForCall)]
 	fake.newPatchManifestActionArgsForCall = append(fake.newPatchManifestActionArgsForCall, struct {
->>>>>>> go-clouddriver-1/spinnaker-versioning
 		arg1 kubernetes.ActionConfig
 	}{arg1})
 	fake.recordInvocation("NewPatchManifestAction", []interface{}{arg1})
@@ -574,17 +585,12 @@ func (fake *FakeActionHandler) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.newCleanupArtifactsActionMutex.RLock()
 	defer fake.newCleanupArtifactsActionMutex.RUnlock()
-	fake.newDeployManifestActionMutex.RLock()
-	defer fake.newDeployManifestActionMutex.RUnlock()
-<<<<<<< HEAD
 	fake.newDeleteManifestActionMutex.RLock()
 	defer fake.newDeleteManifestActionMutex.RUnlock()
-	fake.newRollingRestartActionMutex.RLock()
-	defer fake.newRollingRestartActionMutex.RUnlock()
-=======
+	fake.newDeployManifestActionMutex.RLock()
+	defer fake.newDeployManifestActionMutex.RUnlock()
 	fake.newPatchManifestActionMutex.RLock()
 	defer fake.newPatchManifestActionMutex.RUnlock()
->>>>>>> go-clouddriver-1/spinnaker-versioning
 	fake.newRollbackActionMutex.RLock()
 	defer fake.newRollbackActionMutex.RUnlock()
 	fake.newRollingRestartActionMutex.RLock()

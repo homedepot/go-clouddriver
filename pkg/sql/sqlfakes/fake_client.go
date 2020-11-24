@@ -4,16 +4,9 @@ package sqlfakes
 import (
 	"sync"
 
-<<<<<<< HEAD
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	_ "github.com/mattn/go-sqlite3"
-=======
-	clouddriver "github.com/billiford/go-clouddriver/pkg"
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
-	"github.com/billiford/go-clouddriver/pkg/sql"
->>>>>>> go-clouddriver-1/spinnaker-versioning
 )
 
 type FakeClient struct {
@@ -61,7 +54,6 @@ type FakeClient struct {
 	createWritePermissionReturnsOnCall map[int]struct {
 		result1 error
 	}
-<<<<<<< HEAD
 	DeleteKubernetesProviderStub        func(string) error
 	deleteKubernetesProviderMutex       sync.RWMutex
 	deleteKubernetesProviderArgsForCall []struct {
@@ -73,8 +65,6 @@ type FakeClient struct {
 	deleteKubernetesProviderReturnsOnCall map[int]struct {
 		result1 error
 	}
-=======
->>>>>>> go-clouddriver-1/spinnaker-versioning
 	GetKubernetesProviderStub        func(string) (kubernetes.Provider, error)
 	getKubernetesProviderMutex       sync.RWMutex
 	getKubernetesProviderArgsForCall []struct {
@@ -449,7 +439,6 @@ func (fake *FakeClient) CreateWritePermissionReturnsOnCall(i int, result1 error)
 	}{result1}
 }
 
-<<<<<<< HEAD
 func (fake *FakeClient) DeleteKubernetesProvider(arg1 string) error {
 	fake.deleteKubernetesProviderMutex.Lock()
 	ret, specificReturn := fake.deleteKubernetesProviderReturnsOnCall[len(fake.deleteKubernetesProviderArgsForCall)]
@@ -464,7 +453,8 @@ func (fake *FakeClient) DeleteKubernetesProvider(arg1 string) error {
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.deleteKubernetesProviderReturns.result1
+	fakeReturns := fake.deleteKubernetesProviderReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) DeleteKubernetesProviderCallCount() int {
@@ -473,13 +463,22 @@ func (fake *FakeClient) DeleteKubernetesProviderCallCount() int {
 	return len(fake.deleteKubernetesProviderArgsForCall)
 }
 
+func (fake *FakeClient) DeleteKubernetesProviderCalls(stub func(string) error) {
+	fake.deleteKubernetesProviderMutex.Lock()
+	defer fake.deleteKubernetesProviderMutex.Unlock()
+	fake.DeleteKubernetesProviderStub = stub
+}
+
 func (fake *FakeClient) DeleteKubernetesProviderArgsForCall(i int) string {
 	fake.deleteKubernetesProviderMutex.RLock()
 	defer fake.deleteKubernetesProviderMutex.RUnlock()
-	return fake.deleteKubernetesProviderArgsForCall[i].arg1
+	argsForCall := fake.deleteKubernetesProviderArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) DeleteKubernetesProviderReturns(result1 error) {
+	fake.deleteKubernetesProviderMutex.Lock()
+	defer fake.deleteKubernetesProviderMutex.Unlock()
 	fake.DeleteKubernetesProviderStub = nil
 	fake.deleteKubernetesProviderReturns = struct {
 		result1 error
@@ -487,6 +486,8 @@ func (fake *FakeClient) DeleteKubernetesProviderReturns(result1 error) {
 }
 
 func (fake *FakeClient) DeleteKubernetesProviderReturnsOnCall(i int, result1 error) {
+	fake.deleteKubernetesProviderMutex.Lock()
+	defer fake.deleteKubernetesProviderMutex.Unlock()
 	fake.DeleteKubernetesProviderStub = nil
 	if fake.deleteKubernetesProviderReturnsOnCall == nil {
 		fake.deleteKubernetesProviderReturnsOnCall = make(map[int]struct {
@@ -498,8 +499,6 @@ func (fake *FakeClient) DeleteKubernetesProviderReturnsOnCall(i int, result1 err
 	}{result1}
 }
 
-=======
->>>>>>> go-clouddriver-1/spinnaker-versioning
 func (fake *FakeClient) GetKubernetesProvider(arg1 string) (kubernetes.Provider, error) {
 	fake.getKubernetesProviderMutex.Lock()
 	ret, specificReturn := fake.getKubernetesProviderReturnsOnCall[len(fake.getKubernetesProviderArgsForCall)]
@@ -514,12 +513,8 @@ func (fake *FakeClient) GetKubernetesProvider(arg1 string) (kubernetes.Provider,
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-<<<<<<< HEAD
-	return fake.getKubernetesProviderReturns.result1, fake.getKubernetesProviderReturns.result2
-=======
 	fakeReturns := fake.getKubernetesProviderReturns
 	return fakeReturns.result1, fakeReturns.result2
->>>>>>> go-clouddriver-1/spinnaker-versioning
 }
 
 func (fake *FakeClient) GetKubernetesProviderCallCount() int {
@@ -528,15 +523,6 @@ func (fake *FakeClient) GetKubernetesProviderCallCount() int {
 	return len(fake.getKubernetesProviderArgsForCall)
 }
 
-<<<<<<< HEAD
-func (fake *FakeClient) GetKubernetesProviderArgsForCall(i int) string {
-	fake.getKubernetesProviderMutex.RLock()
-	defer fake.getKubernetesProviderMutex.RUnlock()
-	return fake.getKubernetesProviderArgsForCall[i].arg1
-}
-
-func (fake *FakeClient) GetKubernetesProviderReturns(result1 kubernetes.Provider, result2 error) {
-=======
 func (fake *FakeClient) GetKubernetesProviderCalls(stub func(string) (kubernetes.Provider, error)) {
 	fake.getKubernetesProviderMutex.Lock()
 	defer fake.getKubernetesProviderMutex.Unlock()
@@ -553,7 +539,6 @@ func (fake *FakeClient) GetKubernetesProviderArgsForCall(i int) string {
 func (fake *FakeClient) GetKubernetesProviderReturns(result1 kubernetes.Provider, result2 error) {
 	fake.getKubernetesProviderMutex.Lock()
 	defer fake.getKubernetesProviderMutex.Unlock()
->>>>>>> go-clouddriver-1/spinnaker-versioning
 	fake.GetKubernetesProviderStub = nil
 	fake.getKubernetesProviderReturns = struct {
 		result1 kubernetes.Provider
@@ -562,11 +547,8 @@ func (fake *FakeClient) GetKubernetesProviderReturns(result1 kubernetes.Provider
 }
 
 func (fake *FakeClient) GetKubernetesProviderReturnsOnCall(i int, result1 kubernetes.Provider, result2 error) {
-<<<<<<< HEAD
-=======
 	fake.getKubernetesProviderMutex.Lock()
 	defer fake.getKubernetesProviderMutex.Unlock()
->>>>>>> go-clouddriver-1/spinnaker-versioning
 	fake.GetKubernetesProviderStub = nil
 	if fake.getKubernetesProviderReturnsOnCall == nil {
 		fake.getKubernetesProviderReturnsOnCall = make(map[int]struct {
@@ -1144,11 +1126,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.createReadPermissionMutex.RUnlock()
 	fake.createWritePermissionMutex.RLock()
 	defer fake.createWritePermissionMutex.RUnlock()
-<<<<<<< HEAD
 	fake.deleteKubernetesProviderMutex.RLock()
 	defer fake.deleteKubernetesProviderMutex.RUnlock()
-=======
->>>>>>> go-clouddriver-1/spinnaker-versioning
 	fake.getKubernetesProviderMutex.RLock()
 	defer fake.getKubernetesProviderMutex.RUnlock()
 	fake.listKubernetesAccountsBySpinnakerAppMutex.RLock()

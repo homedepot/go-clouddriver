@@ -233,7 +233,6 @@ func (c *client) ListByGVR(gvr schema.GroupVersionResource, lo metav1.ListOption
 	return c.c.Resource(gvr).List(context.TODO(), lo)
 }
 
-<<<<<<< HEAD
 // List all resources by their kind or resource (e.g. "replicaset" or "replicasets")
 func (c *client) ListResource(resource string, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	gvr, err := c.GVRForKind(resource)
@@ -241,7 +240,8 @@ func (c *client) ListResource(resource string, lo metav1.ListOptions) (*unstruct
 		return nil, err
 	}
 	return c.c.Resource(gvr).List(context.TODO(), lo)
-=======
+}
+
 func (c *client) ListResourcesByKindAndNamespace(kind, namespace string, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	gvk, err := c.mapper.KindFor(schema.GroupVersionResource{Resource: kind})
 	if err != nil {
@@ -274,7 +274,6 @@ func (c *client) ListResourcesByKindAndNamespace(kind, namespace string, lo meta
 	}
 
 	return ul, err
->>>>>>> go-clouddriver-1/spinnaker-versioning
 }
 
 func (c *client) Patch(kind, name, namespace string, p []byte) (Metadata, *unstructured.Unstructured, error) {

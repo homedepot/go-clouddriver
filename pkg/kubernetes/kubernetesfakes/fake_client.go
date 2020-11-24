@@ -4,13 +4,8 @@ package kubernetesfakes
 import (
 	"sync"
 
-<<<<<<< HEAD
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-=======
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
->>>>>>> go-clouddriver-1/spinnaker-versioning
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -44,13 +39,13 @@ type FakeClient struct {
 		result1 kubernetes.Metadata
 		result2 error
 	}
-	DeleteResourceByKindAndNameAndNamespaceStub        func(string, string, string, metav1.DeleteOptions) error
+	DeleteResourceByKindAndNameAndNamespaceStub        func(string, string, string, v1.DeleteOptions) error
 	deleteResourceByKindAndNameAndNamespaceMutex       sync.RWMutex
 	deleteResourceByKindAndNameAndNamespaceArgsForCall []struct {
 		arg1 string
 		arg2 string
 		arg3 string
-		arg4 metav1.DeleteOptions
+		arg4 v1.DeleteOptions
 	}
 	deleteResourceByKindAndNameAndNamespaceReturns struct {
 		result1 error
@@ -100,19 +95,20 @@ type FakeClient struct {
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}
-<<<<<<< HEAD
-	ListResourceStub        func(string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
+	ListResourceStub        func(string, v1.ListOptions) (*unstructured.UnstructuredList, error)
 	listResourceMutex       sync.RWMutex
 	listResourceArgsForCall []struct {
 		arg1 string
-		arg2 metav1.ListOptions
+		arg2 v1.ListOptions
 	}
 	listResourceReturns struct {
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}
 	listResourceReturnsOnCall map[int]struct {
-=======
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}
 	ListResourcesByKindAndNamespaceStub        func(string, string, v1.ListOptions) (*unstructured.UnstructuredList, error)
 	listResourcesByKindAndNamespaceMutex       sync.RWMutex
 	listResourcesByKindAndNamespaceArgsForCall []struct {
@@ -125,7 +121,6 @@ type FakeClient struct {
 		result2 error
 	}
 	listResourcesByKindAndNamespaceReturnsOnCall map[int]struct {
->>>>>>> go-clouddriver-1/spinnaker-versioning
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}
@@ -297,14 +292,14 @@ func (fake *FakeClient) ApplyWithNamespaceOverrideReturnsOnCall(i int, result1 k
 	}{result1, result2}
 }
 
-func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespace(arg1 string, arg2 string, arg3 string, arg4 metav1.DeleteOptions) error {
+func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespace(arg1 string, arg2 string, arg3 string, arg4 v1.DeleteOptions) error {
 	fake.deleteResourceByKindAndNameAndNamespaceMutex.Lock()
 	ret, specificReturn := fake.deleteResourceByKindAndNameAndNamespaceReturnsOnCall[len(fake.deleteResourceByKindAndNameAndNamespaceArgsForCall)]
 	fake.deleteResourceByKindAndNameAndNamespaceArgsForCall = append(fake.deleteResourceByKindAndNameAndNamespaceArgsForCall, struct {
 		arg1 string
 		arg2 string
 		arg3 string
-		arg4 metav1.DeleteOptions
+		arg4 v1.DeleteOptions
 	}{arg1, arg2, arg3, arg4})
 	fake.recordInvocation("DeleteResourceByKindAndNameAndNamespace", []interface{}{arg1, arg2, arg3, arg4})
 	fake.deleteResourceByKindAndNameAndNamespaceMutex.Unlock()
@@ -314,7 +309,8 @@ func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespace(arg1 string, arg
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.deleteResourceByKindAndNameAndNamespaceReturns.result1
+	fakeReturns := fake.deleteResourceByKindAndNameAndNamespaceReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceCallCount() int {
@@ -323,13 +319,22 @@ func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceCallCount() int {
 	return len(fake.deleteResourceByKindAndNameAndNamespaceArgsForCall)
 }
 
-func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceArgsForCall(i int) (string, string, string, metav1.DeleteOptions) {
+func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceCalls(stub func(string, string, string, v1.DeleteOptions) error) {
+	fake.deleteResourceByKindAndNameAndNamespaceMutex.Lock()
+	defer fake.deleteResourceByKindAndNameAndNamespaceMutex.Unlock()
+	fake.DeleteResourceByKindAndNameAndNamespaceStub = stub
+}
+
+func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceArgsForCall(i int) (string, string, string, v1.DeleteOptions) {
 	fake.deleteResourceByKindAndNameAndNamespaceMutex.RLock()
 	defer fake.deleteResourceByKindAndNameAndNamespaceMutex.RUnlock()
-	return fake.deleteResourceByKindAndNameAndNamespaceArgsForCall[i].arg1, fake.deleteResourceByKindAndNameAndNamespaceArgsForCall[i].arg2, fake.deleteResourceByKindAndNameAndNamespaceArgsForCall[i].arg3, fake.deleteResourceByKindAndNameAndNamespaceArgsForCall[i].arg4
+	argsForCall := fake.deleteResourceByKindAndNameAndNamespaceArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceReturns(result1 error) {
+	fake.deleteResourceByKindAndNameAndNamespaceMutex.Lock()
+	defer fake.deleteResourceByKindAndNameAndNamespaceMutex.Unlock()
 	fake.DeleteResourceByKindAndNameAndNamespaceStub = nil
 	fake.deleteResourceByKindAndNameAndNamespaceReturns = struct {
 		result1 error
@@ -337,6 +342,8 @@ func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceReturns(result1 e
 }
 
 func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceReturnsOnCall(i int, result1 error) {
+	fake.deleteResourceByKindAndNameAndNamespaceMutex.Lock()
+	defer fake.deleteResourceByKindAndNameAndNamespaceMutex.Unlock()
 	fake.DeleteResourceByKindAndNameAndNamespaceStub = nil
 	if fake.deleteResourceByKindAndNameAndNamespaceReturnsOnCall == nil {
 		fake.deleteResourceByKindAndNameAndNamespaceReturnsOnCall = make(map[int]struct {
@@ -540,19 +547,70 @@ func (fake *FakeClient) ListByGVRReturnsOnCall(i int, result1 *unstructured.Unst
 	}{result1, result2}
 }
 
-<<<<<<< HEAD
-func (fake *FakeClient) ListResource(arg1 string, arg2 metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+func (fake *FakeClient) ListResource(arg1 string, arg2 v1.ListOptions) (*unstructured.UnstructuredList, error) {
 	fake.listResourceMutex.Lock()
 	ret, specificReturn := fake.listResourceReturnsOnCall[len(fake.listResourceArgsForCall)]
 	fake.listResourceArgsForCall = append(fake.listResourceArgsForCall, struct {
 		arg1 string
-		arg2 metav1.ListOptions
+		arg2 v1.ListOptions
 	}{arg1, arg2})
 	fake.recordInvocation("ListResource", []interface{}{arg1, arg2})
 	fake.listResourceMutex.Unlock()
 	if fake.ListResourceStub != nil {
 		return fake.ListResourceStub(arg1, arg2)
-=======
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.listResourceReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) ListResourceCallCount() int {
+	fake.listResourceMutex.RLock()
+	defer fake.listResourceMutex.RUnlock()
+	return len(fake.listResourceArgsForCall)
+}
+
+func (fake *FakeClient) ListResourceCalls(stub func(string, v1.ListOptions) (*unstructured.UnstructuredList, error)) {
+	fake.listResourceMutex.Lock()
+	defer fake.listResourceMutex.Unlock()
+	fake.ListResourceStub = stub
+}
+
+func (fake *FakeClient) ListResourceArgsForCall(i int) (string, v1.ListOptions) {
+	fake.listResourceMutex.RLock()
+	defer fake.listResourceMutex.RUnlock()
+	argsForCall := fake.listResourceArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeClient) ListResourceReturns(result1 *unstructured.UnstructuredList, result2 error) {
+	fake.listResourceMutex.Lock()
+	defer fake.listResourceMutex.Unlock()
+	fake.ListResourceStub = nil
+	fake.listResourceReturns = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ListResourceReturnsOnCall(i int, result1 *unstructured.UnstructuredList, result2 error) {
+	fake.listResourceMutex.Lock()
+	defer fake.listResourceMutex.Unlock()
+	fake.ListResourceStub = nil
+	if fake.listResourceReturnsOnCall == nil {
+		fake.listResourceReturnsOnCall = make(map[int]struct {
+			result1 *unstructured.UnstructuredList
+			result2 error
+		})
+	}
+	fake.listResourceReturnsOnCall[i] = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) ListResourcesByKindAndNamespace(arg1 string, arg2 string, arg3 v1.ListOptions) (*unstructured.UnstructuredList, error) {
 	fake.listResourcesByKindAndNamespaceMutex.Lock()
 	ret, specificReturn := fake.listResourcesByKindAndNamespaceReturnsOnCall[len(fake.listResourcesByKindAndNamespaceArgsForCall)]
@@ -565,31 +623,10 @@ func (fake *FakeClient) ListResourcesByKindAndNamespace(arg1 string, arg2 string
 	fake.listResourcesByKindAndNamespaceMutex.Unlock()
 	if fake.ListResourcesByKindAndNamespaceStub != nil {
 		return fake.ListResourcesByKindAndNamespaceStub(arg1, arg2, arg3)
->>>>>>> go-clouddriver-1/spinnaker-versioning
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-<<<<<<< HEAD
-	return fake.listResourceReturns.result1, fake.listResourceReturns.result2
-}
-
-func (fake *FakeClient) ListResourceCallCount() int {
-	fake.listResourceMutex.RLock()
-	defer fake.listResourceMutex.RUnlock()
-	return len(fake.listResourceArgsForCall)
-}
-
-func (fake *FakeClient) ListResourceArgsForCall(i int) (string, metav1.ListOptions) {
-	fake.listResourceMutex.RLock()
-	defer fake.listResourceMutex.RUnlock()
-	return fake.listResourceArgsForCall[i].arg1, fake.listResourceArgsForCall[i].arg2
-}
-
-func (fake *FakeClient) ListResourceReturns(result1 *unstructured.UnstructuredList, result2 error) {
-	fake.ListResourceStub = nil
-	fake.listResourceReturns = struct {
-=======
 	fakeReturns := fake.listResourcesByKindAndNamespaceReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
@@ -618,34 +655,22 @@ func (fake *FakeClient) ListResourcesByKindAndNamespaceReturns(result1 *unstruct
 	defer fake.listResourcesByKindAndNamespaceMutex.Unlock()
 	fake.ListResourcesByKindAndNamespaceStub = nil
 	fake.listResourcesByKindAndNamespaceReturns = struct {
->>>>>>> go-clouddriver-1/spinnaker-versioning
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}{result1, result2}
 }
 
-<<<<<<< HEAD
-func (fake *FakeClient) ListResourceReturnsOnCall(i int, result1 *unstructured.UnstructuredList, result2 error) {
-	fake.ListResourceStub = nil
-	if fake.listResourceReturnsOnCall == nil {
-		fake.listResourceReturnsOnCall = make(map[int]struct {
-=======
 func (fake *FakeClient) ListResourcesByKindAndNamespaceReturnsOnCall(i int, result1 *unstructured.UnstructuredList, result2 error) {
 	fake.listResourcesByKindAndNamespaceMutex.Lock()
 	defer fake.listResourcesByKindAndNamespaceMutex.Unlock()
 	fake.ListResourcesByKindAndNamespaceStub = nil
 	if fake.listResourcesByKindAndNamespaceReturnsOnCall == nil {
 		fake.listResourcesByKindAndNamespaceReturnsOnCall = make(map[int]struct {
->>>>>>> go-clouddriver-1/spinnaker-versioning
 			result1 *unstructured.UnstructuredList
 			result2 error
 		})
 	}
-<<<<<<< HEAD
-	fake.listResourceReturnsOnCall[i] = struct {
-=======
 	fake.listResourcesByKindAndNamespaceReturnsOnCall[i] = struct {
->>>>>>> go-clouddriver-1/spinnaker-versioning
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}{result1, result2}
@@ -815,13 +840,10 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.getMutex.RUnlock()
 	fake.listByGVRMutex.RLock()
 	defer fake.listByGVRMutex.RUnlock()
-<<<<<<< HEAD
 	fake.listResourceMutex.RLock()
 	defer fake.listResourceMutex.RUnlock()
-=======
 	fake.listResourcesByKindAndNamespaceMutex.RLock()
 	defer fake.listResourcesByKindAndNamespaceMutex.RUnlock()
->>>>>>> go-clouddriver-1/spinnaker-versioning
 	fake.patchMutex.RLock()
 	defer fake.patchMutex.RUnlock()
 	fake.patchUsingStrategyMutex.RLock()

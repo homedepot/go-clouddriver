@@ -4,7 +4,7 @@ package kubernetesfakes
 import (
 	"sync"
 
-	"github.com/billiford/go-clouddriver/pkg/kubernetes"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 

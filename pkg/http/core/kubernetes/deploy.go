@@ -7,15 +7,14 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/google/uuid"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/google/uuid"
-<<<<<<< HEAD
+
 	"k8s.io/apimachinery/pkg/util/rand"
-=======
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
->>>>>>> go-clouddriver-1/spinnaker-versioning
 	"k8s.io/client-go/rest"
 )
 
@@ -72,15 +71,15 @@ func (d *deployManifest) Run() error {
 
 	manifests := []map[string]interface{}{}
 
+	application := d.dm.Moniker.App
+
 	// Merge all list element items into the manifest list.
 	for _, manifest := range d.dm.Manifests {
 		u, err := d.kc.ToUnstructured(manifest)
 		if err != nil {
 			return err
 		}
-		application := d.dm.Moniker.App
 
-<<<<<<< HEAD
 		if strings.EqualFold(u.GetKind(), "list") {
 			listElement := kubernetes.ListElement{}
 
@@ -120,10 +119,8 @@ func (d *deployManifest) Run() error {
 
 		name := u.GetName()
 
-		err = d.kc.AddSpinnakerAnnotations(u, d.dm.Moniker.App)
-=======
 		err = d.kc.AddSpinnakerAnnotations(u, application)
->>>>>>> go-clouddriver-1/spinnaker-versioning
+
 		if err != nil {
 			return err
 		}
@@ -133,7 +130,7 @@ func (d *deployManifest) Run() error {
 			return err
 		}
 
-		name := u.GetName()
+		name = u.GetName()
 
 		if d.kc.IsVersioned(u) {
 			kind := strings.ToLower(u.GetKind())
