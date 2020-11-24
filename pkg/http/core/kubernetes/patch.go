@@ -26,19 +26,19 @@ func Patch(c *gin.Context, pm PatchManifestRequest) {
 
 	provider, err := sc.GetKubernetesProvider(pm.Account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -52,13 +52,13 @@ func Patch(c *gin.Context, pm PatchManifestRequest) {
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	b, err := json.Marshal(pm.PatchBody)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
@@ -84,14 +84,14 @@ func Patch(c *gin.Context, pm PatchManifestRequest) {
 	case "merge":
 		strategy = types.MergePatchType
 	default:
-		clouddriver.WriteError(c, http.StatusBadRequest,
+		clouddriver.Error(c, http.StatusBadRequest,
 			fmt.Errorf("invalid merge strategy %s", pm.Options.MergeStrategy))
 		return
 	}
 
 	meta, _, err := client.PatchUsingStrategy(kind, name, pm.Location, b, strategy)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -114,7 +114,7 @@ func Patch(c *gin.Context, pm PatchManifestRequest) {
 
 	err = sc.CreateKubernetesResource(kr)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 }

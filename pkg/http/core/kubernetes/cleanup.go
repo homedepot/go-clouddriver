@@ -24,25 +24,25 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 	for _, manifest := range ca.Manifests {
 		u, err := kc.ToUnstructured(manifest)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
 		provider, err := sc.GetKubernetesProvider(ca.Account)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
 		cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
 		token, err := ac.Token()
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -56,13 +56,13 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 
 		client, err := kc.NewClient(config)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 		gvr, err := client.GVRForKind(u.GetKind())
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -83,7 +83,7 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 
 		err = sc.CreateKubernetesResource(kr)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 	}

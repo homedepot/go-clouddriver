@@ -26,19 +26,19 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 
 	provider, err := sc.GetKubernetesProvider(dm.Account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -52,7 +52,7 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -84,13 +84,13 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 
 		gvr, err := client.GVRForKind(kind)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 		err = client.DeleteResourceByKindAndNameAndNamespace(kind, name, dm.Location, do)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -110,15 +110,15 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 
 		err = sc.CreateKubernetesResource(kr)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 	case "label":
-		clouddriver.WriteError(c, http.StatusNotImplemented,
+		clouddriver.Error(c, http.StatusNotImplemented,
 			fmt.Errorf("requested to delete manifest %s using mode %s which is not implemented", dm.ManifestName, mode))
 		return
 	default:
-		clouddriver.WriteError(c, http.StatusNotImplemented,
+		clouddriver.Error(c, http.StatusNotImplemented,
 			fmt.Errorf("requested to delete manifest %s using mode %s which is not implemented", dm.ManifestName, mode))
 		return
 	}

@@ -52,25 +52,25 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 	manifestName := a[1]
 
 	if app == "" {
-		clouddriver.WriteError(c, http.StatusBadRequest, errNoApplicationProvided)
+		clouddriver.Error(c, http.StatusBadRequest, errNoApplicationProvided)
 		return
 	}
 
 	provider, err := sc.GetKubernetesProvider(ur.Account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -84,19 +84,19 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	d, err := client.Get(manifestKind, manifestName, ur.Location)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	replicaSetGVR, err := client.GVRForKind("ReplicaSet")
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -106,7 +106,7 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 
 	replicaSets, err := client.ListByGVR(replicaSetGVR, lo)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -132,7 +132,7 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 	}
 
 	if targetRS == nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, errRevisionNotFound)
+		clouddriver.Error(c, http.StatusInternalServerError, errRevisionNotFound)
 		return
 	}
 
@@ -160,13 +160,13 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 
 	u, err := deployment.ToUnstructured()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	_, err = client.Apply(&u)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 }

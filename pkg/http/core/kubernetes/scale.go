@@ -23,19 +23,19 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 
 	provider, err := sc.GetKubernetesProvider(sm.Account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -49,7 +49,7 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -59,7 +59,7 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 
 	u, err := client.Get(kind, name, sm.Location)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -70,7 +70,7 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 
 		replicas, err := strconv.Atoi(sm.Replicas)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
@@ -79,18 +79,18 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 
 		scaledManifestObject, err := d.ToUnstructured()
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 		_, err = client.Apply(&scaledManifestObject)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 	default:
-		clouddriver.WriteError(c, http.StatusBadRequest,
+		clouddriver.Error(c, http.StatusBadRequest,
 			fmt.Errorf("scaling kind %s not currently supported", kind))
 		return
 	}

@@ -27,19 +27,19 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 
 	provider, err := sc.GetKubernetesProvider(dm.Account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -53,7 +53,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -63,7 +63,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	for _, manifest := range dm.Manifests {
 		u, err := kc.ToUnstructured(manifest)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
@@ -72,13 +72,13 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 
 			b, err := json.Marshal(u.Object)
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusBadRequest, err)
+				clouddriver.Error(c, http.StatusBadRequest, err)
 				return
 			}
 
 			err = json.Unmarshal(b, &listElement)
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusBadRequest, err)
+				clouddriver.Error(c, http.StatusBadRequest, err)
 				return
 			}
 
@@ -91,7 +91,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	for _, manifest := range manifests {
 		u, err := kc.ToUnstructured(manifest)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
@@ -111,13 +111,13 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 
 		err = kc.AddSpinnakerAnnotations(u, dm.Moniker.App)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 		err = kc.AddSpinnakerLabels(u, dm.Moniker.App)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -125,7 +125,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		if err != nil {
 			e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
 				u.GetKind(), u.GroupVersionKind().Version, u.GetName(), err.Error())
-			clouddriver.WriteError(c, http.StatusInternalServerError, e)
+			clouddriver.Error(c, http.StatusInternalServerError, e)
 
 			return
 		}
@@ -146,7 +146,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 
 		err = sc.CreateKubernetesResource(kr)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 	}

@@ -25,19 +25,19 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 
 	provider, err := sc.GetKubernetesProvider(rr.Account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -51,7 +51,7 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -61,7 +61,7 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 
 	u, err := client.Get(kind, name, rr.Location)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -76,18 +76,18 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 
 		annotatedObject, err := d.ToUnstructured()
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 		_, err = client.Apply(&annotatedObject)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 	default:
-		clouddriver.WriteError(c, http.StatusBadRequest, fmt.Errorf("restarting kind %s not currently supported", kind))
+		clouddriver.Error(c, http.StatusBadRequest, fmt.Errorf("restarting kind %s not currently supported", kind))
 		return
 	}
 }
