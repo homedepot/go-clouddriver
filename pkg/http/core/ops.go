@@ -33,7 +33,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&ko)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
@@ -62,7 +62,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 		if req.DeployManifest != nil {
 			err = ah.NewDeployManifestAction(config).Run()
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
@@ -70,7 +70,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 		if req.DeleteManifest != nil {
 			err = ah.NewDeleteManifestAction(config).Run()
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
@@ -78,7 +78,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 		if req.ScaleManifest != nil {
 			err = ah.NewScaleManifestAction(config).Run()
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
@@ -86,7 +86,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 		if req.CleanupArtifacts != nil {
 			err = ah.NewCleanupArtifactsAction(config).Run()
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
@@ -94,7 +94,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 		if req.RollingRestartManifest != nil {
 			err = ah.NewRollingRestartAction(config).Run()
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
@@ -102,7 +102,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 		if req.RunJob != nil {
 			err = ah.NewRunJobAction(config).Run()
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
@@ -110,7 +110,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 		if req.UndoRolloutManifest != nil {
 			err = ah.NewRollbackAction(config).Run()
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
@@ -118,7 +118,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 		if req.PatchManifest != nil {
 			err = ah.NewPatchManifestAction(config).Run()
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
