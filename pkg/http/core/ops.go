@@ -24,7 +24,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&ko)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 

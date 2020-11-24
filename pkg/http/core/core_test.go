@@ -216,8 +216,8 @@ func validateGZipResponse(expected []byte) {
 	Expect(actual).To(Equal(expected), "correct body")
 }
 
-func getClouddriverError() clouddriver.Error {
-	ce := clouddriver.Error{}
+func getClouddriverError() clouddriver.ErrorResponse {
+	ce := clouddriver.ErrorResponse{}
 	b, _ := ioutil.ReadAll(res.Body)
 	json.Unmarshal(b, &ce)
 	return ce

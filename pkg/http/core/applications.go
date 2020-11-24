@@ -45,7 +45,7 @@ func ListApplications(c *gin.Context) {
 
 	rs, err := sc.ListKubernetesResourcesByFields("account_name", "kind", "name", "spinnaker_app")
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -166,7 +166,7 @@ func ListServerGroupManagers(c *gin.Context) {
 
 	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -371,7 +371,7 @@ func ListLoadBalancers(c *gin.Context) {
 
 	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -509,7 +509,7 @@ func ListClusters(c *gin.Context) {
 
 	rs, err := sc.ListKubernetesClustersByApplication(application)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -633,7 +633,7 @@ func ListServerGroups(c *gin.Context) {
 
 	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -937,19 +937,19 @@ func GetServerGroup(c *gin.Context) {
 
 	provider, err := sc.GetKubernetesProvider(account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -963,7 +963,7 @@ func GetServerGroup(c *gin.Context) {
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -974,14 +974,14 @@ func GetServerGroup(c *gin.Context) {
 
 	result, err := client.Get(kind, name, location)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	// "Instances" in kubernetes are pods.
 	pods, err := client.ListResource("pods", lo)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1144,19 +1144,19 @@ func GetJob(c *gin.Context) {
 
 	provider, err := sc.GetKubernetesProvider(account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1170,13 +1170,13 @@ func GetJob(c *gin.Context) {
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	result, err := client.Get(kind, name, location)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
