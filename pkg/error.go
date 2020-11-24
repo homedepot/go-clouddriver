@@ -6,7 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Error struct {
+// This represents a clouddriver error.
+type ErrorResponse struct {
 	Error     string `json:"error"`
 	Message   string `json:"message"`
 	Status    int    `json:"status"`
@@ -20,16 +21,17 @@ type Error struct {
 //   "status":403,
 //   "timestamp":1597608027851
 // }
-func NewError(e, m string, s int) Error {
-	return Error{
-		Error:     e,
-		Message:   m,
-		Status:    s,
+func NewError(err, message string, status int) ErrorResponse {
+	return ErrorResponse{
+		Error:     err,
+		Message:   message,
+		Status:    status,
 		Timestamp: time.Now().UnixNano() / 1000000,
 	}
 }
 
-func WriteError(c *gin.Context, status int, err error) {
+// Error attaches a given Go error to a gin context and sets its type to public.
+func Error(c *gin.Context, status int, err error) {
 	c.Status(status)
 	c.Error(err).SetType(gin.ErrorTypePublic)
 }

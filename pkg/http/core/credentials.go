@@ -68,7 +68,7 @@ func ListCredentials(c *gin.Context) {
 
 	providers, err := sc.ListKubernetesProvidersAndPermissions()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -197,19 +197,19 @@ func GetAccountCredentials(c *gin.Context) {
 
 	provider, err := sc.GetKubernetesProvider(account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	readGroups, err := sc.ListReadGroupsByAccountName(provider.Name)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	writeGroups, err := sc.ListWriteGroupsByAccountName(provider.Name)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
