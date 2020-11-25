@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/billiford/go-clouddriver v0.6.5
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
 	github.com/fatih/color v1.9.0
 	github.com/gdexlab/go-render v1.0.1 // indirect

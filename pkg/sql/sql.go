@@ -36,6 +36,7 @@ type Client interface {
 	GetKubernetesProvider(string) (kubernetes.Provider, error)
 	ListKubernetesAccountsBySpinnakerApp(string) ([]string, error)
 	ListKubernetesClustersByApplication(string) ([]kubernetes.Resource, error)
+	ListKubernetesClustersByFields(...string) ([]kubernetes.Resource, error)
 	ListKubernetesProviders() ([]kubernetes.Provider, error)
 	ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider, error)
 	ListKubernetesResourcesByFields(...string) ([]kubernetes.Resource, error)
@@ -154,6 +155,25 @@ func (c *client) ListKubernetesClustersByApplication(spinnakerApp string) ([]kub
 		Where("spinnaker_app = ? AND kind in ('deployment', 'statefulSet', 'replicaSet', 'ingress', 'service', 'daemonSet')",
 			spinnakerApp).
 		Group("account_name, cluster").Find(&rs)
+
+	return rs, db.Error
+}
+
+func (c *client) ListKubernetesClustersByFields(fields ...string) ([]kubernetes.Resource, error) {
+	if len(fields) == 0 {
+		return nil, errors.New("no fields provided")
+	}
+
+	list := ""
+	for i, field := range fields {
+		list += field
+		if i != len(fields)-1 {
+			list += ", "
+		}
+	}
+
+	var rs []kubernetes.Resource
+	db := c.db.Select(list).Where("kind in ('deployment', 'statefulSet', 'replicaSet', 'ingress', 'service', 'daemonSet')").Group(list).Find(&rs)
 
 	return rs, db.Error
 }
