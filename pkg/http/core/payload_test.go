@@ -128,7 +128,11 @@ const payloadRequestKubernetesOpsDeleteManifest = `[
 
 const payloadRequestKubernetesOpsCleanupArtifacts = `[
   {
-    "cleanupArtifacts": {}
+    "cleanupArtifacts": {
+      "manifests": [
+        {}
+      ]
+		}
   }
 ]`
 
@@ -250,6 +254,7 @@ const payloadRequestKubernetesOpsRollingRestartManifest = `[
       "moniker": {
         "app": "test"
       },
+			"manifestName": "deployment test-deployment",
       "source": "text",
       "account": "spin-cluster-account",
       "skipExpressionEvaluation": false,
@@ -376,6 +381,7 @@ const payloadRequestKubernetesOpsUndoRolloutManifest = `[
       "moniker": {
         "app": "test"
       },
+			"manifestName": "deployment test-deployment",
       "source": "text",
       "account": "spin-cluster-account",
       "skipExpressionEvaluation": false,

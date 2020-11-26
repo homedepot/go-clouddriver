@@ -5,14 +5,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/artifact"
 	"github.com/homedepot/go-clouddriver/pkg/fiat"
-	kube "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/server"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )
 
@@ -75,7 +74,6 @@ func init() {
 		SQLClient:                     sqlClient,
 		FiatClient:                    fiatClient,
 		KubeController:                kubeController,
-		KubeActionHandler:             kube.NewActionHandler(),
 	}
 	if os.Getenv("VERBOSE_REQUEST_LOGGING") == "true" {
 		c.VerboseRequestLogging = true

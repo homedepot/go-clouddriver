@@ -2,49 +2,43 @@ package kubernetes
 
 import (
 	"encoding/base64"
+	"net/http"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/google/uuid"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/rest"
 )
 
 const randNameNumber = 5
 
-func (ah *actionHandler) NewRunJobAction(ac ActionConfig) Action {
-	return &runJob{
-		ac: ac.ArcadeClient,
-		sc: ac.SQLClient,
-		kc: ac.KubeController,
-		id: ac.ID,
-		rj: ac.Operation.RunJob,
-	}
-}
+func RunJob(c *gin.Context, rj RunJobRequest) {
+	ac := arcade.Instance(c)
+	kc := kube.ControllerInstance(c)
+	sc := sql.Instance(c)
+	taskID := clouddriver.TaskIDFromContext(c)
 
-type runJob struct {
-	ac arcade.Client
-	sc sql.Client
-	kc kubernetes.Controller
-	id string
-	rj *RunJobRequest
-}
-
-func (r *runJob) Run() error {
-	provider, err := r.sc.GetKubernetesProvider(r.rj.Account)
+	provider, err := sc.GetKubernetesProvider(rj.Account)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
 	}
 
-	token, err := r.ac.Token()
+	token, err := ac.Token()
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	config := &rest.Config{
@@ -55,24 +49,28 @@ func (r *runJob) Run() error {
 		},
 	}
 
-	client, err := r.kc.NewClient(config)
+	client, err := kc.NewClient(config)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
-	u, err := r.kc.ToUnstructured(r.rj.Manifest)
+	u, err := kc.ToUnstructured(rj.Manifest)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
-	err = r.kc.AddSpinnakerAnnotations(u, r.rj.Application)
+	err = kc.AddSpinnakerAnnotations(u, rj.Application)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
-	err = r.kc.AddSpinnakerLabels(u, r.rj.Application)
+	err = kc.AddSpinnakerLabels(u, rj.Application)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	name := u.GetName()
@@ -84,27 +82,27 @@ func (r *runJob) Run() error {
 
 	meta, err := client.Apply(u)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	// TODO don't hardcode kind.
 	kr := kubernetes.Resource{
-		AccountName:  r.rj.Account,
+		AccountName:  rj.Account,
 		ID:           uuid.New().String(),
-		TaskID:       r.id,
+		TaskID:       taskID,
 		APIGroup:     meta.Group,
 		Name:         meta.Name,
 		Namespace:    meta.Namespace,
 		Resource:     meta.Resource,
 		Version:      meta.Version,
 		Kind:         "job",
-		SpinnakerApp: r.rj.Application,
+		SpinnakerApp: rj.Application,
 	}
 
-	err = r.sc.CreateKubernetesResource(kr)
+	err = sc.CreateKubernetesResource(kr)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
-
-	return nil
 }

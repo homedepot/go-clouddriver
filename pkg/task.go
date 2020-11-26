@@ -1,5 +1,9 @@
 package clouddriver
 
+import "github.com/gin-gonic/gin"
+
+const TaskIDKey = `TaskID`
+
 func NewDefaultTask(id string) Task {
 	return Task{
 		ID:            id,
@@ -13,6 +17,10 @@ func NewDefaultTask(id string) Task {
 			Status:    "Orchestration completed.",
 		},
 	}
+}
+
+func TaskIDFromContext(c *gin.Context) string {
+	return c.MustGet(TaskIDKey).(string)
 }
 
 type Task struct {

@@ -2,7 +2,9 @@ package kubernetes_test
 
 import (
 	"errors"
+	"net/http"
 
+	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,8 +16,7 @@ var _ = Describe("Scale", func() {
 	})
 
 	JustBeforeEach(func() {
-		action = actionHandler.NewScaleManifestAction(actionConfig)
-		err = action.Run()
+		Scale(c, scaleManifestRequest)
 	})
 
 	When("getting the provider returns an error", func() {
@@ -24,8 +25,8 @@ var _ = Describe("Scale", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting provider"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting provider"))
 		})
 	})
 
@@ -35,8 +36,19 @@ var _ = Describe("Scale", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("illegal base64 data at input byte 0"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("illegal base64 data at input byte 0"))
+		})
+	})
+
+	When("getting the gcloud access token returns an error", func() {
+		BeforeEach(func() {
+			fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
+		})
+
+		It("returns an error", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting token"))
 		})
 	})
 
@@ -46,8 +58,8 @@ var _ = Describe("Scale", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("bad config"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("bad config"))
 		})
 	})
 
@@ -57,19 +69,19 @@ var _ = Describe("Scale", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting manifest"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting manifest"))
 		})
 	})
 
 	When("converting the replicas returns an error", func() {
 		BeforeEach(func() {
-			actionConfig.Operation.ScaleManifest.Replicas = "asdf"
+			scaleManifestRequest.Replicas = "asdf"
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("strconv.Atoi: parsing \"asdf\": invalid syntax"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("strconv.Atoi: parsing \"asdf\": invalid syntax"))
 		})
 	})
 
@@ -79,25 +91,25 @@ var _ = Describe("Scale", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error applying manifest"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error applying manifest"))
 		})
 	})
 
 	When("the kind is not supported to scale", func() {
 		BeforeEach(func() {
-			actionConfig.Operation.ScaleManifest.ManifestName = "not-supported-kind test-name"
+			scaleManifestRequest.ManifestName = "not-supported-kind test-name"
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("scaling kind not-supported-kind not currently supported"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("scaling kind not-supported-kind not currently supported"))
 		})
 	})
 
 	When("it succeeds", func() {
 		It("succeeds", func() {
-			Expect(err).To(BeNil())
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 		})
 	})
 })

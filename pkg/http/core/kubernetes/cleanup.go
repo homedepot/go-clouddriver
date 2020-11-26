@@ -2,54 +2,48 @@ package kubernetes
 
 import (
 	"encoding/base64"
+	"net/http"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/google/uuid"
 	"k8s.io/client-go/rest"
 )
 
-func (ah *actionHandler) NewCleanupArtifactsAction(ac ActionConfig) Action {
-	return &cleanupArtifacts{
-		ac:  ac.ArcadeClient,
-		sc:  ac.SQLClient,
-		kc:  ac.KubeController,
-		id:  ac.ID,
-		ca:  ac.Operation.CleanupArtifacts,
-		app: ac.Application,
-	}
-}
+func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
+	ac := arcade.Instance(c)
+	kc := kube.ControllerInstance(c)
+	sc := sql.Instance(c)
+	app := c.GetHeader("X-Spinnaker-Application")
+	taskID := clouddriver.TaskIDFromContext(c)
 
-type cleanupArtifacts struct {
-	ac  arcade.Client
-	sc  sql.Client
-	kc  kubernetes.Controller
-	id  string
-	ca  *CleanupArtifactsRequest
-	app string
-}
-
-func (c *cleanupArtifacts) Run() error {
-	for _, manifest := range c.ca.Manifests {
-		u, err := c.kc.ToUnstructured(manifest)
+	for _, manifest := range ca.Manifests {
+		u, err := kc.ToUnstructured(manifest)
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
 		}
 
-		provider, err := c.sc.GetKubernetesProvider(c.ca.Account)
+		provider, err := sc.GetKubernetesProvider(ca.Account)
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
 		}
 
 		cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
 		}
 
-		token, err := c.ac.Token()
+		token, err := ac.Token()
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
 		}
 
 		config := &rest.Config{
@@ -60,20 +54,22 @@ func (c *cleanupArtifacts) Run() error {
 			},
 		}
 
-		client, err := c.kc.NewClient(config)
+		client, err := kc.NewClient(config)
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
 		}
 
 		gvr, err := client.GVRForKind(u.GetKind())
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
 		}
 
 		kr := kubernetes.Resource{
-			AccountName:  c.ca.Account,
+			AccountName:  ca.Account,
 			ID:           uuid.New().String(),
-			TaskID:       c.id,
+			TaskID:       taskID,
 			TaskType:     "cleanup",
 			APIGroup:     gvr.Group,
 			Name:         u.GetName(),
@@ -81,15 +77,14 @@ func (c *cleanupArtifacts) Run() error {
 			Resource:     gvr.Resource,
 			Version:      gvr.Version,
 			Kind:         u.GetKind(),
-			SpinnakerApp: c.app,
+			SpinnakerApp: app,
 			Cluster:      cluster(u.GetKind(), u.GetName()),
 		}
 
-		err = c.sc.CreateKubernetesResource(kr)
+		err = sc.CreateKubernetesResource(kr)
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
 		}
 	}
-
-	return nil
 }

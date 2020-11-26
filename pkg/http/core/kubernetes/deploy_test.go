@@ -3,6 +3,7 @@ package kubernetes_test
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
@@ -17,8 +18,7 @@ var _ = Describe("Deploy", func() {
 	})
 
 	JustBeforeEach(func() {
-		action = actionHandler.NewDeployManifestAction(actionConfig)
-		err = action.Run()
+		Deploy(c, deployManifestRequest)
 	})
 
 	When("getting the provider returns an error", func() {
@@ -27,8 +27,8 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting provider"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting provider"))
 		})
 	})
 
@@ -38,8 +38,8 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("illegal base64 data at input byte 0"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("illegal base64 data at input byte 0"))
 		})
 	})
 
@@ -49,8 +49,8 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting token"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting token"))
 		})
 	})
 
@@ -60,8 +60,8 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("bad config"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("bad config"))
 		})
 	})
 
@@ -71,8 +71,8 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error converting to unstructured"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("error converting to unstructured"))
 		})
 	})
 
@@ -129,14 +129,14 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("returns an error", func() {
-				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(Equal("json: cannot unmarshal string into Go struct field ListElement.items of type []map[string]interface {}"))
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("json: cannot unmarshal string into Go struct field ListElement.items of type []map[string]interface {}"))
 			})
 		})
 
 		When("it succeeds", func() {
 			It("merges the list items", func() {
-				Expect(err).To(BeNil())
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				Expect(fakeKubeClient.ApplyWithNamespaceOverrideCallCount()).To(Equal(2))
 			})
 		})
@@ -148,14 +148,14 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error converting to unstructured"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("error converting to unstructured"))
 		})
 	})
 
 	When("the kind is a job and generateName is set", func() {
 		BeforeEach(func() {
-			actionConfig.Operation.DeployManifest = &DeployManifestRequest{
+			deployManifestRequest = DeployManifestRequest{
 				Manifests: []map[string]interface{}{
 					{
 						"kind":       "Job",
@@ -178,7 +178,7 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("generates a unique name for the job", func() {
-			Expect(err).To(BeNil())
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 			u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
 			Expect(u.GetKind()).To(Equal("Job"))
 			Expect(u.GetName()).ToNot(BeEmpty())
@@ -193,8 +193,8 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error adding annotations"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error adding annotations"))
 		})
 	})
 
@@ -204,8 +204,8 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error adding labels"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error adding labels"))
 		})
 	})
 
@@ -215,8 +215,8 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error applying manifest (kind: test-kind, apiVersion: test-api-version, name: test-name): error applying manifest"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error applying manifest (kind: test-kind, apiVersion: test-api-version, name: test-name): error applying manifest"))
 		})
 	})
 
@@ -226,8 +226,8 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error creating resource"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error creating resource"))
 		})
 	})
 
@@ -240,6 +240,7 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("sets the cluster", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
 				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
 			})
@@ -253,6 +254,7 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("sets the cluster", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
 				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
 			})
@@ -266,6 +268,7 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("sets the cluster", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
 				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
 			})
@@ -279,6 +282,7 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("sets the cluster", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
 				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
 			})
@@ -292,6 +296,7 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("sets the cluster", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
 				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
 			})
@@ -305,6 +310,7 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("sets the cluster", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
 				Expect(kr.Cluster).To(Equal(fmt.Sprintf("%s %s", kind, "test-name")))
 			})
@@ -318,6 +324,7 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("does not set the cluster", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
 				Expect(kr.Cluster).To(BeEmpty())
 			})
@@ -326,7 +333,7 @@ var _ = Describe("Deploy", func() {
 
 	When("it succeeds", func() {
 		It("succeeds", func() {
-			Expect(err).To(BeNil())
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 		})
 	})
 })
