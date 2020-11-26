@@ -8,10 +8,10 @@ import (
 )
 
 type FakeClient struct {
-	AuthorizeStub        func(account string) (fiat.Response, error)
+	AuthorizeStub        func(string) (fiat.Response, error)
 	authorizeMutex       sync.RWMutex
 	authorizeArgsForCall []struct {
-		account string
+		arg1 string
 	}
 	authorizeReturns struct {
 		result1 fiat.Response
@@ -25,21 +25,23 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) Authorize(account string) (fiat.Response, error) {
+func (fake *FakeClient) Authorize(arg1 string) (fiat.Response, error) {
 	fake.authorizeMutex.Lock()
 	ret, specificReturn := fake.authorizeReturnsOnCall[len(fake.authorizeArgsForCall)]
 	fake.authorizeArgsForCall = append(fake.authorizeArgsForCall, struct {
-		account string
-	}{account})
-	fake.recordInvocation("Authorize", []interface{}{account})
+		arg1 string
+	}{arg1})
+	stub := fake.AuthorizeStub
+	fakeReturns := fake.authorizeReturns
+	fake.recordInvocation("Authorize", []interface{}{arg1})
 	fake.authorizeMutex.Unlock()
-	if fake.AuthorizeStub != nil {
-		return fake.AuthorizeStub(account)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.authorizeReturns.result1, fake.authorizeReturns.result2
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeClient) AuthorizeCallCount() int {
@@ -48,13 +50,22 @@ func (fake *FakeClient) AuthorizeCallCount() int {
 	return len(fake.authorizeArgsForCall)
 }
 
+func (fake *FakeClient) AuthorizeCalls(stub func(string) (fiat.Response, error)) {
+	fake.authorizeMutex.Lock()
+	defer fake.authorizeMutex.Unlock()
+	fake.AuthorizeStub = stub
+}
+
 func (fake *FakeClient) AuthorizeArgsForCall(i int) string {
 	fake.authorizeMutex.RLock()
 	defer fake.authorizeMutex.RUnlock()
-	return fake.authorizeArgsForCall[i].account
+	argsForCall := fake.authorizeArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) AuthorizeReturns(result1 fiat.Response, result2 error) {
+	fake.authorizeMutex.Lock()
+	defer fake.authorizeMutex.Unlock()
 	fake.AuthorizeStub = nil
 	fake.authorizeReturns = struct {
 		result1 fiat.Response
@@ -63,6 +74,8 @@ func (fake *FakeClient) AuthorizeReturns(result1 fiat.Response, result2 error) {
 }
 
 func (fake *FakeClient) AuthorizeReturnsOnCall(i int, result1 fiat.Response, result2 error) {
+	fake.authorizeMutex.Lock()
+	defer fake.authorizeMutex.Unlock()
 	fake.AuthorizeStub = nil
 	if fake.authorizeReturnsOnCall == nil {
 		fake.authorizeReturnsOnCall = make(map[int]struct {

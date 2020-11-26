@@ -43,7 +43,7 @@ const KeyAllApplications = `AllApplications`
 func ListApplications(c *gin.Context) {
 	sc := sql.Instance(c)
 
-	rs, err := sc.ListKubernetesResourcesByFields("account_name", "kind", "name", "spinnaker_app")
+	rs, err := sc.ListKubernetesClustersByFields("account_name", "kind", "name", "spinnaker_app")
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
