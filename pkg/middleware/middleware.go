@@ -1,13 +1,12 @@
 package middleware
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/artifact"
 	"github.com/homedepot/go-clouddriver/pkg/fiat"
-	kube "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/gin-gonic/gin"
 )
 
 func SetArcadeClient(a arcade.Client) gin.HandlerFunc {
@@ -41,13 +40,6 @@ func SetKubeController(k kubernetes.Controller) gin.HandlerFunc {
 func SetArtifactCredentialsController(a artifact.CredentialsController) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set(artifact.CredentialsControllerInstanceKey, a)
-		c.Next()
-	}
-}
-
-func SetKubeActionHandler(k kube.ActionHandler) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Set(kube.ActionHandlerInstanceKey, k)
 		c.Next()
 	}
 }

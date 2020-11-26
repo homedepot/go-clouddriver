@@ -2,10 +2,13 @@ package kubernetes_test
 
 import (
 	"errors"
+	"net/http"
 
+	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var _ = Describe("Rollback", func() {
@@ -14,18 +17,17 @@ var _ = Describe("Rollback", func() {
 	})
 
 	JustBeforeEach(func() {
-		action = actionHandler.NewRollbackAction(actionConfig)
-		err = action.Run()
+		Rollback(c, undoRolloutManifestRequest)
 	})
 
 	When("the application is not set", func() {
 		BeforeEach(func() {
-			actionConfig.Application = ""
+			c.Request.Header.Del("X-Spinnaker-Application")
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("no application provided"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("no application provided"))
 		})
 	})
 
@@ -35,8 +37,8 @@ var _ = Describe("Rollback", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting provider"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting provider"))
 		})
 	})
 
@@ -46,8 +48,19 @@ var _ = Describe("Rollback", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("illegal base64 data at input byte 0"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("illegal base64 data at input byte 0"))
+		})
+	})
+
+	When("getting the gcloud access token returns an error", func() {
+		BeforeEach(func() {
+			fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
+		})
+
+		It("returns an error", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting token"))
 		})
 	})
 
@@ -57,8 +70,8 @@ var _ = Describe("Rollback", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("bad config"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("bad config"))
 		})
 	})
 
@@ -68,8 +81,19 @@ var _ = Describe("Rollback", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting manifest"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting manifest"))
+		})
+	})
+
+	When("getting the gvr returns an error", func() {
+		BeforeEach(func() {
+			fakeKubeClient.GVRForKindReturns(schema.GroupVersionResource{}, errors.New("error getting gvr"))
+		})
+
+		It("returns an error", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting gvr"))
 		})
 	})
 
@@ -79,19 +103,19 @@ var _ = Describe("Rollback", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error listing replicasets"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error listing replicasets"))
 		})
 	})
 
 	When("the replicaset cannot be found", func() {
 		BeforeEach(func() {
-			actionConfig.Operation.UndoRolloutManifest.ManifestName = "deployment wrong"
+			undoRolloutManifestRequest.ManifestName = "deployment wrong"
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("revision not found"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("revision not found"))
 		})
 	})
 
@@ -101,14 +125,14 @@ var _ = Describe("Rollback", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error applying manifest"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error applying manifest"))
 		})
 	})
 
 	When("it succeeds", func() {
 		It("succeeds", func() {
-			Expect(err).To(BeNil())
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 		})
 	})
 })

@@ -2,7 +2,9 @@ package kubernetes_test
 
 import (
 	"errors"
+	"net/http"
 
+	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,8 +30,7 @@ var _ = Describe("RunJob", func() {
 	})
 
 	JustBeforeEach(func() {
-		action = actionHandler.NewRunJobAction(actionConfig)
-		err = action.Run()
+		RunJob(c, runJobRequest)
 	})
 
 	When("getting the provider returns an error", func() {
@@ -38,8 +39,8 @@ var _ = Describe("RunJob", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting provider"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting provider"))
 		})
 	})
 
@@ -49,8 +50,8 @@ var _ = Describe("RunJob", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("illegal base64 data at input byte 0"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("illegal base64 data at input byte 0"))
 		})
 	})
 
@@ -60,8 +61,8 @@ var _ = Describe("RunJob", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting token"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting token"))
 		})
 	})
 
@@ -71,8 +72,8 @@ var _ = Describe("RunJob", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("bad config"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("bad config"))
 		})
 	})
 
@@ -82,8 +83,8 @@ var _ = Describe("RunJob", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error converting to unstructured"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error converting to unstructured"))
 		})
 	})
 
@@ -93,8 +94,8 @@ var _ = Describe("RunJob", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error adding annotations"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error adding annotations"))
 		})
 	})
 
@@ -104,8 +105,8 @@ var _ = Describe("RunJob", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error adding labels"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error adding labels"))
 		})
 	})
 
@@ -115,8 +116,8 @@ var _ = Describe("RunJob", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error applying manifest"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error applying manifest"))
 		})
 	})
 
@@ -126,18 +127,18 @@ var _ = Describe("RunJob", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error creating resource"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error creating resource"))
 		})
 	})
 
 	When("it succeeds", func() {
 		It("succeeds", func() {
-			Expect(err).To(BeNil())
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 		})
 
 		It("generates the name correctly", func() {
-			Expect(err).To(BeNil())
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 			u := fakeKubeClient.ApplyArgsForCall(0)
 			name := u.GetName()
 			Expect(name).To(HavePrefix("test-"))

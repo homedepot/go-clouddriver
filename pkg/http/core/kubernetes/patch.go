@@ -4,48 +4,42 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/google/uuid"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 )
 
-func (ah *actionHandler) NewPatchManifestAction(ac ActionConfig) Action {
-	return &patchManfest{
-		ac: ac.ArcadeClient,
-		sc: ac.SQLClient,
-		kc: ac.KubeController,
-		id: ac.ID,
-		pm: ac.Operation.PatchManifest,
-	}
-}
+func Patch(c *gin.Context, pm PatchManifestRequest) {
+	ac := arcade.Instance(c)
+	kc := kube.ControllerInstance(c)
+	sc := sql.Instance(c)
+	taskID := clouddriver.TaskIDFromContext(c)
 
-type patchManfest struct {
-	ac arcade.Client
-	sc sql.Client
-	kc kubernetes.Controller
-	id string
-	pm *PatchManifestRequest
-}
-
-func (p *patchManfest) Run() error {
-	provider, err := p.sc.GetKubernetesProvider(p.pm.Account)
+	provider, err := sc.GetKubernetesProvider(pm.Account)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
 	}
 
-	token, err := p.ac.Token()
+	token, err := ac.Token()
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	config := &rest.Config{
@@ -56,22 +50,24 @@ func (p *patchManfest) Run() error {
 		},
 	}
 
-	client, err := p.kc.NewClient(config)
+	client, err := kc.NewClient(config)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
-	b, err := json.Marshal(p.pm.PatchBody)
+	b, err := json.Marshal(pm.PatchBody)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	// Manifest name is *really* the Spinnaker cluster - i.e. "deployment test-deployment", so we
 	// need to split on a whitespace and get the actual name of the manifest.
 	kind := ""
-	name := p.pm.ManifestName
+	name := pm.ManifestName
 
-	a := strings.Split(p.pm.ManifestName, " ")
+	a := strings.Split(pm.ManifestName, " ")
 	if len(a) > 1 {
 		kind = a[0]
 		name = a[1]
@@ -80,7 +76,7 @@ func (p *patchManfest) Run() error {
 	// Merge strategy can be "strategic", "json", or "merge".
 	var strategy types.PatchType
 
-	switch p.pm.Options.MergeStrategy {
+	switch pm.Options.MergeStrategy {
 	case "strategic":
 		strategy = types.StrategicMergePatchType
 	case "json":
@@ -88,35 +84,37 @@ func (p *patchManfest) Run() error {
 	case "merge":
 		strategy = types.MergePatchType
 	default:
-		return fmt.Errorf("invalid merge strategy %s", p.pm.Options.MergeStrategy)
+		clouddriver.Error(c, http.StatusBadRequest,
+			fmt.Errorf("invalid merge strategy %s", pm.Options.MergeStrategy))
+		return
 	}
 
-	meta, _, err := client.PatchUsingStrategy(kind, name, p.pm.Location, b, strategy)
+	meta, _, err := client.PatchUsingStrategy(kind, name, pm.Location, b, strategy)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	// TODO Record the applied patch in the kubernetes.io/change-cause annotation. If the annotation already exists, the contents are replaced.
-	if p.pm.Options.Record {
+	if pm.Options.Record {
 	}
 
 	kr := kubernetes.Resource{
-		AccountName:  p.pm.Account,
+		AccountName:  pm.Account,
 		ID:           uuid.New().String(),
-		TaskID:       p.id,
+		TaskID:       taskID,
 		APIGroup:     meta.Group,
 		Name:         meta.Name,
 		Namespace:    meta.Namespace,
 		Resource:     meta.Resource,
 		Version:      meta.Version,
 		Kind:         meta.Kind,
-		SpinnakerApp: p.pm.App,
+		SpinnakerApp: pm.App,
 	}
 
-	err = p.sc.CreateKubernetesResource(kr)
+	err = sc.CreateKubernetesResource(kr)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
-
-	return nil
 }

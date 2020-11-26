@@ -1,15 +1,14 @@
 package server
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/artifact"
 	"github.com/homedepot/go-clouddriver/pkg/fiat"
 	"github.com/homedepot/go-clouddriver/pkg/http"
-	kube "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/middleware"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/gin-gonic/gin"
 )
 
 type Config struct {
@@ -18,7 +17,6 @@ type Config struct {
 	SQLClient                     sql.Client
 	FiatClient                    fiat.Client
 	KubeController                kubernetes.Controller
-	KubeActionHandler             kube.ActionHandler
 	VerboseRequestLogging         bool
 }
 
@@ -28,7 +26,6 @@ func Setup(r *gin.Engine, c *Config) {
 	r.Use(middleware.SetSQLClient(c.SQLClient))
 	r.Use(middleware.SetKubeController(c.KubeController))
 	r.Use(middleware.SetArtifactCredentialsController(c.ArtifactCredentialsController))
-	r.Use(middleware.SetKubeActionHandler(c.KubeActionHandler))
 	r.Use(middleware.SetFiatClient(c.FiatClient))
 	r.Use(middleware.HandleError())
 

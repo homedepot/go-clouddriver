@@ -2,22 +2,23 @@ package kubernetes_test
 
 import (
 	"errors"
+	"net/http"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 )
 
-var _ = Describe("Cleanup", func() {
+var _ = Describe("CleanupArtifacts", func() {
 	BeforeEach(func() {
 		setup()
 	})
 
 	JustBeforeEach(func() {
-		action = actionHandler.NewCleanupArtifactsAction(actionConfig)
-		err = action.Run()
+		CleanupArtifacts(c, cleanupArtifactsRequest)
 	})
 
 	When("getting the unstructured manifest returns an error", func() {
@@ -26,8 +27,8 @@ var _ = Describe("Cleanup", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error converting to unstructured"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("error converting to unstructured"))
 		})
 	})
 
@@ -37,8 +38,8 @@ var _ = Describe("Cleanup", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting provider"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting provider"))
 		})
 	})
 
@@ -48,8 +49,8 @@ var _ = Describe("Cleanup", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("illegal base64 data at input byte 0"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("illegal base64 data at input byte 0"))
 		})
 	})
 
@@ -59,8 +60,8 @@ var _ = Describe("Cleanup", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting token"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting token"))
 		})
 	})
 
@@ -70,8 +71,8 @@ var _ = Describe("Cleanup", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("bad config"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("bad config"))
 		})
 	})
 
@@ -81,8 +82,8 @@ var _ = Describe("Cleanup", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting gvr"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting gvr"))
 		})
 	})
 
@@ -92,14 +93,14 @@ var _ = Describe("Cleanup", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error creating resource"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error creating resource"))
 		})
 	})
 
 	When("it succeeds", func() {
 		It("succeeds", func() {
-			Expect(err).To(BeNil())
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 		})
 	})
 })
