@@ -731,7 +731,7 @@ const payloadCredentialsExpandTrueNoNamespaces = `[
                 "enabled": false,
                 "environment": "provider1",
                 "name": "provider1",
-                "namespaces": null,
+                "namespaces": [],
                 "permissions": {
                   "READ": [
                     "gg_test"
@@ -789,7 +789,7 @@ const payloadCredentialsExpandTrueNoNamespaces = `[
                 "enabled": false,
                 "environment": "provider2",
                 "name": "provider2",
-                "namespaces": null,
+                "namespaces": [],
                 "permissions": {
                   "READ": [
                     "gg_test2"
