@@ -84,6 +84,28 @@ func setup() {
 			},
 		},
 	}, nil)
+	fakeKubeClient.ListByGVRWithContextReturns(&unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerMonikerCluster: "deployment test-deployment",
+						},
+					},
+				},
+			},
+			{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerMonikerCluster: "deployment test-deployment",
+						},
+					},
+				},
+			},
+		},
+	}, nil)
 	fakeKubeClient.ListResourceReturns(&unstructured.UnstructuredList{
 		Items: []unstructured.Unstructured{
 			{
