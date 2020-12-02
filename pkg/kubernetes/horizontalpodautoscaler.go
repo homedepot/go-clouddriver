@@ -2,14 +2,15 @@ package kubernetes
 
 import (
 	"encoding/json"
+	"fmt"
+
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 	v1 "k8s.io/api/autoscaling/v1"
-	"fmt"
 )
 
 type HorizontalPodAutoscaler interface {
-    Status() manifest.Status
-	Object() *v1.HorizontalPodAutoscaler	
+	Status() manifest.Status
+	Object() *v1.HorizontalPodAutoscaler
 }
 
 func NewHorizontalPodAutoscaler(m map[string]interface{}) HorizontalPodAutoscaler {
@@ -20,7 +21,7 @@ func NewHorizontalPodAutoscaler(m map[string]interface{}) HorizontalPodAutoscale
 	return &horizontalPodAutoscaler{hpa: hpa}
 }
 
-type horizontalPodAutoscaler struct{
+type horizontalPodAutoscaler struct {
 	hpa *v1.HorizontalPodAutoscaler
 }
 
@@ -32,17 +33,18 @@ func (hpa *horizontalPodAutoscaler) Status() manifest.Status {
 	s := manifest.DefaultStatus
 
 	hpaStatus := hpa.hpa.Status
-	if(hpaStatus.DesiredReplicas > hpaStatus.CurrentReplicas){
+	if hpaStatus.DesiredReplicas > hpaStatus.CurrentReplicas {
 		s.Stable.State = false
-		s.Stable.Message = fmt.Sprintf("Waiting for HPA to complete a scale up, current: %d desired: %d",hpaStatus.CurrentReplicas, hpaStatus.DesiredReplicas)
+		s.Stable.Message = fmt.Sprintf("Waiting for HPA to complete a scale up, current: %d desired: %d", hpaStatus.CurrentReplicas, hpaStatus.DesiredReplicas)
 		s.Available.State = false
-		s.Available.Message = fmt.Sprintf("Waiting for HPA to complete a scale up, current: %d desired: %d",hpaStatus.CurrentReplicas, hpaStatus.DesiredReplicas)
+		s.Available.Message = fmt.Sprintf("Waiting for HPA to complete a scale up, current: %d desired: %d", hpaStatus.CurrentReplicas, hpaStatus.DesiredReplicas)
 	}
-	if(hpaStatus.DesiredReplicas < hpaStatus.CurrentReplicas) {
+
+	if hpaStatus.DesiredReplicas < hpaStatus.CurrentReplicas {
 		s.Stable.State = false
-		s.Stable.Message = fmt.Sprintf("Waiting for HPA to complete a scale down, current: %d desired: %d",hpaStatus.CurrentReplicas, hpaStatus.DesiredReplicas)
+		s.Stable.Message = fmt.Sprintf("Waiting for HPA to complete a scale down, current: %d desired: %d", hpaStatus.CurrentReplicas, hpaStatus.DesiredReplicas)
 		s.Available.State = false
-		s.Available.Message = fmt.Sprintf("Waiting for HPA to complete a scale down, current: %d desired: %d",hpaStatus.CurrentReplicas, hpaStatus.DesiredReplicas)
+		s.Available.Message = fmt.Sprintf("Waiting for HPA to complete a scale down, current: %d desired: %d", hpaStatus.CurrentReplicas, hpaStatus.DesiredReplicas)
 	}
 
 	return s

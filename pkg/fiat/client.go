@@ -94,6 +94,7 @@ func (c *client) Authorize(account string) (Response, error) {
 	if err != nil {
 		return response, err
 	}
+
 	return response, nil
 }
 

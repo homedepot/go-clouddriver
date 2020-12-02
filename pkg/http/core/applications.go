@@ -13,11 +13,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	"github.com/gin-gonic/gin"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/gin-gonic/gin"
 	"k8s.io/client-go/rest"
 )
 
@@ -85,6 +85,7 @@ func contains(s []string, e string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -96,6 +97,7 @@ func clusterNamesForSpinnakerApp(application string, rs []kubernetes.Resource) m
 			if _, ok := clusterNames[r.AccountName]; !ok {
 				clusterNames[r.AccountName] = []string{}
 			}
+
 			resources := clusterNames[r.AccountName]
 			resources = append(resources, fmt.Sprintf("%s %s", r.Kind, r.Name))
 			clusterNames[r.AccountName] = resources
@@ -302,6 +304,7 @@ func buildServerGroups(replicaSets *unstructured.UnstructuredList,
 		if annotations != nil {
 			name := annotations["artifact.spinnaker.io/name"]
 			t := annotations["artifact.spinnaker.io/type"]
+
 			if strings.EqualFold(name, deployment.GetName()) &&
 				strings.EqualFold(t, "kubernetes/deployment") {
 				sequence, _ := strconv.Atoi(annotations["deployment.kubernetes.io/revision"])
@@ -467,6 +470,7 @@ func listLoadBalancers(c *gin.Context, wg *sync.WaitGroup, lbs chan LoadBalancer
 
 func newLoadBalancer(u unstructured.Unstructured, account, application string) LoadBalancer {
 	kind := strings.ToLower(u.GetKind())
+
 	return LoadBalancer{
 		Account:       account,
 		AccountName:   account,
@@ -520,6 +524,7 @@ func ListClusters(c *gin.Context) {
 			if _, ok := response[resource.AccountName]; !ok {
 				response[resource.AccountName] = []string{}
 			}
+
 			kr := response[resource.AccountName]
 			kr = append(kr, resource.Cluster)
 			response[resource.AccountName] = kr
@@ -743,6 +748,7 @@ func newServerGroup(result unstructured.Unstructured,
 	managerName := annotations["artifact.spinnaker.io/name"]
 	managerLocation := annotations["artifact.spinnaker.io/location"]
 	managerType := annotations["artifact.spinnaker.io/type"]
+
 	if managerType == "kubernetes/deployment" {
 		sgm := ServerGroupServerGroupManager{
 			Account:  account,
@@ -802,15 +808,18 @@ func listImages(result *unstructured.Unstructured) []string {
 	switch strings.ToLower(result.GetKind()) {
 	case "replicaset":
 		rs := kubernetes.NewReplicaSet(result.Object)
+
 		images = rs.ListImages()
 	case "daemonset":
 		ds := kubernetes.NewDaemonSet(result.Object)
 		o := ds.Object()
+
 		for _, container := range o.Spec.Template.Spec.Containers {
 			images = append(images, container.Image)
 		}
 	case "statefulset":
 		sts := kubernetes.NewStatefulSet(result.Object)
+
 		o := sts.Object()
 		for _, container := range o.Spec.Template.Spec.Containers {
 			images = append(images, container.Image)
@@ -837,6 +846,7 @@ func getDesiredReplicasCount(result *unstructured.Unstructured) int32 {
 	case "statefulset":
 		sts := kubernetes.NewStatefulSet(result.Object)
 		o := sts.Object()
+
 		if o.Spec.Replicas != nil {
 			desired = *o.Spec.Replicas
 		}
@@ -892,6 +902,7 @@ func getReadyReplicasCount(result *unstructured.Unstructured) int32 {
 func buildInstances(pods *unstructured.UnstructuredList,
 	serverGroup unstructured.Unstructured) []Instance {
 	instances := []Instance{}
+
 	for _, u := range pods.Items {
 		p := kubernetes.NewPod(u.Object)
 		for _, ownerReference := range p.GetObjectMeta().OwnerReferences {
@@ -900,6 +911,7 @@ func buildInstances(pods *unstructured.UnstructuredList,
 				if p.GetPodStatus().Phase != "Running" {
 					state = "Down"
 				}
+
 				instance := Instance{
 					AvailabilityZone: u.GetNamespace(),
 					Health: []InstanceHealth{
@@ -920,6 +932,7 @@ func buildInstances(pods *unstructured.UnstructuredList,
 			}
 		}
 	}
+
 	return instances
 }
 
@@ -990,8 +1003,8 @@ func GetServerGroup(c *gin.Context) {
 	desired := getDesiredReplicasCount(result)
 	instanceCounts.Total = getTotalReplicasCount(result)
 	instanceCounts.Up = getReadyReplicasCount(result)
-
 	instances := []Instance{}
+
 	for _, v := range pods.Items {
 		p := kubernetes.NewPod(v.Object)
 		for _, ownerReference := range p.GetObjectMeta().OwnerReferences {

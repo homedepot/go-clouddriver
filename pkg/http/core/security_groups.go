@@ -49,5 +49,6 @@ import (
 // }
 func ListSecurityGroups(c *gin.Context) {
 	var empty struct{}
+
 	c.JSON(http.StatusOK, empty)
 }

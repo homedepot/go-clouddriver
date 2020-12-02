@@ -96,8 +96,8 @@ func Patch(c *gin.Context, pm PatchManifestRequest) {
 	}
 
 	// TODO Record the applied patch in the kubernetes.io/change-cause annotation. If the annotation already exists, the contents are replaced.
-	if pm.Options.Record {
-	}
+	// if pm.Options.Record {
+	// }
 
 	kr := kubernetes.Resource{
 		AccountName:  pm.Account,
