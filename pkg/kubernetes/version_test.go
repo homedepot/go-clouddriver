@@ -32,7 +32,7 @@ var _ = Describe("Version", func() {
 			})
 
 			It("returns 0 as the current version", func() {
-				Expect(currentVersion).To(Equal("0"))
+				Expect(currentVersion).To(Equal("-1"))
 			})
 		})
 		When("The higest version number in the cluster is 4", func() {
@@ -113,7 +113,7 @@ var _ = Describe("Version", func() {
 			})
 
 			It("returns 0 as the current version", func() {
-				Expect(currentVersion).To(Equal("0"))
+				Expect(currentVersion).To(Equal("-1"))
 			})
 		})
 		When("#FilterOnLabel returns 0 items", func() {
@@ -143,7 +143,7 @@ var _ = Describe("Version", func() {
 			})
 
 			It("returns 0 as the current version", func() {
-				Expect(currentVersion).To(Equal("0"))
+				Expect(currentVersion).To(Equal("-1"))
 			})
 		})
 	})

@@ -131,7 +131,7 @@ func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, ver
 
 func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string {
 	cluster := kind + " " + name
-	currentVersion := "0"
+	currentVersion := "-1"
 	if len(ul.Items) == 0 {
 		return currentVersion
 	}
