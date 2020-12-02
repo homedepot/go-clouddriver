@@ -13,7 +13,6 @@ var (
 	fakeUnstructuredList                         *unstructured.UnstructuredList
 	fakeResource                                 unstructured.Unstructured
 	currentVersion                               string
-	FakeManifestFilter                           kubernetesfakes.FakeManifestFilter
 	isVersioned                                  bool
 	updatedVersion, expectedVersion, fakeVersion kubernetes.SpinnakerVersion
 	err                                          error
