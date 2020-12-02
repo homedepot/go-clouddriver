@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/pkg/server"
 	"github.com/homedepot/go-clouddriver/pkg/sql/sqlfakes"
-	"github.com/gin-gonic/gin"
 
 	// . "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -48,6 +48,7 @@ func setup() {
 
 func teardown() {
 	svr.Close()
+
 	mt, mtp, _ := mime.ParseMediaType(res.Header.Get("content-type"))
 	Expect(mt).To(Equal("application/json"), "content-type")
 	Expect(mtp["charset"]).To(Equal("utf-8"), "charset")

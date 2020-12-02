@@ -33,5 +33,5 @@ func NewError(err, message string, status int) ErrorResponse {
 // Error attaches a given Go error to a gin context and sets its type to public.
 func Error(c *gin.Context, status int, err error) {
 	c.Status(status)
-	c.Error(err).SetType(gin.ErrorTypePublic)
+	_ = c.Error(err).SetType(gin.ErrorTypePublic)
 }

@@ -131,6 +131,7 @@ func setup() {
 
 	fakeKubeController = &kubernetesfakes.FakeController{}
 	fakeKubeController.NewClientReturns(fakeKubeClient, nil)
+
 	fakeUnstructured := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"kind":       "test-kind",
@@ -219,6 +220,7 @@ func validateResponse(expected string) {
 	mt, mtp, _ := mime.ParseMediaType(res.Header.Get("content-type"))
 	Expect(mt).To(Equal("application/json"), "content-type")
 	Expect(mtp["charset"]).To(Equal("utf-8"), "charset")
+
 	actual, _ := ioutil.ReadAll(res.Body)
 	Expect(actual).To(MatchJSON(expected), "correct body")
 }
@@ -227,6 +229,7 @@ func validateTextResponse(expected string) {
 	mt, mtp, _ := mime.ParseMediaType(res.Header.Get("content-type"))
 	Expect(mt).To(Equal("text/plain"), "content-type")
 	Expect(mtp["charset"]).To(Equal("utf-8"), "charset")
+
 	actual, _ := ioutil.ReadAll(res.Body)
 	Expect(string(actual)).To(Equal(expected), "correct body")
 }
@@ -234,6 +237,7 @@ func validateTextResponse(expected string) {
 func validateGZipResponse(expected []byte) {
 	mt, _, _ := mime.ParseMediaType(res.Header.Get("content-type"))
 	Expect(mt).To(Equal("application/x-gzip"), "content-type")
+
 	actual, _ := ioutil.ReadAll(res.Body)
 	Expect(actual).To(Equal(expected), "correct body")
 }
@@ -241,6 +245,7 @@ func validateGZipResponse(expected []byte) {
 func getClouddriverError() clouddriver.ErrorResponse {
 	ce := clouddriver.ErrorResponse{}
 	b, _ := ioutil.ReadAll(res.Body)
-	json.Unmarshal(b, &ce)
+	_ = json.Unmarshal(b, &ce)
+
 	return ce
 }

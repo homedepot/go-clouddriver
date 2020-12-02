@@ -8,12 +8,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	ops "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/gin-gonic/gin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
@@ -37,7 +37,7 @@ func GetManifest(c *gin.Context) {
 
 	// Sometimes a full kind such as MutatingWebhookConfiguration.admissionregistration.k8s.io
 	// is passed in - this is the current fix for that...
-	if strings.Index(kind, ".") > -1 {
+	if strings.Contains(kind, ".") {
 		a2 := strings.Split(kind, ".")
 		kind = a2[0]
 	}
@@ -120,7 +120,7 @@ func GetManifestByTarget(c *gin.Context) {
 
 	// Sometimes a full kind such as MutatingWebhookConfiguration.admissionregistration.k8s.io
 	// is passed in - this is the current fix for that...
-	if strings.Index(kind, ".") > -1 {
+	if strings.Contains(kind, ".") {
 		a2 := strings.Split(kind, ".")
 		kind = a2[0]
 	}
@@ -205,12 +205,14 @@ func GetManifestByTarget(c *gin.Context) {
 			clouddriver.Error(c, http.StatusBadRequest, errors.New("requested target \"Second Newest\" for cluster "+cluster+", but only one resource was found"))
 			return
 		}
+
 		result = items[1]
 	case "oldest":
 		if len(items) < 2 {
 			clouddriver.Error(c, http.StatusBadRequest, errors.New("requested target \"Oldest\" for cluster "+cluster+", but only one resource was found"))
 			return
 		}
+
 		result = items[len(items)-1]
 	default:
 		clouddriver.Error(c, http.StatusNotImplemented, errors.New("requested target \""+target+"\" for cluster "+cluster+" is not supported"))

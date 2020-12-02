@@ -94,6 +94,7 @@ func ListCredentials(c *gin.Context) {
 		if expand == "true" {
 			sca.SpinnakerKindMap = spinnakerKindMap
 		}
+
 		credentials = append(credentials, sca)
 	}
 
@@ -172,6 +173,7 @@ func listNamespaces(provider kubernetes.Provider,
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	gvr := schema.GroupVersionResource{
 		Group:    "",
 		Version:  "v1",

@@ -82,6 +82,7 @@ func (rs *replicaSet) LabelTemplateIfNotExists(key, value string) {
 	if _, ok := labels[key]; !ok {
 		labels[key] = value
 	}
+
 	rs.rs.Spec.Template.ObjectMeta.Labels = labels
 }
 

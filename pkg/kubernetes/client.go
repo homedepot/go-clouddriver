@@ -81,6 +81,7 @@ func (c *client) ApplyWithNamespaceOverride(u *unstructured.Unstructured, namesp
 	}
 
 	helper := resource.NewHelper(restClient, restMapping)
+
 	if namespaceOverride == "" {
 		SetDefaultNamespaceIfScopedAndNoneSet(u, helper)
 	} else {
@@ -126,7 +127,8 @@ func (c *client) ApplyWithNamespaceOverride(u *unstructured.Unstructured, namesp
 		if err != nil {
 			return metadata, err
 		}
-		info.Refresh(obj, true)
+
+		_ = info.Refresh(obj, true)
 	}
 
 	_, patchedObject, err := patcher.Patch(info.Object, modified, info.Namespace, info.Name)
@@ -134,7 +136,7 @@ func (c *client) ApplyWithNamespaceOverride(u *unstructured.Unstructured, namesp
 		return metadata, err
 	}
 
-	info.Refresh(patchedObject, true)
+	_ = info.Refresh(patchedObject, true)
 
 	metadata.Name = u.GetName()
 	metadata.Namespace = u.GetNamespace()
@@ -149,6 +151,7 @@ func (c *client) ApplyWithNamespaceOverride(u *unstructured.Unstructured, namesp
 func newRestClient(restConfig rest.Config, gv schema.GroupVersion) (rest.Interface, error) {
 	restConfig.ContentConfig = resource.UnstructuredPlusDefaultContentConfig()
 	restConfig.GroupVersion = &gv
+
 	if len(gv.Group) == 0 {
 		restConfig.APIPath = "/api"
 	} else {
@@ -245,6 +248,7 @@ func (c *client) ListResource(resource string, lo metav1.ListOptions) (*unstruct
 	if err != nil {
 		return nil, err
 	}
+
 	return c.c.Resource(gvr).List(context.TODO(), lo)
 }
 
@@ -288,6 +292,7 @@ func (c *client) Patch(kind, name, namespace string, p []byte) (Metadata, *unstr
 
 func (c *client) PatchUsingStrategy(kind, name, namespace string, p []byte, strategy types.PatchType) (Metadata, *unstructured.Unstructured, error) {
 	metadata := Metadata{}
+
 	gvk, err := c.mapper.KindFor(schema.GroupVersionResource{Resource: kind})
 	if err != nil {
 		return metadata, nil, err

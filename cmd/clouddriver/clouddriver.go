@@ -20,7 +20,10 @@ var (
 )
 
 func main() {
-	r.Run(":7002")
+	err := r.Run(":7002")
+	if err != nil {
+		panic(err)
+	}
 }
 
 func init() {

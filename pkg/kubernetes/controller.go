@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/homedepot/go-clouddriver/pkg/kubernetes/cached/disk"
 	"github.com/gin-gonic/gin"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes/cached/disk"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -92,6 +92,7 @@ func computeDiscoverCacheDir(parentDir, host string) string {
 	// now do a simple collapse of non-AZ09 characters.  Collisions are possible but unlikely.
 	// Even if we do collide the problem is short lived
 	safeHost := overlyCautiousIllegalFileCharacters.ReplaceAllString(schemelessHost, "_")
+
 	return filepath.Join(parentDir, safeHost)
 }
 
