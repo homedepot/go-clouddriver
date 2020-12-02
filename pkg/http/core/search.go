@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/gin-gonic/gin"
 )
 
 type SearchResponse []Page
@@ -55,6 +55,7 @@ func Search(c *gin.Context) {
 	}
 
 	results := []PageResult{}
+
 	for _, account := range accounts {
 		if account == "" {
 			continue
@@ -68,11 +69,13 @@ func Search(c *gin.Context) {
 		if err != nil {
 			continue
 		}
+
 		for _, name := range names {
 			t := "unclassified"
 			if _, ok := spinnakerKindMap[kind]; ok {
 				t = spinnakerKindMap[kind]
 			}
+
 			result := PageResult{
 				Account:        account,
 				Group:          kind,
@@ -83,6 +86,7 @@ func Search(c *gin.Context) {
 				Region:         namespace,
 				Type:           t,
 			}
+
 			results = append(results, result)
 			if len(results) >= pageSize {
 				break

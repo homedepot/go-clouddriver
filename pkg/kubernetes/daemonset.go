@@ -80,6 +80,7 @@ func (ds *daemonSet) LabelTemplateIfNotExists(key, value string) {
 	if _, ok := labels[key]; !ok {
 		labels[key] = value
 	}
+
 	ds.ds.Spec.Template.ObjectMeta.Labels = labels
 }
 
@@ -103,7 +104,7 @@ func (ds *daemonSet) Status() manifest.Status {
 		return s
 	}
 
-	desiredReplicas := *&ds.ds.Status.DesiredNumberScheduled
+	desiredReplicas := ds.ds.Status.DesiredNumberScheduled
 
 	{
 		scheduledReplicas := ds.ds.Status.CurrentNumberScheduled

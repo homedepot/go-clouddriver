@@ -89,6 +89,7 @@ func (d *deployment) LabelTemplateIfNotExists(key, value string) {
 	if _, ok := labels[key]; !ok {
 		labels[key] = value
 	}
+
 	d.d.Spec.Template.ObjectMeta.Labels = labels
 }
 

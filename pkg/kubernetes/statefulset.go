@@ -51,6 +51,7 @@ func (ss *statefulSet) Status() manifest.Status {
 	if x.ObjectMeta.Generation != x.Status.ObservedGeneration {
 		s.Stable.State = false
 		s.Stable.Message = "Waiting for status generation to match updated object generation"
+
 		return s
 	}
 
@@ -84,10 +85,13 @@ func (ss *statefulSet) Status() manifest.Status {
 		if partition != nil && (updated < (existing - *partition)) {
 			s.Stable.State = false
 			s.Stable.Message = "Waiting for partitioned rollout to finish"
+
 			return s
 		}
+
 		s.Stable.State = true
 		s.Stable.Message = "Partitioned roll out complete"
+
 		return s
 	}
 
@@ -105,6 +109,7 @@ func (ss *statefulSet) Status() manifest.Status {
 	if currentRev != updateRev {
 		s.Stable.State = false
 		s.Stable.Message = "Waiting for the updated revision to match the current revision"
+
 		return s
 	}
 

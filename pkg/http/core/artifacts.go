@@ -74,6 +74,7 @@ func ListHelmArtifactAccountVersions(c *gin.Context) {
 	for name, resources := range i.Entries {
 		if strings.EqualFold(name, artifactName) {
 			found = true
+
 			for _, resource := range resources {
 				versions = append(versions, resource.Version)
 			}
@@ -118,7 +119,7 @@ func GetArtifact(c *gin.Context) {
 		return
 	}
 
-	b := []byte{}
+	var b []byte
 
 	switch a.Type {
 	case artifact.TypeHTTPFile:
@@ -206,7 +207,12 @@ func GetArtifact(c *gin.Context) {
 			Content  string `json:"content"`
 			Encoding string `json:"encoding"`
 		}
-		json.Unmarshal(buf.Bytes(), &response)
+
+		err = json.Unmarshal(buf.Bytes(), &response)
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
 
 		if strings.EqualFold(response.Encoding, "base64") {
 			b, err = base64.StdEncoding.DecodeString(response.Content)
@@ -237,14 +243,14 @@ func GetArtifact(c *gin.Context) {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
+		defer resp.Body.Close()
+
 		if resp.StatusCode < 200 || resp.StatusCode > 299 {
 			clouddriver.Error(c, http.StatusInternalServerError, fmt.Errorf("error getting git/repo (repo: %s, branch: %s): %s", a.Reference, branch, resp.Status))
 			return
 		}
-		defer resp.Body.Close()
 
-		rb := []byte{}
-		rb, err = ioutil.ReadAll(resp.Body)
+		rb, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -288,11 +294,13 @@ func GetArtifact(c *gin.Context) {
 
 		// Read tar archive
 		tr := tar.NewReader(gr)
+
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
 				break
 			}
+
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -338,5 +346,8 @@ func GetArtifact(c *gin.Context) {
 		return
 	}
 
-	c.Writer.Write(b)
+	_, err = c.Writer.Write(b)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+	}
 }
