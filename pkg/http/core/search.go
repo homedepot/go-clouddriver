@@ -49,7 +49,7 @@ func Search(c *gin.Context) {
 	accounts := strings.Split(c.GetHeader("X-Spinnaker-Accounts"), ",")
 
 	if kind == "" || namespace == "" {
-		clouddriver.WriteError(c, http.StatusBadRequest,
+		clouddriver.Error(c, http.StatusBadRequest,
 			errors.New("must provide query params 'q' to specify the namespace and 'type' to specify the kind"))
 		return
 	}

@@ -4,12 +4,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"unicode"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -22,38 +26,29 @@ var (
 	listTimeout = int64(30)
 )
 
-func (ah *actionHandler) NewDeployManifestAction(ac ActionConfig) Action {
-	return &deployManifest{
-		ac: ac.ArcadeClient,
-		sc: ac.SQLClient,
-		kc: ac.KubeController,
-		id: ac.ID,
-		dm: ac.Operation.DeployManifest,
-	}
-}
+func Deploy(c *gin.Context, dm DeployManifestRequest) {
+	ac := arcade.Instance(c)
+	kc := kube.ControllerInstance(c)
+	sc := sql.Instance(c)
+	taskID := clouddriver.TaskIDFromContext(c)
 
-type deployManifest struct {
-	ac arcade.Client
-	sc sql.Client
-	kc kubernetes.Controller
-	id string
-	dm *DeployManifestRequest
-}
+	provider, err := sc.GetKubernetesProvider(dm.Account)
 
-func (d *deployManifest) Run() error {
-	provider, err := d.sc.GetKubernetesProvider(d.dm.Account)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
 	}
 
-	token, err := d.ac.Token()
+	token, err := ac.Token()
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	config := &rest.Config{
@@ -64,20 +59,22 @@ func (d *deployManifest) Run() error {
 		},
 	}
 
-	client, err := d.kc.NewClient(config)
+	client, err := kc.NewClient(config)
 	if err != nil {
-		return err
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	manifests := []map[string]interface{}{}
 
-	application := d.dm.Moniker.App
+	application := dm.Moniker.App
 
 	// Merge all list element items into the manifest list.
-	for _, manifest := range d.dm.Manifests {
-		u, err := d.kc.ToUnstructured(manifest)
+	for _, manifest := range dm.Manifests {
+		u, err := kc.ToUnstructured(manifest)
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
 		}
 
 		if strings.EqualFold(u.GetKind(), "list") {
@@ -85,12 +82,14 @@ func (d *deployManifest) Run() error {
 
 			b, err := json.Marshal(u.Object)
 			if err != nil {
-				return err
+				clouddriver.Error(c, http.StatusBadRequest, err)
+				return
 			}
 
 			err = json.Unmarshal(b, &listElement)
 			if err != nil {
-				return err
+				clouddriver.Error(c, http.StatusBadRequest, err)
+				return
 			}
 
 			manifests = append(manifests, listElement.Items...)
@@ -100,16 +99,17 @@ func (d *deployManifest) Run() error {
 	}
 
 	for _, manifest := range manifests {
-		u, err := d.kc.ToUnstructured(manifest)
+		u, err := kc.ToUnstructured(manifest)
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
 		}
 
 		// If the kind is a job, its name is not set, and generateName is set,
 		// generate a name for the job as `apply` will throw the error
 		// `resource name may not be empty`.
+		name := u.GetName()
 		if strings.EqualFold(u.GetKind(), "job") {
-			name := u.GetName()
 			generateName := u.GetGenerateName()
 
 			if name == "" && generateName != "" {
@@ -117,22 +117,19 @@ func (d *deployManifest) Run() error {
 			}
 		}
 
-		name := u.GetName()
-
-		err = d.kc.AddSpinnakerAnnotations(u, application)
-
+		err = kc.AddSpinnakerAnnotations(u, application)
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
 		}
 
-		err = d.kc.AddSpinnakerLabels(u, application)
+		err = kc.AddSpinnakerLabels(u, application)
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
 		}
 
-		name = u.GetName()
-
-		if d.kc.IsVersioned(u) {
+		if kc.IsVersioned(u) {
 			kind := strings.ToLower(u.GetKind())
 			namespace := u.GetNamespace()
 			lo := metav1.ListOptions{
@@ -142,52 +139,58 @@ func (d *deployManifest) Run() error {
 
 			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
 			if err != nil {
-				return err
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
 			}
 
-			currentVersion := d.kc.GetCurrentVersion(results, kind, name)
-			latestVersion := d.kc.IncrementVersion(currentVersion)
+			currentVersion := kc.GetCurrentVersion(results, kind, name)
+			latestVersion := kc.IncrementVersion(currentVersion)
 
 			u.SetName(u.GetName() + "-" + latestVersion.Long)
 
-			err = d.kc.AddSpinnakerVersionAnnotations(u, latestVersion)
+			err = kc.AddSpinnakerVersionAnnotations(u, latestVersion)
 			if err != nil {
-				return err
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
 			}
 
-			err = d.kc.AddSpinnakerVersionLabels(u, latestVersion)
+			err = kc.AddSpinnakerVersionLabels(u, latestVersion)
 			if err != nil {
-				return err
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
 			}
 		}
 
-		meta, err := client.ApplyWithNamespaceOverride(u, d.dm.NamespaceOverride)
+		meta, err := client.ApplyWithNamespaceOverride(u, dm.NamespaceOverride)
+
 		if err != nil {
-			return fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
+			e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
 				u.GetKind(), u.GroupVersionKind().Version, u.GetName(), err.Error())
+			clouddriver.Error(c, http.StatusInternalServerError, e)
+
+			return
 		}
 
 		kr := kubernetes.Resource{
-			AccountName:  d.dm.Account,
+			AccountName:  dm.Account,
 			ID:           uuid.New().String(),
-			TaskID:       d.id,
+			TaskID:       taskID,
 			APIGroup:     meta.Group,
 			Name:         meta.Name,
 			Namespace:    meta.Namespace,
 			Resource:     meta.Resource,
 			Version:      meta.Version,
 			Kind:         meta.Kind,
-			SpinnakerApp: d.dm.Moniker.App,
+			SpinnakerApp: dm.Moniker.App,
 			Cluster:      cluster(meta.Kind, name),
 		}
 
-		err = d.sc.CreateKubernetesResource(kr)
+		err = sc.CreateKubernetesResource(kr)
 		if err != nil {
-			return err
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
 		}
 	}
-
-	return nil
 }
 
 // Generate the cluster that a kind is a part of.

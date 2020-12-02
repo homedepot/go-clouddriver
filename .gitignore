@@ -2,3 +2,4 @@
 /test/
 *.coverprofile
 clouddriver.db
+.idea/

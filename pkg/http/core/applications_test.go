@@ -20,40 +20,22 @@ var _ = Describe("Application", func() {
 			setup()
 			uri = svr.URL + "/applications"
 			createRequest(http.MethodGet)
-			fakeSQLClient.ListKubernetesResourcesByFieldsReturns([]kubernetes.Resource{
+			fakeSQLClient.ListKubernetesClustersByFieldsReturns([]kubernetes.Resource{
 				{
 					AccountName:  "test-account1",
-					ID:           "test-id1",
-					TaskID:       "test-task-id1",
-					APIGroup:     "test-api-group1",
 					Name:         "test-name1",
-					Namespace:    "test-namespace1",
-					Resource:     "test-resource1",
-					Version:      "test-version1",
 					Kind:         "test-kind1",
 					SpinnakerApp: "test-spinnaker-app1",
 				},
 				{
 					AccountName:  "test-account2",
-					ID:           "test-id2",
-					TaskID:       "test-task-id2",
-					APIGroup:     "test-api-group2",
 					Name:         "test-name2",
-					Namespace:    "test-namespace2",
-					Resource:     "test-resource2",
-					Version:      "test-version2",
 					Kind:         "test-kind2",
 					SpinnakerApp: "test-spinnaker-app2",
 				},
 				{
 					AccountName:  "test-account3",
-					ID:           "test-id3",
-					TaskID:       "test-task-id3",
-					APIGroup:     "test-api-group3",
 					Name:         "test-name3",
-					Namespace:    "test-namespace3",
-					Resource:     "test-resource3",
-					Version:      "test-version3",
 					Kind:         "test-kind3",
 					SpinnakerApp: "test-spinnaker-app2",
 				},
@@ -71,7 +53,7 @@ var _ = Describe("Application", func() {
 
 		When("listing resources by fields returns an error", func() {
 			BeforeEach(func() {
-				fakeSQLClient.ListKubernetesResourcesByFieldsReturns(nil, errors.New("error listing resources"))
+				fakeSQLClient.ListKubernetesClustersByFieldsReturns(nil, errors.New("error listing resources"))
 			})
 
 			It("returns an error", func() {

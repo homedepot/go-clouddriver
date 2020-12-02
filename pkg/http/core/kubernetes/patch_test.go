@@ -2,7 +2,9 @@ package kubernetes_test
 
 import (
 	"errors"
+	"net/http"
 
+	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,8 +16,7 @@ var _ = Describe("Patch", func() {
 	})
 
 	JustBeforeEach(func() {
-		action = actionHandler.NewPatchManifestAction(actionConfig)
-		err = action.Run()
+		Patch(c, patchManifestRequest)
 	})
 
 	When("getting the provider returns an error", func() {
@@ -24,8 +25,8 @@ var _ = Describe("Patch", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting provider"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting provider"))
 		})
 	})
 
@@ -35,8 +36,8 @@ var _ = Describe("Patch", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("illegal base64 data at input byte 0"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("illegal base64 data at input byte 0"))
 		})
 	})
 
@@ -46,8 +47,8 @@ var _ = Describe("Patch", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting token"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting token"))
 		})
 	})
 
@@ -57,8 +58,8 @@ var _ = Describe("Patch", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("bad config"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("bad config"))
 		})
 	})
 
@@ -68,8 +69,8 @@ var _ = Describe("Patch", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error patching manifest"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error patching manifest"))
 		})
 	})
 
@@ -79,55 +80,55 @@ var _ = Describe("Patch", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error creating resource"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error creating resource"))
 		})
 	})
 
 	Context("merge strategies", func() {
 		Context("strategic patch type", func() {
 			BeforeEach(func() {
-				actionConfig.Operation.PatchManifest.Options.MergeStrategy = "strategic"
+				patchManifestRequest.Options.MergeStrategy = "strategic"
 			})
 
 			It("succeeds", func() {
-				Expect(err).To(BeNil())
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 			})
 		})
 
 		Context("json patch type", func() {
 			BeforeEach(func() {
-				actionConfig.Operation.PatchManifest.Options.MergeStrategy = "json"
+				patchManifestRequest.Options.MergeStrategy = "json"
 			})
 
 			It("succeeds", func() {
-				Expect(err).To(BeNil())
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 			})
 		})
 
 		Context("merge patch type", func() {
 			BeforeEach(func() {
-				actionConfig.Operation.PatchManifest.Options.MergeStrategy = "merge"
+				patchManifestRequest.Options.MergeStrategy = "merge"
 			})
 
 			It("succeeds", func() {
-				Expect(err).To(BeNil())
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 			})
 		})
 
 		Context("unknown patch type", func() {
 			BeforeEach(func() {
-				actionConfig.Operation.PatchManifest.Options.MergeStrategy = "unknown"
+				patchManifestRequest.Options.MergeStrategy = "unknown"
 			})
 
 			It("returns an error", func() {
-				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(Equal("invalid merge strategy unknown"))
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("invalid merge strategy unknown"))
 			})
 		})
 
 		It("succeeds", func() {
-			Expect(err).To(BeNil())
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 		})
 	})
 })

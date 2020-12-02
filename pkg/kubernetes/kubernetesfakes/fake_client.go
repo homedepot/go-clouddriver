@@ -2,6 +2,7 @@
 package kubernetesfakes
 
 import (
+	"context"
 	"sync"
 
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
@@ -92,6 +93,21 @@ type FakeClient struct {
 		result2 error
 	}
 	listByGVRReturnsOnCall map[int]struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}
+	ListByGVRWithContextStub        func(context.Context, schema.GroupVersionResource, v1.ListOptions) (*unstructured.UnstructuredList, error)
+	listByGVRWithContextMutex       sync.RWMutex
+	listByGVRWithContextArgsForCall []struct {
+		arg1 context.Context
+		arg2 schema.GroupVersionResource
+		arg3 v1.ListOptions
+	}
+	listByGVRWithContextReturns struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}
+	listByGVRWithContextReturnsOnCall map[int]struct {
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}
@@ -547,6 +563,71 @@ func (fake *FakeClient) ListByGVRReturnsOnCall(i int, result1 *unstructured.Unst
 	}{result1, result2}
 }
 
+func (fake *FakeClient) ListByGVRWithContext(arg1 context.Context, arg2 schema.GroupVersionResource, arg3 v1.ListOptions) (*unstructured.UnstructuredList, error) {
+	fake.listByGVRWithContextMutex.Lock()
+	ret, specificReturn := fake.listByGVRWithContextReturnsOnCall[len(fake.listByGVRWithContextArgsForCall)]
+	fake.listByGVRWithContextArgsForCall = append(fake.listByGVRWithContextArgsForCall, struct {
+		arg1 context.Context
+		arg2 schema.GroupVersionResource
+		arg3 v1.ListOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("ListByGVRWithContext", []interface{}{arg1, arg2, arg3})
+	fake.listByGVRWithContextMutex.Unlock()
+	if fake.ListByGVRWithContextStub != nil {
+		return fake.ListByGVRWithContextStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.listByGVRWithContextReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) ListByGVRWithContextCallCount() int {
+	fake.listByGVRWithContextMutex.RLock()
+	defer fake.listByGVRWithContextMutex.RUnlock()
+	return len(fake.listByGVRWithContextArgsForCall)
+}
+
+func (fake *FakeClient) ListByGVRWithContextCalls(stub func(context.Context, schema.GroupVersionResource, v1.ListOptions) (*unstructured.UnstructuredList, error)) {
+	fake.listByGVRWithContextMutex.Lock()
+	defer fake.listByGVRWithContextMutex.Unlock()
+	fake.ListByGVRWithContextStub = stub
+}
+
+func (fake *FakeClient) ListByGVRWithContextArgsForCall(i int) (context.Context, schema.GroupVersionResource, v1.ListOptions) {
+	fake.listByGVRWithContextMutex.RLock()
+	defer fake.listByGVRWithContextMutex.RUnlock()
+	argsForCall := fake.listByGVRWithContextArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeClient) ListByGVRWithContextReturns(result1 *unstructured.UnstructuredList, result2 error) {
+	fake.listByGVRWithContextMutex.Lock()
+	defer fake.listByGVRWithContextMutex.Unlock()
+	fake.ListByGVRWithContextStub = nil
+	fake.listByGVRWithContextReturns = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ListByGVRWithContextReturnsOnCall(i int, result1 *unstructured.UnstructuredList, result2 error) {
+	fake.listByGVRWithContextMutex.Lock()
+	defer fake.listByGVRWithContextMutex.Unlock()
+	fake.ListByGVRWithContextStub = nil
+	if fake.listByGVRWithContextReturnsOnCall == nil {
+		fake.listByGVRWithContextReturnsOnCall = make(map[int]struct {
+			result1 *unstructured.UnstructuredList
+			result2 error
+		})
+	}
+	fake.listByGVRWithContextReturnsOnCall[i] = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) ListResource(arg1 string, arg2 v1.ListOptions) (*unstructured.UnstructuredList, error) {
 	fake.listResourceMutex.Lock()
 	ret, specificReturn := fake.listResourceReturnsOnCall[len(fake.listResourceArgsForCall)]
@@ -840,6 +921,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.getMutex.RUnlock()
 	fake.listByGVRMutex.RLock()
 	defer fake.listByGVRMutex.RUnlock()
+	fake.listByGVRWithContextMutex.RLock()
+	defer fake.listByGVRWithContextMutex.RUnlock()
 	fake.listResourceMutex.RLock()
 	defer fake.listResourceMutex.RUnlock()
 	fake.listResourcesByKindAndNamespaceMutex.RLock()

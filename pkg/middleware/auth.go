@@ -31,7 +31,7 @@ func AuthApplication(permissions ...string) gin.HandlerFunc {
 		fiatClient := fiat.Instance(c)
 		authResp, err := fiatClient.Authorize(user)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusUnauthorized, err)
+			clouddriver.Error(c, http.StatusUnauthorized, err)
 			return
 		}
 
@@ -41,7 +41,7 @@ func AuthApplication(permissions ...string) gin.HandlerFunc {
 				for _, p := range permissions {
 					found := find(auth.Authorizations, p)
 					if !found {
-						clouddriver.WriteError(c, http.StatusForbidden, fmt.Errorf("Access denied to application %s - required authorization: %s", app, p))
+						clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to application %s - required authorization: %s", app, p))
 						return
 					}
 				}
@@ -64,7 +64,7 @@ func AuthAccount(permissions ...string) gin.HandlerFunc {
 
 		authResp, err := fiatClient.Authorize(user)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusUnauthorized, err)
+			clouddriver.Error(c, http.StatusUnauthorized, err)
 			return
 		}
 
@@ -75,7 +75,7 @@ func AuthAccount(permissions ...string) gin.HandlerFunc {
 				for _, p := range permissions {
 					found := find(auth.Authorizations, p)
 					if !found {
-						clouddriver.WriteError(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
+						clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
 						return
 					}
 				}
@@ -105,7 +105,7 @@ func PostFilterAuthorizedApplications(permissions ...string) gin.HandlerFunc {
 		fiatClient := fiat.Instance(c)
 		authResp, err := fiatClient.Authorize(user)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusUnauthorized, err)
+			clouddriver.Error(c, http.StatusUnauthorized, err)
 			return
 		}
 		authorizedApps := authResp.Applications

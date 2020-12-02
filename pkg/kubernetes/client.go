@@ -39,6 +39,7 @@ type Client interface {
 	GVRForKind(string) (schema.GroupVersionResource, error)
 	Get(string, string, string) (*unstructured.Unstructured, error)
 	ListByGVR(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
+	ListByGVRWithContext(context.Context, schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	ListResource(string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	Patch(string, string, string, []byte) (Metadata, *unstructured.Unstructured, error)
 	PatchUsingStrategy(string, string, string, []byte, types.PatchType) (Metadata, *unstructured.Unstructured, error)
@@ -231,6 +232,11 @@ func (c *client) GVRForKind(kind string) (schema.GroupVersionResource, error) {
 // List all resources by their GVR and list options.
 func (c *client) ListByGVR(gvr schema.GroupVersionResource, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	return c.c.Resource(gvr).List(context.TODO(), lo)
+}
+
+// List all resources by their GVR and list options with context,
+func (c *client) ListByGVRWithContext(ctx context.Context, gvr schema.GroupVersionResource, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+	return c.c.Resource(gvr).List(ctx, lo)
 }
 
 // List all resources by their kind or resource (e.g. "replicaset" or "replicasets")

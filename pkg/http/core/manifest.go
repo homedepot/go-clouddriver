@@ -44,19 +44,19 @@ func GetManifest(c *gin.Context) {
 
 	provider, err := sc.GetKubernetesProvider(account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -70,13 +70,13 @@ func GetManifest(c *gin.Context) {
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	result, err := client.Get(kind, name, namespace)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -127,19 +127,19 @@ func GetManifestByTarget(c *gin.Context) {
 
 	provider, err := sc.GetKubernetesProvider(account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -153,13 +153,13 @@ func GetManifestByTarget(c *gin.Context) {
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	gvr, err := client.GVRForKind(kind)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -176,7 +176,7 @@ func GetManifestByTarget(c *gin.Context) {
 
 	list, err := client.ListByGVR(gvr, lo)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -184,7 +184,7 @@ func GetManifestByTarget(c *gin.Context) {
 	manifestFilter := kubernetes.NewManifestFilter(list.Items)
 	items := manifestFilter.FilterOnCluster(cluster)
 	if len(items) == 0 {
-		clouddriver.WriteError(c, http.StatusNotFound, errors.New("no resources found for cluster "+cluster))
+		clouddriver.Error(c, http.StatusNotFound, errors.New("no resources found for cluster "+cluster))
 		return
 	}
 
@@ -202,18 +202,18 @@ func GetManifestByTarget(c *gin.Context) {
 		result = items[0]
 	case "second_newest":
 		if len(items) < 2 {
-			clouddriver.WriteError(c, http.StatusBadRequest, errors.New("requested target \"Second Newest\" for cluster "+cluster+", but only one resource was found"))
+			clouddriver.Error(c, http.StatusBadRequest, errors.New("requested target \"Second Newest\" for cluster "+cluster+", but only one resource was found"))
 			return
 		}
 		result = items[1]
 	case "oldest":
 		if len(items) < 2 {
-			clouddriver.WriteError(c, http.StatusBadRequest, errors.New("requested target \"Oldest\" for cluster "+cluster+", but only one resource was found"))
+			clouddriver.Error(c, http.StatusBadRequest, errors.New("requested target \"Oldest\" for cluster "+cluster+", but only one resource was found"))
 			return
 		}
 		result = items[len(items)-1]
 	default:
-		clouddriver.WriteError(c, http.StatusNotImplemented, errors.New("requested target \""+target+"\" for cluster "+cluster+" is not supported"))
+		clouddriver.Error(c, http.StatusNotImplemented, errors.New("requested target \""+target+"\" for cluster "+cluster+" is not supported"))
 		return
 	}
 

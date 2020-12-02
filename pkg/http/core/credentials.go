@@ -1,17 +1,19 @@
 package core
 
 import (
+	"context"
 	"encoding/base64"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/gin-gonic/gin"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/gin-gonic/gin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
@@ -68,7 +70,7 @@ func ListCredentials(c *gin.Context) {
 
 	providers, err := sc.ListKubernetesProvidersAndPermissions()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -137,11 +139,14 @@ func listNamespaces(provider kubernetes.Provider,
 	accountNamespacesCh chan AccountNamespaces,
 	ac arcade.Client,
 	kc kubernetes.Controller) {
+	namespaces := []string{}
+
 	defer wg.Done()
+	defer sendToNsChan(accountNamespacesCh, &provider.Name, &namespaces)
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		log.Println("/credentials error decoding provider ca data:", err.Error())
+		log.Println("/credentials error decoding provider ca data for "+provider.Name+":", err.Error())
 		return
 	}
 
@@ -165,29 +170,32 @@ func listNamespaces(provider kubernetes.Provider,
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	gvr := schema.GroupVersionResource{
 		Group:    "",
 		Version:  "v1",
 		Resource: "namespaces",
 	}
 	// timeout listing namespaces to 5 seconds
-	result, err := client.ListByGVR(gvr, metav1.ListOptions{
+	result, err := client.ListByGVRWithContext(ctx, gvr, metav1.ListOptions{
 		TimeoutSeconds: &listNamespacesTimeout,
 	})
 	if err != nil {
-		log.Println("/credentials error listing using kubernetes account:", err.Error())
+		log.Println("/credentials error listing using kubernetes account "+provider.Name+":", err.Error())
 		return
 	}
 
-	namespaces := []string{}
 	for _, ns := range result.Items {
 		namespaces = append(namespaces, ns.GetName())
 	}
-	an := AccountNamespaces{
-		Name:       provider.Name,
-		Namespaces: namespaces,
-	}
+}
 
+func sendToNsChan(accountNamespacesCh chan AccountNamespaces, name *string, namespaces *[]string) {
+	an := AccountNamespaces{
+		Name:       *name,
+		Namespaces: *namespaces,
+	}
 	accountNamespacesCh <- an
 }
 
@@ -197,19 +205,19 @@ func GetAccountCredentials(c *gin.Context) {
 
 	provider, err := sc.GetKubernetesProvider(account)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	readGroups, err := sc.ListReadGroupsByAccountName(provider.Name)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	writeGroups, err := sc.ListWriteGroupsByAccountName(provider.Name)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 

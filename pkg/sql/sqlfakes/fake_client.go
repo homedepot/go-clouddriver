@@ -104,6 +104,19 @@ type FakeClient struct {
 		result1 []kubernetes.Resource
 		result2 error
 	}
+	ListKubernetesClustersByFieldsStub        func(...string) ([]kubernetes.Resource, error)
+	listKubernetesClustersByFieldsMutex       sync.RWMutex
+	listKubernetesClustersByFieldsArgsForCall []struct {
+		arg1 []string
+	}
+	listKubernetesClustersByFieldsReturns struct {
+		result1 []kubernetes.Resource
+		result2 error
+	}
+	listKubernetesClustersByFieldsReturnsOnCall map[int]struct {
+		result1 []kubernetes.Resource
+		result2 error
+	}
 	ListKubernetesProvidersStub        func() ([]kubernetes.Provider, error)
 	listKubernetesProvidersMutex       sync.RWMutex
 	listKubernetesProvidersArgsForCall []struct {
@@ -688,6 +701,69 @@ func (fake *FakeClient) ListKubernetesClustersByApplicationReturnsOnCall(i int, 
 	}{result1, result2}
 }
 
+func (fake *FakeClient) ListKubernetesClustersByFields(arg1 ...string) ([]kubernetes.Resource, error) {
+	fake.listKubernetesClustersByFieldsMutex.Lock()
+	ret, specificReturn := fake.listKubernetesClustersByFieldsReturnsOnCall[len(fake.listKubernetesClustersByFieldsArgsForCall)]
+	fake.listKubernetesClustersByFieldsArgsForCall = append(fake.listKubernetesClustersByFieldsArgsForCall, struct {
+		arg1 []string
+	}{arg1})
+	fake.recordInvocation("ListKubernetesClustersByFields", []interface{}{arg1})
+	fake.listKubernetesClustersByFieldsMutex.Unlock()
+	if fake.ListKubernetesClustersByFieldsStub != nil {
+		return fake.ListKubernetesClustersByFieldsStub(arg1...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.listKubernetesClustersByFieldsReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) ListKubernetesClustersByFieldsCallCount() int {
+	fake.listKubernetesClustersByFieldsMutex.RLock()
+	defer fake.listKubernetesClustersByFieldsMutex.RUnlock()
+	return len(fake.listKubernetesClustersByFieldsArgsForCall)
+}
+
+func (fake *FakeClient) ListKubernetesClustersByFieldsCalls(stub func(...string) ([]kubernetes.Resource, error)) {
+	fake.listKubernetesClustersByFieldsMutex.Lock()
+	defer fake.listKubernetesClustersByFieldsMutex.Unlock()
+	fake.ListKubernetesClustersByFieldsStub = stub
+}
+
+func (fake *FakeClient) ListKubernetesClustersByFieldsArgsForCall(i int) []string {
+	fake.listKubernetesClustersByFieldsMutex.RLock()
+	defer fake.listKubernetesClustersByFieldsMutex.RUnlock()
+	argsForCall := fake.listKubernetesClustersByFieldsArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClient) ListKubernetesClustersByFieldsReturns(result1 []kubernetes.Resource, result2 error) {
+	fake.listKubernetesClustersByFieldsMutex.Lock()
+	defer fake.listKubernetesClustersByFieldsMutex.Unlock()
+	fake.ListKubernetesClustersByFieldsStub = nil
+	fake.listKubernetesClustersByFieldsReturns = struct {
+		result1 []kubernetes.Resource
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ListKubernetesClustersByFieldsReturnsOnCall(i int, result1 []kubernetes.Resource, result2 error) {
+	fake.listKubernetesClustersByFieldsMutex.Lock()
+	defer fake.listKubernetesClustersByFieldsMutex.Unlock()
+	fake.ListKubernetesClustersByFieldsStub = nil
+	if fake.listKubernetesClustersByFieldsReturnsOnCall == nil {
+		fake.listKubernetesClustersByFieldsReturnsOnCall = make(map[int]struct {
+			result1 []kubernetes.Resource
+			result2 error
+		})
+	}
+	fake.listKubernetesClustersByFieldsReturnsOnCall[i] = struct {
+		result1 []kubernetes.Resource
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) ListKubernetesProviders() ([]kubernetes.Provider, error) {
 	fake.listKubernetesProvidersMutex.Lock()
 	ret, specificReturn := fake.listKubernetesProvidersReturnsOnCall[len(fake.listKubernetesProvidersArgsForCall)]
@@ -1134,6 +1210,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.listKubernetesAccountsBySpinnakerAppMutex.RUnlock()
 	fake.listKubernetesClustersByApplicationMutex.RLock()
 	defer fake.listKubernetesClustersByApplicationMutex.RUnlock()
+	fake.listKubernetesClustersByFieldsMutex.RLock()
+	defer fake.listKubernetesClustersByFieldsMutex.RUnlock()
 	fake.listKubernetesProvidersMutex.RLock()
 	defer fake.listKubernetesProvidersMutex.RUnlock()
 	fake.listKubernetesProvidersAndPermissionsMutex.RLock()

@@ -301,6 +301,51 @@ var _ = Describe("Sql", func() {
 		})
 	})
 
+	Describe("#ListKubernetesClustersByFields", func() {
+		var resources []kubernetes.Resource
+		fields := []string{}
+
+		BeforeEach(func() {
+			fields = []string{"field1", "field2"}
+		})
+
+		JustBeforeEach(func() {
+			resources, err = c.ListKubernetesClustersByFields(fields...)
+		})
+
+		When("no fields are provided", func() {
+			BeforeEach(func() {
+				fields = []string{}
+			})
+
+			It("returns an error", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("no fields provided"))
+			})
+		})
+
+		When("it succeeds", func() {
+			BeforeEach(func() {
+				sqlRows := sqlmock.NewRows([]string{"group", "name"}).
+					AddRow("group1", "name1").
+					AddRow("group2", "name2")
+				mock.ExpectQuery(`(?i)^SELECT ` +
+					`field1, ` +
+					`field2 ` +
+					`FROM "kubernetes_resources" ` +
+					` WHERE \(kind in \('deployment', 'statefulSet', 'replicaSet', 'ingress', 'service', 'daemonSet'\)\)`+
+					` GROUP BY field1, field2$`).
+					WillReturnRows(sqlRows)
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+				Expect(resources).To(HaveLen(2))
+			})
+		})
+	})
+
 	Describe("#ListKubernetesResourceNamesByAccountNameAndKindAndNamespace", func() {
 		var names []string
 

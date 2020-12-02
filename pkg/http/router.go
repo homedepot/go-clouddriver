@@ -1,10 +1,10 @@
 package http
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/pkg/http/core"
 	v1 "github.com/homedepot/go-clouddriver/pkg/http/v1"
 	"github.com/homedepot/go-clouddriver/pkg/middleware"
-	"github.com/gin-gonic/gin"
 )
 
 // Define the API.
@@ -60,7 +60,7 @@ func Initialize(r *gin.Engine) {
 		api.GET("/applications/:application/jobs/:account/:location/:name", middleware.AuthApplication("READ"), middleware.AuthAccount("READ"), core.GetJob)
 
 		// Create a kubernetes operation - deploy/delete/scale manifest.
-		api.POST("/kubernetes/ops", core.CreateKubernetesOperation)
+		api.POST("/kubernetes/ops", middleware.TaskID(), core.CreateKubernetesOperation)
 
 		// Manifests API controller.
 		api.GET("/manifests/:account/:location/:kind", core.GetManifest)

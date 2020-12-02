@@ -2,13 +2,14 @@ package kubernetes_test
 
 import (
 	"errors"
+	"net/http"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	// . "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
+	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 )
 
@@ -18,8 +19,7 @@ var _ = Describe("Delete", func() {
 	})
 
 	JustBeforeEach(func() {
-		action = actionHandler.NewDeleteManifestAction(actionConfig)
-		err = action.Run()
+		Delete(c, deleteManifestRequest)
 	})
 
 	When("getting the provider returns an error", func() {
@@ -28,8 +28,8 @@ var _ = Describe("Delete", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting provider"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting provider"))
 		})
 	})
 
@@ -39,8 +39,8 @@ var _ = Describe("Delete", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("illegal base64 data at input byte 0"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("illegal base64 data at input byte 0"))
 		})
 	})
 
@@ -50,8 +50,8 @@ var _ = Describe("Delete", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting token"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting token"))
 		})
 	})
 
@@ -61,8 +61,8 @@ var _ = Describe("Delete", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("bad config"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("bad config"))
 		})
 	})
 
@@ -72,8 +72,8 @@ var _ = Describe("Delete", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error getting gvr"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error getting gvr"))
 		})
 	})
 
@@ -83,8 +83,8 @@ var _ = Describe("Delete", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error deleting resource"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error deleting resource"))
 		})
 	})
 
@@ -94,36 +94,36 @@ var _ = Describe("Delete", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("error creating resource"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error creating resource"))
 		})
 	})
 
 	When("the mode is label", func() {
 		BeforeEach(func() {
-			actionConfig.Operation.DeleteManifest.Mode = "label"
+			deleteManifestRequest.Mode = "label"
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("requested to delete manifest deployment test-deployment using mode label which is not implemented"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusNotImplemented))
+			Expect(c.Errors.Last().Error()).To(Equal("requested to delete manifest deployment test-deployment using mode label which is not implemented"))
 		})
 	})
 
 	When("the mode is invalid", func() {
 		BeforeEach(func() {
-			actionConfig.Operation.DeleteManifest.Mode = "invalid"
+			deleteManifestRequest.Mode = "invalid"
 		})
 
 		It("returns an error", func() {
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("requested to delete manifest deployment test-deployment using mode invalid which is not implemented"))
+			Expect(c.Writer.Status()).To(Equal(http.StatusNotImplemented))
+			Expect(c.Errors.Last().Error()).To(Equal("requested to delete manifest deployment test-deployment using mode invalid which is not implemented"))
 		})
 	})
 
 	When("it succeeds", func() {
 		It("succeeds", func() {
-			Expect(err).To(BeNil())
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 			kind, name, namespace, deleteOptions := fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceArgsForCall(0)
 			Expect(kind).To(Equal("deployment"))
 			Expect(name).To(Equal("test-deployment"))

@@ -33,13 +33,13 @@ func ListHelmArtifactAccountNames(c *gin.Context) {
 
 	hc, err := cc.HelmClientForAccountName(c.Param("accountName"))
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	i, err := hc.GetIndex()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -59,13 +59,13 @@ func ListHelmArtifactAccountVersions(c *gin.Context) {
 
 	hc, err := cc.HelmClientForAccountName(c.Param("accountName"))
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	i, err := hc.GetIndex()
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -114,7 +114,7 @@ func GetArtifact(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&a)
 	if err != nil {
-		clouddriver.WriteError(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
@@ -124,33 +124,33 @@ func GetArtifact(c *gin.Context) {
 	case artifact.TypeHTTPFile:
 		hc, err := cc.HTTPClientForAccountName(a.ArtifactAccount)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
 		resp, err := hc.Get(a.Reference)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 		defer resp.Body.Close()
 
 		b, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 	case artifact.TypeHelmChart:
 		hc, err := cc.HelmClientForAccountName(a.ArtifactAccount)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
 		b, err = hc.GetChart(a.Name, a.Version)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -160,19 +160,19 @@ func GetArtifact(c *gin.Context) {
 		// the prefix, or handle it in the deploy manifest operation.
 		b, err = base64.StdEncoding.DecodeString(a.Reference)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 	case artifact.TypeGithubFile:
 		gc, err := cc.GitClientForAccountName(a.ArtifactAccount)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
 		if !strings.HasPrefix(a.Reference, gc.BaseURL.String()) {
-			clouddriver.WriteError(c, http.StatusBadRequest, fmt.Errorf("content URL %s should have base URL %s",
+			clouddriver.Error(c, http.StatusBadRequest, fmt.Errorf("content URL %s should have base URL %s",
 				a.Reference, gc.BaseURL.String()))
 			return
 		}
@@ -181,7 +181,7 @@ func GetArtifact(c *gin.Context) {
 
 		req, err := gc.NewRequest(http.MethodGet, urlStr, nil)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -198,7 +198,7 @@ func GetArtifact(c *gin.Context) {
 
 		_, err = gc.Do(context.TODO(), req, &buf)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -211,7 +211,7 @@ func GetArtifact(c *gin.Context) {
 		if strings.EqualFold(response.Encoding, "base64") {
 			b, err = base64.StdEncoding.DecodeString(response.Content)
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		} else {
@@ -221,7 +221,7 @@ func GetArtifact(c *gin.Context) {
 	case artifact.TypeGitRepo:
 		gc, err := cc.GitRepoClientForAccountName(a.ArtifactAccount)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusBadRequest, err)
+			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
@@ -234,11 +234,11 @@ func GetArtifact(c *gin.Context) {
 
 		resp, err := gc.Get(url)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 		if resp.StatusCode < 200 || resp.StatusCode > 299 {
-			clouddriver.WriteError(c, http.StatusInternalServerError, fmt.Errorf("error getting git/repo (repo: %s, branch: %s): %s", a.Reference, branch, resp.Status))
+			clouddriver.Error(c, http.StatusInternalServerError, fmt.Errorf("error getting git/repo (repo: %s, branch: %s): %s", a.Reference, branch, resp.Status))
 			return
 		}
 		defer resp.Body.Close()
@@ -246,7 +246,7 @@ func GetArtifact(c *gin.Context) {
 		rb := []byte{}
 		rb, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -281,7 +281,7 @@ func GetArtifact(c *gin.Context) {
 		// Uncompress tarball
 		gr, err := gzip.NewReader(bytes.NewBuffer(rb))
 		if err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 		defer gr.Close()
@@ -294,13 +294,13 @@ func GetArtifact(c *gin.Context) {
 				break
 			}
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 
 			tb, err := ioutil.ReadAll(tr)
 			if err != nil {
-				clouddriver.WriteError(c, http.StatusInternalServerError, err)
+				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 
@@ -308,12 +308,12 @@ func GetArtifact(c *gin.Context) {
 			hdr.Name = matchToFirstSlashRegexp.ReplaceAllString(hdr.Name, "")
 			if len(hdr.Name) > 0 && strings.HasPrefix(hdr.Name, a.Location) {
 				if err := tw.WriteHeader(hdr); err != nil {
-					clouddriver.WriteError(c, http.StatusInternalServerError, err)
+					clouddriver.Error(c, http.StatusInternalServerError, err)
 					return
 				}
 
 				if _, err := tw.Write(tb); err != nil {
-					clouddriver.WriteError(c, http.StatusInternalServerError, err)
+					clouddriver.Error(c, http.StatusInternalServerError, err)
 					return
 				}
 			}
@@ -321,20 +321,20 @@ func GetArtifact(c *gin.Context) {
 
 		// Produce tar
 		if err := tw.Close(); err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 		// Produce gzip
 		if err := zr.Close(); err != nil {
-			clouddriver.WriteError(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 		b = buf.Bytes()
 
 	default:
-		clouddriver.WriteError(c, http.StatusNotImplemented, fmt.Errorf("getting artifact of type %s not implemented", a.Type))
+		clouddriver.Error(c, http.StatusNotImplemented, fmt.Errorf("getting artifact of type %s not implemented", a.Type))
 		return
 	}
 
