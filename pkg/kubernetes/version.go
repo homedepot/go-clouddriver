@@ -25,8 +25,11 @@ type SpinnakerVersion struct {
 func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, version SpinnakerVersion) error {
 	annotate(u, AnnotationSpinnakerArtifactVersion, version.Long)
 	annotate(u, AnnotationSpinnakerMonikerSequence, version.Short)
+
 	var err error
+
 	gvk := u.GroupVersionKind()
+
 	if strings.EqualFold(gvk.Kind, "deployment") {
 		d := NewDeployment(u.Object)
 
@@ -80,8 +83,11 @@ func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured
 
 func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, version SpinnakerVersion) error {
 	label(u, LabelSpinnakerMonikerSequence, version.Short)
+
 	var err error
+
 	gvk := u.GroupVersionKind()
+
 	if strings.EqualFold(gvk.Kind, "deployment") {
 		d := NewDeployment(u.Object)
 
@@ -130,14 +136,16 @@ func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, ver
 }
 
 func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string {
-	cluster := kind + " " + name
 	currentVersion := "-1"
+
 	if len(ul.Items) == 0 {
 		return currentVersion
 	}
 	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
 	manifestFilter := NewManifestFilter(ul.Items)
+	cluster := kind + " " + name
 	results := manifestFilter.FilterOnCluster(cluster)
+
 	if len(results) == 0 {
 		return currentVersion
 	}
@@ -152,6 +160,7 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].GetCreationTimestamp().String() > results[j].GetCreationTimestamp().String()
 	})
+
 	currentVersion = results[0].GetResourceVersion()
 
 	return currentVersion
@@ -168,6 +177,7 @@ func (c *controller) IsVersioned(u *unstructured.Unstructured) bool {
 			}
 		}
 	}
+
 	kind := strings.ToLower(u.GetKind())
 	if strings.EqualFold(kind, "pod") ||
 		strings.EqualFold(kind, "replicaSet") ||
@@ -175,6 +185,7 @@ func (c *controller) IsVersioned(u *unstructured.Unstructured) bool {
 		strings.EqualFold(kind, "Secret") {
 		return true
 	}
+
 	return false
 }
 

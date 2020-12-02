@@ -22,6 +22,7 @@ func NewManifestFilter(items []unstructured.Unstructured) manifestFilter {
 
 func (f *manifestFilter) FilterOnCluster(cluster string) []unstructured.Unstructured {
 	filtered := []unstructured.Unstructured{}
+
 	for _, item := range f.items {
 		annotations := item.GetAnnotations()
 		if annotations != nil {
@@ -30,11 +31,13 @@ func (f *manifestFilter) FilterOnCluster(cluster string) []unstructured.Unstruct
 			}
 		}
 	}
+
 	return filtered
 }
 
 func (f *manifestFilter) FilterOnLabel(label string) []unstructured.Unstructured {
 	filtered := []unstructured.Unstructured{}
+
 	for _, item := range f.items {
 		labels := item.GetLabels()
 		if labels != nil {

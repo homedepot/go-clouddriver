@@ -109,6 +109,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		// generate a name for the job as `apply` will throw the error
 		// `resource name may not be empty`.
 		name := u.GetName()
+
 		if strings.EqualFold(u.GetKind(), "job") {
 			generateName := u.GetGenerateName()
 
