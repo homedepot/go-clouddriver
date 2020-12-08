@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/fiat"
 	"github.com/homedepot/go-clouddriver/pkg/http/core"
-	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -29,6 +29,7 @@ func AuthApplication(permissions ...string) gin.HandlerFunc {
 		}
 
 		fiatClient := fiat.Instance(c)
+
 		authResp, err := fiatClient.Authorize(user)
 		if err != nil {
 			clouddriver.Error(c, http.StatusUnauthorized, err)
@@ -47,6 +48,7 @@ func AuthApplication(permissions ...string) gin.HandlerFunc {
 				}
 			}
 		}
+
 		c.Next()
 	}
 }
@@ -81,6 +83,7 @@ func AuthAccount(permissions ...string) gin.HandlerFunc {
 				}
 			}
 		}
+
 		c.Next()
 	}
 }
@@ -93,8 +96,7 @@ func PostFilterAuthorizedApplications(permissions ...string) gin.HandlerFunc {
 			return
 		}
 
-		allApps := core.Applications{}
-		allApps = c.MustGet(core.KeyAllApplications).(core.Applications)
+		allApps := c.MustGet(core.KeyAllApplications).(core.Applications)
 
 		user := c.GetHeader(headerSpinnakerUser)
 		if user == "" {
@@ -103,13 +105,16 @@ func PostFilterAuthorizedApplications(permissions ...string) gin.HandlerFunc {
 		}
 
 		fiatClient := fiat.Instance(c)
+
 		authResp, err := fiatClient.Authorize(user)
 		if err != nil {
 			clouddriver.Error(c, http.StatusUnauthorized, err)
 			return
 		}
+
 		authorizedApps := authResp.Applications
 		authorizedAppsMap := map[string]fiat.Application{}
+
 		for _, app := range authorizedApps {
 			authorizedAppsMap[app.Name] = app
 		}
@@ -126,11 +131,13 @@ func find(slice []string, val string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 func FilterAuthorizedApps(authorizedAppsMap map[string]fiat.Application, allApps core.Applications, permissions ...string) []core.Application {
 	filteredApps := []core.Application{}
+
 	for _, app := range allApps {
 		if authorizedApp, ok := authorizedAppsMap[app.Name]; ok {
 			for _, p := range permissions {
@@ -140,5 +147,6 @@ func FilterAuthorizedApps(authorizedAppsMap map[string]fiat.Application, allApps
 			}
 		}
 	}
+
 	return filteredApps
 }

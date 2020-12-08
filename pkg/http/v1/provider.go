@@ -3,11 +3,11 @@ package v1
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 )
 
@@ -39,6 +39,7 @@ func CreateKubernetesProvider(c *gin.Context) {
 			AccountName: p.Name,
 			ReadGroup:   group,
 		}
+
 		err = sc.CreateReadPermission(rp)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -52,6 +53,7 @@ func CreateKubernetesProvider(c *gin.Context) {
 			AccountName: p.Name,
 			WriteGroup:  group,
 		}
+
 		err = sc.CreateWritePermission(wp)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -74,6 +76,7 @@ func DeleteKubernetesProvider(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
 		return
 	}
 

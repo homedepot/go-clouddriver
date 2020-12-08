@@ -132,6 +132,7 @@ func newCleanupArtifactsRequest() CleanupArtifactsRequest {
 
 func newDeleteManifestRequest() DeleteManifestRequest {
 	gps := int64(10)
+
 	return DeleteManifestRequest{
 		Location:     "test-namespace",
 		Mode:         "static",

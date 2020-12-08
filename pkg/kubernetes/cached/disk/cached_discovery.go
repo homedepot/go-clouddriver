@@ -137,6 +137,7 @@ func (d *cachedDiscoveryClient) ServerGroups() (*metav1.APIGroupList, error) {
 		klog.V(3).Infof("skipped caching discovery info due to %v", err)
 		return liveGroups, err
 	}
+
 	if liveGroups == nil || len(liveGroups.Groups) == 0 {
 		klog.V(3).Infof("skipped caching discovery info, no groups found")
 		return liveGroups, err
@@ -153,6 +154,7 @@ func (d *cachedDiscoveryClient) getCachedFile(filename string) ([]byte, error) {
 	// after invalidation ignore cache files not created by this process
 	d.mutex.Lock()
 	_, ourFile := d.ourFiles[filename]
+
 	if d.invalidated && !ourFile {
 		d.mutex.Unlock()
 		return nil, errors.New("cache invalidated")
@@ -201,7 +203,9 @@ func (d *cachedDiscoveryClient) writeCachedFile(filename string, obj runtime.Obj
 	if err != nil {
 		return err
 	}
+
 	defer os.Remove(f.Name())
+
 	_, err = f.Write(bytes)
 	if err != nil {
 		return err
@@ -213,6 +217,7 @@ func (d *cachedDiscoveryClient) writeCachedFile(filename string, obj runtime.Obj
 	}
 
 	name := f.Name()
+
 	err = f.Close()
 	if err != nil {
 		return err
@@ -221,10 +226,12 @@ func (d *cachedDiscoveryClient) writeCachedFile(filename string, obj runtime.Obj
 	// atomic rename
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
+
 	err = os.Rename(name, filename)
 	if err == nil {
 		d.ourFiles[filename] = struct{}{}
 	}
+
 	return err
 }
 

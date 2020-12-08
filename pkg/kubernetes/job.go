@@ -59,6 +59,7 @@ func (j *job) State() string {
 		if failed {
 			return "Failed"
 		}
+
 		return "Running"
 	}
 
@@ -85,6 +86,7 @@ func (j *job) Status() manifest.Status {
 				return s
 			}
 		}
+
 		s.Stable.State = false
 		s.Stable.Message = "Waiting for jobs to finish"
 	}

@@ -81,8 +81,8 @@ var _ = Describe("CachedDiscovery", func() {
 
 		When("server groups is called twice", func() {
 			BeforeEach(func() {
-				cdc.ServerGroups()
-				cdc.ServerGroups()
+				_, _ = cdc.ServerGroups()
+				_, _ = cdc.ServerGroups()
 			})
 
 			It("should be fresh", func() {
@@ -93,7 +93,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 		When("resources is called", func() {
 			BeforeEach(func() {
-				cdc.ServerResources()
+				_, _ = cdc.ServerResources()
 			})
 
 			It("should be fresh", func() {
@@ -104,8 +104,8 @@ var _ = Describe("CachedDiscovery", func() {
 
 		When("resources is called twice", func() {
 			BeforeEach(func() {
-				cdc.ServerResources()
-				cdc.ServerResources()
+				_, _ = cdc.ServerResources()
+				_, _ = cdc.ServerResources()
 			})
 
 			It("should be fresh", func() {
@@ -116,14 +116,14 @@ var _ = Describe("CachedDiscovery", func() {
 
 		Context("client is recreated", func() {
 			BeforeEach(func() {
-				cdc.ServerGroups()
-				cdc.ServerResources()
+				_, _ = cdc.ServerGroups()
+				_, _ = cdc.ServerResources()
 				cdc = NewCachedDiscoveryClient(c, d, 60*time.Second)
 			})
 
 			When("server groups is called", func() {
 				BeforeEach(func() {
-					cdc.ServerGroups()
+					_, _ = cdc.ServerGroups()
 				})
 
 				It("should not be fresh", func() {
@@ -134,7 +134,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 			When("resources is called", func() {
 				BeforeEach(func() {
-					cdc.ServerResources()
+					_, _ = cdc.ServerResources()
 				})
 
 				It("should not be fresh", func() {
@@ -158,7 +158,8 @@ var _ = Describe("CachedDiscovery", func() {
 				})
 
 				It("should ignore existing resources cache after invalidation", func() {
-					cdc.ServerResources()
+					_, err = cdc.ServerResources()
+					Expect(err).To(BeNil())
 					Expect(cdc.Fresh()).To(BeTrue())
 					Expect(c.resourceCalls).To(Equal(2))
 				})
@@ -182,10 +183,12 @@ var _ = Describe("CachedDiscovery", func() {
 		})
 
 		It("respects the ttl", func() {
-			cdc.ServerGroups()
+			_, err = cdc.ServerGroups()
+			Expect(err).To(BeNil())
 			Expect(c.groupCalls).To(Equal(1))
 			time.Sleep(1 * time.Second)
-			cdc.ServerGroups()
+			_, err = cdc.ServerGroups()
+			Expect(err).To(BeNil())
 			Expect(c.groupCalls).To(Equal(2))
 		})
 	})
@@ -197,7 +200,7 @@ var _ = Describe("CachedDiscovery", func() {
 			os.RemoveAll(d)
 			c = &fakeDiscoveryClient{}
 			cdc = NewCachedDiscoveryClient(c, d, 1*time.Nanosecond)
-			cdc.ServerGroups()
+			_, _ = cdc.ServerGroups()
 		})
 
 		JustBeforeEach(func() {
@@ -272,6 +275,7 @@ func (c *fakeDiscoveryClient) serverGroups() (*metav1.APIGroupList, error) {
 
 func (c *fakeDiscoveryClient) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
 	c.resourceCalls = c.resourceCalls + 1
+
 	if groupVersion == "a/v1" {
 		return &metav1.APIResourceList{APIResources: []metav1.APIResource{{Name: "widgets", Kind: "Widget"}}}, nil
 	}
@@ -290,6 +294,7 @@ func (c *fakeDiscoveryClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []
 
 	gs, _ := c.serverGroups()
 	resultGroups := []*metav1.APIGroup{}
+
 	for i := range gs.Groups {
 		resultGroups = append(resultGroups, &gs.Groups[i])
 	}
@@ -298,6 +303,7 @@ func (c *fakeDiscoveryClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []
 		rs, err := c.serverResourcesHandler()
 		return resultGroups, rs, err
 	}
+
 	return resultGroups, []*metav1.APIResourceList{}, nil
 }
 

@@ -28,7 +28,7 @@ func LogRequest() gin.HandlerFunc {
 
 		clone := c.Request.Clone(context.TODO())
 
-		buf.ReadFrom(c.Request.Body)
+		_, _ = buf.ReadFrom(c.Request.Body)
 		c.Request.Body = ioutil.NopCloser(&buf)
 		clone.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 
