@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"encoding/base64"
+	"github.com/homedepot/go-clouddriver/pkg/util"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -71,6 +72,7 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 			ID:           uuid.New().String(),
 			TaskID:       taskID,
 			TaskType:     "cleanup",
+			Timestamp:    util.CurrentTimeUTC(),
 			APIGroup:     gvr.Group,
 			Name:         u.GetName(),
 			Namespace:    u.GetNamespace(),
