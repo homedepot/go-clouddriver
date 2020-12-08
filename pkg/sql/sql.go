@@ -7,9 +7,9 @@ import (
 	"sort"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
-	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 
 	// Needed for connection.
@@ -67,6 +67,7 @@ func Connect(driver string, connection interface{}) (*gorm.DB, error) {
 
 	db.LogMode(false)
 	db.AutoMigrate(
+		&kubernetes.Cluster{},
 		&kubernetes.Provider{},
 		&kubernetes.Resource{},
 		&clouddriver.ReadPermission{},
@@ -100,6 +101,11 @@ func Connection(c Config) (string, string) {
 
 	return "mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=UTC",
 		c.User, c.Password, c.Host, c.Name)
+}
+
+func (c *client) CreateKubernetesCluster(p kubernetes.Cluster) error {
+	db := c.db.Create(&p)
+	return db.Error
 }
 
 func (c *client) CreateKubernetesProvider(p kubernetes.Provider) error {
