@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/homedepot/go-clouddriver/pkg/util"
 	"net/http"
 	"strings"
 	"unicode"
@@ -134,6 +135,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			AccountName:  dm.Account,
 			ID:           uuid.New().String(),
 			TaskID:       taskID,
+			Timestamp:    util.CurrentTimeUTC(),
 			APIGroup:     meta.Group,
 			Name:         meta.Name,
 			Namespace:    meta.Namespace,
