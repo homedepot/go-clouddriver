@@ -1,12 +1,10 @@
 package util_test
 
 import (
-	"time"
-
-	. "github.homedepot.com/cd/skipper/pkg/util"
-
+	. "github.com/homedepot/go-clouddriver/pkg/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"time"
 )
 
 var _ = Describe("Time", func() {
