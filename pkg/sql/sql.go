@@ -28,6 +28,7 @@ const (
 //go:generate counterfeiter . Client
 
 type Client interface {
+	CreateKubernetesCluster(cluster kubernetes.Cluster) error
 	CreateKubernetesProvider(kubernetes.Provider) error
 	CreateKubernetesResource(kubernetes.Resource) error
 	CreateReadPermission(clouddriver.ReadPermission) error
