@@ -69,7 +69,7 @@ var _ = Describe("Credential", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 					Expect(ce.Message).To(Equal("error listing providers"))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
@@ -155,7 +155,7 @@ var _ = Describe("Credential", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 					Expect(ce.Message).To(Equal("error listing providers"))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
@@ -299,7 +299,7 @@ var _ = Describe("Credential", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -313,7 +313,7 @@ var _ = Describe("Credential", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error listing read groups"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -327,7 +327,7 @@ var _ = Describe("Credential", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error listing write groups"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})

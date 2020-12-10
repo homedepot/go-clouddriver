@@ -12,6 +12,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
 
 var (
@@ -33,7 +34,7 @@ func LogRequest() gin.HandlerFunc {
 		clone.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 
 		if err != nil {
-			log.Println("[MIDDLEWARE] error getting request body in verbose request logger:", err.Error())
+			clouddriver.Log(err)
 		} else {
 			b, _ := ioutil.ReadAll(clone.Body)
 			buffer := &bytes.Buffer{}

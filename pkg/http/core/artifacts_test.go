@@ -68,7 +68,7 @@ var _ = Describe("Artifacts", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("error getting helm client"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
@@ -82,7 +82,7 @@ var _ = Describe("Artifacts", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error getting index"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -138,7 +138,7 @@ var _ = Describe("Artifacts", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("error getting helm client"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
@@ -152,7 +152,7 @@ var _ = Describe("Artifacts", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error getting index"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -190,7 +190,7 @@ var _ = Describe("Artifacts", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("invalid character ';' looking for beginning of value"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
@@ -211,7 +211,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
 					Expect(ce.Message).To(Equal("error getting helm client"))
 					Expect(ce.Status).To(Equal(http.StatusBadRequest))
 				})
@@ -225,7 +225,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 					Expect(ce.Message).To(Equal("error getting chart"))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
@@ -255,7 +255,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 					Expect(ce.Message).To(Equal("illegal base64 data at input byte 3"))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
@@ -283,7 +283,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
 					Expect(ce.Message).To(Equal("error getting git client"))
 					Expect(ce.Status).To(Equal(http.StatusBadRequest))
 				})
@@ -299,7 +299,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
 					Expect(ce.Message).To(Equal(fmt.Sprintf("content URL https://bad-reference/api/v3/repos/homedepot/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml should have base URL %s",
 						fakeGithubClient.BaseURL.String())))
 					Expect(ce.Status).To(Equal(http.StatusBadRequest))
@@ -315,7 +315,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 					Expect(ce.Message).To(Equal(fmt.Sprintf(`BaseURL must have a trailing slash, but "%s" does not`, fakeGithubClient.BaseURL.String())))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
@@ -366,7 +366,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 					Expect(ce.Message).To(Equal(fmt.Sprintf(`Get "%s/api/v3/repos/homedepot/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml?ref=master": dial tcp %s: connect: connection refused`, url, addr)))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
@@ -403,7 +403,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 					Expect(ce.Message).To(Equal("illegal base64 data at input byte 0"))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
@@ -485,7 +485,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
 					Expect(ce.Message).To(Equal("error getting http client"))
 					Expect(ce.Status).To(Equal(http.StatusBadRequest))
 				})
@@ -503,7 +503,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 					Expect(ce.Message).To(Equal(fmt.Sprintf(`Get "%s/git-repo/archive/master.tar.gz": dial tcp %s: connect: connection refused`, url, addr)))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
@@ -523,7 +523,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 					Expect(ce.Message).To(Equal(fmt.Sprintf(`error getting git/repo (repo: %s/git-repo, branch: master): 404 Not Found`, url)))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
@@ -609,7 +609,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
 					Expect(ce.Message).To(Equal("error getting http client"))
 					Expect(ce.Status).To(Equal(http.StatusBadRequest))
 				})
@@ -627,7 +627,7 @@ var _ = Describe("Artifacts", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Internal Server Error"))
+					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 					Expect(ce.Message).To(Equal(fmt.Sprintf(`Get "%s/hello": dial tcp %s: connect: connection refused`, url, addr)))
 					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 				})
@@ -657,7 +657,7 @@ var _ = Describe("Artifacts", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusNotImplemented))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Not Implemented"))
+				Expect(ce.Error).To(HavePrefix("Not Implemented"))
 				Expect(ce.Message).To(Equal("getting artifact of type unknown/type not implemented"))
 				Expect(ce.Status).To(Equal(http.StatusNotImplemented))
 			})
