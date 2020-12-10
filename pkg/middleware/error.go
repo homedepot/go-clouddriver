@@ -16,16 +16,19 @@ func HandleError() gin.HandlerFunc {
 		if err != nil {
 			statusCode := c.Writer.Status()
 			text := http.StatusText(statusCode)
+
 			if statusCode >= http.StatusInternalServerError {
 				meta := clouddriver.Meta(err)
 				clouddriver.Log(err, meta)
 				text += " (error ID: " + meta.GUID + ")"
 			}
+
 			ce := clouddriver.NewError(
 				text,
 				err.Error(),
 				statusCode,
 			)
+
 			c.JSON(c.Writer.Status(), ce)
 		}
 	}

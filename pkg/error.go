@@ -48,6 +48,7 @@ func Error(c *gin.Context, status int, err error) {
 		GUID:     uuid.New().String(),
 		LineNum:  ln,
 	}
+
 	c.Status(status)
 	_ = c.Error(err).SetType(gin.ErrorTypePublic).SetMeta(m)
 }

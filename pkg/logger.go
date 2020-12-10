@@ -31,6 +31,7 @@ func Log(err error, meta ...ErrorMeta) {
 		}
 		meta = append(meta, m)
 	}
+
 	m := meta[0]
 
 	log.SetFlags(0)
