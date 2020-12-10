@@ -35,7 +35,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error getting provider"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -51,7 +51,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("illegal base64 data at input byte 0"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -65,7 +65,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error getting token"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -79,7 +79,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("bad config"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -93,7 +93,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error getting manifest"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -132,7 +132,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error getting provider"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -148,7 +148,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("illegal base64 data at input byte 0"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -162,7 +162,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error getting token"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -176,7 +176,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("bad config"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -190,7 +190,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error getting gvr"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -204,7 +204,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Internal Server Error"))
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error listing resources"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
@@ -218,7 +218,7 @@ var _ = Describe("Manifest", func() {
 			It("returns status not found", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusNotFound))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Not Found"))
+				Expect(ce.Error).To(HavePrefix("Not Found"))
 				Expect(ce.Message).To(Equal("no resources found for cluster deployment test-deployment"))
 				Expect(ce.Status).To(Equal(http.StatusNotFound))
 			})
@@ -249,7 +249,7 @@ var _ = Describe("Manifest", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
 					Expect(ce.Message).To(Equal("requested target \"Second Newest\" for cluster deployment test-deployment, but only one resource was found"))
 					Expect(ce.Status).To(Equal(http.StatusBadRequest))
 				})
@@ -287,7 +287,7 @@ var _ = Describe("Manifest", func() {
 				It("returns an error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Bad Request"))
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
 					Expect(ce.Message).To(Equal("requested target \"Oldest\" for cluster deployment test-deployment, but only one resource was found"))
 					Expect(ce.Status).To(Equal(http.StatusBadRequest))
 				})
@@ -309,7 +309,7 @@ var _ = Describe("Manifest", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusNotImplemented))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(Equal("Not Implemented"))
+					Expect(ce.Error).To(HavePrefix("Not Implemented"))
 					Expect(ce.Message).To(Equal("requested target \"not_supported\" for cluster deployment test-deployment is not supported"))
 					Expect(ce.Status).To(Equal(http.StatusNotImplemented))
 				})

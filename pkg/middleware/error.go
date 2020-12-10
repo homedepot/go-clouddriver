@@ -3,8 +3,8 @@ package middleware
 import (
 	"net/http"
 
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/gin-gonic/gin"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
 
 func HandleError() gin.HandlerFunc {
@@ -15,8 +15,14 @@ func HandleError() gin.HandlerFunc {
 		err := c.Errors.ByType(gin.ErrorTypePublic).Last()
 		if err != nil {
 			statusCode := c.Writer.Status()
+			text := http.StatusText(statusCode)
+			if statusCode >= http.StatusInternalServerError {
+				meta := clouddriver.Meta(err)
+				clouddriver.Log(err, meta)
+				text += " (error ID: " + meta.GUID + ")"
+			}
 			ce := clouddriver.NewError(
-				http.StatusText(statusCode),
+				text,
 				err.Error(),
 				statusCode,
 			)
