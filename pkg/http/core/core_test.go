@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"mime"
 	"net/http"
 	"net/http/httptest"
@@ -200,6 +201,8 @@ func setup() {
 	server.Setup(r, c)
 	svr = httptest.NewServer(r)
 	body = &bytes.Buffer{}
+	// Ignore log output.
+	log.SetOutput(ioutil.Discard)
 }
 
 func teardown() {

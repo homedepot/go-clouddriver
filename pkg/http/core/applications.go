@@ -3,7 +3,6 @@ package core
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -206,19 +205,19 @@ func listServerGroupManagers(c *gin.Context, wg *sync.WaitGroup, sgms chan Serve
 
 	provider, err := sc.GetKubernetesProvider(account)
 	if err != nil {
-		log.Println("unable to get kubernetes provider for account", account)
+		clouddriver.Log(err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		log.Println("error decoding ca data for account", account)
+		clouddriver.Log(err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		log.Println("error getting token", err.Error())
+		clouddriver.Log(err)
 		return
 	}
 
@@ -232,7 +231,7 @@ func listServerGroupManagers(c *gin.Context, wg *sync.WaitGroup, sgms chan Serve
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		log.Println("error creating dynamic client for account", account)
+		clouddriver.Log(err)
 		return
 	}
 
@@ -243,13 +242,13 @@ func listServerGroupManagers(c *gin.Context, wg *sync.WaitGroup, sgms chan Serve
 
 	deployments, err := client.ListResource("deployments", lo)
 	if err != nil {
-		log.Println("error listing deployments:", err.Error())
+		clouddriver.Log(err)
 		return
 	}
 
 	replicaSets, err := client.ListResource("replicaSets", lo)
 	if err != nil {
-		log.Println("error listing replicaSets:", err.Error())
+		clouddriver.Log(err)
 		return
 	}
 
@@ -417,19 +416,19 @@ func listLoadBalancers(c *gin.Context, wg *sync.WaitGroup, lbs chan LoadBalancer
 
 	provider, err := sc.GetKubernetesProvider(account)
 	if err != nil {
-		log.Println("unable to get kubernetes provider for account", account)
+		clouddriver.Log(err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		log.Println("error decoding ca data for account", account)
+		clouddriver.Log(err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		log.Println("error getting token", err.Error())
+		clouddriver.Log(err)
 		return
 	}
 
@@ -443,7 +442,7 @@ func listLoadBalancers(c *gin.Context, wg *sync.WaitGroup, lbs chan LoadBalancer
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		log.Println("error creating dynamic client for account", account)
+		clouddriver.Log(err)
 		return
 	}
 
@@ -457,7 +456,7 @@ func listLoadBalancers(c *gin.Context, wg *sync.WaitGroup, lbs chan LoadBalancer
 	for _, resource := range resources {
 		results, err := client.ListResource(resource, lo)
 		if err != nil {
-			log.Printf("error listing %s: %s", resource, err.Error())
+			clouddriver.Log(err)
 			continue
 		}
 
@@ -680,19 +679,19 @@ func listServerGroups(c *gin.Context, wg *sync.WaitGroup, sgs chan ServerGroup,
 
 	provider, err := sc.GetKubernetesProvider(account)
 	if err != nil {
-		log.Println("unable to get kubernetes provider for account", account)
+		clouddriver.Log(err)
 		return
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		log.Println("error decoding ca data for account", account)
+		clouddriver.Log(err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		log.Println("error getting token", err.Error())
+		clouddriver.Log(err)
 		return
 	}
 
@@ -706,7 +705,7 @@ func listServerGroups(c *gin.Context, wg *sync.WaitGroup, sgs chan ServerGroup,
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		log.Println("error creating dynamic client for account", account)
+		clouddriver.Log(err)
 		return
 	}
 
@@ -717,14 +716,14 @@ func listServerGroups(c *gin.Context, wg *sync.WaitGroup, sgs chan ServerGroup,
 
 	pods, err := client.ListResource("pods", lo)
 	if err != nil {
-		log.Println("error listing pods:", err.Error())
+		clouddriver.Log(err)
 		return
 	}
 
 	for _, resource := range resources {
 		results, err := client.ListResource(resource, lo)
 		if err != nil {
-			log.Printf("error listing %s: %s\n", resource, err.Error())
+			clouddriver.Log(err)
 			continue
 		}
 

@@ -36,7 +36,7 @@ var _ = Describe("Search", func() {
 			It("returns status bad request", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("must provide query params 'q' to specify the namespace and 'type' to specify the kind"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})

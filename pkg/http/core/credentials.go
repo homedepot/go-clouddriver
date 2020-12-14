@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"encoding/base64"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -147,13 +146,13 @@ func listNamespaces(provider kubernetes.Provider,
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		log.Println("/credentials error decoding provider ca data for "+provider.Name+":", err.Error())
+		clouddriver.Log(err)
 		return
 	}
 
 	token, err := ac.Token()
 	if err != nil {
-		log.Println("error getting arcade token:", err.Error())
+		clouddriver.Log(err)
 		return
 	}
 
@@ -167,7 +166,7 @@ func listNamespaces(provider kubernetes.Provider,
 
 	client, err := kc.NewClient(config)
 	if err != nil {
-		log.Println("/credentials error creating dynamic account:", err.Error())
+		clouddriver.Log(err)
 		return
 	}
 
@@ -184,7 +183,7 @@ func listNamespaces(provider kubernetes.Provider,
 		TimeoutSeconds: &listNamespacesTimeout,
 	})
 	if err != nil {
-		log.Println("/credentials error listing using kubernetes account "+provider.Name+":", err.Error())
+		clouddriver.Log(err)
 		return
 	}
 

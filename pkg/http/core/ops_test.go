@@ -39,7 +39,7 @@ var _ = Describe("Kubernetes", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("invalid character 'd' looking for beginning of value"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
@@ -53,7 +53,7 @@ var _ = Describe("Kubernetes", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
@@ -70,7 +70,7 @@ var _ = Describe("Kubernetes", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
@@ -87,7 +87,7 @@ var _ = Describe("Kubernetes", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
@@ -104,7 +104,7 @@ var _ = Describe("Kubernetes", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("error converting to unstructured"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
@@ -121,7 +121,7 @@ var _ = Describe("Kubernetes", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
@@ -138,7 +138,7 @@ var _ = Describe("Kubernetes", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
@@ -156,7 +156,7 @@ var _ = Describe("Kubernetes", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
@@ -173,7 +173,7 @@ var _ = Describe("Kubernetes", func() {
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(Equal("Bad Request"))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
 				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})

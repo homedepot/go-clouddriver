@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/homedepot/go-clouddriver/pkg/util"
 	"net/http"
 	"strings"
 
@@ -98,6 +99,7 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 			AccountName:  dm.Account,
 			ID:           uuid.New().String(),
 			TaskID:       taskID,
+			Timestamp:    util.CurrentTimeUTC(),
 			APIGroup:     gvr.Group,
 			Name:         name,
 			Namespace:    dm.Location,
