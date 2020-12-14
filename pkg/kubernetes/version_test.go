@@ -42,16 +42,16 @@ var _ = Describe("Version", func() {
 							"kind":       "Pod",
 							"apiVersion": "v1",
 							"metadata": map[string]interface{}{
-								"name":              "fakeName",
+								"name":              "fakeName-v000",
 								"namespace":         "test-namespace2",
-								"resourceVersion":   "3",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
 								"labels": map[string]interface{}{
 									"label1":                        "test-label1",
-									"moniker.spinnaker.io/sequence": "3",
+									"moniker.spinnaker.io/sequence": "0",
 								},
 								"annotations": map[string]interface{}{
-									"moniker.spinnaker.io/cluster": "pod fakeName",
+									"moniker.spinnaker.io/cluster":  "pod fakeName",
+									"moniker.spinnaker.io/sequence": "0",
 								},
 								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 							},
@@ -62,16 +62,16 @@ var _ = Describe("Version", func() {
 							"kind":       "Pod",
 							"apiVersion": "v1",
 							"metadata": map[string]interface{}{
-								"name":              "fakeName",
+								"name":              "fakeName-v004",
 								"namespace":         "test-namespace2",
-								"resourceVersion":   "4",
 								"creationTimestamp": "2020-02-14T14:12:03Z",
 								"labels": map[string]interface{}{
 									"label1":                        "test-label1",
 									"moniker.spinnaker.io/sequence": "4",
 								},
 								"annotations": map[string]interface{}{
-									"moniker.spinnaker.io/cluster": "pod fakeName",
+									"moniker.spinnaker.io/cluster":  "pod fakeName",
+									"moniker.spinnaker.io/sequence": "4",
 								},
 								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 							},
@@ -79,17 +79,17 @@ var _ = Describe("Version", func() {
 					},
 				},
 				}
-				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "pod", "fakeName")
+				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "pod", "fakeName-v005")
 			})
 
 			It("return 4 as the current version", func() {
 				Expect(currentVersion).To(Equal("4"))
 			})
 		})
-		When("#FilterOnCluster returns 0 items", func() {
+		When("#FilterOnClusterAnnotation returns 0 items", func() {
 			BeforeEach(func() {
 				FakeManifestFilter := kubernetesfakes.FakeManifestFilter{}
-				FakeManifestFilter.FilterOnClusterReturns([]unstructured.Unstructured{})
+				FakeManifestFilter.FilterOnClusterAnnotationReturns([]unstructured.Unstructured{})
 				fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{{
 					Object: map[string]interface{}{
 						"kind": "fakeKind",

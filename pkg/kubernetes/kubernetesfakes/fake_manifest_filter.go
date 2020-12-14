@@ -9,16 +9,16 @@ import (
 )
 
 type FakeManifestFilter struct {
-	FilterOnClusterStub        func([]unstructured.Unstructured, string) []unstructured.Unstructured
-	filterOnClusterMutex       sync.RWMutex
-	filterOnClusterArgsForCall []struct {
+	FilterOnClusterAnnotationStub        func([]unstructured.Unstructured, string) []unstructured.Unstructured
+	filterOnClusterAnnotationMutex       sync.RWMutex
+	filterOnClusterAnnotationArgsForCall []struct {
 		arg1 []unstructured.Unstructured
 		arg2 string
 	}
-	filterOnClusterReturns struct {
+	filterOnClusterAnnotationReturns struct {
 		result1 []unstructured.Unstructured
 	}
-	filterOnClusterReturnsOnCall map[int]struct {
+	filterOnClusterAnnotationReturnsOnCall map[int]struct {
 		result1 []unstructured.Unstructured
 	}
 	FilterOnLabelStub        func([]unstructured.Unstructured, string) []unstructured.Unstructured
@@ -37,68 +37,68 @@ type FakeManifestFilter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeManifestFilter) FilterOnCluster(arg1 []unstructured.Unstructured, arg2 string) []unstructured.Unstructured {
+func (fake *FakeManifestFilter) FilterOnClusterAnnotation(arg1 []unstructured.Unstructured, arg2 string) []unstructured.Unstructured {
 	var arg1Copy []unstructured.Unstructured
 	if arg1 != nil {
 		arg1Copy = make([]unstructured.Unstructured, len(arg1))
 		copy(arg1Copy, arg1)
 	}
-	fake.filterOnClusterMutex.Lock()
-	ret, specificReturn := fake.filterOnClusterReturnsOnCall[len(fake.filterOnClusterArgsForCall)]
-	fake.filterOnClusterArgsForCall = append(fake.filterOnClusterArgsForCall, struct {
+	fake.filterOnClusterAnnotationMutex.Lock()
+	ret, specificReturn := fake.filterOnClusterAnnotationReturnsOnCall[len(fake.filterOnClusterAnnotationArgsForCall)]
+	fake.filterOnClusterAnnotationArgsForCall = append(fake.filterOnClusterAnnotationArgsForCall, struct {
 		arg1 []unstructured.Unstructured
 		arg2 string
 	}{arg1Copy, arg2})
-	fake.recordInvocation("FilterOnCluster", []interface{}{arg1Copy, arg2})
-	fake.filterOnClusterMutex.Unlock()
-	if fake.FilterOnClusterStub != nil {
-		return fake.FilterOnClusterStub(arg1, arg2)
+	fake.recordInvocation("FilterOnClusterAnnotation", []interface{}{arg1Copy, arg2})
+	fake.filterOnClusterAnnotationMutex.Unlock()
+	if fake.FilterOnClusterAnnotationStub != nil {
+		return fake.FilterOnClusterAnnotationStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.filterOnClusterReturns
+	fakeReturns := fake.filterOnClusterAnnotationReturns
 	return fakeReturns.result1
 }
 
-func (fake *FakeManifestFilter) FilterOnClusterCallCount() int {
-	fake.filterOnClusterMutex.RLock()
-	defer fake.filterOnClusterMutex.RUnlock()
-	return len(fake.filterOnClusterArgsForCall)
+func (fake *FakeManifestFilter) FilterOnClusterAnnotationCallCount() int {
+	fake.filterOnClusterAnnotationMutex.RLock()
+	defer fake.filterOnClusterAnnotationMutex.RUnlock()
+	return len(fake.filterOnClusterAnnotationArgsForCall)
 }
 
-func (fake *FakeManifestFilter) FilterOnClusterCalls(stub func([]unstructured.Unstructured, string) []unstructured.Unstructured) {
-	fake.filterOnClusterMutex.Lock()
-	defer fake.filterOnClusterMutex.Unlock()
-	fake.FilterOnClusterStub = stub
+func (fake *FakeManifestFilter) FilterOnClusterAnnotationCalls(stub func([]unstructured.Unstructured, string) []unstructured.Unstructured) {
+	fake.filterOnClusterAnnotationMutex.Lock()
+	defer fake.filterOnClusterAnnotationMutex.Unlock()
+	fake.FilterOnClusterAnnotationStub = stub
 }
 
-func (fake *FakeManifestFilter) FilterOnClusterArgsForCall(i int) ([]unstructured.Unstructured, string) {
-	fake.filterOnClusterMutex.RLock()
-	defer fake.filterOnClusterMutex.RUnlock()
-	argsForCall := fake.filterOnClusterArgsForCall[i]
+func (fake *FakeManifestFilter) FilterOnClusterAnnotationArgsForCall(i int) ([]unstructured.Unstructured, string) {
+	fake.filterOnClusterAnnotationMutex.RLock()
+	defer fake.filterOnClusterAnnotationMutex.RUnlock()
+	argsForCall := fake.filterOnClusterAnnotationArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeManifestFilter) FilterOnClusterReturns(result1 []unstructured.Unstructured) {
-	fake.filterOnClusterMutex.Lock()
-	defer fake.filterOnClusterMutex.Unlock()
-	fake.FilterOnClusterStub = nil
-	fake.filterOnClusterReturns = struct {
+func (fake *FakeManifestFilter) FilterOnClusterAnnotationReturns(result1 []unstructured.Unstructured) {
+	fake.filterOnClusterAnnotationMutex.Lock()
+	defer fake.filterOnClusterAnnotationMutex.Unlock()
+	fake.FilterOnClusterAnnotationStub = nil
+	fake.filterOnClusterAnnotationReturns = struct {
 		result1 []unstructured.Unstructured
 	}{result1}
 }
 
-func (fake *FakeManifestFilter) FilterOnClusterReturnsOnCall(i int, result1 []unstructured.Unstructured) {
-	fake.filterOnClusterMutex.Lock()
-	defer fake.filterOnClusterMutex.Unlock()
-	fake.FilterOnClusterStub = nil
-	if fake.filterOnClusterReturnsOnCall == nil {
-		fake.filterOnClusterReturnsOnCall = make(map[int]struct {
+func (fake *FakeManifestFilter) FilterOnClusterAnnotationReturnsOnCall(i int, result1 []unstructured.Unstructured) {
+	fake.filterOnClusterAnnotationMutex.Lock()
+	defer fake.filterOnClusterAnnotationMutex.Unlock()
+	fake.FilterOnClusterAnnotationStub = nil
+	if fake.filterOnClusterAnnotationReturnsOnCall == nil {
+		fake.filterOnClusterAnnotationReturnsOnCall = make(map[int]struct {
 			result1 []unstructured.Unstructured
 		})
 	}
-	fake.filterOnClusterReturnsOnCall[i] = struct {
+	fake.filterOnClusterAnnotationReturnsOnCall[i] = struct {
 		result1 []unstructured.Unstructured
 	}{result1}
 }
@@ -172,8 +172,8 @@ func (fake *FakeManifestFilter) FilterOnLabelReturnsOnCall(i int, result1 []unst
 func (fake *FakeManifestFilter) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.filterOnClusterMutex.RLock()
-	defer fake.filterOnClusterMutex.RUnlock()
+	fake.filterOnClusterAnnotationMutex.RLock()
+	defer fake.filterOnClusterAnnotationMutex.RUnlock()
 	fake.filterOnLabelMutex.RLock()
 	defer fake.filterOnLabelMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

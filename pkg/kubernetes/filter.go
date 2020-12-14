@@ -8,7 +8,7 @@ import (
 
 //go:generate counterfeiter . ManifestFilter
 type ManifestFilter interface {
-	FilterOnCluster([]unstructured.Unstructured, string) []unstructured.Unstructured
+	FilterOnClusterAnnotation([]unstructured.Unstructured, string) []unstructured.Unstructured
 	FilterOnLabel([]unstructured.Unstructured, string) []unstructured.Unstructured
 }
 
@@ -20,7 +20,7 @@ func NewManifestFilter(items []unstructured.Unstructured) manifestFilter {
 	return manifestFilter{items: items}
 }
 
-func (f *manifestFilter) FilterOnCluster(cluster string) []unstructured.Unstructured {
+func (f *manifestFilter) FilterOnClusterAnnotation(cluster string) []unstructured.Unstructured {
 	filtered := []unstructured.Unstructured{}
 
 	for _, item := range f.items {

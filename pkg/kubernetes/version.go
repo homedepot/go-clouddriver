@@ -137,21 +137,30 @@ func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, ver
 
 func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string {
 	currentVersion := "-1"
+	cluster := ""
 
 	if len(ul.Items) == 0 {
 		return currentVersion
 	}
+
 	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
 	manifestFilter := NewManifestFilter(ul.Items)
-	cluster := kind + " " + name
-	results := manifestFilter.FilterOnCluster(cluster)
+	lastIndex := strings.LastIndex(name, "-v")
+	if lastIndex != -1 {
+		cluster = kind + " " + name[:lastIndex]
+	} else {
+		cluster = kind + " " + name
+	}
+
+	results := manifestFilter.FilterOnClusterAnnotation(cluster)
 
 	if len(results) == 0 {
 		return currentVersion
 	}
 
 	//filter out empty moniker.spinnaker.io/sequence labels
-	results = manifestFilter.FilterOnLabel(LabelSpinnakerMonikerSequence)
+	manifestFilter2 := NewManifestFilter(results)
+	results = manifestFilter2.FilterOnLabel(LabelSpinnakerMonikerSequence)
 	if len(results) == 0 {
 		return currentVersion
 	}
@@ -161,7 +170,8 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 		return results[i].GetCreationTimestamp().String() > results[j].GetCreationTimestamp().String()
 	})
 
-	currentVersion = results[0].GetResourceVersion()
+	annotations := results[0].GetAnnotations()
+	currentVersion = annotations[AnnotationSpinnakerMonikerSequence]
 
 	return currentVersion
 }

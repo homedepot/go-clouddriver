@@ -14,7 +14,7 @@ var (
 )
 
 var _ = Describe("ManifestFilter", func() {
-	Context("#FilterOnCluster", func() {
+	Context("#FilterOnClusterAnnotation", func() {
 		BeforeEach(func() {
 			kc = kubernetes.NewController()
 			fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{}}
@@ -23,7 +23,7 @@ var _ = Describe("ManifestFilter", func() {
 		When("called with empty list", func() {
 			BeforeEach(func() {
 				manifestFilter := kubernetes.NewManifestFilter([]unstructured.Unstructured{})
-				filteredResourcesArray = manifestFilter.FilterOnCluster("test-cluster")
+				filteredResourcesArray = manifestFilter.FilterOnClusterAnnotation("test-cluster")
 
 			})
 			It("returns an empty list", func() {
@@ -115,7 +115,7 @@ var _ = Describe("ManifestFilter", func() {
 					},
 				}
 				manifestFilter := kubernetes.NewManifestFilter(fakeResourcesArray)
-				filteredResourcesArray = manifestFilter.FilterOnCluster("pod fakeName")
+				filteredResourcesArray = manifestFilter.FilterOnClusterAnnotation("pod fakeName")
 			})
 			It("returns a of 2 items", func() {
 				Expect(len(filteredResourcesArray)).To(Equal(2))
