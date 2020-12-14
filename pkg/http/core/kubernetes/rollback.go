@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -37,8 +39,10 @@ const (
 )
 
 var (
-	errNoApplicationProvided = errors.New("no application provided")
-	errRevisionNotFound      = errors.New("revision not found")
+	errNoApplicationProvided       = errors.New("no application provided")
+	errRevisionNotFound            = errors.New("revision not found")
+	errNumRevisionsBackLessThanOne = errors.New("number of revisions back was less than 1")
+	errNumRevisionsBackOutOfRange  = errors.New("number of revisions back was out of range")
 )
 
 func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
@@ -110,34 +114,25 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 		return
 	}
 
-	var targetRS *unstructured.Unstructured
+	var tr *unstructured.Unstructured
 
-	// Deployments manage replicasets, so build a list of managed replicasets for each deployment.
-	for i, replicaSet := range replicaSets.Items {
-		annotations := replicaSet.GetAnnotations()
-		if annotations != nil {
-			name := annotations[kubernetes.AnnotationSpinnakerArtifactName]
-			t := annotations[kubernetes.AnnotationSpinnakerArtifactType]
-
-			if strings.EqualFold(name, manifestName) &&
-				strings.EqualFold(t, "kubernetes/"+manifestKind) {
-				sequence := annotations["deployment.kubernetes.io/revision"]
-
-				if sequence != "" && sequence == ur.Revision {
-					targetRS = &replicaSets.Items[i]
-					break
-				}
-			}
+	if ur.Mode == "static" {
+		tr, err = staticTargetRS(ur, replicaSets, manifestName, manifestKind)
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
 		}
+	} else {
+		tr = targetRS(ur, replicaSets, manifestName, manifestKind)
 	}
 
-	if targetRS == nil {
-		clouddriver.Error(c, http.StatusInternalServerError, errRevisionNotFound)
+	if tr == nil {
+		clouddriver.Error(c, http.StatusNotFound, errRevisionNotFound)
 		return
 	}
 
 	deployment := kubernetes.NewDeployment(d.Object)
-	rs := kubernetes.NewReplicaSet(targetRS.Object).Object()
+	rs := kubernetes.NewReplicaSet(tr.Object).Object()
 
 	SetFromReplicaSetTemplate(deployment.Object(), rs.Spec.Template)
 	// set RS (the old RS we'll rolling back to) annotations back to the deployment;
@@ -243,4 +238,71 @@ func CloneAndRemoveLabel(labels map[string]string, labelKey string) map[string]s
 	delete(newLabels, labelKey)
 
 	return newLabels
+}
+
+func targetRS(ur UndoRolloutManifestRequest,
+	replicaSets *unstructured.UnstructuredList,
+	manifestName, manifestKind string) *unstructured.Unstructured {
+	var targetRS *unstructured.Unstructured
+	for i, replicaSet := range replicaSets.Items {
+		annotations := replicaSet.GetAnnotations()
+		if annotations != nil {
+			name := annotations[kubernetes.AnnotationSpinnakerArtifactName]
+			t := annotations[kubernetes.AnnotationSpinnakerArtifactType]
+
+			if strings.EqualFold(name, manifestName) &&
+				strings.EqualFold(t, "kubernetes/"+manifestKind) &&
+				replicaSet.GetNamespace() == ur.Location {
+				sequence := annotations["deployment.kubernetes.io/revision"]
+
+				if sequence != "" && sequence == ur.Revision {
+					targetRS = &replicaSets.Items[i]
+					break
+				}
+			}
+		}
+	}
+
+	return targetRS
+}
+
+func staticTargetRS(ur UndoRolloutManifestRequest,
+	replicaSets *unstructured.UnstructuredList,
+	manifestName, manifestKind string) (*unstructured.Unstructured, error) {
+	if ur.NumRevisionsBack < 1 {
+		return nil, errNumRevisionsBackLessThanOne
+	}
+	// Create a map of sequence number to rs.
+	rs := map[int]*unstructured.Unstructured{}
+	for _, replicaSet := range replicaSets.Items {
+		annotations := replicaSet.GetAnnotations()
+		if annotations != nil {
+			name := annotations[kubernetes.AnnotationSpinnakerArtifactName]
+			t := annotations[kubernetes.AnnotationSpinnakerArtifactType]
+
+			if strings.EqualFold(name, manifestName) &&
+				strings.EqualFold(t, "kubernetes/"+manifestKind) &&
+				replicaSet.GetNamespace() == ur.Location {
+				sequence := annotations["deployment.kubernetes.io/revision"]
+				i, err := strconv.Atoi(sequence)
+				if err != nil {
+					continue
+				}
+				rs[i] = &replicaSet
+			}
+		}
+	}
+	// If number of revisions back is greater than or equal to the number of replicaSets, return
+	// an error.
+	if ur.NumRevisionsBack >= len(rs) {
+		return nil, errNumRevisionsBackOutOfRange
+	}
+	// Sort sequences in descending order.
+	keys := make([]int, 0, len(rs))
+	for k := range rs {
+		keys = append(keys, k)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(keys)))
+	// Get the target replica set.
+	return rs[keys[ur.NumRevisionsBack]], nil
 }

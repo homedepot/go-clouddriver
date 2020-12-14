@@ -144,12 +144,14 @@ type DeleteManifestRequestOptions struct {
 }
 
 type UndoRolloutManifestRequest struct {
-	ManifestName  string `json:"manifestName"`
-	CloudProvider string `json:"cloudProvider"`
-	Location      string `json:"location"`
-	User          string `json:"user"`
-	Account       string `json:"account"`
-	Revision      string `json:"revision"`
+	Mode             string `json:"mode"`
+	ManifestName     string `json:"manifestName"`
+	CloudProvider    string `json:"cloudProvider"`
+	Location         string `json:"location"`
+	NumRevisionsBack int    `json:"numRevisionsBack"`
+	User             string `json:"user"`
+	Account          string `json:"account"`
+	Revision         string `json:"revision"`
 }
 
 type RollingRestartManifestRequest struct {

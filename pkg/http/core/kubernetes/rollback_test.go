@@ -8,6 +8,7 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -114,7 +115,7 @@ var _ = Describe("Rollback", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Writer.Status()).To(Equal(http.StatusNotFound))
 			Expect(c.Errors.Last().Error()).To(Equal("revision not found"))
 		})
 	})
@@ -127,6 +128,140 @@ var _ = Describe("Rollback", func() {
 		It("returns an error", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
 			Expect(c.Errors.Last().Error()).To(Equal("error applying manifest"))
+		})
+	})
+
+	Context("when the mode is static", func() {
+		BeforeEach(func() {
+			undoRolloutManifestRequest.Mode = "static"
+			undoRolloutManifestRequest.NumRevisionsBack = 1
+		})
+
+		When("num revisions back is less than 1", func() {
+			BeforeEach(func() {
+				undoRolloutManifestRequest.NumRevisionsBack = 0
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("number of revisions back was less than 1"))
+			})
+		})
+
+		When("num revisions back is out of range", func() {
+			BeforeEach(func() {
+				undoRolloutManifestRequest.NumRevisionsBack = 100
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("number of revisions back was out of range"))
+			})
+		})
+
+		When("there is an error converting the sequence to an int", func() {
+			fakeUnstructured1 := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "test-kind",
+					"apiVersion": "test-api-version",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":        "asdf",
+						},
+						"name": "test-name",
+					},
+				},
+			}
+			fakeUnstructured2 := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "test-kind",
+					"apiVersion": "test-api-version",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":        "100",
+						},
+						"name": "test-name",
+					},
+				},
+			}
+			fakeUnstructured3 := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "test-kind",
+					"apiVersion": "test-api-version",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":        "101",
+						},
+						"name": "test-name",
+					},
+				},
+			}
+			fakeUnstructuredList := &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					fakeUnstructured1,
+					fakeUnstructured2,
+					fakeUnstructured3,
+				},
+			}
+
+			BeforeEach(func() {
+				fakeKubeClient.ListByGVRReturns(fakeUnstructuredList, nil)
+			})
+
+			It("continues", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			})
+		})
+
+		When("it succeeds", func() {
+			fakeUnstructured1 := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "test-kind",
+					"apiVersion": "test-api-version",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":        "99",
+						},
+						"name": "test-name",
+					},
+				},
+			}
+			fakeUnstructured2 := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "test-kind",
+					"apiVersion": "test-api-version",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":        "100",
+						},
+						"name": "test-name",
+					},
+				},
+			}
+			fakeUnstructuredList := &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					fakeUnstructured1,
+					fakeUnstructured2,
+				},
+			}
+
+			BeforeEach(func() {
+				fakeKubeClient.ListByGVRReturns(fakeUnstructuredList, nil)
+			})
+
+			It("succeeds", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			})
 		})
 	})
 
