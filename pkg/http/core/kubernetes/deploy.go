@@ -145,6 +145,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			}
 
 			currentVersion := kc.GetCurrentVersion(results, kind, name)
+
 			latestVersion := kc.IncrementVersion(currentVersion)
 
 			u.SetName(u.GetName() + "-" + latestVersion.Long)
