@@ -4,10 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/homedepot/go-clouddriver/pkg/util"
 	"net/http"
 	"strings"
 	"unicode"
+
+	"github.com/homedepot/go-clouddriver/pkg/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -146,9 +147,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			}
 
 			currentVersion := kc.GetCurrentVersion(results, kind, name)
-
 			latestVersion := kc.IncrementVersion(currentVersion)
-
 			u.SetName(u.GetName() + "-" + latestVersion.Long)
 
 			err = kc.AddSpinnakerVersionAnnotations(u, latestVersion)
