@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -106,6 +107,7 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 
 	lo := metav1.ListOptions{
 		LabelSelector: kubernetes.LabelKubernetesName + "=" + app,
+		FieldSelector: "metadata.namespace=" + ur.Location,
 	}
 
 	replicaSets, err := client.ListByGVR(replicaSetGVR, lo)
@@ -244,6 +246,7 @@ func targetRS(ur UndoRolloutManifestRequest,
 	replicaSets *unstructured.UnstructuredList,
 	manifestName, manifestKind string) *unstructured.Unstructured {
 	var targetRS *unstructured.Unstructured
+
 	for i, replicaSet := range replicaSets.Items {
 		annotations := replicaSet.GetAnnotations()
 		if annotations != nil {
@@ -257,6 +260,7 @@ func targetRS(ur UndoRolloutManifestRequest,
 
 				if sequence != "" && sequence == ur.Revision {
 					targetRS = &replicaSets.Items[i]
+
 					break
 				}
 			}
@@ -274,6 +278,8 @@ func staticTargetRS(ur UndoRolloutManifestRequest,
 	}
 	// Create a map of sequence number to rs.
 	rs := map[int]*unstructured.Unstructured{}
+
+	fmt.Println("total replicasets", len(replicaSets.Items))
 	for _, replicaSet := range replicaSets.Items {
 		annotations := replicaSet.GetAnnotations()
 		if annotations != nil {
@@ -284,11 +290,15 @@ func staticTargetRS(ur UndoRolloutManifestRequest,
 				strings.EqualFold(t, "kubernetes/"+manifestKind) &&
 				replicaSet.GetNamespace() == ur.Location {
 				sequence := annotations["deployment.kubernetes.io/revision"]
-				i, err := strconv.Atoi(sequence)
+
+				j, err := strconv.Atoi(sequence)
 				if err != nil {
 					continue
 				}
-				rs[i] = &replicaSet
+				fmt.Println("found sequence", sequence)
+				fmt.Println("rs", replicaSet.GetName())
+
+				rs[j] = &replicaSet
 			}
 		}
 	}
@@ -297,12 +307,16 @@ func staticTargetRS(ur UndoRolloutManifestRequest,
 	if ur.NumRevisionsBack >= len(rs) {
 		return nil, errNumRevisionsBackOutOfRange
 	}
-	// Sort sequences in descending order.
+
 	keys := make([]int, 0, len(rs))
 	for k := range rs {
 		keys = append(keys, k)
 	}
+	fmt.Println("keys", keys)
+	// Sort the sequences in reverse order.
 	sort.Sort(sort.Reverse(sort.IntSlice(keys)))
+	fmt.Println("sorted keys", keys)
+	fmt.Println("winning rs", keys[ur.NumRevisionsBack])
 	// Get the target replica set.
 	return rs[keys[ur.NumRevisionsBack]], nil
 }
