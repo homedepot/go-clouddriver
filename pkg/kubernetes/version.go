@@ -21,12 +21,11 @@ type SpinnakerVersion struct {
 	Short string
 }
 
-//Create a similar function for labels
 func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, version SpinnakerVersion) error {
+	var err error
+
 	annotate(u, AnnotationSpinnakerArtifactVersion, version.Long)
 	annotate(u, AnnotationSpinnakerMonikerSequence, version.Short)
-
-	var err error
 
 	gvk := u.GroupVersionKind()
 
@@ -82,9 +81,9 @@ func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured
 }
 
 func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, version SpinnakerVersion) error {
-	label(u, LabelSpinnakerMonikerSequence, version.Short)
-
 	var err error
+
+	label(u, LabelSpinnakerMonikerSequence, version.Short)
 
 	gvk := u.GroupVersionKind()
 
