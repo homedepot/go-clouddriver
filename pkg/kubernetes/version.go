@@ -154,7 +154,6 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 	}
 
 	results := manifestFilter.FilterOnClusterAnnotation(cluster)
-
 	if len(results) == 0 {
 		return currentVersion
 	}

@@ -35,7 +35,6 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	taskID := clouddriver.TaskIDFromContext(c)
 
 	provider, err := sc.GetKubernetesProvider(dm.Account)
-
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
@@ -68,9 +67,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	}
 
 	manifests := []map[string]interface{}{}
-
 	application := dm.Moniker.App
-
 	// Merge all list element items into the manifest list.
 	for _, manifest := range dm.Manifests {
 		u, err := kc.ToUnstructured(manifest)
@@ -164,7 +161,6 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		meta, err := client.ApplyWithNamespaceOverride(u, dm.NamespaceOverride)
-
 		if err != nil {
 			e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
 				u.GetKind(), u.GroupVersionKind().Version, u.GetName(), err.Error())

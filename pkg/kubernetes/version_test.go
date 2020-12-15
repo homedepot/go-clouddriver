@@ -306,12 +306,6 @@ var _ = Describe("Version", func() {
 			It("expect error not to have occured", func() {
 				Expect(err).To(BeNil())
 			})
-			// It("#annotate was called with AnnotationSpinnakerArtifactVersion and v002 version number", func() {
-
-			// })
-			// It("#annotate was called with AnnotationSpinnakerMonikerSequence and 2 version number", func() {
-
-			// })
 		})
 	})
 
@@ -349,9 +343,6 @@ var _ = Describe("Version", func() {
 			It("expect error not to have occured", func() {
 				Expect(err).To(BeNil())
 			})
-			// It("#Label was called with LabelSpinnakerMonikerSequence and 2 version number", func() {
-
-			// })
 		})
 	})
 })

@@ -9,8 +9,6 @@ import (
 
 var (
 	filteredResourcesArray, fakeResourcesArray []unstructured.Unstructured
-	// manifestFilter kubernetes.ManifestFilter
-// kc kubernetes.Controller
 )
 
 var _ = Describe("ManifestFilter", func() {
