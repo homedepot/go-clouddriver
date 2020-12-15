@@ -66,18 +66,17 @@ func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured
 		}
 	}
 
-	//Todo: create statefulset.go with all the needed functions
-	// if strings.EqualFold(gvk.Kind, "statefulset") {
-	// 	ss := NewStatefulSet(u.Object)
+	if strings.EqualFold(gvk.Kind, "statefulset") {
+		ss := NewStatefulSet(u.Object)
 
-	// 	ss.AnnotateTemplate(AnnotationSpinnakerArtifactVersion, version.Long)
-	// 	ss.AnnotateTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+		ss.AnnotateTemplate(AnnotationSpinnakerArtifactVersion, version.Long)
+		ss.AnnotateTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
 
-	// 	*u, err = ds.ToUnstructured()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+		*u, err = ss.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -121,17 +120,16 @@ func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, ver
 		}
 	}
 
-	//Todo: create statefulset.go with all the needed functions
-	// if strings.EqualFold(gvk.Kind, "statefulset") {
-	// 	ss := NewStatefulSet(u.Object)
+	if strings.EqualFold(gvk.Kind, "statefulset") {
+		ss := NewStatefulSet(u.Object)
 
-	// 	ss.LabelTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+		ss.LabelTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
 
-	// 	*u, err = ss.ToUnstructured()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+		*u, err = ss.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
