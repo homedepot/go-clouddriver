@@ -21,6 +21,7 @@ type SpinnakerVersion struct {
 	Short string
 }
 
+// AddSpinnakerVersionAnnotations adds the `artifact.spinnaker.io/version` and `moniker.spinnaker.io/sequence` annotations to the manifest to identify the version number of that resource
 func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, version SpinnakerVersion) error {
 	var err error
 
@@ -80,6 +81,7 @@ func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured
 	return nil
 }
 
+// AddSpinnakerVersionLabels adds the `moniker.spinnaker.io/sequence` label to the manifest to identify the version number of that resource
 func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, version SpinnakerVersion) error {
 	var err error
 
@@ -90,7 +92,7 @@ func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, ver
 	if strings.EqualFold(gvk.Kind, "deployment") {
 		d := NewDeployment(u.Object)
 
-		d.LabelTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+		d.LabelTemplate(LabelSpinnakerMonikerSequence, version.Short)
 
 		*u, err = d.ToUnstructured()
 		if err != nil {
@@ -101,7 +103,7 @@ func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, ver
 	if strings.EqualFold(gvk.Kind, "replicaset") {
 		rs := NewReplicaSet(u.Object)
 
-		rs.LabelTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+		rs.LabelTemplate(LabelSpinnakerMonikerSequence, version.Short)
 
 		*u, err = rs.ToUnstructured()
 		if err != nil {
