@@ -210,10 +210,9 @@ func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, 
 		return nil, err
 	}
 
-	helper := resource.NewHelper(restClient, restMapping)
-
 	var u *unstructured.Unstructured
 
+	helper := resource.NewHelper(restClient, restMapping)
 	if helper.NamespaceScoped {
 		u, err = c.c.
 			Resource(restMapping.Resource).
@@ -268,10 +267,9 @@ func (c *client) ListResourcesByKindAndNamespace(kind, namespace string, lo meta
 		return nil, err
 	}
 
-	helper := resource.NewHelper(restClient, restMapping)
-
 	var ul *unstructured.UnstructuredList
 
+	helper := resource.NewHelper(restClient, restMapping)
 	if helper.NamespaceScoped {
 		ul, err = c.c.
 			Resource(restMapping.Resource).
@@ -308,10 +306,9 @@ func (c *client) PatchUsingStrategy(kind, name, namespace string, p []byte, stra
 		return metadata, nil, err
 	}
 
-	helper := resource.NewHelper(restClient, restMapping)
-
 	var u *unstructured.Unstructured
 
+	helper := resource.NewHelper(restClient, restMapping)
 	if helper.NamespaceScoped {
 		u, err = c.c.
 			Resource(restMapping.Resource).

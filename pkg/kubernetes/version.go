@@ -77,6 +77,7 @@ func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -130,6 +131,7 @@ func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, ver
 			return err
 		}
 	}
+
 	return nil
 }
 
