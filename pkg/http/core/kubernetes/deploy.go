@@ -18,6 +18,7 @@ import (
 	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -132,8 +133,20 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		if kc.IsVersioned(u) {
 			kind := strings.ToLower(u.GetKind())
 			namespace := u.GetNamespace()
+			labelSelector := metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					kubernetes.LabelKubernetesName: application,
+				},
+				MatchExpressions: []metav1.LabelSelectorRequirement{
+					{
+						Key:      kubernetes.LabelSpinnakerMonikerSequence,
+						Operator: metav1.LabelSelectorOpExists,
+					},
+				},
+			}
+
 			lo := metav1.ListOptions{
-				LabelSelector:  kubernetes.LabelKubernetesName + "=" + application,
+				LabelSelector:  labels.Set(labelSelector.MatchLabels).String(),
 				TimeoutSeconds: &listTimeout,
 			}
 
