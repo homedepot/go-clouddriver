@@ -9,12 +9,11 @@ import (
 )
 
 var (
-	kc                                           kubernetes.Controller
-	fakeUnstructuredList                         *unstructured.UnstructuredList
-	fakeResource                                 unstructured.Unstructured
-	currentVersion                               string
-	isVersioned                                  bool
-	updatedVersion, expectedVersion, fakeVersion kubernetes.SpinnakerVersion
+	kc                              kubernetes.Controller
+	fakeUnstructuredList            *unstructured.UnstructuredList
+	currentVersion                  string
+	isVersioned                     bool
+	updatedVersion, expectedVersion kubernetes.SpinnakerVersion
 )
 
 var _ = Describe("Version", func() {

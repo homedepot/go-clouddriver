@@ -15,6 +15,8 @@ var _ = Describe("Label", func() {
 		application string
 		err         error
 		kc          Controller
+		version     SpinnakerVersion
+		m           map[string]interface{}
 	)
 
 	Context("#AddSpinnakerLabels", func() {
@@ -238,42 +240,169 @@ var _ = Describe("Label", func() {
 	})
 
 	Context("#AddSpinnakerVersionLabels", func() {
-		When("kind is a replicaset", func() {
+		BeforeEach(func() {
+			kc = NewController()
+		})
+
+		JustBeforeEach(func() {
+			err = kc.AddSpinnakerVersionLabels(u, version)
+		})
+
+		When("kind is a deployment", func() {
 			BeforeEach(func() {
-				fakeResource = unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"kind": "test-kind",
-						"metadata": map[string]interface{}{
-							"name":              "test-name",
-							"namespace":         "test-namespace2",
-							"creationTimestamp": "2020-02-13T14:12:03Z",
-							"labels": map[string]interface{}{
-								"label1": "test-label1",
-							},
-							"annotations": map[string]interface{}{
-								"strategy.spinnaker.io/versioned": "true",
-								"moniker.spinnaker.io/cluster":    "test-kind test-name",
-							},
-							"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+				m = map[string]interface{}{
+					"kind": "deployment",
+					"metadata": map[string]interface{}{
+						"name":              "test-name",
+						"namespace":         "test-namespace2",
+						"creationTimestamp": "2020-02-13T14:12:03Z",
+						"labels": map[string]interface{}{
+							"label1": "test-label1",
 						},
+						"annotations": map[string]interface{}{
+							"strategy.spinnaker.io/versioned": "true",
+							"moniker.spinnaker.io/cluster":    "test-kind test-name",
+						},
+						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 					},
 				}
-
-				fakeVersion = kubernetes.SpinnakerVersion{
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+				version = kubernetes.SpinnakerVersion{
 					Long:  "v002",
 					Short: "2",
 				}
-
-				kc = kubernetes.NewController()
-				err = kc.AddSpinnakerVersionLabels(&fakeResource, fakeVersion)
-
 			})
-			It("expect error not to have occured", func() {
+
+			AfterEach(func() {
+				u, err = kc.ToUnstructured(m)
 				Expect(err).To(BeNil())
 			})
-			// It("#Label was called with LabelSpinnakerMonikerSequence and 2 version number", func() {
 
-			// })
+			It("adds the labels", func() {
+				Labels := u.GetLabels()
+				Expect(Labels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
+				d := NewDeployment(u.Object).Object()
+				templateLabels := d.Spec.Template.ObjectMeta.Labels
+				Expect(templateLabels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
+			})
+		})
+		When("kind is a replicaset", func() {
+			BeforeEach(func() {
+				m = map[string]interface{}{
+					"kind": "replicaset",
+					"metadata": map[string]interface{}{
+						"name":              "test-name",
+						"namespace":         "test-namespace2",
+						"creationTimestamp": "2020-02-13T14:12:03Z",
+						"labels": map[string]interface{}{
+							"label1": "test-label1",
+						},
+						"annotations": map[string]interface{}{
+							"strategy.spinnaker.io/versioned": "true",
+							"moniker.spinnaker.io/cluster":    "test-kind test-name",
+						},
+						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+					},
+				}
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+				version = kubernetes.SpinnakerVersion{
+					Long:  "v002",
+					Short: "2",
+				}
+			})
+
+			AfterEach(func() {
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+			})
+
+			It("adds the labels", func() {
+				Labels := u.GetLabels()
+				Expect(Labels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
+				d := NewDeployment(u.Object).Object()
+				templateLabels := d.Spec.Template.ObjectMeta.Labels
+				Expect(templateLabels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
+			})
+		})
+		When("kind is a demonset", func() {
+			BeforeEach(func() {
+				m = map[string]interface{}{
+					"kind": "demonset",
+					"metadata": map[string]interface{}{
+						"name":              "test-name",
+						"namespace":         "test-namespace2",
+						"creationTimestamp": "2020-02-13T14:12:03Z",
+						"labels": map[string]interface{}{
+							"label1": "test-label1",
+						},
+						"annotations": map[string]interface{}{
+							"strategy.spinnaker.io/versioned": "true",
+							"moniker.spinnaker.io/cluster":    "test-kind test-name",
+						},
+						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+					},
+				}
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+				version = kubernetes.SpinnakerVersion{
+					Long:  "v002",
+					Short: "2",
+				}
+			})
+
+			AfterEach(func() {
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+			})
+
+			It("adds the labels", func() {
+				Labels := u.GetLabels()
+				Expect(Labels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
+				d := NewDeployment(u.Object).Object()
+				templateLabels := d.Spec.Template.ObjectMeta.Labels
+				Expect(templateLabels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
+			})
+		})
+		When("kind is a statefulset", func() {
+			BeforeEach(func() {
+				m = map[string]interface{}{
+					"kind": "statefulset",
+					"metadata": map[string]interface{}{
+						"name":              "test-name",
+						"namespace":         "test-namespace2",
+						"creationTimestamp": "2020-02-13T14:12:03Z",
+						"labels": map[string]interface{}{
+							"label1": "test-label1",
+						},
+						"annotations": map[string]interface{}{
+							"strategy.spinnaker.io/versioned": "true",
+							"moniker.spinnaker.io/cluster":    "test-kind test-name",
+						},
+						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+					},
+				}
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+				version = kubernetes.SpinnakerVersion{
+					Long:  "v002",
+					Short: "2",
+				}
+			})
+
+			AfterEach(func() {
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+			})
+
+			It("adds the labels", func() {
+				Labels := u.GetLabels()
+				Expect(Labels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
+				d := NewDeployment(u.Object).Object()
+				templateLabels := d.Spec.Template.ObjectMeta.Labels
+				Expect(templateLabels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
+			})
 		})
 	})
 })
