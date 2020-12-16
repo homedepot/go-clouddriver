@@ -231,7 +231,7 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("Increment version function is called with version 0", func() {
-				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+				Expect(c.Writer.Status()).To(Equal(http.StatusAccepted))
 				Expect(fakeKubeController.IncrementVersionArgsForCall(0)).To(Equal("0"))
 			})
 		})
