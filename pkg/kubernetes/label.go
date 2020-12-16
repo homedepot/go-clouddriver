@@ -68,6 +68,62 @@ func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, applicatio
 	return nil
 }
 
+// AddSpinnakerVersionLabels adds the `moniker.spinnaker.io/sequence` label
+// to the manifest to identify the version number of that resource.
+func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, version SpinnakerVersion) error {
+	var err error
+
+	label(u, LabelSpinnakerMonikerSequence, version.Short)
+
+	gvk := u.GroupVersionKind()
+
+	if strings.EqualFold(gvk.Kind, "deployment") {
+		d := NewDeployment(u.Object)
+
+		d.LabelTemplate(LabelSpinnakerMonikerSequence, version.Short)
+
+		*u, err = d.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	if strings.EqualFold(gvk.Kind, "replicaset") {
+		rs := NewReplicaSet(u.Object)
+
+		rs.LabelTemplate(LabelSpinnakerMonikerSequence, version.Short)
+
+		*u, err = rs.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	if strings.EqualFold(gvk.Kind, "demonset") {
+		ds := NewReplicaSet(u.Object)
+
+		ds.LabelTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+		*u, err = ds.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	if strings.EqualFold(gvk.Kind, "statefulset") {
+		ss := NewStatefulSet(u.Object)
+
+		ss.LabelTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+		*u, err = ss.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func label(u *unstructured.Unstructured, key, value string) {
 	labels := u.GetLabels()
 	if labels == nil {

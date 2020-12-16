@@ -146,6 +146,7 @@ var _ = Describe("Version", func() {
 			})
 		})
 	})
+
 	Context("#IsVersioned", func() {
 		When("#GetAnnotations returns strategy.spinnaker.io/versioned annotaion", func() {
 			When("strategy.spinnaker.io/versioned annotaion is true", func() {
@@ -244,6 +245,7 @@ var _ = Describe("Version", func() {
 			})
 		})
 	})
+
 	Context("#IncrementVersion", func() {
 		When("current version is 1", func() {
 			BeforeEach(func() {
@@ -269,79 +271,6 @@ var _ = Describe("Version", func() {
 			})
 			It("returns expected version", func() {
 				Expect(updatedVersion).To(Equal(expectedVersion))
-			})
-		})
-	})
-	Context("#AddSpinnakerVersionAnnotations", func() {
-		When("kind is a replicaset", func() {
-			BeforeEach(func() {
-				fakeResource = unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"kind": "test-kind",
-						"metadata": map[string]interface{}{
-							"name":              "test-name",
-							"namespace":         "test-namespace2",
-							"creationTimestamp": "2020-02-13T14:12:03Z",
-							"labels": map[string]interface{}{
-								"label1": "test-label1",
-							},
-							"annotations": map[string]interface{}{
-								"strategy.spinnaker.io/versioned": "true",
-								"moniker.spinnaker.io/cluster":    "test-kind test-name",
-							},
-							"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
-						},
-					},
-				}
-
-				fakeVersion = kubernetes.SpinnakerVersion{
-					Long:  "v002",
-					Short: "2",
-				}
-
-				kc = kubernetes.NewController()
-				err = kc.AddSpinnakerVersionAnnotations(&fakeResource, fakeVersion)
-
-			})
-			It("expect error not to have occured", func() {
-				Expect(err).To(BeNil())
-			})
-		})
-	})
-
-	Context("#AddSpinnakerVersionLabels", func() {
-		When("kind is a replicaset", func() {
-			BeforeEach(func() {
-				fakeResource = unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"kind": "test-kind",
-						"metadata": map[string]interface{}{
-							"name":              "test-name",
-							"namespace":         "test-namespace2",
-							"creationTimestamp": "2020-02-13T14:12:03Z",
-							"labels": map[string]interface{}{
-								"label1": "test-label1",
-							},
-							"annotations": map[string]interface{}{
-								"strategy.spinnaker.io/versioned": "true",
-								"moniker.spinnaker.io/cluster":    "test-kind test-name",
-							},
-							"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
-						},
-					},
-				}
-
-				fakeVersion = kubernetes.SpinnakerVersion{
-					Long:  "v002",
-					Short: "2",
-				}
-
-				kc = kubernetes.NewController()
-				err = kc.AddSpinnakerVersionLabels(&fakeResource, fakeVersion)
-
-			})
-			It("expect error not to have occured", func() {
-				Expect(err).To(BeNil())
 			})
 		})
 	})
