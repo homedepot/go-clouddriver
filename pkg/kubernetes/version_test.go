@@ -15,7 +15,6 @@ var (
 	currentVersion                               string
 	isVersioned                                  bool
 	updatedVersion, expectedVersion, fakeVersion kubernetes.SpinnakerVersion
-	err                                          error
 )
 
 var _ = Describe("Version", func() {
