@@ -15,6 +15,8 @@ var _ = Describe("Annotation", func() {
 		application string
 		err         error
 		kc          Controller
+		version     SpinnakerVersion
+		m           map[string]interface{}
 	)
 
 	Context("#AddSpinnakerAnnotations", func() {
@@ -28,7 +30,7 @@ var _ = Describe("Annotation", func() {
 
 		When("the object is a deployment", func() {
 			BeforeEach(func() {
-				m := map[string]interface{}{
+				m = map[string]interface{}{
 					"kind":       "Deployment",
 					"apiVersion": "apps/v1",
 					"metadata": map[string]interface{}{
@@ -61,7 +63,7 @@ var _ = Describe("Annotation", func() {
 
 		When("the object is a replicaset", func() {
 			BeforeEach(func() {
-				m := map[string]interface{}{
+				m = map[string]interface{}{
 					"kind":       "ReplicaSet",
 					"apiVersion": "apps/v1",
 					"metadata": map[string]interface{}{
@@ -94,7 +96,7 @@ var _ = Describe("Annotation", func() {
 
 		When("the object is a daemonset", func() {
 			BeforeEach(func() {
-				m := map[string]interface{}{
+				m = map[string]interface{}{
 					"kind":       "DaemonSet",
 					"apiVersion": "apps/v1",
 					"metadata": map[string]interface{}{
@@ -127,38 +129,179 @@ var _ = Describe("Annotation", func() {
 	})
 
 	Context("#AddSpinnakerVersionAnnotations", func() {
-		When("kind is a replicaset", func() {
+		BeforeEach(func() {
+			kc = NewController()
+		})
+
+		JustBeforeEach(func() {
+			err = kc.AddSpinnakerVersionAnnotations(u, version)
+		})
+
+		When("kind is a deployment", func() {
 			BeforeEach(func() {
-				fakeResource = unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"kind": "test-kind",
-						"metadata": map[string]interface{}{
-							"name":              "test-name",
-							"namespace":         "test-namespace2",
-							"creationTimestamp": "2020-02-13T14:12:03Z",
-							"labels": map[string]interface{}{
-								"label1": "test-label1",
-							},
-							"annotations": map[string]interface{}{
-								"strategy.spinnaker.io/versioned": "true",
-								"moniker.spinnaker.io/cluster":    "test-kind test-name",
-							},
-							"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+				m = map[string]interface{}{
+					"kind": "deployment",
+					"metadata": map[string]interface{}{
+						"name":              "test-name",
+						"namespace":         "test-namespace2",
+						"creationTimestamp": "2020-02-13T14:12:03Z",
+						"labels": map[string]interface{}{
+							"label1": "test-label1",
 						},
+						"annotations": map[string]interface{}{
+							"strategy.spinnaker.io/versioned": "true",
+							"moniker.spinnaker.io/cluster":    "test-kind test-name",
+						},
+						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 					},
 				}
-
-				fakeVersion = kubernetes.SpinnakerVersion{
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+				version = kubernetes.SpinnakerVersion{
 					Long:  "v002",
 					Short: "2",
 				}
-
-				kc = kubernetes.NewController()
-				err = kc.AddSpinnakerVersionAnnotations(&fakeResource, fakeVersion)
-
 			})
-			It("expect error not to have occured", func() {
+
+			AfterEach(func() {
+				u, err = kc.ToUnstructured(m)
 				Expect(err).To(BeNil())
+			})
+
+			It("adds the annotations", func() {
+				annotations := u.GetAnnotations()
+				Expect(annotations[AnnotationSpinnakerArtifactVersion]).To(Equal("v002"))
+				Expect(annotations[AnnotationSpinnakerMonikerSequence]).To(Equal("2"))
+				d := NewDeployment(u.Object).Object()
+				templateAnnotations := d.Spec.Template.ObjectMeta.Annotations
+				Expect(templateAnnotations[AnnotationSpinnakerArtifactVersion]).To(Equal("v002"))
+				Expect(templateAnnotations[AnnotationSpinnakerMonikerSequence]).To(Equal("2"))
+			})
+		})
+
+		When("kind is a replicaset", func() {
+			BeforeEach(func() {
+				m = map[string]interface{}{
+					"kind": "replicaset",
+					"metadata": map[string]interface{}{
+						"name":              "test-name",
+						"namespace":         "test-namespace2",
+						"creationTimestamp": "2020-02-13T14:12:03Z",
+						"labels": map[string]interface{}{
+							"label1": "test-label1",
+						},
+						"annotations": map[string]interface{}{
+							"strategy.spinnaker.io/versioned": "true",
+							"moniker.spinnaker.io/cluster":    "test-kind test-name",
+						},
+						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+					},
+				}
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+				version = kubernetes.SpinnakerVersion{
+					Long:  "v002",
+					Short: "2",
+				}
+			})
+
+			AfterEach(func() {
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+			})
+
+			It("adds the annotations", func() {
+				annotations := u.GetAnnotations()
+				Expect(annotations[AnnotationSpinnakerArtifactVersion]).To(Equal("v002"))
+				Expect(annotations[AnnotationSpinnakerMonikerSequence]).To(Equal("2"))
+				rs := NewReplicaSet(u.Object).Object()
+				templateAnnotations := rs.Spec.Template.ObjectMeta.Annotations
+				Expect(templateAnnotations[AnnotationSpinnakerArtifactVersion]).To(Equal("v002"))
+				Expect(templateAnnotations[AnnotationSpinnakerMonikerSequence]).To(Equal("2"))
+			})
+		})
+
+		When("kind is a daemonset", func() {
+			BeforeEach(func() {
+				m = map[string]interface{}{
+					"kind": "daemonset",
+					"metadata": map[string]interface{}{
+						"name":              "test-name",
+						"namespace":         "test-namespace2",
+						"creationTimestamp": "2020-02-13T14:12:03Z",
+						"labels": map[string]interface{}{
+							"label1": "test-label1",
+						},
+						"annotations": map[string]interface{}{
+							"strategy.spinnaker.io/versioned": "true",
+							"moniker.spinnaker.io/cluster":    "test-kind test-name",
+						},
+						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+					},
+				}
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+				version = kubernetes.SpinnakerVersion{
+					Long:  "v002",
+					Short: "2",
+				}
+			})
+
+			AfterEach(func() {
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+			})
+
+			It("adds the annotations", func() {
+				annotations := u.GetAnnotations()
+				Expect(annotations[AnnotationSpinnakerArtifactVersion]).To(Equal("v002"))
+				Expect(annotations[AnnotationSpinnakerMonikerSequence]).To(Equal("2"))
+				d := NewDeployment(u.Object).Object()
+				templateAnnotations := d.Spec.Template.ObjectMeta.Annotations
+				Expect(templateAnnotations[AnnotationSpinnakerArtifactVersion]).To(Equal("v002"))
+				Expect(templateAnnotations[AnnotationSpinnakerMonikerSequence]).To(Equal("2"))
+			})
+		})
+
+		When("kind is a statefulset", func() {
+			BeforeEach(func() {
+				m = map[string]interface{}{
+					"kind": "statefulset",
+					"metadata": map[string]interface{}{
+						"name":              "test-name",
+						"namespace":         "test-namespace2",
+						"creationTimestamp": "2020-02-13T14:12:03Z",
+						"labels": map[string]interface{}{
+							"label1": "test-label1",
+						},
+						"annotations": map[string]interface{}{
+							"strategy.spinnaker.io/versioned": "true",
+							"moniker.spinnaker.io/cluster":    "test-kind test-name",
+						},
+						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+					},
+				}
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+				version = kubernetes.SpinnakerVersion{
+					Long:  "v002",
+					Short: "2",
+				}
+			})
+
+			AfterEach(func() {
+				u, err = kc.ToUnstructured(m)
+				Expect(err).To(BeNil())
+			})
+
+			It("adds the annotations", func() {
+				annotations := u.GetAnnotations()
+				Expect(annotations[AnnotationSpinnakerArtifactVersion]).To(Equal("v002"))
+				Expect(annotations[AnnotationSpinnakerMonikerSequence]).To(Equal("2"))
+				d := NewDeployment(u.Object).Object()
+				templateAnnotations := d.Spec.Template.ObjectMeta.Annotations
+				Expect(templateAnnotations[AnnotationSpinnakerArtifactVersion]).To(Equal("v002"))
+				Expect(templateAnnotations[AnnotationSpinnakerMonikerSequence]).To(Equal("2"))
 			})
 		})
 	})
