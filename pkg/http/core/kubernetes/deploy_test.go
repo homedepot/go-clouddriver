@@ -220,6 +220,7 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("ListResourcesByKindAndNamespace returns a fake error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
 				Expect(c.Errors.Last().Error()).To(Equal("ListResourcesByKindAndNamespaceReturns fake error"))
 			})
 		})
@@ -230,6 +231,7 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("Increment version function is called with version 0", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
 				Expect(fakeKubeController.IncrementVersionArgsForCall(0)).To(Equal("0"))
 			})
 		})
@@ -240,6 +242,7 @@ var _ = Describe("Deploy", func() {
 			})
 
 			It("AddSpinnakerVersionAnnotations returns a fake error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
 				Expect(c.Errors.Last().Error()).To(Equal("AddSpinnakerVersionAnnotations fake error"))
 			})
 		})
