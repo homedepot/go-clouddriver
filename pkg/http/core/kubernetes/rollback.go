@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -118,6 +117,7 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 
 	var tr *unstructured.Unstructured
 
+	// Handle undoRolloutManifest stage.
 	if ur.Mode == "static" {
 		tr, err = staticTargetRS(ur, replicaSets, manifestName, manifestKind)
 		if err != nil {
@@ -125,6 +125,7 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 			return
 		}
 	} else {
+		// Handle undo rollouts triggered in the 'clusters' tab.
 		tr = targetRS(ur, replicaSets, manifestName, manifestKind)
 	}
 
@@ -252,17 +253,16 @@ func targetRS(ur UndoRolloutManifestRequest,
 		if annotations != nil {
 			name := annotations[kubernetes.AnnotationSpinnakerArtifactName]
 			t := annotations[kubernetes.AnnotationSpinnakerArtifactType]
+			sequence := annotations["deployment.kubernetes.io/revision"]
 
 			if strings.EqualFold(name, manifestName) &&
 				strings.EqualFold(t, "kubernetes/"+manifestKind) &&
-				replicaSet.GetNamespace() == ur.Location {
-				sequence := annotations["deployment.kubernetes.io/revision"]
+				replicaSet.GetNamespace() == ur.Location &&
+				sequence != "" &&
+				sequence == ur.Revision {
+				targetRS = &replicaSets.Items[i]
 
-				if sequence != "" && sequence == ur.Revision {
-					targetRS = &replicaSets.Items[i]
-
-					break
-				}
+				break
 			}
 		}
 	}
@@ -279,8 +279,7 @@ func staticTargetRS(ur UndoRolloutManifestRequest,
 	// Create a map of sequence number to rs.
 	rs := map[int]*unstructured.Unstructured{}
 
-	fmt.Println("total replicasets", len(replicaSets.Items))
-	for _, replicaSet := range replicaSets.Items {
+	for i, replicaSet := range replicaSets.Items {
 		annotations := replicaSet.GetAnnotations()
 		if annotations != nil {
 			name := annotations[kubernetes.AnnotationSpinnakerArtifactName]
@@ -295,10 +294,8 @@ func staticTargetRS(ur UndoRolloutManifestRequest,
 				if err != nil {
 					continue
 				}
-				fmt.Println("found sequence", sequence)
-				fmt.Println("rs", replicaSet.GetName())
 
-				rs[j] = &replicaSet
+				rs[j] = &replicaSets.Items[i]
 			}
 		}
 	}
@@ -312,11 +309,8 @@ func staticTargetRS(ur UndoRolloutManifestRequest,
 	for k := range rs {
 		keys = append(keys, k)
 	}
-	fmt.Println("keys", keys)
 	// Sort the sequences in reverse order.
 	sort.Sort(sort.Reverse(sort.IntSlice(keys)))
-	fmt.Println("sorted keys", keys)
-	fmt.Println("winning rs", keys[ur.NumRevisionsBack])
 	// Get the target replica set.
 	return rs[keys[ur.NumRevisionsBack]], nil
 }
