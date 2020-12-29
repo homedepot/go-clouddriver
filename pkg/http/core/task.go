@@ -13,6 +13,7 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 	"github.com/gin-gonic/gin"
+	"github.com/iancoleman/strcase"
 )
 
 // Get a task - currently only associated with kubernetes 'tasks'.
@@ -87,7 +88,8 @@ func GetTask(c *gin.Context) {
 	}
 
 	mnr := buildMapOfNamespaceToResource(resources)
-
+	
+	// 	BoundArtifacts is missing!
 	ro := clouddriver.TaskResultObject{
 		DeployedNamesByLocation:           mnr,
 		CreatedArtifacts:                  buildCreatedArtifacts(resources),
@@ -114,7 +116,7 @@ func buildCreatedArtifacts(resources []kubernetes.Resource) []clouddriver.TaskCr
 			},
 			Name:      resource.Name,
 			Reference: resource.Name,
-			Type:      "kubernetes/" + resource.Kind,
+			Type:      "kubernetes/" + strcase.ToLowerCamel(resource.Kind),
 			Version:   resource.Version,
 		}
 		cas = append(cas, ca)

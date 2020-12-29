@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"github.com/iancoleman/strcase"
 )
 
 const (
@@ -23,8 +24,9 @@ func (c *controller) AddSpinnakerAnnotations(u *unstructured.Unstructured, appli
 	namespace := u.GetNamespace()
 	gvk := u.GroupVersionKind()
 
-	t := fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
-	cluster := fmt.Sprintf("%s %s", strings.ToLower(gvk.Kind), name)
+	// possible bug ToLower
+	t := fmt.Sprintf("kubernetes/%s", strcase.ToLowerCamel(gvk.Kind))
+	cluster := fmt.Sprintf("%s %s", strcase.ToLowerCamel(gvk.Kind), name)
 
 	// Add reserved annotations.
 	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-annotations
