@@ -142,6 +142,7 @@ func (c *client) ApplyWithNamespaceOverride(u *unstructured.Unstructured, namesp
 	metadata.Namespace = u.GetNamespace()
 	metadata.Group = gvr.Group
 	metadata.Resource = gvr.Resource
+	metadata.Kind = gvk.Kind
 
 	annotations := u.GetAnnotations()
 	if annotations != nil {
@@ -149,8 +150,6 @@ func (c *client) ApplyWithNamespaceOverride(u *unstructured.Unstructured, namesp
 			metadata.Version = annotations[AnnotationSpinnakerArtifactVersion]
 		}
 	}
-	
-	metadata.Kind = gvk.Kind
 
 	return metadata, nil
 }
@@ -337,13 +336,14 @@ func (c *client) PatchUsingStrategy(kind, name, namespace string, p []byte, stra
 	metadata.Namespace = u.GetNamespace()
 	metadata.Group = gvr.Group
 	metadata.Resource = gvr.Resource
+	metadata.Kind = gvk.Kind
+
 	annotations := u.GetAnnotations()
 	if annotations != nil {
 		if _, ok := annotations[AnnotationSpinnakerArtifactVersion]; ok {
 			metadata.Version = annotations[AnnotationSpinnakerArtifactVersion]
 		}
 	}
-	metadata.Kind = gvk.Kind
 
 	return metadata, u, err
 }
