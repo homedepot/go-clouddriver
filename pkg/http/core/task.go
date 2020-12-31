@@ -9,10 +9,10 @@ import (
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"k8s.io/client-go/rest"
 
+	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/gin-gonic/gin"
 	"github.com/iancoleman/strcase"
 )
 
@@ -88,7 +88,7 @@ func GetTask(c *gin.Context) {
 	}
 
 	mnr := buildMapOfNamespaceToResource(resources)
-	
+
 	// 	BoundArtifacts is missing!
 	ro := clouddriver.TaskResultObject{
 		DeployedNamesByLocation:           mnr,
@@ -105,19 +105,31 @@ func GetTask(c *gin.Context) {
 }
 
 func buildCreatedArtifacts(resources []kubernetes.Resource) []clouddriver.TaskCreatedArtifact {
+	var (
+		artifactVersion string
+		lastIndex       int
+	)
+
 	cas := []clouddriver.TaskCreatedArtifact{}
 
 	for _, resource := range resources {
+		artifactVersion = ""
+		lastIndex = strings.LastIndex(resource.Name, "-v")
+
+		if lastIndex != -1 {
+			artifactVersion = resource.Name[lastIndex+1:]
+		}
+
 		ca := clouddriver.TaskCreatedArtifact{
 			CustomKind: false,
 			Location:   resource.Namespace,
 			Metadata: clouddriver.TaskCreatedArtifactMetadata{
 				Account: resource.AccountName,
 			},
-			Name:      resource.Name,
+			Name:      resource.ArtifactName,
 			Reference: resource.Name,
 			Type:      "kubernetes/" + strcase.ToLowerCamel(resource.Kind),
-			Version:   resource.Version,
+			Version:   artifactVersion,
 		}
 		cas = append(cas, ca)
 	}

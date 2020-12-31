@@ -40,7 +40,7 @@ var _ = Describe("Version", func() {
 							"kind":       "Pod",
 							"apiVersion": "v1",
 							"metadata": map[string]interface{}{
-								"name":              "fakeName-v000",
+								"name":              "fakeName",
 								"namespace":         "test-namespace2",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
 								"labels": map[string]interface{}{
@@ -60,7 +60,7 @@ var _ = Describe("Version", func() {
 							"kind":       "Pod",
 							"apiVersion": "v1",
 							"metadata": map[string]interface{}{
-								"name":              "fakeName-v004",
+								"name":              "fakeName",
 								"namespace":         "test-namespace2",
 								"creationTimestamp": "2020-02-14T14:12:03Z",
 								"labels": map[string]interface{}{
@@ -77,7 +77,7 @@ var _ = Describe("Version", func() {
 					},
 				},
 				}
-				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "pod", "fakeName-v005")
+				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "pod", "fakeName")
 			})
 
 			It("return 4 as the current version", func() {

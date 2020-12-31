@@ -108,15 +108,19 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		// If the kind is a job, its name is not set, and generateName is set,
 		// generate a name for the job as `apply` will throw the error
 		// `resource name may not be empty`.
-		name := u.GetName()
 
 		if strings.EqualFold(u.GetKind(), "job") {
+			name := u.GetName()
+
 			generateName := u.GetGenerateName()
 
 			if name == "" && generateName != "" {
 				u.SetName(generateName + rand.String(randNameNumber))
 			}
 		}
+
+		name := u.GetName()
+		artifactName := name
 
 		err = kc.AddSpinnakerAnnotations(u, application)
 		if err != nil {
@@ -189,6 +193,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			Timestamp:    util.CurrentTimeUTC(),
 			APIGroup:     meta.Group,
 			Name:         meta.Name,
+			ArtifactName: artifactName,
 			Namespace:    meta.Namespace,
 			Resource:     meta.Resource,
 			Version:      meta.Version,
