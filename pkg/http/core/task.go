@@ -89,10 +89,13 @@ func GetTask(c *gin.Context) {
 
 	mnr := buildMapOfNamespaceToResource(resources)
 
-	// 	BoundArtifacts is missing!
+	//Refactor bound artifact to get the list of bound artifacts as not all created artifacts need to be bound
+	createdArtifacts := buildCreatedArtifacts(resources)
+
 	ro := clouddriver.TaskResultObject{
+		BoundArtifacts:                    createdArtifacts,
 		DeployedNamesByLocation:           mnr,
-		CreatedArtifacts:                  buildCreatedArtifacts(resources),
+		CreatedArtifacts:                  createdArtifacts,
 		Manifests:                         manifests,
 		ManifestNamesByNamespace:          mnr,
 		ManifestNamesByNamespaceToRefresh: mnr,
