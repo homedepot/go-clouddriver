@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -101,5 +103,63 @@ func (c *controller) IncrementVersion(currentVersion string) SpinnakerVersion {
 	return SpinnakerVersion{
 		Short: latestVersionShortFormat,
 		Long:  latestVersionLongFormat,
+	}
+}
+
+func (c *controller) VersionVolumes(u *unstructured.Unstructured, requiredArtifacts []clouddriver.TaskCreatedArtifact) error {
+	var (
+		err     error
+		volumes []v1.Volume
+	)
+
+	if len(requiredArtifacts) != 0 {
+		requiredArtifactsMap := map[string]clouddriver.TaskCreatedArtifact{}
+		for _, a := range requiredArtifacts {
+			requiredArtifactsMap[a.Name] = a
+		}
+
+		switch strings.ToLower(u.GetKind()) {
+		case "deployment":
+			d := NewDeployment(u.Object)
+			volumes = d.GetSpec().Template.Spec.Volumes
+
+			overwriteVolumesNames(volumes, requiredArtifactsMap)
+
+			*u, err = d.ToUnstructured()
+			if err != nil {
+				return err
+			}
+
+		case "pod":
+			p := NewPod(u.Object)
+			volumes = p.GetSpec().Volumes
+
+			overwriteVolumesNames(volumes, requiredArtifactsMap)
+
+			*u, err = p.ToUnstructured()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func overwriteVolumesNames(volumes []v1.Volume, requiredArtifactsMap map[string]clouddriver.TaskCreatedArtifact) {
+	if len(volumes) != 0 {
+		for _, volume := range volumes {
+			if volume.VolumeSource.ConfigMap != nil {
+				if val, ok := requiredArtifactsMap[volume.Name]; ok && strings.EqualFold(val.Type, "kubernetes/configMap") {
+					volume.ConfigMap.Name = val.Reference
+				}
+			}
+
+			if volume.VolumeSource.Secret != nil {
+				if val, ok := requiredArtifactsMap[volume.Name]; ok && strings.EqualFold(val.Type, "kubernetes/secret") {
+					volume.Secret.SecretName = val.Reference
+				}
+			}
+		}
 	}
 }

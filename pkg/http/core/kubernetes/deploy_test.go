@@ -209,6 +209,17 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
+	When("#VersionVolumes returns and error", func() {
+		BeforeEach(func() {
+			fakeKubeController.VersionVolumesReturns(errors.New("error adding labels"))
+		})
+
+		It("returns an error", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error adding labels"))
+		})
+	})
+
 	When("The manifest is versioned", func() {
 		BeforeEach(func() {
 			fakeKubeController.IsVersionedReturns(true)

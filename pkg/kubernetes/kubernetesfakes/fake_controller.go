@@ -4,6 +4,7 @@ package kubernetesfakes
 import (
 	"sync"
 
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
@@ -118,6 +119,18 @@ type FakeController struct {
 	toUnstructuredReturnsOnCall map[int]struct {
 		result1 *unstructured.Unstructured
 		result2 error
+	}
+	VersionVolumesStub        func(*unstructured.Unstructured, []clouddriver.TaskCreatedArtifact) error
+	versionVolumesMutex       sync.RWMutex
+	versionVolumesArgsForCall []struct {
+		arg1 *unstructured.Unstructured
+		arg2 []clouddriver.TaskCreatedArtifact
+	}
+	versionVolumesReturns struct {
+		result1 error
+	}
+	versionVolumesReturnsOnCall map[int]struct {
+		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -675,6 +688,72 @@ func (fake *FakeController) ToUnstructuredReturnsOnCall(i int, result1 *unstruct
 	}{result1, result2}
 }
 
+func (fake *FakeController) VersionVolumes(arg1 *unstructured.Unstructured, arg2 []clouddriver.TaskCreatedArtifact) error {
+	var arg2Copy []clouddriver.TaskCreatedArtifact
+	if arg2 != nil {
+		arg2Copy = make([]clouddriver.TaskCreatedArtifact, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	fake.versionVolumesMutex.Lock()
+	ret, specificReturn := fake.versionVolumesReturnsOnCall[len(fake.versionVolumesArgsForCall)]
+	fake.versionVolumesArgsForCall = append(fake.versionVolumesArgsForCall, struct {
+		arg1 *unstructured.Unstructured
+		arg2 []clouddriver.TaskCreatedArtifact
+	}{arg1, arg2Copy})
+	fake.recordInvocation("VersionVolumes", []interface{}{arg1, arg2Copy})
+	fake.versionVolumesMutex.Unlock()
+	if fake.VersionVolumesStub != nil {
+		return fake.VersionVolumesStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.versionVolumesReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeController) VersionVolumesCallCount() int {
+	fake.versionVolumesMutex.RLock()
+	defer fake.versionVolumesMutex.RUnlock()
+	return len(fake.versionVolumesArgsForCall)
+}
+
+func (fake *FakeController) VersionVolumesCalls(stub func(*unstructured.Unstructured, []clouddriver.TaskCreatedArtifact) error) {
+	fake.versionVolumesMutex.Lock()
+	defer fake.versionVolumesMutex.Unlock()
+	fake.VersionVolumesStub = stub
+}
+
+func (fake *FakeController) VersionVolumesArgsForCall(i int) (*unstructured.Unstructured, []clouddriver.TaskCreatedArtifact) {
+	fake.versionVolumesMutex.RLock()
+	defer fake.versionVolumesMutex.RUnlock()
+	argsForCall := fake.versionVolumesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeController) VersionVolumesReturns(result1 error) {
+	fake.versionVolumesMutex.Lock()
+	defer fake.versionVolumesMutex.Unlock()
+	fake.VersionVolumesStub = nil
+	fake.versionVolumesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) VersionVolumesReturnsOnCall(i int, result1 error) {
+	fake.versionVolumesMutex.Lock()
+	defer fake.versionVolumesMutex.Unlock()
+	fake.VersionVolumesStub = nil
+	if fake.versionVolumesReturnsOnCall == nil {
+		fake.versionVolumesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.versionVolumesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeController) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -696,6 +775,8 @@ func (fake *FakeController) Invocations() map[string][][]interface{} {
 	defer fake.newClientMutex.RUnlock()
 	fake.toUnstructuredMutex.RLock()
 	defer fake.toUnstructuredMutex.RUnlock()
+	fake.versionVolumesMutex.RLock()
+	defer fake.versionVolumesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

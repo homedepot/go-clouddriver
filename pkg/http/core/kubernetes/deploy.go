@@ -134,6 +134,12 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
+		err = kc.VersionVolumes(u, dm.RequiredArtifacts)
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
+
 		if kc.IsVersioned(u) {
 			kind := strings.ToLower(u.GetKind())
 			namespace := u.GetNamespace()
