@@ -112,7 +112,7 @@ func (c *controller) VersionVolumes(u *unstructured.Unstructured, requiredArtifa
 		volumes []v1.Volume
 	)
 
-	if len(requiredArtifacts) != 0 {
+	if len(requiredArtifacts) > 0 {
 		requiredArtifactsMap := map[string]clouddriver.TaskCreatedArtifact{}
 		for _, a := range requiredArtifacts {
 			requiredArtifactsMap[a.Name] = a
@@ -147,18 +147,16 @@ func (c *controller) VersionVolumes(u *unstructured.Unstructured, requiredArtifa
 }
 
 func overwriteVolumesNames(volumes []v1.Volume, requiredArtifactsMap map[string]clouddriver.TaskCreatedArtifact) {
-	if len(volumes) != 0 {
-		for _, volume := range volumes {
-			if volume.VolumeSource.ConfigMap != nil {
-				if val, ok := requiredArtifactsMap[volume.Name]; ok && strings.EqualFold(val.Type, "kubernetes/configMap") {
-					volume.ConfigMap.Name = val.Reference
-				}
+	for _, volume := range volumes {
+		if volume.VolumeSource.ConfigMap != nil {
+			if val, ok := requiredArtifactsMap[volume.Name]; ok && strings.EqualFold(val.Type, "kubernetes/configMap") {
+				volume.ConfigMap.Name = val.Reference
 			}
+		}
 
-			if volume.VolumeSource.Secret != nil {
-				if val, ok := requiredArtifactsMap[volume.Name]; ok && strings.EqualFold(val.Type, "kubernetes/secret") {
-					volume.Secret.SecretName = val.Reference
-				}
+		if volume.VolumeSource.Secret != nil {
+			if val, ok := requiredArtifactsMap[volume.Name]; ok && strings.EqualFold(val.Type, "kubernetes/secret") {
+				volume.Secret.SecretName = val.Reference
 			}
 		}
 	}
