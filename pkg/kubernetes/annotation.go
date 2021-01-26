@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"github.com/iancoleman/strcase"
 )
 
 const (
@@ -13,6 +14,7 @@ const (
 	AnnotationSpinnakerArtifactType       = `artifact.spinnaker.io/type`
 	AnnotationSpinnakerMonikerApplication = `moniker.spinnaker.io/application`
 	AnnotationSpinnakerMonikerCluster     = `moniker.spinnaker.io/cluster`
+	AnnotationSpinnakerStrategyVersioned  = `strategy.spinnaker.io/versioned`
 )
 
 func (c *controller) AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error {
@@ -22,8 +24,9 @@ func (c *controller) AddSpinnakerAnnotations(u *unstructured.Unstructured, appli
 	namespace := u.GetNamespace()
 	gvk := u.GroupVersionKind()
 
-	t := fmt.Sprintf("kubernetes/%s", strings.ToLower(gvk.Kind))
-	cluster := fmt.Sprintf("%s %s", strings.ToLower(gvk.Kind), name)
+	// possible bug ToLower
+	t := fmt.Sprintf("kubernetes/%s", strcase.ToLowerCamel(gvk.Kind))
+	cluster := fmt.Sprintf("%s %s", strcase.ToLowerCamel(gvk.Kind), name)
 
 	// Add reserved annotations.
 	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-annotations
@@ -76,6 +79,69 @@ func (c *controller) AddSpinnakerAnnotations(u *unstructured.Unstructured, appli
 		ds.AnnotateTemplate(AnnotationSpinnakerMonikerCluster, cluster)
 
 		*u, err = ds.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// AddSpinnakerVersionAnnotations adds the following annotations:
+// `artifact.spinnaker.io/version`
+// `moniker.spinnaker.io/sequence`
+// to the manifest to identify the version number of that resource.
+func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, version SpinnakerVersion) error {
+	var err error
+
+	annotate(u, AnnotationSpinnakerArtifactVersion, version.Long)
+	annotate(u, AnnotationSpinnakerMonikerSequence, version.Short)
+
+	gvk := u.GroupVersionKind()
+
+	if strings.EqualFold(gvk.Kind, "deployment") {
+		d := NewDeployment(u.Object)
+
+		d.AnnotateTemplate(AnnotationSpinnakerArtifactVersion, version.Long)
+		d.AnnotateTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+		*u, err = d.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	if strings.EqualFold(gvk.Kind, "replicaset") {
+		rs := NewReplicaSet(u.Object)
+
+		rs.AnnotateTemplate(AnnotationSpinnakerArtifactVersion, version.Long)
+		rs.AnnotateTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+		*u, err = rs.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	if strings.EqualFold(gvk.Kind, "daemonset") {
+		ds := NewReplicaSet(u.Object)
+
+		ds.AnnotateTemplate(AnnotationSpinnakerArtifactVersion, version.Long)
+		ds.AnnotateTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+		*u, err = ds.ToUnstructured()
+		if err != nil {
+			return err
+		}
+	}
+
+	if strings.EqualFold(gvk.Kind, "statefulset") {
+		ss := NewStatefulSet(u.Object)
+
+		ss.AnnotateTemplate(AnnotationSpinnakerArtifactVersion, version.Long)
+		ss.AnnotateTemplate(AnnotationSpinnakerMonikerSequence, version.Short)
+
+		*u, err = ss.ToUnstructured()
 		if err != nil {
 			return err
 		}
