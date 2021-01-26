@@ -97,6 +97,12 @@ type ManifestResponse struct {
 	Warnings []interface{}           `json:"warnings"`
 }
 
+type ManifestCoordinatesResponse struct {
+	Kind      string `json:"kind"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
 type ManifestResponseMoniker struct {
 	App     string `json:"app"`
 	Cluster string `json:"cluster"`

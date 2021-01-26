@@ -11,6 +11,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+const payloadOkResponse = `{
+	"kind": "test-kind",
+	"name": "test-name",
+	"namespace": "test-namespace"
+  }`
+
 var _ = Describe("Manifest", func() {
 	Describe("#GetManifest", func() {
 		BeforeEach(func() {
@@ -258,6 +264,7 @@ var _ = Describe("Manifest", func() {
 			When("it succeeds", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadOkResponse)
 				})
 			})
 		})
@@ -296,6 +303,7 @@ var _ = Describe("Manifest", func() {
 			When("it succeeds", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadOkResponse)
 				})
 			})
 		})
@@ -319,6 +327,7 @@ var _ = Describe("Manifest", func() {
 		When("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadOkResponse)
 			})
 		})
 	})
