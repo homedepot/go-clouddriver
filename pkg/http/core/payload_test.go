@@ -1589,9 +1589,3 @@ const payloadSearchWithPageSizeThree = `[
               "totalMatches": 3
             }
           ]`
-
-const payloadManifestCoordinates = `{
-            "kind": "test-kind",
-            "name": "test-name",
-            "namespace": "test-namespace"
-          }`
