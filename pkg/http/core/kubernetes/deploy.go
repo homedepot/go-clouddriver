@@ -4,11 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/homedepot/go-clouddriver/pkg/util"
 	"net/http"
 	"strings"
 	"unicode"
-
-	"github.com/homedepot/go-clouddriver/pkg/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -17,16 +16,8 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-)
-
-var (
-	listTimeout = int64(30)
 )
 
 func Deploy(c *gin.Context, dm DeployManifestRequest) {
@@ -68,7 +59,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	}
 
 	manifests := []map[string]interface{}{}
-	application := dm.Moniker.App
+
 	// Merge all list element items into the manifest list.
 	for _, manifest := range dm.Manifests {
 		u, err := kc.ToUnstructured(manifest)
@@ -108,10 +99,8 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		// If the kind is a job, its name is not set, and generateName is set,
 		// generate a name for the job as `apply` will throw the error
 		// `resource name may not be empty`.
-
 		if strings.EqualFold(u.GetKind(), "job") {
 			name := u.GetName()
-
 			generateName := u.GetGenerateName()
 
 			if name == "" && generateName != "" {
@@ -120,67 +109,17 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		name := u.GetName()
-		artifactName := name
 
-		err = kc.AddSpinnakerAnnotations(u, application)
+		err = kc.AddSpinnakerAnnotations(u, dm.Moniker.App)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		err = kc.AddSpinnakerLabels(u, application)
+		err = kc.AddSpinnakerLabels(u, dm.Moniker.App)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
-		}
-
-		err = kc.VersionVolumes(u, dm.RequiredArtifacts)
-		if err != nil {
-			clouddriver.Error(c, http.StatusInternalServerError, err)
-			return
-		}
-
-		if kc.IsVersioned(u) {
-			kind := strings.ToLower(u.GetKind())
-			namespace := u.GetNamespace()
-			labelSelector := metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					kubernetes.LabelKubernetesName: application,
-				},
-				MatchExpressions: []metav1.LabelSelectorRequirement{
-					{
-						Key:      kubernetes.LabelSpinnakerMonikerSequence,
-						Operator: metav1.LabelSelectorOpExists,
-					},
-				},
-			}
-
-			lo := metav1.ListOptions{
-				LabelSelector:  labels.Set(labelSelector.MatchLabels).String(),
-				TimeoutSeconds: &listTimeout,
-			}
-
-			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
-			if err != nil {
-				clouddriver.Error(c, http.StatusInternalServerError, err)
-				return
-			}
-
-			currentVersion := kc.GetCurrentVersion(results, kind, name)
-			latestVersion := kc.IncrementVersion(currentVersion)
-			u.SetName(u.GetName() + "-" + latestVersion.Long)
-
-			err = kc.AddSpinnakerVersionAnnotations(u, latestVersion)
-			if err != nil {
-				clouddriver.Error(c, http.StatusInternalServerError, err)
-				return
-			}
-
-			err = kc.AddSpinnakerVersionLabels(u, latestVersion)
-			if err != nil {
-				clouddriver.Error(c, http.StatusInternalServerError, err)
-				return
-			}
 		}
 
 		meta, err := client.ApplyWithNamespaceOverride(u, dm.NamespaceOverride)
@@ -199,7 +138,6 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			Timestamp:    util.CurrentTimeUTC(),
 			APIGroup:     meta.Group,
 			Name:         meta.Name,
-			ArtifactName: artifactName,
 			Namespace:    meta.Namespace,
 			Resource:     meta.Resource,
 			Version:      meta.Version,

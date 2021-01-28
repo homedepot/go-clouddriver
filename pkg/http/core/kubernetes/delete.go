@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/homedepot/go-clouddriver/pkg/util"
 	"net/http"
 	"strings"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/homedepot/go-clouddriver/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"

@@ -6,7 +6,6 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type Pod interface {
@@ -18,8 +17,6 @@ type Pod interface {
 	GetName() string
 	GetUID() string
 	Object() *v1.Pod
-	GetSpec() v1.PodSpec
-	ToUnstructured() (unstructured.Unstructured, error)
 }
 
 func NewPod(m map[string]interface{}) Pod {
@@ -75,24 +72,4 @@ func (p *pod) Status() manifest.Status {
 	}
 
 	return s
-}
-
-func (p *pod) GetSpec() v1.PodSpec {
-	return p.p.Spec
-}
-
-func (p *pod) ToUnstructured() (unstructured.Unstructured, error) {
-	u := unstructured.Unstructured{}
-
-	b, err := json.Marshal(p.p)
-	if err != nil {
-		return u, err
-	}
-
-	err = json.Unmarshal(b, &u.Object)
-	if err != nil {
-		return u, err
-	}
-
-	return u, nil
 }

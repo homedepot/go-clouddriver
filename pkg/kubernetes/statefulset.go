@@ -7,16 +7,12 @@ import (
 
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 	v1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type StatefulSet interface {
 	Object() *v1.StatefulSet
 	SetReplicas(*int32)
 	Status() manifest.Status
-	LabelTemplate(string, string)
-	ToUnstructured() (unstructured.Unstructured, error)
-	AnnotateTemplate(string, string)
 }
 
 type statefulSet struct {
@@ -118,40 +114,4 @@ func (ss *statefulSet) Status() manifest.Status {
 	}
 
 	return s
-}
-
-func (ss *statefulSet) ToUnstructured() (unstructured.Unstructured, error) {
-	u := unstructured.Unstructured{}
-
-	b, err := json.Marshal(ss.ss)
-	if err != nil {
-		return u, err
-	}
-
-	err = json.Unmarshal(b, &u.Object)
-	if err != nil {
-		return u, err
-	}
-
-	return u, nil
-}
-
-func (ss *statefulSet) LabelTemplate(key, value string) {
-	labels := ss.ss.Spec.Template.ObjectMeta.Labels
-	if labels == nil {
-		labels = map[string]string{}
-	}
-
-	labels[key] = value
-	ss.ss.Spec.Template.ObjectMeta.Labels = labels
-}
-
-func (ss *statefulSet) AnnotateTemplate(key, value string) {
-	annotations := ss.ss.Spec.Template.ObjectMeta.Annotations
-	if annotations == nil {
-		annotations = map[string]string{}
-	}
-
-	annotations[key] = value
-	ss.ss.Spec.Template.ObjectMeta.Annotations = annotations
 }

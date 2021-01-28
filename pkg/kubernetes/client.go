@@ -43,7 +43,6 @@ type Client interface {
 	ListResource(string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	Patch(string, string, string, []byte) (Metadata, *unstructured.Unstructured, error)
 	PatchUsingStrategy(string, string, string, []byte, types.PatchType) (Metadata, *unstructured.Unstructured, error)
-	ListResourcesByKindAndNamespace(string, string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 }
 
 type client struct {
@@ -142,8 +141,8 @@ func (c *client) ApplyWithNamespaceOverride(u *unstructured.Unstructured, namesp
 	metadata.Namespace = u.GetNamespace()
 	metadata.Group = gvr.Group
 	metadata.Resource = gvr.Resource
+	metadata.Version = gvr.Version
 	metadata.Kind = gvk.Kind
-	metadata.Version =  gvr.Version
 
 	return metadata, nil
 }
@@ -210,9 +209,10 @@ func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, 
 		return nil, err
 	}
 
+	helper := resource.NewHelper(restClient, restMapping)
+
 	var u *unstructured.Unstructured
 
-	helper := resource.NewHelper(restClient, restMapping)
 	if helper.NamespaceScoped {
 		u, err = c.c.
 			Resource(restMapping.Resource).
@@ -251,39 +251,6 @@ func (c *client) ListResource(resource string, lo metav1.ListOptions) (*unstruct
 	return c.c.Resource(gvr).List(context.TODO(), lo)
 }
 
-func (c *client) ListResourcesByKindAndNamespace(kind, namespace string, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
-	gvk, err := c.mapper.KindFor(schema.GroupVersionResource{Resource: kind})
-	if err != nil {
-		return nil, err
-	}
-
-	restMapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-	if err != nil {
-		return nil, err
-	}
-
-	restClient, err := newRestClient(*c.config, gvk.GroupVersion())
-	if err != nil {
-		return nil, err
-	}
-
-	var ul *unstructured.UnstructuredList
-
-	helper := resource.NewHelper(restClient, restMapping)
-	if helper.NamespaceScoped {
-		ul, err = c.c.
-			Resource(restMapping.Resource).
-			Namespace(namespace).
-			List(context.TODO(), lo)
-	} else {
-		ul, err = c.c.
-			Resource(restMapping.Resource).
-			List(context.TODO(), lo)
-	}
-
-	return ul, err
-}
-
 func (c *client) Patch(kind, name, namespace string, p []byte) (Metadata, *unstructured.Unstructured, error) {
 	return c.PatchUsingStrategy(kind, name, namespace, p, types.StrategicMergePatchType)
 }
@@ -306,9 +273,10 @@ func (c *client) PatchUsingStrategy(kind, name, namespace string, p []byte, stra
 		return metadata, nil, err
 	}
 
+	helper := resource.NewHelper(restClient, restMapping)
+
 	var u *unstructured.Unstructured
 
-	helper := resource.NewHelper(restClient, restMapping)
 	if helper.NamespaceScoped {
 		u, err = c.c.
 			Resource(restMapping.Resource).
@@ -330,8 +298,8 @@ func (c *client) PatchUsingStrategy(kind, name, namespace string, p []byte, stra
 	metadata.Namespace = u.GetNamespace()
 	metadata.Group = gvr.Group
 	metadata.Resource = gvr.Resource
-	metadata.Kind = gvk.Kind
 	metadata.Version = gvr.Version
+	metadata.Kind = gvk.Kind
 
 	return metadata, u, err
 }

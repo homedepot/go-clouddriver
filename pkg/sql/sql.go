@@ -7,9 +7,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 
 	// Needed for connection.
@@ -297,7 +297,7 @@ func contains(s []string, e string) bool {
 
 func (c *client) ListKubernetesResourcesByTaskID(taskID string) ([]kubernetes.Resource, error) {
 	var rs []kubernetes.Resource
-	db := c.db.Select("account_name, api_group, kind, name, artifact_name, namespace, resource, task_type, version").
+	db := c.db.Select("account_name, api_group, kind, name, namespace, resource, task_type, version").
 		Where("task_id = ?", taskID).Find(&rs)
 
 	return rs, db.Error

@@ -209,56 +209,6 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
-	When("#VersionVolumes returns and error", func() {
-		BeforeEach(func() {
-			fakeKubeController.VersionVolumesReturns(errors.New("error adding labels"))
-		})
-
-		It("returns an error", func() {
-			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-			Expect(c.Errors.Last().Error()).To(Equal("error adding labels"))
-		})
-	})
-
-	When("The manifest is versioned", func() {
-		BeforeEach(func() {
-			fakeKubeController.IsVersionedReturns(true)
-		})
-
-		When("Listing resources by kind and namespace returns an error", func() {
-			BeforeEach(func() {
-				fakeKubeClient.ListResourcesByKindAndNamespaceReturns(nil, errors.New("ListResourcesByKindAndNamespaceReturns fake error"))
-			})
-
-			It("ListResourcesByKindAndNamespace returns a fake error", func() {
-				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-				Expect(c.Errors.Last().Error()).To(Equal("ListResourcesByKindAndNamespaceReturns fake error"))
-			})
-		})
-
-		When("Get ListResourcesByKindAndNamespace returns an empty list", func() {
-			BeforeEach(func() {
-				fakeKubeController.GetCurrentVersionReturns("0")
-			})
-
-			It("Increment version function is called with version 0", func() {
-				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				Expect(fakeKubeController.IncrementVersionArgsForCall(0)).To(Equal("0"))
-			})
-		})
-
-		When("AddSpinnakerVersionAnnotations returns an error", func() {
-			BeforeEach(func() {
-				fakeKubeController.AddSpinnakerVersionAnnotationsReturns(errors.New("AddSpinnakerVersionAnnotations fake error"))
-			})
-
-			It("AddSpinnakerVersionAnnotations returns a fake error", func() {
-				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-				Expect(c.Errors.Last().Error()).To(Equal("AddSpinnakerVersionAnnotations fake error"))
-			})
-		})
-	})
-
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
 			fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
