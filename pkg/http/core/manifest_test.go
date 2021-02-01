@@ -258,6 +258,7 @@ var _ = Describe("Manifest", func() {
 			When("it succeeds", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadManifestCoordinates)
 				})
 			})
 		})
@@ -296,6 +297,7 @@ var _ = Describe("Manifest", func() {
 			When("it succeeds", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadManifestCoordinates)
 				})
 			})
 		})
@@ -319,6 +321,7 @@ var _ = Describe("Manifest", func() {
 		When("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadManifestCoordinates)
 			})
 		})
 	})

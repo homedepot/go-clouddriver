@@ -219,22 +219,13 @@ func GetManifestByTarget(c *gin.Context) {
 		return
 	}
 
-	kmr := ops.ManifestResponse{
-		Account:  account,
-		Events:   []interface{}{},
-		Location: namespace,
-		Manifest: result.Object,
-		Metrics:  []interface{}{},
-		Moniker: ops.ManifestResponseMoniker{
-			App:     application,
-			Cluster: cluster,
-		},
-		Name:     fmt.Sprintf("%s %s", kind, result.GetName()),
-		Status:   kubernetes.GetStatus(kind, result.Object),
-		Warnings: []interface{}{},
+	mcr := ops.ManifestCoordinatesResponse{
+		Kind:      kind,
+		Name:      result.GetName(),
+		Namespace: result.GetNamespace(),
 	}
 
-	c.JSON(http.StatusOK, kmr)
+	c.JSON(http.StatusOK, mcr)
 }
 
 func filterOnCluster(items []unstructured.Unstructured, cluster string) []unstructured.Unstructured {

@@ -71,6 +71,8 @@ func setup() {
 						"annotations": map[string]interface{}{
 							kubernetes.AnnotationSpinnakerMonikerCluster: "deployment test-deployment",
 						},
+						"name":      "test-name",
+						"namespace": "test-namespace",
 					},
 				},
 			},
@@ -80,6 +82,8 @@ func setup() {
 						"annotations": map[string]interface{}{
 							kubernetes.AnnotationSpinnakerMonikerCluster: "deployment test-deployment",
 						},
+						"name":      "test-name",
+						"namespace": "test-namespace",
 					},
 				},
 			},
