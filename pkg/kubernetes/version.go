@@ -35,7 +35,7 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
 	manifestFilter := NewManifestFilter(ul.Items)
 
-	re := regexp.MustCompile(`(.*)-v(\d){3}`)
+	re := regexp.MustCompile(`(.*)-v(\d){3}$`)
 	subm := re.FindSubmatch([]byte(name))
 
 	if subm == nil {
