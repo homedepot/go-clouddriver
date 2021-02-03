@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,12 +34,14 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 
 	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
 	manifestFilter := NewManifestFilter(ul.Items)
-	lastIndex := strings.LastIndex(name, "-v")
 
-	if lastIndex != -1 {
-		cluster = kind + " " + name[:lastIndex]
-	} else {
+	re := regexp.MustCompile(`(.*)-v(\d){4}`)
+	subm := re.FindSubmatch([]byte(name))
+
+	if subm == nil {
 		cluster = kind + " " + name
+	} else {
+		cluster = string(subm[1])
 	}
 
 	results := manifestFilter.FilterOnClusterAnnotation(cluster)
