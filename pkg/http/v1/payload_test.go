@@ -7,6 +7,20 @@ const payloadBadRequest = `{
 const payloadRequestKubernetesProviders = `{
 						"name": "test-name",
 						"host": "test-host",
+						"caData": "dGVzdC1jYS1kYXRhCg==",
+						"permissions": {
+						  "read": [
+							  "gg_test"
+							],
+							"write": [
+							  "gg_test"
+							]
+						}
+          }`
+
+const payloadRequestKubernetesProvidersBadCAData = `{
+						"name": "test-name",
+						"host": "test-host",
 						"caData": "test-ca-data",
 						"permissions": {
 						  "read": [
@@ -34,10 +48,14 @@ const payloadErrorCreatingWritePermission = `{
             "error": "error creating write permission"
           }`
 
+const payloadErrorDecodingBase64 = `{
+            "error": "error decoding base64 CA data: illegal base64 data at input byte 4"
+          }`
+
 const payloadKubernetesProviderCreated = `{
             "name": "test-name",
             "host": "test-host",
-            "caData": "test-ca-data",
+            "caData": "dGVzdC1jYS1kYXRhCg==",
             "permissions": {
               "read": [
                 "gg_test"

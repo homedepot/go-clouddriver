@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"encoding/base64"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -24,6 +26,12 @@ func CreateKubernetesProvider(c *gin.Context) {
 	_, err = sc.GetKubernetesProvider(p.Name)
 	if err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "provider already exists"})
+		return
+	}
+
+	_, err = base64.StdEncoding.DecodeString(p.CAData)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error decoding base64 CA data: %s", err.Error())})
 		return
 	}
 

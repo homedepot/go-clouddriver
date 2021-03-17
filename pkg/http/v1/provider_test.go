@@ -44,6 +44,19 @@ var _ = Describe("Provider", func() {
 			})
 		})
 
+		When("the ca data in the request is bad", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesProvidersBadCAData))
+				createRequest(http.MethodPost)
+			})
+
+			It("returns status bad request", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				validateResponse(payloadErrorDecodingBase64)
+			})
+		})
+
 		When("the provider already exists", func() {
 			BeforeEach(func() {
 				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, nil)
