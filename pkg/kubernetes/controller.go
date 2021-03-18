@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/cached/disk"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -30,7 +30,9 @@ type Controller interface {
 	GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string
 	IsVersioned(u *unstructured.Unstructured) bool
 	IncrementVersion(currentVersion string) SpinnakerVersion
-	VersionVolumes(u *unstructured.Unstructured, requiredArtifacts []clouddriver.TaskCreatedArtifact) error
+	VersionVolumes(u *unstructured.Unstructured, namespace, application string, kubeClient Client) error
+	OverwriteVolumeNames(volumes []v1.Volume, namespace, application string, kubeClient Client) error
+	GetVolumeVersion(name, kind string, namespace, application string, kubeClient Client) (string, error)
 }
 
 func NewController() Controller {

@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	spinnaker = `spinnaker`
+	Spinnaker = `spinnaker`
 )
 
 type Metadata struct {
@@ -143,7 +143,7 @@ func (c *client) ApplyWithNamespaceOverride(u *unstructured.Unstructured, namesp
 	metadata.Group = gvr.Group
 	metadata.Resource = gvr.Resource
 	metadata.Kind = gvk.Kind
-	metadata.Version =  gvr.Version
+	metadata.Version = gvr.Version
 
 	return metadata, nil
 }

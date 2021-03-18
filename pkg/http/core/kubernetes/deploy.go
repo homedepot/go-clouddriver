@@ -8,17 +8,16 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
-	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
-	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -134,18 +133,19 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
-		err = kc.VersionVolumes(u, dm.RequiredArtifacts)
+		namespace := u.GetNamespace()
+		err = kc.VersionVolumes(u, namespace, application, client)
+
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
 		if kc.IsVersioned(u) {
-			kind := strings.ToLower(u.GetKind())
-			namespace := u.GetNamespace()
 			labelSelector := metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					kubernetes.LabelKubernetesName: application,
+					kubernetes.LabelKubernetesName:      application,
+					kubernetes.LabelKubernetesManagedBy: kubernetes.Spinnaker,
 				},
 				MatchExpressions: []metav1.LabelSelectorRequirement{
 					{
@@ -155,12 +155,20 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 				},
 			}
 
+			ls, err := metav1.LabelSelectorAsSelector(&labelSelector)
+			if err != nil {
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
+			}
+
 			lo := metav1.ListOptions{
-				LabelSelector:  labels.Set(labelSelector.MatchLabels).String(),
+				LabelSelector:  ls.String(),
 				TimeoutSeconds: &listTimeout,
 			}
 
+			kind := strings.ToLower(u.GetKind())
 			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
+
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return

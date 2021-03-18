@@ -23,14 +23,14 @@ func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, applicatio
 	//
 	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-labels
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
-	label(u, LabelKubernetesManagedBy, spinnaker)
+	label(u, LabelKubernetesManagedBy, Spinnaker)
 	labelIfNotExists(u, LabelKubernetesName, application)
 
 	if strings.EqualFold(gvk.Kind, "deployment") {
 		d := NewDeployment(u.Object)
 
 		// Add reserved labels.
-		d.LabelTemplate(LabelKubernetesManagedBy, spinnaker)
+		d.LabelTemplate(LabelKubernetesManagedBy, Spinnaker)
 		d.LabelTemplateIfNotExists(LabelKubernetesName, application)
 
 		*u, err = d.ToUnstructured()
@@ -43,7 +43,7 @@ func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, applicatio
 		rs := NewReplicaSet(u.Object)
 
 		// Add reserved labels.
-		rs.LabelTemplate(LabelKubernetesManagedBy, spinnaker)
+		rs.LabelTemplate(LabelKubernetesManagedBy, Spinnaker)
 		rs.LabelTemplateIfNotExists(LabelKubernetesName, application)
 
 		*u, err = rs.ToUnstructured()
@@ -56,7 +56,7 @@ func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, applicatio
 		ds := NewDaemonSet(u.Object)
 
 		// Add reserved labels.
-		ds.LabelTemplate(LabelKubernetesManagedBy, spinnaker)
+		ds.LabelTemplate(LabelKubernetesManagedBy, Spinnaker)
 		ds.LabelTemplateIfNotExists(LabelKubernetesName, application)
 
 		*u, err = ds.ToUnstructured()

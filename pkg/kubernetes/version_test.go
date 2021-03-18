@@ -1,7 +1,8 @@
 package kubernetes_test
 
 import (
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	"errors"
+
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/kubernetesfakes"
 	. "github.com/onsi/ginkgo"
@@ -12,12 +13,13 @@ import (
 var (
 	kc                              kubernetes.Controller
 	fakeUnstructuredList            *unstructured.UnstructuredList
-	currentVersion                  string
+	currentVersion, app, namespace  string
 	isVersioned                     bool
 	updatedVersion, expectedVersion kubernetes.SpinnakerVersion
 	err                             error
 	fakeDeployment                  kubernetes.Deployment
 	fakePod                         kubernetes.Pod
+	fakeManifest                    *unstructured.Unstructured
 )
 
 var _ = Describe("Version", func() {
@@ -277,13 +279,26 @@ var _ = Describe("Version", func() {
 		})
 	})
 
-	Context("#versionVolumes", func() {
+	Context("#VersionVolumes", func() {
+		BeforeEach(func() {
+			kc = kubernetes.NewController()
+			fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{}}
+		})
 		When("manifest kind is depolyment and volume type is configMap", func() {
 			BeforeEach(func() {
-				fakeResource := &unstructured.Unstructured{
+				fakeManifest = &unstructured.Unstructured{
 					Object: map[string]interface{}{
 						"kind":       "Deployment",
 						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"name":              "test-deployment",
+							"namespace":         "test-namespace",
+							"creationTimestamp": "2020-02-13T14:12:03Z",
+							"labels": map[string]interface{}{
+								"label1": "test-label1",
+							},
+							"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+						},
 						"spec": map[string]interface{}{
 							"template": map[string]interface{}{
 								"spec": map[string]interface{}{
@@ -292,7 +307,7 @@ var _ = Describe("Version", func() {
 											"configMap": map[string]interface{}{
 												"name": "test-config-map",
 											},
-											"name": "test-config-map",
+											"name": "the-config-map",
 										},
 									},
 								},
@@ -301,29 +316,95 @@ var _ = Describe("Version", func() {
 					},
 				}
 
-				requiredArtifacts := []clouddriver.TaskCreatedArtifact{
-					{
-						Name:      "test-config-map",
-						Type:      "kubernetes/configMap",
-						Reference: "test-config-map-v001",
-					},
-				}
-
-				err = kc.VersionVolumes(fakeResource, requiredArtifacts)
-				Expect(err).To(BeNil())
-				fakeDeployment = kubernetes.NewDeployment(fakeResource.Object)
+				app = "myApp"
+				namespace = "theNamespace"
 			})
-			It("updates the volume name to contain the reference", func() {
-				volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
-				Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v001"))
+			When("ListResourcesByKindAndNamespaceReturns returns an error to OverwriteVolumeNames", func() {
+				BeforeEach(func() {
+					fakeKubeClient := &kubernetesfakes.FakeClient{}
+					fakeKubeClient.ListResourcesByKindAndNamespaceReturns(fakeUnstructuredList, errors.New("resource not found"))
+					err = kc.VersionVolumes(fakeManifest, namespace, app, fakeKubeClient)
+				})
+				It("returns an error", func() {
+					Expect(err).ToNot(BeNil())
+					Expect(err.Error()).To(Equal("resource not found"))
+				})
+			})
+			When("ListResourcesByKindAndNamespaceReturns returns a list that contains the configMap", func() {
+				BeforeEach(func() {
+					fakeResources := &unstructured.UnstructuredList{
+						Items: []unstructured.Unstructured{
+							{
+								Object: map[string]interface{}{
+									"kind":       "ConfigMap",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-config-map-v001",
+										"namespace":         namespace,
+										"creationTimestamp": "2020-02-13T14:12:03Z",
+										"labels": map[string]interface{}{
+											kubernetes.LabelKubernetesManagedBy:      kubernetes.Spinnaker,
+											kubernetes.LabelKubernetesName:           app,
+											kubernetes.LabelSpinnakerMonikerSequence: "1",
+										},
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster: "configMap test-config-map",
+											kubernetes.LabelSpinnakerMonikerSequence:     "1",
+										},
+										"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									},
+								},
+							},
+							{
+								Object: map[string]interface{}{
+									"kind":       "ConfigMap",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-config-map-v002",
+										"namespace":         namespace,
+										"creationTimestamp": "2020-03-13T14:12:03Z",
+										"labels": map[string]interface{}{
+											kubernetes.LabelKubernetesManagedBy:      kubernetes.Spinnaker,
+											kubernetes.LabelKubernetesName:           app,
+											kubernetes.LabelSpinnakerMonikerSequence: "2",
+										},
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster: "configMap test-config-map",
+											kubernetes.LabelSpinnakerMonikerSequence:     "2",
+										},
+										"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									},
+								},
+							},
+						},
+					}
+					fakeKubeClient := &kubernetesfakes.FakeClient{}
+					fakeKubeClient.ListResourcesByKindAndNamespaceReturns(fakeResources, nil)
+					err = kc.VersionVolumes(fakeManifest, "fakeNamespace", "fakeApplication", fakeKubeClient)
+					fakeDeployment = kubernetes.NewDeployment(fakeManifest.Object)
+				})
+				It("returns an error", func() {
+					Expect(err).To(BeNil())
+					volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
+					Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v002"))
+				})
 			})
 		})
 		When("manifest kind is depolyment and volume type is secret", func() {
 			BeforeEach(func() {
-				fakeResource := &unstructured.Unstructured{
+				fakeManifest = &unstructured.Unstructured{
 					Object: map[string]interface{}{
 						"kind":       "Deployment",
 						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"name":              "test-deployment",
+							"namespace":         "test-namespace",
+							"creationTimestamp": "2020-02-13T14:12:03Z",
+							"labels": map[string]interface{}{
+								"label1": "test-label1",
+							},
+							"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+						},
 						"spec": map[string]interface{}{
 							"template": map[string]interface{}{
 								"spec": map[string]interface{}{
@@ -332,7 +413,7 @@ var _ = Describe("Version", func() {
 											"secret": map[string]interface{}{
 												"secretName": "test-secret",
 											},
-											"name": "test-secret",
+											"name": "the-secret",
 										},
 									},
 								},
@@ -341,93 +422,282 @@ var _ = Describe("Version", func() {
 					},
 				}
 
-				requiredArtifacts := []clouddriver.TaskCreatedArtifact{
-					{
-						Name:      "test-secret",
-						Type:      "kubernetes/secret",
-						Reference: "test-secret-v001",
-					},
-				}
-
-				err = kc.VersionVolumes(fakeResource, requiredArtifacts)
-				Expect(err).To(BeNil())
-				fakeDeployment = kubernetes.NewDeployment(fakeResource.Object)
+				app = "myApp"
+				namespace = "theNamespace"
 			})
-			It("updates the volume name to contain the reference", func() {
-				volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
-				Expect(volumes[0].Secret.SecretName).To(Equal("test-secret-v001"))
+			When("ListResourcesByKindAndNamespaceReturns returns an error to OverwriteVolumeNames", func() {
+				BeforeEach(func() {
+					fakeKubeClient := &kubernetesfakes.FakeClient{}
+					fakeKubeClient.ListResourcesByKindAndNamespaceReturns(fakeUnstructuredList, errors.New("resource not found"))
+					err = kc.VersionVolumes(fakeManifest, namespace, app, fakeKubeClient)
+				})
+				It("returns an error", func() {
+					Expect(err).ToNot(BeNil())
+					Expect(err.Error()).To(Equal("resource not found"))
+				})
+			})
+			When("ListResourcesByKindAndNamespaceReturns returns a list that contains the secret", func() {
+				BeforeEach(func() {
+					fakeResources := &unstructured.UnstructuredList{
+						Items: []unstructured.Unstructured{
+							{
+								Object: map[string]interface{}{
+									"kind":       "Secret",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-secret-v001",
+										"namespace":         namespace,
+										"creationTimestamp": "2020-02-13T14:12:03Z",
+										"labels": map[string]interface{}{
+											kubernetes.LabelKubernetesManagedBy:      kubernetes.Spinnaker,
+											kubernetes.LabelKubernetesName:           app,
+											kubernetes.LabelSpinnakerMonikerSequence: "1",
+										},
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster: "secret test-secret",
+											kubernetes.LabelSpinnakerMonikerSequence:     "1",
+										},
+										"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									},
+								},
+							},
+							{
+								Object: map[string]interface{}{
+									"kind":       "ConfigMap",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-config-map-v002",
+										"namespace":         namespace,
+										"creationTimestamp": "2020-03-13T14:12:03Z",
+										"labels": map[string]interface{}{
+											kubernetes.LabelKubernetesManagedBy:      kubernetes.Spinnaker,
+											kubernetes.LabelKubernetesName:           app,
+											kubernetes.LabelSpinnakerMonikerSequence: "2",
+										},
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster: "configMap test-config-map",
+											kubernetes.LabelSpinnakerMonikerSequence:     "2",
+										},
+										"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									},
+								},
+							},
+						},
+					}
+					fakeKubeClient := &kubernetesfakes.FakeClient{}
+					fakeKubeClient.ListResourcesByKindAndNamespaceReturns(fakeResources, nil)
+					err = kc.VersionVolumes(fakeManifest, "fakeNamespace", "fakeApplication", fakeKubeClient)
+					fakeDeployment = kubernetes.NewDeployment(fakeManifest.Object)
+				})
+				It("returns an error", func() {
+					Expect(err).To(BeNil())
+					volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
+					Expect(volumes[0].Secret.SecretName).To(Equal("test-secret-v001"))
+				})
 			})
 		})
 		When("manifest kind is pod and volume type is configMap", func() {
 			BeforeEach(func() {
-				fakeResource := &unstructured.Unstructured{
+				fakeManifest = &unstructured.Unstructured{
 					Object: map[string]interface{}{
 						"kind":       "Pod",
 						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"name":              "test-Pod",
+							"namespace":         "test-namespace",
+							"creationTimestamp": "2020-02-13T14:12:03Z",
+							"labels": map[string]interface{}{
+								"label1": "test-label1",
+							},
+							"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+						},
 						"spec": map[string]interface{}{
 							"volumes": []map[string]interface{}{
 								{
 									"configMap": map[string]interface{}{
 										"name": "test-config-map",
 									},
-									"name": "test-config-map",
+									"name": "the-config-map",
 								},
 							},
 						},
 					},
 				}
 
-				requiredArtifacts := []clouddriver.TaskCreatedArtifact{
-					{
-						Name:      "test-config-map",
-						Type:      "kubernetes/configMap",
-						Reference: "test-config-map-v001",
-					},
-				}
-
-				err = kc.VersionVolumes(fakeResource, requiredArtifacts)
-				Expect(err).To(BeNil())
-				fakePod = kubernetes.NewPod(fakeResource.Object)
+				app = "myApp"
+				namespace = "theNamespace"
 			})
-			It("updates the volume name to contain the reference", func() {
-				volumes := fakePod.GetSpec().Volumes
-				Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v001"))
+			When("ListResourcesByKindAndNamespaceReturns returns an error to OverwriteVolumeNames", func() {
+				BeforeEach(func() {
+					fakeKubeClient := &kubernetesfakes.FakeClient{}
+					fakeKubeClient.ListResourcesByKindAndNamespaceReturns(fakeUnstructuredList, errors.New("resource not found"))
+					err = kc.VersionVolumes(fakeManifest, namespace, app, fakeKubeClient)
+				})
+				It("returns an error", func() {
+					Expect(err).ToNot(BeNil())
+					Expect(err.Error()).To(Equal("resource not found"))
+				})
+			})
+			When("ListResourcesByKindAndNamespaceReturns returns a list that contains the configMap", func() {
+				BeforeEach(func() {
+					fakeResources := &unstructured.UnstructuredList{
+						Items: []unstructured.Unstructured{
+							{
+								Object: map[string]interface{}{
+									"kind":       "ConfigMap",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-config-map-v001",
+										"namespace":         namespace,
+										"creationTimestamp": "2020-02-13T14:12:03Z",
+										"labels": map[string]interface{}{
+											kubernetes.LabelKubernetesManagedBy:      kubernetes.Spinnaker,
+											kubernetes.LabelKubernetesName:           app,
+											kubernetes.LabelSpinnakerMonikerSequence: "1",
+										},
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster: "configMap test-config-map",
+											kubernetes.LabelSpinnakerMonikerSequence:     "1",
+										},
+										"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									},
+								},
+							},
+							{
+								Object: map[string]interface{}{
+									"kind":       "ConfigMap",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-config-map-v002",
+										"namespace":         namespace,
+										"creationTimestamp": "2020-03-13T14:12:03Z",
+										"labels": map[string]interface{}{
+											kubernetes.LabelKubernetesManagedBy:      kubernetes.Spinnaker,
+											kubernetes.LabelKubernetesName:           app,
+											kubernetes.LabelSpinnakerMonikerSequence: "2",
+										},
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster: "configMap test-config-map",
+											kubernetes.LabelSpinnakerMonikerSequence:     "2",
+										},
+										"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									},
+								},
+							},
+						},
+					}
+					fakeKubeClient := &kubernetesfakes.FakeClient{}
+					fakeKubeClient.ListResourcesByKindAndNamespaceReturns(fakeResources, nil)
+					err = kc.VersionVolumes(fakeManifest, "fakeNamespace", "fakeApplication", fakeKubeClient)
+					fakePod = kubernetes.NewPod(fakeManifest.Object)
+				})
+				It("returns an error", func() {
+					Expect(err).To(BeNil())
+					volumes := fakePod.GetSpec().Volumes
+					Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v002"))
+				})
 			})
 		})
 		When("manifest kind is pod and volume type is secret", func() {
 			BeforeEach(func() {
-				fakeResource := &unstructured.Unstructured{
+				fakeManifest = &unstructured.Unstructured{
 					Object: map[string]interface{}{
 						"kind":       "Pod",
 						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"name":              "test-pod",
+							"namespace":         "test-namespace",
+							"creationTimestamp": "2020-02-13T14:12:03Z",
+							"labels": map[string]interface{}{
+								"label1": "test-label1",
+							},
+							"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+						},
 						"spec": map[string]interface{}{
 							"volumes": []map[string]interface{}{
 								{
-									"Secret": map[string]interface{}{
+									"secret": map[string]interface{}{
 										"secretName": "test-secret",
 									},
-									"name": "test-secret",
+									"name": "the-secret",
 								},
 							},
 						},
 					},
 				}
 
-				requiredArtifacts := []clouddriver.TaskCreatedArtifact{
-					{
-						Name:      "test-secret",
-						Type:      "kubernetes/secret",
-						Reference: "test-secret-v001",
-					},
-				}
-
-				err = kc.VersionVolumes(fakeResource, requiredArtifacts)
-				Expect(err).To(BeNil())
-				fakePod = kubernetes.NewPod(fakeResource.Object)
+				app = "myApp"
+				namespace = "theNamespace"
 			})
-			It("updates the volume name to contain the reference", func() {
-				volumes := fakePod.GetSpec().Volumes
-				Expect(volumes[0].Secret.SecretName).To(Equal("test-secret-v001"))
+			When("ListResourcesByKindAndNamespaceReturns returns an error to OverwriteVolumeNames", func() {
+				BeforeEach(func() {
+					fakeKubeClient := &kubernetesfakes.FakeClient{}
+					fakeKubeClient.ListResourcesByKindAndNamespaceReturns(fakeUnstructuredList, errors.New("resource not found"))
+					err = kc.VersionVolumes(fakeManifest, namespace, app, fakeKubeClient)
+				})
+				It("returns an error", func() {
+					Expect(err).ToNot(BeNil())
+					Expect(err.Error()).To(Equal("resource not found"))
+				})
+			})
+			When("ListResourcesByKindAndNamespaceReturns returns a list that contains the secret", func() {
+				BeforeEach(func() {
+					fakeResources := &unstructured.UnstructuredList{
+						Items: []unstructured.Unstructured{
+							{
+								Object: map[string]interface{}{
+									"kind":       "Secret",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-secret-v001",
+										"namespace":         namespace,
+										"creationTimestamp": "2020-02-13T14:12:03Z",
+										"labels": map[string]interface{}{
+											kubernetes.LabelKubernetesManagedBy:      kubernetes.Spinnaker,
+											kubernetes.LabelKubernetesName:           app,
+											kubernetes.LabelSpinnakerMonikerSequence: "1",
+										},
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster: "secret test-secret",
+											kubernetes.LabelSpinnakerMonikerSequence:     "1",
+										},
+										"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									},
+								},
+							},
+							{
+								Object: map[string]interface{}{
+									"kind":       "ConfigMap",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-config-map-v002",
+										"namespace":         namespace,
+										"creationTimestamp": "2020-03-13T14:12:03Z",
+										"labels": map[string]interface{}{
+											kubernetes.LabelKubernetesManagedBy:      kubernetes.Spinnaker,
+											kubernetes.LabelKubernetesName:           app,
+											kubernetes.LabelSpinnakerMonikerSequence: "2",
+										},
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster: "configMap test-config-map",
+											kubernetes.LabelSpinnakerMonikerSequence:     "2",
+										},
+										"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									},
+								},
+							},
+						},
+					}
+					fakeKubeClient := &kubernetesfakes.FakeClient{}
+					fakeKubeClient.ListResourcesByKindAndNamespaceReturns(fakeResources, nil)
+					err = kc.VersionVolumes(fakeManifest, "fakeNamespace", "fakeApplication", fakeKubeClient)
+					fakePod = kubernetes.NewPod(fakeManifest.Object)
+				})
+				It("returns an error", func() {
+					Expect(err).To(BeNil())
+					volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
+					Expect(volumes[0].Secret.SecretName).To(Equal("test-secret-v001"))
+				})
 			})
 		})
 	})

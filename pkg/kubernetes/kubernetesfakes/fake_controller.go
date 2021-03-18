@@ -4,8 +4,8 @@ package kubernetesfakes
 import (
 	"sync"
 
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 )
@@ -72,6 +72,23 @@ type FakeController struct {
 	getCurrentVersionReturnsOnCall map[int]struct {
 		result1 string
 	}
+	GetVolumeVersionStub        func(string, string, string, string, kubernetes.Client) (string, error)
+	getVolumeVersionMutex       sync.RWMutex
+	getVolumeVersionArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 kubernetes.Client
+	}
+	getVolumeVersionReturns struct {
+		result1 string
+		result2 error
+	}
+	getVolumeVersionReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	IncrementVersionStub        func(string) kubernetes.SpinnakerVersion
 	incrementVersionMutex       sync.RWMutex
 	incrementVersionArgsForCall []struct {
@@ -107,6 +124,20 @@ type FakeController struct {
 		result1 kubernetes.Client
 		result2 error
 	}
+	OverwriteVolumeNamesStub        func([]v1.Volume, string, string, kubernetes.Client) error
+	overwriteVolumeNamesMutex       sync.RWMutex
+	overwriteVolumeNamesArgsForCall []struct {
+		arg1 []v1.Volume
+		arg2 string
+		arg3 string
+		arg4 kubernetes.Client
+	}
+	overwriteVolumeNamesReturns struct {
+		result1 error
+	}
+	overwriteVolumeNamesReturnsOnCall map[int]struct {
+		result1 error
+	}
 	ToUnstructuredStub        func(map[string]interface{}) (*unstructured.Unstructured, error)
 	toUnstructuredMutex       sync.RWMutex
 	toUnstructuredArgsForCall []struct {
@@ -120,11 +151,13 @@ type FakeController struct {
 		result1 *unstructured.Unstructured
 		result2 error
 	}
-	VersionVolumesStub        func(*unstructured.Unstructured, []clouddriver.TaskCreatedArtifact) error
+	VersionVolumesStub        func(*unstructured.Unstructured, string, string, kubernetes.Client) error
 	versionVolumesMutex       sync.RWMutex
 	versionVolumesArgsForCall []struct {
 		arg1 *unstructured.Unstructured
-		arg2 []clouddriver.TaskCreatedArtifact
+		arg2 string
+		arg3 string
+		arg4 kubernetes.Client
 	}
 	versionVolumesReturns struct {
 		result1 error
@@ -442,6 +475,73 @@ func (fake *FakeController) GetCurrentVersionReturnsOnCall(i int, result1 string
 	}{result1}
 }
 
+func (fake *FakeController) GetVolumeVersion(arg1 string, arg2 string, arg3 string, arg4 string, arg5 kubernetes.Client) (string, error) {
+	fake.getVolumeVersionMutex.Lock()
+	ret, specificReturn := fake.getVolumeVersionReturnsOnCall[len(fake.getVolumeVersionArgsForCall)]
+	fake.getVolumeVersionArgsForCall = append(fake.getVolumeVersionArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 kubernetes.Client
+	}{arg1, arg2, arg3, arg4, arg5})
+	fake.recordInvocation("GetVolumeVersion", []interface{}{arg1, arg2, arg3, arg4, arg5})
+	fake.getVolumeVersionMutex.Unlock()
+	if fake.GetVolumeVersionStub != nil {
+		return fake.GetVolumeVersionStub(arg1, arg2, arg3, arg4, arg5)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.getVolumeVersionReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeController) GetVolumeVersionCallCount() int {
+	fake.getVolumeVersionMutex.RLock()
+	defer fake.getVolumeVersionMutex.RUnlock()
+	return len(fake.getVolumeVersionArgsForCall)
+}
+
+func (fake *FakeController) GetVolumeVersionCalls(stub func(string, string, string, string, kubernetes.Client) (string, error)) {
+	fake.getVolumeVersionMutex.Lock()
+	defer fake.getVolumeVersionMutex.Unlock()
+	fake.GetVolumeVersionStub = stub
+}
+
+func (fake *FakeController) GetVolumeVersionArgsForCall(i int) (string, string, string, string, kubernetes.Client) {
+	fake.getVolumeVersionMutex.RLock()
+	defer fake.getVolumeVersionMutex.RUnlock()
+	argsForCall := fake.getVolumeVersionArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
+}
+
+func (fake *FakeController) GetVolumeVersionReturns(result1 string, result2 error) {
+	fake.getVolumeVersionMutex.Lock()
+	defer fake.getVolumeVersionMutex.Unlock()
+	fake.GetVolumeVersionStub = nil
+	fake.getVolumeVersionReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeController) GetVolumeVersionReturnsOnCall(i int, result1 string, result2 error) {
+	fake.getVolumeVersionMutex.Lock()
+	defer fake.getVolumeVersionMutex.Unlock()
+	fake.GetVolumeVersionStub = nil
+	if fake.getVolumeVersionReturnsOnCall == nil {
+		fake.getVolumeVersionReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.getVolumeVersionReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeController) IncrementVersion(arg1 string) kubernetes.SpinnakerVersion {
 	fake.incrementVersionMutex.Lock()
 	ret, specificReturn := fake.incrementVersionReturnsOnCall[len(fake.incrementVersionArgsForCall)]
@@ -625,6 +725,74 @@ func (fake *FakeController) NewClientReturnsOnCall(i int, result1 kubernetes.Cli
 	}{result1, result2}
 }
 
+func (fake *FakeController) OverwriteVolumeNames(arg1 []v1.Volume, arg2 string, arg3 string, arg4 kubernetes.Client) error {
+	var arg1Copy []v1.Volume
+	if arg1 != nil {
+		arg1Copy = make([]v1.Volume, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.overwriteVolumeNamesMutex.Lock()
+	ret, specificReturn := fake.overwriteVolumeNamesReturnsOnCall[len(fake.overwriteVolumeNamesArgsForCall)]
+	fake.overwriteVolumeNamesArgsForCall = append(fake.overwriteVolumeNamesArgsForCall, struct {
+		arg1 []v1.Volume
+		arg2 string
+		arg3 string
+		arg4 kubernetes.Client
+	}{arg1Copy, arg2, arg3, arg4})
+	fake.recordInvocation("OverwriteVolumeNames", []interface{}{arg1Copy, arg2, arg3, arg4})
+	fake.overwriteVolumeNamesMutex.Unlock()
+	if fake.OverwriteVolumeNamesStub != nil {
+		return fake.OverwriteVolumeNamesStub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.overwriteVolumeNamesReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeController) OverwriteVolumeNamesCallCount() int {
+	fake.overwriteVolumeNamesMutex.RLock()
+	defer fake.overwriteVolumeNamesMutex.RUnlock()
+	return len(fake.overwriteVolumeNamesArgsForCall)
+}
+
+func (fake *FakeController) OverwriteVolumeNamesCalls(stub func([]v1.Volume, string, string, kubernetes.Client) error) {
+	fake.overwriteVolumeNamesMutex.Lock()
+	defer fake.overwriteVolumeNamesMutex.Unlock()
+	fake.OverwriteVolumeNamesStub = stub
+}
+
+func (fake *FakeController) OverwriteVolumeNamesArgsForCall(i int) ([]v1.Volume, string, string, kubernetes.Client) {
+	fake.overwriteVolumeNamesMutex.RLock()
+	defer fake.overwriteVolumeNamesMutex.RUnlock()
+	argsForCall := fake.overwriteVolumeNamesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeController) OverwriteVolumeNamesReturns(result1 error) {
+	fake.overwriteVolumeNamesMutex.Lock()
+	defer fake.overwriteVolumeNamesMutex.Unlock()
+	fake.OverwriteVolumeNamesStub = nil
+	fake.overwriteVolumeNamesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) OverwriteVolumeNamesReturnsOnCall(i int, result1 error) {
+	fake.overwriteVolumeNamesMutex.Lock()
+	defer fake.overwriteVolumeNamesMutex.Unlock()
+	fake.OverwriteVolumeNamesStub = nil
+	if fake.overwriteVolumeNamesReturnsOnCall == nil {
+		fake.overwriteVolumeNamesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.overwriteVolumeNamesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeController) ToUnstructured(arg1 map[string]interface{}) (*unstructured.Unstructured, error) {
 	fake.toUnstructuredMutex.Lock()
 	ret, specificReturn := fake.toUnstructuredReturnsOnCall[len(fake.toUnstructuredArgsForCall)]
@@ -688,22 +856,19 @@ func (fake *FakeController) ToUnstructuredReturnsOnCall(i int, result1 *unstruct
 	}{result1, result2}
 }
 
-func (fake *FakeController) VersionVolumes(arg1 *unstructured.Unstructured, arg2 []clouddriver.TaskCreatedArtifact) error {
-	var arg2Copy []clouddriver.TaskCreatedArtifact
-	if arg2 != nil {
-		arg2Copy = make([]clouddriver.TaskCreatedArtifact, len(arg2))
-		copy(arg2Copy, arg2)
-	}
+func (fake *FakeController) VersionVolumes(arg1 *unstructured.Unstructured, arg2 string, arg3 string, arg4 kubernetes.Client) error {
 	fake.versionVolumesMutex.Lock()
 	ret, specificReturn := fake.versionVolumesReturnsOnCall[len(fake.versionVolumesArgsForCall)]
 	fake.versionVolumesArgsForCall = append(fake.versionVolumesArgsForCall, struct {
 		arg1 *unstructured.Unstructured
-		arg2 []clouddriver.TaskCreatedArtifact
-	}{arg1, arg2Copy})
-	fake.recordInvocation("VersionVolumes", []interface{}{arg1, arg2Copy})
+		arg2 string
+		arg3 string
+		arg4 kubernetes.Client
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("VersionVolumes", []interface{}{arg1, arg2, arg3, arg4})
 	fake.versionVolumesMutex.Unlock()
 	if fake.VersionVolumesStub != nil {
-		return fake.VersionVolumesStub(arg1, arg2)
+		return fake.VersionVolumesStub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1
@@ -718,17 +883,17 @@ func (fake *FakeController) VersionVolumesCallCount() int {
 	return len(fake.versionVolumesArgsForCall)
 }
 
-func (fake *FakeController) VersionVolumesCalls(stub func(*unstructured.Unstructured, []clouddriver.TaskCreatedArtifact) error) {
+func (fake *FakeController) VersionVolumesCalls(stub func(*unstructured.Unstructured, string, string, kubernetes.Client) error) {
 	fake.versionVolumesMutex.Lock()
 	defer fake.versionVolumesMutex.Unlock()
 	fake.VersionVolumesStub = stub
 }
 
-func (fake *FakeController) VersionVolumesArgsForCall(i int) (*unstructured.Unstructured, []clouddriver.TaskCreatedArtifact) {
+func (fake *FakeController) VersionVolumesArgsForCall(i int) (*unstructured.Unstructured, string, string, kubernetes.Client) {
 	fake.versionVolumesMutex.RLock()
 	defer fake.versionVolumesMutex.RUnlock()
 	argsForCall := fake.versionVolumesArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeController) VersionVolumesReturns(result1 error) {
@@ -767,12 +932,16 @@ func (fake *FakeController) Invocations() map[string][][]interface{} {
 	defer fake.addSpinnakerVersionLabelsMutex.RUnlock()
 	fake.getCurrentVersionMutex.RLock()
 	defer fake.getCurrentVersionMutex.RUnlock()
+	fake.getVolumeVersionMutex.RLock()
+	defer fake.getVolumeVersionMutex.RUnlock()
 	fake.incrementVersionMutex.RLock()
 	defer fake.incrementVersionMutex.RUnlock()
 	fake.isVersionedMutex.RLock()
 	defer fake.isVersionedMutex.RUnlock()
 	fake.newClientMutex.RLock()
 	defer fake.newClientMutex.RUnlock()
+	fake.overwriteVolumeNamesMutex.RLock()
+	defer fake.overwriteVolumeNamesMutex.RUnlock()
 	fake.toUnstructuredMutex.RLock()
 	defer fake.toUnstructuredMutex.RUnlock()
 	fake.versionVolumesMutex.RLock()

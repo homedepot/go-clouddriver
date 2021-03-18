@@ -7,13 +7,17 @@ import (
 	"strconv"
 	"strings"
 
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
+)
+
+var (
+	listTimeout = int64(30)
 )
 
 const (
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	AnnotationSpinnakerArtifactVersion = `artifact.spinnaker.io/version`
 	AnnotationSpinnakerMonikerSequence = `moniker.spinnaker.io/sequence`
 	Annotation
@@ -45,6 +49,7 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 	}
 
 	results := manifestFilter.FilterOnClusterAnnotation(cluster)
+
 	if len(results) == 0 {
 		return currentVersion
 	}
@@ -109,58 +114,101 @@ func (c *controller) IncrementVersion(currentVersion string) SpinnakerVersion {
 	}
 }
 
-func (c *controller) VersionVolumes(u *unstructured.Unstructured, requiredArtifacts []clouddriver.TaskCreatedArtifact) error {
+func (c *controller) VersionVolumes(u *unstructured.Unstructured, namespace, application string, kubeClient Client) error {
 	var (
 		err     error
 		volumes []v1.Volume
 	)
 
-	if len(requiredArtifacts) > 0 {
-		requiredArtifactsMap := map[string]clouddriver.TaskCreatedArtifact{}
-		for _, a := range requiredArtifacts {
-			requiredArtifactsMap[a.Name] = a
+	switch strings.ToLower(u.GetKind()) {
+	case "deployment":
+		d := NewDeployment(u.Object)
+		volumes = d.GetSpec().Template.Spec.Volumes
+
+		err = c.OverwriteVolumeNames(volumes, namespace, application, kubeClient)
+		if err != nil {
+			return err
 		}
 
-		switch strings.ToLower(u.GetKind()) {
-		case "deployment":
-			d := NewDeployment(u.Object)
-			volumes = d.GetSpec().Template.Spec.Volumes
+		*u, err = d.ToUnstructured()
+		if err != nil {
+			return err
+		}
 
-			overwriteVolumesNames(volumes, requiredArtifactsMap)
+	case "pod":
+		p := NewPod(u.Object)
+		volumes = p.GetSpec().Volumes
 
-			*u, err = d.ToUnstructured()
-			if err != nil {
-				return err
-			}
+		err = c.OverwriteVolumeNames(volumes, namespace, application, kubeClient)
+		if err != nil {
+			return err
+		}
 
-		case "pod":
-			p := NewPod(u.Object)
-			volumes = p.GetSpec().Volumes
-
-			overwriteVolumesNames(volumes, requiredArtifactsMap)
-
-			*u, err = p.ToUnstructured()
-			if err != nil {
-				return err
-			}
+		*u, err = p.ToUnstructured()
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func overwriteVolumesNames(volumes []v1.Volume, requiredArtifactsMap map[string]clouddriver.TaskCreatedArtifact) {
+func (c *controller) OverwriteVolumeNames(volumes []v1.Volume, namespace, application string, kubeClient Client) error {
 	for _, volume := range volumes {
 		if volume.VolumeSource.ConfigMap != nil {
-			if val, ok := requiredArtifactsMap[volume.Name]; ok && strings.EqualFold(val.Type, "kubernetes/configMap") {
-				volume.ConfigMap.Name = val.Reference
+			currentVersion, err := c.GetVolumeVersion(volume.ConfigMap.Name, "configMap", namespace, application, kubeClient)
+			if err != nil {
+				return err
 			}
+
+			volume.ConfigMap.Name = currentVersion
 		}
 
 		if volume.VolumeSource.Secret != nil {
-			if val, ok := requiredArtifactsMap[volume.Name]; ok && strings.EqualFold(val.Type, "kubernetes/secret") {
-				volume.Secret.SecretName = val.Reference
+			currentVersion, err := c.GetVolumeVersion(volume.Secret.SecretName, "secret", namespace, application, kubeClient)
+			if err != nil {
+				return err
 			}
+
+			volume.Secret.SecretName = currentVersion
 		}
 	}
+
+	return nil
+}
+
+func (c *controller) GetVolumeVersion(name, kind, namespace, application string, kubeClient Client) (string, error) {
+	//get resourcces
+	labelSelector := metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelKubernetesName:      application,
+			LabelKubernetesManagedBy: Spinnaker,
+		},
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{
+				Key:      LabelSpinnakerMonikerSequence,
+				Operator: metav1.LabelSelectorOpExists,
+			},
+		},
+	}
+
+	lo := metav1.ListOptions{
+		LabelSelector:  labels.Set(labelSelector.MatchLabels).String(),
+		TimeoutSeconds: &listTimeout,
+	}
+
+	results, err := kubeClient.ListResourcesByKindAndNamespace(kind, namespace, lo)
+	if err != nil {
+		return "", err
+	}
+
+	cluster := kind + " " + name
+
+	manifestFilter := NewManifestFilter(results.Items)
+	resources := manifestFilter.FilterOnClusterAnnotation(cluster)
+	sort.Slice(resources, func(i, j int) bool {
+		return resources[i].GetCreationTimestamp().String() > resources[j].GetCreationTimestamp().String()
+	})
+
+	return resources[0].GetName(), nil
 }
