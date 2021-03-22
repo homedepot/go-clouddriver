@@ -78,8 +78,35 @@ var _ = Describe("Deploy", func() {
 
 	Context("the kind is a list", func() {
 		var fakeUnstructured unstructured.Unstructured
+		var manifests []map[string]interface{}
 
 		BeforeEach(func() {
+			manifests = []map[string]interface{}{
+				{
+					"kind":       "ServiceMonitor",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":        "100",
+						},
+						"name": "test-list-name",
+					},
+				},
+				{
+					"kind":       "ServiceMonitor",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":        "100",
+						},
+						"name": "test-list-name2",
+					},
+				},
+			}
 			fakeUnstructured = unstructured.Unstructured{
 				Object: map[string]interface{}{
 					"kind":       "list",
@@ -92,34 +119,10 @@ var _ = Describe("Deploy", func() {
 						},
 						"name": "test-name",
 					},
-					"items": []map[string]interface{}{
-						{
-							"kind":       "ServiceMonitor",
-							"apiVersion": "v1",
-							"metadata": map[string]interface{}{
-								"annotations": map[string]interface{}{
-									kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-									kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-									"deployment.kubernetes.io/revision":        "100",
-								},
-								"name": "test-list-name",
-							},
-						},
-						{
-							"kind":       "ServiceMonitor",
-							"apiVersion": "v1",
-							"metadata": map[string]interface{}{
-								"annotations": map[string]interface{}{
-									kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-									kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-									"deployment.kubernetes.io/revision":        "100",
-								},
-								"name": "test-list-name2",
-							},
-						},
-					},
+					"items": manifests,
 				},
 			}
+			fakeKubeController.SortManifestsReturns(manifests, nil)
 			fakeKubeController.ToUnstructuredReturns(&fakeUnstructured, nil)
 		})
 
@@ -139,6 +142,17 @@ var _ = Describe("Deploy", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				Expect(fakeKubeClient.ApplyWithNamespaceOverrideCallCount()).To(Equal(2))
 			})
+		})
+	})
+
+	When("sorting the manifests returns an error", func() {
+		BeforeEach(func() {
+			fakeKubeController.SortManifestsReturns(nil, errors.New("error sorting manifests"))
+		})
+
+		It("returns an error", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error sorting manifests"))
 		})
 	})
 

@@ -60,6 +60,19 @@ type FakeController struct {
 	addSpinnakerLabelsReturnsOnCall map[int]struct {
 		result1 error
 	}
+	SortManifestsStub        func([]map[string]interface{}) ([]map[string]interface{}, error)
+	sortManifestsMutex       sync.RWMutex
+	sortManifestsArgsForCall []struct {
+		arg1 []map[string]interface{}
+	}
+	sortManifestsReturns struct {
+		result1 []map[string]interface{}
+		result2 error
+	}
+	sortManifestsReturnsOnCall map[int]struct {
+		result1 []map[string]interface{}
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -264,6 +277,62 @@ func (fake *FakeController) AddSpinnakerLabelsReturnsOnCall(i int, result1 error
 	}{result1}
 }
 
+func (fake *FakeController) SortManifests(arg1 []map[string]interface{}) ([]map[string]interface{}, error) {
+	var arg1Copy []map[string]interface{}
+	if arg1 != nil {
+		arg1Copy = make([]map[string]interface{}, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.sortManifestsMutex.Lock()
+	ret, specificReturn := fake.sortManifestsReturnsOnCall[len(fake.sortManifestsArgsForCall)]
+	fake.sortManifestsArgsForCall = append(fake.sortManifestsArgsForCall, struct {
+		arg1 []map[string]interface{}
+	}{arg1Copy})
+	fake.recordInvocation("SortManifests", []interface{}{arg1Copy})
+	fake.sortManifestsMutex.Unlock()
+	if fake.SortManifestsStub != nil {
+		return fake.SortManifestsStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.sortManifestsReturns.result1, fake.sortManifestsReturns.result2
+}
+
+func (fake *FakeController) SortManifestsCallCount() int {
+	fake.sortManifestsMutex.RLock()
+	defer fake.sortManifestsMutex.RUnlock()
+	return len(fake.sortManifestsArgsForCall)
+}
+
+func (fake *FakeController) SortManifestsArgsForCall(i int) []map[string]interface{} {
+	fake.sortManifestsMutex.RLock()
+	defer fake.sortManifestsMutex.RUnlock()
+	return fake.sortManifestsArgsForCall[i].arg1
+}
+
+func (fake *FakeController) SortManifestsReturns(result1 []map[string]interface{}, result2 error) {
+	fake.SortManifestsStub = nil
+	fake.sortManifestsReturns = struct {
+		result1 []map[string]interface{}
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeController) SortManifestsReturnsOnCall(i int, result1 []map[string]interface{}, result2 error) {
+	fake.SortManifestsStub = nil
+	if fake.sortManifestsReturnsOnCall == nil {
+		fake.sortManifestsReturnsOnCall = make(map[int]struct {
+			result1 []map[string]interface{}
+			result2 error
+		})
+	}
+	fake.sortManifestsReturnsOnCall[i] = struct {
+		result1 []map[string]interface{}
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeController) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -275,6 +344,8 @@ func (fake *FakeController) Invocations() map[string][][]interface{} {
 	defer fake.addSpinnakerAnnotationsMutex.RUnlock()
 	fake.addSpinnakerLabelsMutex.RLock()
 	defer fake.addSpinnakerLabelsMutex.RUnlock()
+	fake.sortManifestsMutex.RLock()
+	defer fake.sortManifestsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
