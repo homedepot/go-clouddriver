@@ -24,6 +24,7 @@ type Controller interface {
 	ToUnstructured(map[string]interface{}) (*unstructured.Unstructured, error)
 	AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error
 	AddSpinnakerLabels(u *unstructured.Unstructured, application string) error
+	SortManifests([]map[string]interface{}) ([]map[string]interface{}, error)
 }
 
 func NewController() Controller {

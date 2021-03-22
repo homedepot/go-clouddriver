@@ -4,10 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/homedepot/go-clouddriver/pkg/util"
 	"net/http"
 	"strings"
 	"unicode"
+
+	"github.com/homedepot/go-clouddriver/pkg/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -87,6 +88,13 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		} else {
 			manifests = append(manifests, u.Object)
 		}
+	}
+
+	// Sort the manifests by their kind's priority.
+	manifests, err = kc.SortManifests(manifests)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	for _, manifest := range manifests {

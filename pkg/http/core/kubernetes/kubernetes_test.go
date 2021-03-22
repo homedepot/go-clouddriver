@@ -79,6 +79,12 @@ func setup() {
 	fakeKubeController = &kubernetesfakes.FakeController{}
 	fakeKubeController.NewClientReturns(fakeKubeClient, nil)
 	fakeKubeController.ToUnstructuredReturns(&fakeUnstructured, nil)
+	fakeKubeController.SortManifestsReturns([]map[string]interface{}{
+		{
+			"kind":       "Pod",
+			"apiVersion": "v1",
+		},
+	}, nil)
 
 	req, _ := http.NewRequest(http.MethodGet, "", nil)
 	req.Header.Set("X-Spinnaker-Application", "test-app")
