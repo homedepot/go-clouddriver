@@ -10,7 +10,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 var (
@@ -190,8 +189,13 @@ func (c *controller) GetVolumeVersion(name, kind, namespace, application string,
 		},
 	}
 
+	ls, err := metav1.LabelSelectorAsSelector(&labelSelector)
+	if err != nil {
+		return "", err
+	}
+
 	lo := metav1.ListOptions{
-		LabelSelector:  labels.Set(labelSelector.MatchLabels).String(),
+		LabelSelector:  ls.String(),
 		TimeoutSeconds: &listTimeout,
 	}
 
