@@ -102,20 +102,53 @@ func (c *client) GetIndex() (Index, error) {
 }
 
 func (c *client) GetChart(name, version string) ([]byte, error) {
-	res, err := http.Get(fmt.Sprintf("%s/%s-%s.tgz", c.u, name, version))
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
+	var err error
 
-	if res.StatusCode < 200 || res.StatusCode > 399 {
-		return nil, errors.New("error getting helm chart: " + res.Status)
+	b := []byte{}
+	resource := findResource(name, version)
+
+	// Loop through all the resource's URLs to get the chart,
+	// including a default url of the format https://helm.example/chart_name-chart_version.tgz
+	urls := append(resource.Urls, fmt.Sprintf("%s/%s-%s.tgz", c.u, name, version))
+	for _, url := range urls {
+		res, e := http.Get(url)
+		if e != nil {
+			err = e
+
+			continue
+		}
+		defer res.Body.Close()
+
+		if res.StatusCode < 200 || res.StatusCode > 399 {
+			err = errors.New("helm: error getting chart: " + res.Status)
+
+			continue
+		}
+
+		b, err = ioutil.ReadAll(res.Body)
+		if err != nil {
+			continue
+		}
+
+		break
 	}
 
-	b, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
+	return b, err
+}
+
+func findResource(name, version string) Resource {
+	// Lock since we are accessing the cached index.
+	mux.Lock()
+	defer mux.Unlock()
+
+	if _, ok := cache.Entries[name]; ok {
+		resources := cache.Entries[name]
+		for _, resource := range resources {
+			if resource.Version == version {
+				return resource
+			}
+		}
 	}
 
-	return b, nil
+	return Resource{}
 }

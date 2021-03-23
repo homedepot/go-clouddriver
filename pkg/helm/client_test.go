@@ -1,6 +1,7 @@
 package helm_test
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/homedepot/go-clouddriver/pkg/helm"
@@ -169,7 +170,56 @@ entries:
 
 			It("returns an error", func() {
 				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(Equal("error getting helm chart: 500 Internal Server Error"))
+				Expect(err.Error()).To(Equal("helm: error getting chart: 500 Internal Server Error"))
+			})
+		})
+
+		When("the resources are cached", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyRequest(http.MethodGet, "/index.yaml"),
+					ghttp.RespondWith(http.StatusOK, fmt.Sprintf(`apiVersion: v1
+entries:
+  test-name:
+  - apiVersion: v2
+    appVersion: "1.0"
+    created: 2020-03-20T13:13:42.956Z
+    description: A Helm chart for deploying hello-app to Kuberntes
+    digest: a934a39ba7f77e8e16b609d01c493d7ead5ec24c78d2918d3a00ebaa3c3fdfd2
+    home: https://pages.github.com/test
+    maintainers:
+    - email: me@test.com
+      name: CD Team
+    name: hello-app
+    urls:
+    - %s/artifactory/helm/packages/test-name-0.1.0.tgz
+    version: 0.1.0
+  thd-cd-hello-app:
+  - apiVersion: v2
+    appVersion: "2.0"
+    created: 2020-08-14T22:11:19.894Z
+    description: A Helm chart for deploying hello-app to Kubernetes
+    digest: c9c2663958ffdf2c790ebfd0f502176c3ac663014e9d6ce49955c4178c2f43d7
+    home: https://pages.github.com/test
+    maintainers:
+    - email: me@test.com
+      name: CD Team
+    name: thd-cd-hello-app
+    urls:
+    - https://helm..com/artifactory/helm/packages/test-3.0.2.tgz
+    version: 3.0.2`, server.URL()),
+					)))
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyRequest(http.MethodGet, "/artifactory/helm/packages/test-name-0.1.0.tgz"),
+					ghttp.RespondWith(http.StatusOK, `some-binary-data`),
+				))
+				_, err = client.GetIndex()
+				Expect(err).To(BeNil())
+			})
+
+			It("calls the url in the cached entry", func() {
+				Expect(err).To(BeNil())
+				Expect(string(b)).To(Equal("some-binary-data"))
 			})
 		})
 
