@@ -167,8 +167,8 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			}
 
 			kind := strings.ToLower(u.GetKind())
-			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
 
+			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return

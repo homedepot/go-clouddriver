@@ -177,7 +177,6 @@ func (c *controller) OverwriteVolumeNames(volumes []v1.Volume, namespace, applic
 }
 
 func (c *controller) GetVolumeVersion(name, kind, namespace, application string, kubeClient Client) (string, error) {
-	//get resourcces
 	labelSelector := metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			LabelKubernetesName:      application,
