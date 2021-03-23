@@ -14,6 +14,10 @@ const (
 	ClientInstanceKey = `HelmClient`
 )
 
+var (
+	errUnableToFindResource = errors.New("unable to find resource")
+)
+
 type Index struct {
 	APIVersion string                `json:"apiVersion" yaml:"apiVersion"`
 	Entries    map[string][]Resource `json:"entries" yaml:"entries"`
@@ -102,15 +106,22 @@ func (c *client) GetIndex() (Index, error) {
 }
 
 func (c *client) GetChart(name, version string) ([]byte, error) {
-	var err error
+	var (
+		err error
+		b   []byte
+	)
 
-	b := []byte{}
-	resource := findResource(name, version)
+	resource, err := c.findResource(name, version)
+	if err != nil {
+		return b, fmt.Errorf("helm: unable to find chart %s-%s: %w", name, version, err)
+	}
 
-	// Loop through all the resource's URLs to get the chart,
-	// including a default url of the format https://helm.example/chart_name-chart_version.tgz
-	urls := append(resource.Urls, fmt.Sprintf("%s/%s-%s.tgz", c.u, name, version))
-	for _, url := range urls {
+	if len(resource.Urls) == 0 {
+		return b, fmt.Errorf("helm: no resource urls defined for chart %s-%s", name, version)
+	}
+
+	// Loop through all the resource's URLs to get the chart.
+	for _, url := range resource.Urls {
 		res, e := http.Get(url)
 		if e != nil {
 			err = e
@@ -136,7 +147,17 @@ func (c *client) GetChart(name, version string) ([]byte, error) {
 	return b, err
 }
 
-func findResource(name, version string) Resource {
+// findResource resets the helm index's cache then gets the resource
+// from the cache by name and version.
+//
+// If it is unable to find the resource it returns an error.
+func (c *client) findResource(name, version string) (Resource, error) {
+	// Refresh the cached index.
+	_, err := c.GetIndex()
+	if err != nil {
+		return Resource{}, err
+	}
+
 	// Lock since we are accessing the cached index.
 	mux.Lock()
 	defer mux.Unlock()
@@ -145,10 +166,10 @@ func findResource(name, version string) Resource {
 		resources := cache.Entries[name]
 		for _, resource := range resources {
 			if resource.Version == version {
-				return resource
+				return resource, nil
 			}
 		}
 	}
 
-	return Resource{}
+	return Resource{}, errUnableToFindResource
 }
