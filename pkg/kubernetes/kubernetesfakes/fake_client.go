@@ -162,6 +162,21 @@ type FakeClient struct {
 		result2 *unstructured.Unstructured
 		result3 error
 	}
+	ListResourcesByKindAndNamespaceStub        func(string, string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
+	listResourcesByKindAndNamespaceMutex       sync.RWMutex
+	listResourcesByKindAndNamespaceArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 metav1.ListOptions
+	}
+	listResourcesByKindAndNamespaceReturns struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}
+	listResourcesByKindAndNamespaceReturnsOnCall map[int]struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -706,6 +721,59 @@ func (fake *FakeClient) PatchUsingStrategyReturnsOnCall(i int, result1 kubernete
 	}{result1, result2, result3}
 }
 
+func (fake *FakeClient) ListResourcesByKindAndNamespace(arg1 string, arg2 string, arg3 metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+	fake.listResourcesByKindAndNamespaceMutex.Lock()
+	ret, specificReturn := fake.listResourcesByKindAndNamespaceReturnsOnCall[len(fake.listResourcesByKindAndNamespaceArgsForCall)]
+	fake.listResourcesByKindAndNamespaceArgsForCall = append(fake.listResourcesByKindAndNamespaceArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 metav1.ListOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("ListResourcesByKindAndNamespace", []interface{}{arg1, arg2, arg3})
+	fake.listResourcesByKindAndNamespaceMutex.Unlock()
+	if fake.ListResourcesByKindAndNamespaceStub != nil {
+		return fake.ListResourcesByKindAndNamespaceStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.listResourcesByKindAndNamespaceReturns.result1, fake.listResourcesByKindAndNamespaceReturns.result2
+}
+
+func (fake *FakeClient) ListResourcesByKindAndNamespaceCallCount() int {
+	fake.listResourcesByKindAndNamespaceMutex.RLock()
+	defer fake.listResourcesByKindAndNamespaceMutex.RUnlock()
+	return len(fake.listResourcesByKindAndNamespaceArgsForCall)
+}
+
+func (fake *FakeClient) ListResourcesByKindAndNamespaceArgsForCall(i int) (string, string, metav1.ListOptions) {
+	fake.listResourcesByKindAndNamespaceMutex.RLock()
+	defer fake.listResourcesByKindAndNamespaceMutex.RUnlock()
+	return fake.listResourcesByKindAndNamespaceArgsForCall[i].arg1, fake.listResourcesByKindAndNamespaceArgsForCall[i].arg2, fake.listResourcesByKindAndNamespaceArgsForCall[i].arg3
+}
+
+func (fake *FakeClient) ListResourcesByKindAndNamespaceReturns(result1 *unstructured.UnstructuredList, result2 error) {
+	fake.ListResourcesByKindAndNamespaceStub = nil
+	fake.listResourcesByKindAndNamespaceReturns = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ListResourcesByKindAndNamespaceReturnsOnCall(i int, result1 *unstructured.UnstructuredList, result2 error) {
+	fake.ListResourcesByKindAndNamespaceStub = nil
+	if fake.listResourcesByKindAndNamespaceReturnsOnCall == nil {
+		fake.listResourcesByKindAndNamespaceReturnsOnCall = make(map[int]struct {
+			result1 *unstructured.UnstructuredList
+			result2 error
+		})
+	}
+	fake.listResourcesByKindAndNamespaceReturnsOnCall[i] = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -729,6 +797,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.patchMutex.RUnlock()
 	fake.patchUsingStrategyMutex.RLock()
 	defer fake.patchUsingStrategyMutex.RUnlock()
+	fake.listResourcesByKindAndNamespaceMutex.RLock()
+	defer fake.listResourcesByKindAndNamespaceMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

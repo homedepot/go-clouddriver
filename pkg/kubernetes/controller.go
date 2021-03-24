@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/cached/disk"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
@@ -25,6 +26,12 @@ type Controller interface {
 	AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error
 	AddSpinnakerLabels(u *unstructured.Unstructured, application string) error
 	SortManifests([]map[string]interface{}) ([]map[string]interface{}, error)
+	AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, version SpinnakerVersion) error
+	AddSpinnakerVersionLabels(u *unstructured.Unstructured, version SpinnakerVersion) error
+	GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string
+	IsVersioned(u *unstructured.Unstructured) bool
+	IncrementVersion(currentVersion string) SpinnakerVersion
+	VersionVolumes(u *unstructured.Unstructured, requiredArtifacts []clouddriver.TaskCreatedArtifact) error
 }
 
 func NewController() Controller {

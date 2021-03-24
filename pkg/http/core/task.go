@@ -9,10 +9,11 @@ import (
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"k8s.io/client-go/rest"
 
+	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	"github.com/gin-gonic/gin"
+	"github.com/iancoleman/strcase"
 )
 
 // Get a task - currently only associated with kubernetes 'tasks'.
@@ -88,9 +89,13 @@ func GetTask(c *gin.Context) {
 
 	mnr := buildMapOfNamespaceToResource(resources)
 
+	//Refactor bound artifact to get the list of bound artifacts as not all created artifacts need to be bound
+	createdArtifacts := buildCreatedArtifacts(resources)
+
 	ro := clouddriver.TaskResultObject{
+		BoundArtifacts:                    createdArtifacts,
 		DeployedNamesByLocation:           mnr,
-		CreatedArtifacts:                  buildCreatedArtifacts(resources),
+		CreatedArtifacts:                  createdArtifacts,
 		Manifests:                         manifests,
 		ManifestNamesByNamespace:          mnr,
 		ManifestNamesByNamespaceToRefresh: mnr,
@@ -103,19 +108,31 @@ func GetTask(c *gin.Context) {
 }
 
 func buildCreatedArtifacts(resources []kubernetes.Resource) []clouddriver.TaskCreatedArtifact {
+	var (
+		artifactVersion string
+		lastIndex       int
+	)
+
 	cas := []clouddriver.TaskCreatedArtifact{}
 
 	for _, resource := range resources {
+		artifactVersion = ""
+		lastIndex = strings.LastIndex(resource.Name, "-v")
+
+		if lastIndex != -1 {
+			artifactVersion = resource.Name[lastIndex+1:]
+		}
+
 		ca := clouddriver.TaskCreatedArtifact{
 			CustomKind: false,
 			Location:   resource.Namespace,
 			Metadata: clouddriver.TaskCreatedArtifactMetadata{
 				Account: resource.AccountName,
 			},
-			Name:      resource.Name,
+			Name:      resource.ArtifactName,
 			Reference: resource.Name,
-			Type:      "kubernetes/" + resource.Kind,
-			Version:   resource.Version,
+			Type:      "kubernetes/" + strcase.ToLowerCamel(resource.Kind),
+			Version:   artifactVersion,
 		}
 		cas = append(cas, ca)
 	}

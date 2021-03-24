@@ -15,7 +15,6 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 )
 
@@ -182,7 +181,9 @@ func GetManifestByTarget(c *gin.Context) {
 	}
 
 	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
-	items := filterOnCluster(list.Items, cluster)
+	manifestFilter := kubernetes.NewManifestFilter(list.Items)
+	items := manifestFilter.FilterOnClusterAnnotation(cluster)
+
 	if len(items) == 0 {
 		clouddriver.Error(c, http.StatusNotFound, errors.New("no resources found for cluster "+cluster))
 		return
@@ -226,19 +227,4 @@ func GetManifestByTarget(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, mcr)
-}
-
-func filterOnCluster(items []unstructured.Unstructured, cluster string) []unstructured.Unstructured {
-	filtered := []unstructured.Unstructured{}
-
-	for _, item := range items {
-		annotations := item.GetAnnotations()
-		if annotations != nil {
-			if strings.EqualFold(annotations[kubernetes.AnnotationSpinnakerMonikerCluster], cluster) {
-				filtered = append(filtered, item)
-			}
-		}
-	}
-
-	return filtered
 }

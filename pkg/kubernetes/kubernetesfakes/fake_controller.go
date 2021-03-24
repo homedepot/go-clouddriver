@@ -4,6 +4,7 @@ package kubernetesfakes
 import (
 	"sync"
 
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
@@ -72,6 +73,77 @@ type FakeController struct {
 	sortManifestsReturnsOnCall map[int]struct {
 		result1 []map[string]interface{}
 		result2 error
+	}
+	AddSpinnakerVersionAnnotationsStub        func(u *unstructured.Unstructured, version kubernetes.SpinnakerVersion) error
+	addSpinnakerVersionAnnotationsMutex       sync.RWMutex
+	addSpinnakerVersionAnnotationsArgsForCall []struct {
+		u       *unstructured.Unstructured
+		version kubernetes.SpinnakerVersion
+	}
+	addSpinnakerVersionAnnotationsReturns struct {
+		result1 error
+	}
+	addSpinnakerVersionAnnotationsReturnsOnCall map[int]struct {
+		result1 error
+	}
+	AddSpinnakerVersionLabelsStub        func(u *unstructured.Unstructured, version kubernetes.SpinnakerVersion) error
+	addSpinnakerVersionLabelsMutex       sync.RWMutex
+	addSpinnakerVersionLabelsArgsForCall []struct {
+		u       *unstructured.Unstructured
+		version kubernetes.SpinnakerVersion
+	}
+	addSpinnakerVersionLabelsReturns struct {
+		result1 error
+	}
+	addSpinnakerVersionLabelsReturnsOnCall map[int]struct {
+		result1 error
+	}
+	GetCurrentVersionStub        func(ul *unstructured.UnstructuredList, kind, name string) string
+	getCurrentVersionMutex       sync.RWMutex
+	getCurrentVersionArgsForCall []struct {
+		ul   *unstructured.UnstructuredList
+		kind string
+		name string
+	}
+	getCurrentVersionReturns struct {
+		result1 string
+	}
+	getCurrentVersionReturnsOnCall map[int]struct {
+		result1 string
+	}
+	IsVersionedStub        func(u *unstructured.Unstructured) bool
+	isVersionedMutex       sync.RWMutex
+	isVersionedArgsForCall []struct {
+		u *unstructured.Unstructured
+	}
+	isVersionedReturns struct {
+		result1 bool
+	}
+	isVersionedReturnsOnCall map[int]struct {
+		result1 bool
+	}
+	IncrementVersionStub        func(currentVersion string) kubernetes.SpinnakerVersion
+	incrementVersionMutex       sync.RWMutex
+	incrementVersionArgsForCall []struct {
+		currentVersion string
+	}
+	incrementVersionReturns struct {
+		result1 kubernetes.SpinnakerVersion
+	}
+	incrementVersionReturnsOnCall map[int]struct {
+		result1 kubernetes.SpinnakerVersion
+	}
+	VersionVolumesStub        func(u *unstructured.Unstructured, requiredArtifacts []clouddriver.TaskCreatedArtifact) error
+	versionVolumesMutex       sync.RWMutex
+	versionVolumesArgsForCall []struct {
+		u                 *unstructured.Unstructured
+		requiredArtifacts []clouddriver.TaskCreatedArtifact
+	}
+	versionVolumesReturns struct {
+		result1 error
+	}
+	versionVolumesReturnsOnCall map[int]struct {
+		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -333,6 +405,304 @@ func (fake *FakeController) SortManifestsReturnsOnCall(i int, result1 []map[stri
 	}{result1, result2}
 }
 
+func (fake *FakeController) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, version kubernetes.SpinnakerVersion) error {
+	fake.addSpinnakerVersionAnnotationsMutex.Lock()
+	ret, specificReturn := fake.addSpinnakerVersionAnnotationsReturnsOnCall[len(fake.addSpinnakerVersionAnnotationsArgsForCall)]
+	fake.addSpinnakerVersionAnnotationsArgsForCall = append(fake.addSpinnakerVersionAnnotationsArgsForCall, struct {
+		u       *unstructured.Unstructured
+		version kubernetes.SpinnakerVersion
+	}{u, version})
+	fake.recordInvocation("AddSpinnakerVersionAnnotations", []interface{}{u, version})
+	fake.addSpinnakerVersionAnnotationsMutex.Unlock()
+	if fake.AddSpinnakerVersionAnnotationsStub != nil {
+		return fake.AddSpinnakerVersionAnnotationsStub(u, version)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.addSpinnakerVersionAnnotationsReturns.result1
+}
+
+func (fake *FakeController) AddSpinnakerVersionAnnotationsCallCount() int {
+	fake.addSpinnakerVersionAnnotationsMutex.RLock()
+	defer fake.addSpinnakerVersionAnnotationsMutex.RUnlock()
+	return len(fake.addSpinnakerVersionAnnotationsArgsForCall)
+}
+
+func (fake *FakeController) AddSpinnakerVersionAnnotationsArgsForCall(i int) (*unstructured.Unstructured, kubernetes.SpinnakerVersion) {
+	fake.addSpinnakerVersionAnnotationsMutex.RLock()
+	defer fake.addSpinnakerVersionAnnotationsMutex.RUnlock()
+	return fake.addSpinnakerVersionAnnotationsArgsForCall[i].u, fake.addSpinnakerVersionAnnotationsArgsForCall[i].version
+}
+
+func (fake *FakeController) AddSpinnakerVersionAnnotationsReturns(result1 error) {
+	fake.AddSpinnakerVersionAnnotationsStub = nil
+	fake.addSpinnakerVersionAnnotationsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) AddSpinnakerVersionAnnotationsReturnsOnCall(i int, result1 error) {
+	fake.AddSpinnakerVersionAnnotationsStub = nil
+	if fake.addSpinnakerVersionAnnotationsReturnsOnCall == nil {
+		fake.addSpinnakerVersionAnnotationsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.addSpinnakerVersionAnnotationsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) AddSpinnakerVersionLabels(u *unstructured.Unstructured, version kubernetes.SpinnakerVersion) error {
+	fake.addSpinnakerVersionLabelsMutex.Lock()
+	ret, specificReturn := fake.addSpinnakerVersionLabelsReturnsOnCall[len(fake.addSpinnakerVersionLabelsArgsForCall)]
+	fake.addSpinnakerVersionLabelsArgsForCall = append(fake.addSpinnakerVersionLabelsArgsForCall, struct {
+		u       *unstructured.Unstructured
+		version kubernetes.SpinnakerVersion
+	}{u, version})
+	fake.recordInvocation("AddSpinnakerVersionLabels", []interface{}{u, version})
+	fake.addSpinnakerVersionLabelsMutex.Unlock()
+	if fake.AddSpinnakerVersionLabelsStub != nil {
+		return fake.AddSpinnakerVersionLabelsStub(u, version)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.addSpinnakerVersionLabelsReturns.result1
+}
+
+func (fake *FakeController) AddSpinnakerVersionLabelsCallCount() int {
+	fake.addSpinnakerVersionLabelsMutex.RLock()
+	defer fake.addSpinnakerVersionLabelsMutex.RUnlock()
+	return len(fake.addSpinnakerVersionLabelsArgsForCall)
+}
+
+func (fake *FakeController) AddSpinnakerVersionLabelsArgsForCall(i int) (*unstructured.Unstructured, kubernetes.SpinnakerVersion) {
+	fake.addSpinnakerVersionLabelsMutex.RLock()
+	defer fake.addSpinnakerVersionLabelsMutex.RUnlock()
+	return fake.addSpinnakerVersionLabelsArgsForCall[i].u, fake.addSpinnakerVersionLabelsArgsForCall[i].version
+}
+
+func (fake *FakeController) AddSpinnakerVersionLabelsReturns(result1 error) {
+	fake.AddSpinnakerVersionLabelsStub = nil
+	fake.addSpinnakerVersionLabelsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) AddSpinnakerVersionLabelsReturnsOnCall(i int, result1 error) {
+	fake.AddSpinnakerVersionLabelsStub = nil
+	if fake.addSpinnakerVersionLabelsReturnsOnCall == nil {
+		fake.addSpinnakerVersionLabelsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.addSpinnakerVersionLabelsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) GetCurrentVersion(ul *unstructured.UnstructuredList, kind string, name string) string {
+	fake.getCurrentVersionMutex.Lock()
+	ret, specificReturn := fake.getCurrentVersionReturnsOnCall[len(fake.getCurrentVersionArgsForCall)]
+	fake.getCurrentVersionArgsForCall = append(fake.getCurrentVersionArgsForCall, struct {
+		ul   *unstructured.UnstructuredList
+		kind string
+		name string
+	}{ul, kind, name})
+	fake.recordInvocation("GetCurrentVersion", []interface{}{ul, kind, name})
+	fake.getCurrentVersionMutex.Unlock()
+	if fake.GetCurrentVersionStub != nil {
+		return fake.GetCurrentVersionStub(ul, kind, name)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.getCurrentVersionReturns.result1
+}
+
+func (fake *FakeController) GetCurrentVersionCallCount() int {
+	fake.getCurrentVersionMutex.RLock()
+	defer fake.getCurrentVersionMutex.RUnlock()
+	return len(fake.getCurrentVersionArgsForCall)
+}
+
+func (fake *FakeController) GetCurrentVersionArgsForCall(i int) (*unstructured.UnstructuredList, string, string) {
+	fake.getCurrentVersionMutex.RLock()
+	defer fake.getCurrentVersionMutex.RUnlock()
+	return fake.getCurrentVersionArgsForCall[i].ul, fake.getCurrentVersionArgsForCall[i].kind, fake.getCurrentVersionArgsForCall[i].name
+}
+
+func (fake *FakeController) GetCurrentVersionReturns(result1 string) {
+	fake.GetCurrentVersionStub = nil
+	fake.getCurrentVersionReturns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeController) GetCurrentVersionReturnsOnCall(i int, result1 string) {
+	fake.GetCurrentVersionStub = nil
+	if fake.getCurrentVersionReturnsOnCall == nil {
+		fake.getCurrentVersionReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.getCurrentVersionReturnsOnCall[i] = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeController) IsVersioned(u *unstructured.Unstructured) bool {
+	fake.isVersionedMutex.Lock()
+	ret, specificReturn := fake.isVersionedReturnsOnCall[len(fake.isVersionedArgsForCall)]
+	fake.isVersionedArgsForCall = append(fake.isVersionedArgsForCall, struct {
+		u *unstructured.Unstructured
+	}{u})
+	fake.recordInvocation("IsVersioned", []interface{}{u})
+	fake.isVersionedMutex.Unlock()
+	if fake.IsVersionedStub != nil {
+		return fake.IsVersionedStub(u)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.isVersionedReturns.result1
+}
+
+func (fake *FakeController) IsVersionedCallCount() int {
+	fake.isVersionedMutex.RLock()
+	defer fake.isVersionedMutex.RUnlock()
+	return len(fake.isVersionedArgsForCall)
+}
+
+func (fake *FakeController) IsVersionedArgsForCall(i int) *unstructured.Unstructured {
+	fake.isVersionedMutex.RLock()
+	defer fake.isVersionedMutex.RUnlock()
+	return fake.isVersionedArgsForCall[i].u
+}
+
+func (fake *FakeController) IsVersionedReturns(result1 bool) {
+	fake.IsVersionedStub = nil
+	fake.isVersionedReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *FakeController) IsVersionedReturnsOnCall(i int, result1 bool) {
+	fake.IsVersionedStub = nil
+	if fake.isVersionedReturnsOnCall == nil {
+		fake.isVersionedReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.isVersionedReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *FakeController) IncrementVersion(currentVersion string) kubernetes.SpinnakerVersion {
+	fake.incrementVersionMutex.Lock()
+	ret, specificReturn := fake.incrementVersionReturnsOnCall[len(fake.incrementVersionArgsForCall)]
+	fake.incrementVersionArgsForCall = append(fake.incrementVersionArgsForCall, struct {
+		currentVersion string
+	}{currentVersion})
+	fake.recordInvocation("IncrementVersion", []interface{}{currentVersion})
+	fake.incrementVersionMutex.Unlock()
+	if fake.IncrementVersionStub != nil {
+		return fake.IncrementVersionStub(currentVersion)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.incrementVersionReturns.result1
+}
+
+func (fake *FakeController) IncrementVersionCallCount() int {
+	fake.incrementVersionMutex.RLock()
+	defer fake.incrementVersionMutex.RUnlock()
+	return len(fake.incrementVersionArgsForCall)
+}
+
+func (fake *FakeController) IncrementVersionArgsForCall(i int) string {
+	fake.incrementVersionMutex.RLock()
+	defer fake.incrementVersionMutex.RUnlock()
+	return fake.incrementVersionArgsForCall[i].currentVersion
+}
+
+func (fake *FakeController) IncrementVersionReturns(result1 kubernetes.SpinnakerVersion) {
+	fake.IncrementVersionStub = nil
+	fake.incrementVersionReturns = struct {
+		result1 kubernetes.SpinnakerVersion
+	}{result1}
+}
+
+func (fake *FakeController) IncrementVersionReturnsOnCall(i int, result1 kubernetes.SpinnakerVersion) {
+	fake.IncrementVersionStub = nil
+	if fake.incrementVersionReturnsOnCall == nil {
+		fake.incrementVersionReturnsOnCall = make(map[int]struct {
+			result1 kubernetes.SpinnakerVersion
+		})
+	}
+	fake.incrementVersionReturnsOnCall[i] = struct {
+		result1 kubernetes.SpinnakerVersion
+	}{result1}
+}
+
+func (fake *FakeController) VersionVolumes(u *unstructured.Unstructured, requiredArtifacts []clouddriver.TaskCreatedArtifact) error {
+	var requiredArtifactsCopy []clouddriver.TaskCreatedArtifact
+	if requiredArtifacts != nil {
+		requiredArtifactsCopy = make([]clouddriver.TaskCreatedArtifact, len(requiredArtifacts))
+		copy(requiredArtifactsCopy, requiredArtifacts)
+	}
+	fake.versionVolumesMutex.Lock()
+	ret, specificReturn := fake.versionVolumesReturnsOnCall[len(fake.versionVolumesArgsForCall)]
+	fake.versionVolumesArgsForCall = append(fake.versionVolumesArgsForCall, struct {
+		u                 *unstructured.Unstructured
+		requiredArtifacts []clouddriver.TaskCreatedArtifact
+	}{u, requiredArtifactsCopy})
+	fake.recordInvocation("VersionVolumes", []interface{}{u, requiredArtifactsCopy})
+	fake.versionVolumesMutex.Unlock()
+	if fake.VersionVolumesStub != nil {
+		return fake.VersionVolumesStub(u, requiredArtifacts)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.versionVolumesReturns.result1
+}
+
+func (fake *FakeController) VersionVolumesCallCount() int {
+	fake.versionVolumesMutex.RLock()
+	defer fake.versionVolumesMutex.RUnlock()
+	return len(fake.versionVolumesArgsForCall)
+}
+
+func (fake *FakeController) VersionVolumesArgsForCall(i int) (*unstructured.Unstructured, []clouddriver.TaskCreatedArtifact) {
+	fake.versionVolumesMutex.RLock()
+	defer fake.versionVolumesMutex.RUnlock()
+	return fake.versionVolumesArgsForCall[i].u, fake.versionVolumesArgsForCall[i].requiredArtifacts
+}
+
+func (fake *FakeController) VersionVolumesReturns(result1 error) {
+	fake.VersionVolumesStub = nil
+	fake.versionVolumesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeController) VersionVolumesReturnsOnCall(i int, result1 error) {
+	fake.VersionVolumesStub = nil
+	if fake.versionVolumesReturnsOnCall == nil {
+		fake.versionVolumesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.versionVolumesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeController) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -346,6 +716,18 @@ func (fake *FakeController) Invocations() map[string][][]interface{} {
 	defer fake.addSpinnakerLabelsMutex.RUnlock()
 	fake.sortManifestsMutex.RLock()
 	defer fake.sortManifestsMutex.RUnlock()
+	fake.addSpinnakerVersionAnnotationsMutex.RLock()
+	defer fake.addSpinnakerVersionAnnotationsMutex.RUnlock()
+	fake.addSpinnakerVersionLabelsMutex.RLock()
+	defer fake.addSpinnakerVersionLabelsMutex.RUnlock()
+	fake.getCurrentVersionMutex.RLock()
+	defer fake.getCurrentVersionMutex.RUnlock()
+	fake.isVersionedMutex.RLock()
+	defer fake.isVersionedMutex.RUnlock()
+	fake.incrementVersionMutex.RLock()
+	defer fake.incrementVersionMutex.RUnlock()
+	fake.versionVolumesMutex.RLock()
+	defer fake.versionVolumesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

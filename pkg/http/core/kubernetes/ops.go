@@ -1,6 +1,9 @@
 package kubernetes
 
-import "github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
+import (
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
+)
 
 type OperationsResponse struct {
 	ID          string `json:"id"`
@@ -35,10 +38,10 @@ type DeployManifestRequest struct {
 	Moniker struct {
 		App string `json:"app"`
 	} `json:"moniker"`
-	Source                   string        `json:"source"`
-	Account                  string        `json:"account"`
-	SkipExpressionEvaluation bool          `json:"skipExpressionEvaluation"`
-	RequiredArtifacts        []interface{} `json:"requiredArtifacts"`
+	Source                   string                            `json:"source"`
+	Account                  string                            `json:"account"`
+	SkipExpressionEvaluation bool                              `json:"skipExpressionEvaluation"`
+	RequiredArtifacts        []clouddriver.TaskCreatedArtifact `json:"requiredArtifacts"`
 }
 
 type PatchManifestRequest struct {
@@ -77,6 +80,7 @@ type PatchManifestRequestOptions struct {
 	Record        bool   `json:"record"`
 }
 
+// why are artifacts commented out here? possibly causing the problem of artifacts not getting bound correctly
 type ManifestResponse struct {
 	Account string `json:"account"`
 	// Artifacts []struct {
