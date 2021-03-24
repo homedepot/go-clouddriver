@@ -92,13 +92,14 @@ var _ = Describe("Sql", func() {
 
 		BeforeEach(func() {
 			resource = kubernetes.Resource{
-				ID:        "test-id",
-				TaskID:    "test-task-id",
-				APIGroup:  "test-group",
-				Name:      "test-name",
-				Namespace: "test-namespace",
-				Resource:  "test-resource",
-				Version:   "test-version",
+				ID:           "test-id",
+				TaskID:       "test-task-id",
+				APIGroup:     "test-group",
+				Name:         "test-name",
+				ArtifactName: "test-name",
+				Namespace:    "test-namespace",
+				Resource:     "test-resource",
+				Version:      "test-version",
 			}
 		})
 
@@ -116,13 +117,14 @@ var _ = Describe("Sql", func() {
 					`"task_type",` +
 					`"api_group",` +
 					`"name",` +
+					`"artifact_name",` +
 					`"namespace",` +
 					`"resource",` +
 					`"version",` +
 					`"kind",` +
 					`"spinnaker_app",` +
 					`"cluster"` +
-					`\) VALUES \(\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?\)$`).
+					`\) VALUES \(\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?\,\?\)$`).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			})
@@ -333,7 +335,7 @@ var _ = Describe("Sql", func() {
 					`field1, ` +
 					`field2 ` +
 					`FROM "kubernetes_resources" ` +
-					` WHERE \(kind in \('deployment', 'statefulSet', 'replicaSet', 'ingress', 'service', 'daemonSet'\)\)`+
+					` WHERE \(kind in \('deployment', 'statefulSet', 'replicaSet', 'ingress', 'service', 'daemonSet'\)\)` +
 					` GROUP BY field1, field2$`).
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
@@ -393,6 +395,7 @@ var _ = Describe("Sql", func() {
 					`api_group, ` +
 					`kind, ` +
 					`name, ` +
+					`artifact_name, ` +
 					`namespace, ` +
 					`resource, ` +
 					`task_type, ` +

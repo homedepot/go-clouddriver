@@ -18,6 +18,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/googleapis/gnostic v0.5.1
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7
+	github.com/iancoleman/strcase v0.1.2
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jonboulle/clockwork v0.1.0
 	github.com/lib/pq v1.2.0 // indirect
