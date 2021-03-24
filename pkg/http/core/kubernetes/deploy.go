@@ -98,6 +98,13 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 	}
 
+	// Sort the manifests by their kind's priority.
+	manifests, err = kc.SortManifests(manifests)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
+	}
+
 	for _, manifest := range manifests {
 		u, err := kc.ToUnstructured(manifest)
 		if err != nil {

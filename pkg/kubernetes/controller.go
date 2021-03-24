@@ -25,6 +25,7 @@ type Controller interface {
 	ToUnstructured(map[string]interface{}) (*unstructured.Unstructured, error)
 	AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error
 	AddSpinnakerLabels(u *unstructured.Unstructured, application string) error
+	SortManifests([]map[string]interface{}) ([]map[string]interface{}, error)
 	AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, version SpinnakerVersion) error
 	AddSpinnakerVersionLabels(u *unstructured.Unstructured, version SpinnakerVersion) error
 	GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string
