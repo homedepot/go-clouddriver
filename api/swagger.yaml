@@ -330,3 +330,23 @@ definitions:
         description: "The provider of the kubernetes auth token, defaults to google"
         enum: ["google", "rancher"]
         example: "google"
+      permissions:
+        $ref: "#/definitions/Permissions"
+  Permissions:
+    type: "object"
+    required:
+    - read
+    - write
+    properties:
+      read:
+        type: "array"
+        items:
+          type: "string"
+        description: "List of groups that have READ access"
+        example: ["group1"]
+      write:
+        type: "array"
+        items:
+          type: "string"
+        description: "List of groups that have WRITE access"
+        example: ["group1", "group2"]
