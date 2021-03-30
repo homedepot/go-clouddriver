@@ -269,6 +269,17 @@ paths:
       tags:
       - "kubernetes"
       summary: "Create a new Kubernetes account (provider)"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Object that describes the kubernetes provider"
+        required: true
+        schema:
+          $ref: "#/definitions/Provider"
       responses:
         "200":
           description: "OK"
@@ -295,4 +306,27 @@ paths:
           description: "Not Found"
         "500":
           description: "Internal Server Error"
-
+definitions:
+  Provider:
+    type: "object"
+    required:
+    - name
+    - host
+    properties:
+      name:
+        type: "string"
+        description: "The unique name identifiying this Spinnaker account"
+        example: "gke_np-platforms-cd-thd_us-east1_np-us-east1-np"
+      host:
+        type: "string"
+        description: "The endpoint (hostname or ip address) for reaching the kubernetes cluster's control plane"
+        example: "https://34.73.20.115"
+      caData:
+        type: "string"
+        description: "The base64-encoded CA certificate of the kubernetes cluster"
+        example: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0t..."
+      tokenProvider:
+        type: "string"
+        description: "The provider of the kubernetes auth token, defaults to google"
+        enum: ["google", "rancher"]
+        example: "google"
