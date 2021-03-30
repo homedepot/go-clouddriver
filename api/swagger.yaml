@@ -279,7 +279,7 @@ paths:
         description: "Object that describes the kubernetes provider"
         required: true
         schema:
-          $ref: "#/definitions/Provider"
+          $ref: "#/definitions/KubernetesProvider"
       responses:
         "200":
           description: "OK"
@@ -307,7 +307,7 @@ paths:
         "500":
           description: "Internal Server Error"
 definitions:
-  Provider:
+  KubernetesProvider:
     type: "object"
     required:
     - name
