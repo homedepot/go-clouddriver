@@ -68,6 +68,31 @@ var _ = Describe("Sql", func() {
 			err = c.CreateKubernetesProvider(provider)
 		})
 
+		When("tokenProvider is set", func() {
+			BeforeEach(func() {
+				provider = kubernetes.Provider{
+					Name:          "test-name",
+					Host:          "test-host",
+					CAData:        "test-ca-data",
+					TokenProvider: "test-token",
+				}
+				mock.ExpectBegin()
+				mock.ExpectExec(`(?i)^INSERT INTO "kubernetes_providers" \(` +
+					`"name"` +
+					`,"host"` +
+					`,"ca_data"` +
+					`,"bearer_token"` +
+					`,"token_provider"` +
+					`\) VALUES \(\?,\?,\?,\?,\?\)$`).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				mock.ExpectBegin()
