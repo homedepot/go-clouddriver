@@ -47,7 +47,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		return
 	}
 
-	token, err := ac.Token()
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

@@ -33,7 +33,7 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 		return
 	}
 
-	token, err := ac.Token()
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

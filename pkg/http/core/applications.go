@@ -215,7 +215,7 @@ func listServerGroupManagers(c *gin.Context, wg *sync.WaitGroup, sgms chan Serve
 		return
 	}
 
-	token, err := ac.Token()
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Log(err)
 		return
@@ -426,7 +426,7 @@ func listLoadBalancers(c *gin.Context, wg *sync.WaitGroup, lbs chan LoadBalancer
 		return
 	}
 
-	token, err := ac.Token()
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Log(err)
 		return
@@ -689,7 +689,7 @@ func listServerGroups(c *gin.Context, wg *sync.WaitGroup, sgs chan ServerGroup,
 		return
 	}
 
-	token, err := ac.Token()
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Log(err)
 		return
@@ -959,7 +959,7 @@ func GetServerGroup(c *gin.Context) {
 		return
 	}
 
-	token, err := ac.Token()
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -1166,7 +1166,7 @@ func GetJob(c *gin.Context) {
 		return
 	}
 
-	token, err := ac.Token()
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

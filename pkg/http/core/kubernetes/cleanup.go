@@ -2,8 +2,9 @@ package kubernetes
 
 import (
 	"encoding/base64"
-	"github.com/homedepot/go-clouddriver/pkg/util"
 	"net/http"
+
+	"github.com/homedepot/go-clouddriver/pkg/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -41,7 +42,7 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 			return
 		}
 
-		token, err := ac.Token()
+		token, err := ac.Token(provider.TokenProvider)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return

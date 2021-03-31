@@ -150,7 +150,7 @@ func listNamespaces(provider kubernetes.Provider,
 		return
 	}
 
-	token, err := ac.Token()
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Log(err)
 		return

@@ -35,7 +35,7 @@ func RunJob(c *gin.Context, rj RunJobRequest) {
 		return
 	}
 
-	token, err := ac.Token()
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
