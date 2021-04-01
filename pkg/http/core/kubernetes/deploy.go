@@ -18,7 +18,6 @@ import (
 	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -162,8 +161,14 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 				},
 			}
 
+			ls, err := metav1.LabelSelectorAsSelector(&labelSelector)
+			if err != nil {
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
+			}
+
 			lo := metav1.ListOptions{
-				LabelSelector:  labels.Set(labelSelector.MatchLabels).String(),
+				LabelSelector:  ls.String(),
 				TimeoutSeconds: &listTimeout,
 			}
 
