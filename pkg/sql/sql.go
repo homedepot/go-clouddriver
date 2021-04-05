@@ -143,7 +143,7 @@ func (c *client) DeleteKubernetesProvider(name string) error {
 
 func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error) {
 	var p kubernetes.Provider
-	db := c.db.Select("host, ca_data, bearer_token").Where("name = ?", name).First(&p)
+	db := c.db.Select("host, ca_data, bearer_token, token_provider").Where("name = ?", name).First(&p)
 
 	return p, db.Error
 }
@@ -198,12 +198,12 @@ func (c *client) ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(acc
 
 func (c *client) ListKubernetesProviders() ([]kubernetes.Provider, error) {
 	var ps []kubernetes.Provider
-	db := c.db.Select("name, host, ca_data").Find(&ps)
+	db := c.db.Select("name, host, ca_data, token_provider").Find(&ps)
 
 	return ps, db.Error
 }
 
-// select a.name, a.host, a.ca_data, b.read_group, c.write_group from kubernetes_providers a
+// select a.name, a.host, a.ca_data, a.token_provider, b.read_group, c.write_group from kubernetes_providers a
 //   left join provider_read_permissions b on a.name = b.account_name
 //   left join provider_write_permissions c on a.name = c.account_name;
 func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider, error) {
@@ -213,6 +213,7 @@ func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider,
 		Select("a.name, " +
 			"a.host, " +
 			"a.ca_data, " +
+			"a.token_provider, " +
 			"b.read_group, " +
 			"c.write_group").
 		Joins("LEFT JOIN provider_read_permissions b ON a.name = b.account_name").
@@ -229,23 +230,25 @@ func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider,
 
 	for rows.Next() {
 		var r struct {
-			CAData     string
-			Host       string
-			Name       string
-			ReadGroup  *string
-			WriteGroup *string
+			CAData        string
+			Host          string
+			Name          string
+			ReadGroup     *string
+			WriteGroup    *string
+			TokenProvider string
 		}
 
-		err = rows.Scan(&r.Name, &r.Host, &r.CAData, &r.ReadGroup, &r.WriteGroup)
+		err = rows.Scan(&r.Name, &r.Host, &r.CAData, &r.TokenProvider, &r.ReadGroup, &r.WriteGroup)
 		if err != nil {
 			return nil, err
 		}
 
 		if _, ok := providers[r.Name]; !ok {
 			p := kubernetes.Provider{
-				Name:   r.Name,
-				Host:   r.Host,
-				CAData: r.CAData,
+				Name:          r.Name,
+				Host:          r.Host,
+				CAData:        r.CAData,
+				TokenProvider: r.TokenProvider,
 			}
 			providers[r.Name] = p
 		}
