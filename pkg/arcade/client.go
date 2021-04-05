@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +16,7 @@ const (
 
 //go:generate counterfeiter . Client
 type Client interface {
-	Token() (string, error)
+	Token(string) (string, error)
 	WithAPIKey(string)
 }
 
@@ -40,11 +41,15 @@ func (c *client) WithAPIKey(apiKey string) {
 	c.apiKey = apiKey
 }
 
-func (c *client) Token() (string, error) {
+func (c *client) Token(tokenProvider string) (string, error) {
 	req, err := http.NewRequest(http.MethodGet, c.url+"/tokens", nil)
 	if err != nil {
 		return "", err
 	}
+
+	q := url.Values{}
+	q.Add("provider", tokenProvider)
+	req.URL.RawQuery = q.Encode()
 
 	req.Header.Add("Api-Key", c.apiKey)
 

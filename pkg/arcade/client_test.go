@@ -3,8 +3,8 @@ package arcade_test
 import (
 	"net/http"
 
-	. "github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/gin-gonic/gin"
+	. "github.com/homedepot/go-clouddriver/pkg/arcade"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -12,13 +12,15 @@ import (
 
 var _ = Describe("Client", func() {
 	var (
-		server *ghttp.Server
-		client Client
-		err    error
-		token  string
+		server   *ghttp.Server
+		client   Client
+		err      error
+		token    string
+		provider string
 	)
 
 	BeforeEach(func() {
+		provider = "google"
 		server = ghttp.NewServer()
 		client = NewClient(server.URL())
 		client.WithAPIKey("test-api-key")
@@ -39,7 +41,7 @@ var _ = Describe("Client", func() {
 
 	Describe("#Token", func() {
 		JustBeforeEach(func() {
-			token, err = client.Token()
+			token, err = client.Token(provider)
 		})
 
 		When("the uri is invalid", func() {
@@ -88,10 +90,27 @@ var _ = Describe("Client", func() {
 			})
 		})
 
+		When("provider is rancher", func() {
+			BeforeEach(func() {
+				provider = "rancher"
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyHeaderKV("api-key", "test-api-key"),
+					ghttp.VerifyRequest(http.MethodGet, "/tokens", "provider=rancher"),
+					ghttp.RespondWith(http.StatusOK, `{"token":"some.bearer.token"}`),
+				))
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+				Expect(token).To(Equal("some.bearer.token"))
+			})
+		})
+
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(ghttp.CombineHandlers(
 					ghttp.VerifyHeaderKV("api-key", "test-api-key"),
+					ghttp.VerifyRequest(http.MethodGet, "/tokens", "provider=google"),
 					ghttp.RespondWith(http.StatusOK, `{"token":"some.bearer.token"}`),
 				))
 			})

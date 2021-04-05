@@ -54,7 +54,7 @@ func GetManifest(c *gin.Context) {
 		return
 	}
 
-	token, err := ac.Token()
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -137,7 +137,7 @@ func GetManifestByTarget(c *gin.Context) {
 		return
 	}
 
-	token, err := ac.Token()
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

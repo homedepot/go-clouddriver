@@ -36,7 +36,7 @@ var _ = Describe("Version", func() {
 				Expect(currentVersion).To(Equal("-1"))
 			})
 		})
-		When("The higest version number in the cluster is 4", func() {
+		When("The highest version number in the cluster is 4", func() {
 			BeforeEach(func() {
 				fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{
 					{
@@ -278,7 +278,7 @@ var _ = Describe("Version", func() {
 	})
 
 	Context("#versionVolumes", func() {
-		When("manifest kind is depolyment and volume type is configMap", func() {
+		When("manifest kind is deployment and volume type is configMap", func() {
 			BeforeEach(func() {
 				fakeResource := &unstructured.Unstructured{
 					Object: map[string]interface{}{
@@ -318,7 +318,7 @@ var _ = Describe("Version", func() {
 				Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v001"))
 			})
 		})
-		When("manifest kind is depolyment and volume type is secret", func() {
+		When("manifest kind is deployment and volume type is secret", func() {
 			BeforeEach(func() {
 				fakeResource := &unstructured.Unstructured{
 					Object: map[string]interface{}{

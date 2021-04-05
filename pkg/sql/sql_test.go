@@ -68,6 +68,31 @@ var _ = Describe("Sql", func() {
 			err = c.CreateKubernetesProvider(provider)
 		})
 
+		When("tokenProvider is set", func() {
+			BeforeEach(func() {
+				provider = kubernetes.Provider{
+					Name:          "test-name",
+					Host:          "test-host",
+					CAData:        "test-ca-data",
+					TokenProvider: "test-token",
+				}
+				mock.ExpectBegin()
+				mock.ExpectExec(`(?i)^INSERT INTO "kubernetes_providers" \(` +
+					`"name"` +
+					`,"host"` +
+					`,"ca_data"` +
+					`,"bearer_token"` +
+					`,"token_provider"` +
+					`\) VALUES \(\?,\?,\?,\?,\?\)$`).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				mock.ExpectBegin()
@@ -254,7 +279,7 @@ var _ = Describe("Sql", func() {
 			BeforeEach(func() {
 				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data"}).
 					AddRow("test-name", "test-host", "test-ca-data")
-				mock.ExpectQuery(`(?i)^SELECT host, ca_data, bearer_token FROM "kubernetes_providers" ` +
+				mock.ExpectQuery(`(?i)^SELECT host, ca_data, bearer_token, token_provider FROM "kubernetes_providers" ` +
 					` WHERE \(name = \?\) ORDER BY "kubernetes_providers"."name" ASC LIMIT 1$`).
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
@@ -422,13 +447,14 @@ var _ = Describe("Sql", func() {
 
 		When("it succeeds", func() {
 			BeforeEach(func() {
-				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data"}).
-					AddRow("name1", "host1", "ca_data1").
-					AddRow("name2", "host2", "ca_data2")
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "token_provider"}).
+					AddRow("name1", "host1", "ca_data1", "google").
+					AddRow("name2", "host2", "ca_data2", "rancher")
 				mock.ExpectQuery(`(?i)^SELECT ` +
 					`name, ` +
 					`host, ` +
-					`ca_data ` +
+					`ca_data, ` +
+					`token_provider ` +
 					`FROM "kubernetes_providers"$`).
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
@@ -467,6 +493,7 @@ var _ = Describe("Sql", func() {
 					`a.name, ` +
 					`a.host, ` +
 					`a.ca_data, ` +
+					`a.token_provider, ` +
 					`b.read_group, ` +
 					`c.write_group ` +
 					`FROM kubernetes_providers a ` +
@@ -477,21 +504,22 @@ var _ = Describe("Sql", func() {
 
 			It("returns an error", func() {
 				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(Equal("sql: expected 4 destination arguments in Scan, not 5"))
+				Expect(err.Error()).To(Equal("sql: expected 4 destination arguments in Scan, not 6"))
 			})
 		})
 
 		When("it succeeds", func() {
 			BeforeEach(func() {
-				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "read_group", "write_group"}).
-					AddRow("name1", "host1", "ca_data1", "read_group1", "write_group1").
-					AddRow("name1", "host1", "ca_data1", "read_group2", "write_group1").
-					AddRow("name2", "host2", "ca_data2", "read_group2", "write_group2").
-					AddRow("name2", "host2", "ca_data2", "read_group2", "write_group3")
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "google", "read_group", "write_group"}).
+					AddRow("name1", "host1", "ca_data1", "google", "read_group1", "write_group1").
+					AddRow("name1", "host1", "ca_data1", "google", "read_group2", "write_group1").
+					AddRow("name2", "host2", "ca_data2", "rancher", "read_group2", "write_group2").
+					AddRow("name2", "host2", "ca_data2", "rancher", "read_group2", "write_group3")
 				mock.ExpectQuery(`(?i)^SELECT ` +
 					`a.name, ` +
 					`a.host, ` +
 					`a.ca_data, ` +
+					`a.token_provider, ` +
 					`b.read_group, ` +
 					`c.write_group ` +
 					`FROM kubernetes_providers a ` +

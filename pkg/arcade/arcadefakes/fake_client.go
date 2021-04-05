@@ -8,10 +8,12 @@ import (
 )
 
 type FakeClient struct {
-	TokenStub        func() (string, error)
+	TokenStub        func(string) (string, error)
 	tokenMutex       sync.RWMutex
-	tokenArgsForCall []struct{}
-	tokenReturns     struct {
+	tokenArgsForCall []struct {
+		arg1 string
+	}
+	tokenReturns struct {
 		result1 string
 		result2 error
 	}
@@ -28,19 +30,22 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) Token() (string, error) {
+func (fake *FakeClient) Token(arg1 string) (string, error) {
 	fake.tokenMutex.Lock()
 	ret, specificReturn := fake.tokenReturnsOnCall[len(fake.tokenArgsForCall)]
-	fake.tokenArgsForCall = append(fake.tokenArgsForCall, struct{}{})
-	fake.recordInvocation("Token", []interface{}{})
+	fake.tokenArgsForCall = append(fake.tokenArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("Token", []interface{}{arg1})
 	fake.tokenMutex.Unlock()
 	if fake.TokenStub != nil {
-		return fake.TokenStub()
+		return fake.TokenStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.tokenReturns.result1, fake.tokenReturns.result2
+	fakeReturns := fake.tokenReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeClient) TokenCallCount() int {
@@ -49,7 +54,22 @@ func (fake *FakeClient) TokenCallCount() int {
 	return len(fake.tokenArgsForCall)
 }
 
+func (fake *FakeClient) TokenCalls(stub func(string) (string, error)) {
+	fake.tokenMutex.Lock()
+	defer fake.tokenMutex.Unlock()
+	fake.TokenStub = stub
+}
+
+func (fake *FakeClient) TokenArgsForCall(i int) string {
+	fake.tokenMutex.RLock()
+	defer fake.tokenMutex.RUnlock()
+	argsForCall := fake.tokenArgsForCall[i]
+	return argsForCall.arg1
+}
+
 func (fake *FakeClient) TokenReturns(result1 string, result2 error) {
+	fake.tokenMutex.Lock()
+	defer fake.tokenMutex.Unlock()
 	fake.TokenStub = nil
 	fake.tokenReturns = struct {
 		result1 string
@@ -58,6 +78,8 @@ func (fake *FakeClient) TokenReturns(result1 string, result2 error) {
 }
 
 func (fake *FakeClient) TokenReturnsOnCall(i int, result1 string, result2 error) {
+	fake.tokenMutex.Lock()
+	defer fake.tokenMutex.Unlock()
 	fake.TokenStub = nil
 	if fake.tokenReturnsOnCall == nil {
 		fake.tokenReturnsOnCall = make(map[int]struct {
@@ -89,10 +111,17 @@ func (fake *FakeClient) WithAPIKeyCallCount() int {
 	return len(fake.withAPIKeyArgsForCall)
 }
 
+func (fake *FakeClient) WithAPIKeyCalls(stub func(string)) {
+	fake.withAPIKeyMutex.Lock()
+	defer fake.withAPIKeyMutex.Unlock()
+	fake.WithAPIKeyStub = stub
+}
+
 func (fake *FakeClient) WithAPIKeyArgsForCall(i int) string {
 	fake.withAPIKeyMutex.RLock()
 	defer fake.withAPIKeyMutex.RUnlock()
-	return fake.withAPIKeyArgsForCall[i].arg1
+	argsForCall := fake.withAPIKeyArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
