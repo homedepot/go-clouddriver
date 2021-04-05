@@ -251,6 +251,9 @@ func getListOptions(app string) (metav1.ListOptions, error) {
 	}
 
 	ls, err := metav1.LabelSelectorAsSelector(&labelSelector)
+	if err != nil {
+		return metav1.ListOptions{}, err
+	}
 
 	lo := metav1.ListOptions{
 		LabelSelector:  ls.String(),
