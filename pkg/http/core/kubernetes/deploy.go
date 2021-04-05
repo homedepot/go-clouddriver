@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 )
 
@@ -115,7 +114,6 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		// If the kind is a job, its name is not set, and generateName is set,
 		// generate a name for the job as `apply` will throw the error
 		// `resource name may not be empty`.
-
 		if strings.EqualFold(u.GetKind(), "job") {
 			name := u.GetName()
 
@@ -148,7 +146,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		if kc.IsVersioned(u) {
-			lo, err := getListOptions(u, application)
+			lo, err := getListOptions(application)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -156,8 +154,8 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 
 			kind := strings.ToLower(u.GetKind())
 			namespace := u.GetNamespace()
-			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
 
+			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -239,7 +237,7 @@ func lowercaseFirst(str string) string {
 	return ""
 }
 
-func getListOptions(u *unstructured.Unstructured, app string) (lo metav1.ListOptions, err error) {
+func getListOptions(app string) (metav1.ListOptions, error) {
 	labelSelector := metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			kubernetes.LabelKubernetesName: app,
@@ -254,10 +252,10 @@ func getListOptions(u *unstructured.Unstructured, app string) (lo metav1.ListOpt
 
 	ls, err := metav1.LabelSelectorAsSelector(&labelSelector)
 
-	lo = metav1.ListOptions{
+	lo := metav1.ListOptions{
 		LabelSelector:  ls.String(),
 		TimeoutSeconds: &listTimeout,
 	}
 
-	return
+	return lo, err
 }

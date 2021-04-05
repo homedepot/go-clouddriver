@@ -262,18 +262,6 @@ var _ = Describe("Deploy", func() {
 			})
 		})
 
-		When("ListResourcesByKindAndNamespace filters resources correctly", func() {
-			// BeforeEach(func() {
-
-			// })
-
-			It("GetCurrentVersion function is called with a list containing one item that contains all the required fields", func() {
-				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				// results, _, _ := fakeKubeController.GetCurrentVersionArgsForCall(0)
-				// Expect(len(results.Items)).To(Equal(1))
-			})
-		})
-
 		When("AddSpinnakerVersionAnnotations returns an error", func() {
 			BeforeEach(func() {
 				fakeKubeController.AddSpinnakerVersionAnnotationsReturns(errors.New("AddSpinnakerVersionAnnotations fake error"))
