@@ -18,7 +18,6 @@ import (
 	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -115,7 +114,6 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		// If the kind is a job, its name is not set, and generateName is set,
 		// generate a name for the job as `apply` will throw the error
 		// `resource name may not be empty`.
-
 		if strings.EqualFold(u.GetKind(), "job") {
 			name := u.GetName()
 
@@ -148,24 +146,14 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		if kc.IsVersioned(u) {
-			kind := strings.ToLower(u.GetKind())
-			namespace := u.GetNamespace()
-			labelSelector := metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					kubernetes.LabelKubernetesName: application,
-				},
-				MatchExpressions: []metav1.LabelSelectorRequirement{
-					{
-						Key:      kubernetes.LabelSpinnakerMonikerSequence,
-						Operator: metav1.LabelSelectorOpExists,
-					},
-				},
+			lo, err := getListOptions(application)
+			if err != nil {
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
 			}
 
-			lo := metav1.ListOptions{
-				LabelSelector:  labels.Set(labelSelector.MatchLabels).String(),
-				TimeoutSeconds: &listTimeout,
-			}
+			kind := strings.ToLower(u.GetKind())
+			namespace := u.GetNamespace()
 
 			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
 			if err != nil {
@@ -247,4 +235,30 @@ func lowercaseFirst(str string) string {
 	}
 
 	return ""
+}
+
+func getListOptions(app string) (metav1.ListOptions, error) {
+	labelSelector := metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			kubernetes.LabelKubernetesName: app,
+		},
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{
+				Key:      kubernetes.LabelSpinnakerMonikerSequence,
+				Operator: metav1.LabelSelectorOpExists,
+			},
+		},
+	}
+
+	ls, err := metav1.LabelSelectorAsSelector(&labelSelector)
+	if err != nil {
+		return metav1.ListOptions{}, err
+	}
+
+	lo := metav1.ListOptions{
+		LabelSelector:  ls.String(),
+		TimeoutSeconds: &listTimeout,
+	}
+
+	return lo, err
 }

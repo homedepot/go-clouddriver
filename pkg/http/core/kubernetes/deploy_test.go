@@ -250,14 +250,15 @@ var _ = Describe("Deploy", func() {
 			})
 		})
 
-		When("Get ListResourcesByKindAndNamespace returns an empty list", func() {
+		When("ListResourcesByKindAndNamespace returns an empty list", func() {
 			BeforeEach(func() {
-				fakeKubeController.GetCurrentVersionReturns("0")
+				fakeKubeClient.ListResourcesByKindAndNamespaceReturns(&unstructured.UnstructuredList{}, nil)
 			})
 
-			It("Increment version function is called with version 0", func() {
+			It("GetCurrentVersion function is called with an empty list", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				Expect(fakeKubeController.IncrementVersionArgsForCall(0)).To(Equal("0"))
+				results, _, _ := fakeKubeController.GetCurrentVersionArgsForCall(0)
+				Expect(results).To(Equal(&unstructured.UnstructuredList{}))
 			})
 		})
 
@@ -269,6 +270,17 @@ var _ = Describe("Deploy", func() {
 			It("AddSpinnakerVersionAnnotations returns a fake error", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
 				Expect(c.Errors.Last().Error()).To(Equal("AddSpinnakerVersionAnnotations fake error"))
+			})
+		})
+
+		When("AddSpinnakerVersionLabels returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeController.AddSpinnakerVersionLabelsReturns(errors.New("AddSpinnakerVersionLabels fake error"))
+			})
+
+			It("AddSpinnakerVersionLabels returns a fake error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+				Expect(c.Errors.Last().Error()).To(Equal("AddSpinnakerVersionLabels fake error"))
 			})
 		})
 	})
