@@ -12,9 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-var (
-	fakeUnstructuredList *unstructured.UnstructuredList
-)
 var _ = Describe("Deploy", func() {
 	BeforeEach(func() {
 		setup()

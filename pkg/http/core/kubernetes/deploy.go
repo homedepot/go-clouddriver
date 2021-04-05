@@ -157,6 +157,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			kind := strings.ToLower(u.GetKind())
 			namespace := u.GetNamespace()
 			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
+
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -239,7 +240,6 @@ func lowercaseFirst(str string) string {
 }
 
 func getListOptions(u *unstructured.Unstructured, app string) (lo metav1.ListOptions, err error) {
-
 	labelSelector := metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			kubernetes.LabelKubernetesName: app,
@@ -258,5 +258,6 @@ func getListOptions(u *unstructured.Unstructured, app string) (lo metav1.ListOpt
 		LabelSelector:  ls.String(),
 		TimeoutSeconds: &listTimeout,
 	}
+
 	return
 }
