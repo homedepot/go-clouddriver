@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 )
 
@@ -147,31 +148,14 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		if kc.IsVersioned(u) {
-			kind := strings.ToLower(u.GetKind())
-			namespace := u.GetNamespace()
-			labelSelector := metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					kubernetes.LabelKubernetesName: application,
-				},
-				MatchExpressions: []metav1.LabelSelectorRequirement{
-					{
-						Key:      kubernetes.LabelSpinnakerMonikerSequence,
-						Operator: metav1.LabelSelectorOpExists,
-					},
-				},
-			}
-
-			ls, err := metav1.LabelSelectorAsSelector(&labelSelector)
+			lo, err := getListOptions(u, application)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 
-			lo := metav1.ListOptions{
-				LabelSelector:  ls.String(),
-				TimeoutSeconds: &listTimeout,
-			}
-
+			kind := strings.ToLower(u.GetKind())
+			namespace := u.GetNamespace()
 			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
@@ -252,4 +236,27 @@ func lowercaseFirst(str string) string {
 	}
 
 	return ""
+}
+
+func getListOptions(u *unstructured.Unstructured, app string) (lo metav1.ListOptions, err error) {
+
+	labelSelector := metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			kubernetes.LabelKubernetesName: app,
+		},
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{
+				Key:      kubernetes.LabelSpinnakerMonikerSequence,
+				Operator: metav1.LabelSelectorOpExists,
+			},
+		},
+	}
+
+	ls, err := metav1.LabelSelectorAsSelector(&labelSelector)
+
+	lo = metav1.ListOptions{
+		LabelSelector:  ls.String(),
+		TimeoutSeconds: &listTimeout,
+	}
+	return
 }
