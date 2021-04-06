@@ -301,15 +301,15 @@ var _ = Describe("Version", func() {
 					},
 				}
 
-				requiredArtifacts := []clouddriver.TaskCreatedArtifact{
-					{
+				pipelineArtifacts := map[string]clouddriver.TaskCreatedArtifact{
+					"test-config-map": {
 						Name:      "test-config-map",
 						Type:      "kubernetes/configMap",
 						Reference: "test-config-map-v001",
 					},
 				}
 
-				err = kc.VersionVolumes(fakeResource, requiredArtifacts)
+				err = kc.VersionVolumes(fakeResource, pipelineArtifacts)
 				Expect(err).To(BeNil())
 				fakeDeployment = kubernetes.NewDeployment(fakeResource.Object)
 			})
@@ -341,15 +341,15 @@ var _ = Describe("Version", func() {
 					},
 				}
 
-				requiredArtifacts := []clouddriver.TaskCreatedArtifact{
-					{
+				pipelineArtifacts := map[string]clouddriver.TaskCreatedArtifact{
+					"test-secret": {
 						Name:      "test-secret",
 						Type:      "kubernetes/secret",
 						Reference: "test-secret-v001",
 					},
 				}
 
-				err = kc.VersionVolumes(fakeResource, requiredArtifacts)
+				err = kc.VersionVolumes(fakeResource, pipelineArtifacts)
 				Expect(err).To(BeNil())
 				fakeDeployment = kubernetes.NewDeployment(fakeResource.Object)
 			})
@@ -377,8 +377,8 @@ var _ = Describe("Version", func() {
 					},
 				}
 
-				requiredArtifacts := []clouddriver.TaskCreatedArtifact{
-					{
+				requiredArtifacts := map[string]clouddriver.TaskCreatedArtifact{
+					"test-config-map": {
 						Name:      "test-config-map",
 						Type:      "kubernetes/configMap",
 						Reference: "test-config-map-v001",
@@ -413,21 +413,61 @@ var _ = Describe("Version", func() {
 					},
 				}
 
-				requiredArtifacts := []clouddriver.TaskCreatedArtifact{
-					{
+				pipelineArtifacts := map[string]clouddriver.TaskCreatedArtifact{
+					"test-secret": {
 						Name:      "test-secret",
 						Type:      "kubernetes/secret",
 						Reference: "test-secret-v001",
 					},
 				}
 
-				err = kc.VersionVolumes(fakeResource, requiredArtifacts)
+				err = kc.VersionVolumes(fakeResource, pipelineArtifacts)
 				Expect(err).To(BeNil())
 				fakePod = kubernetes.NewPod(fakeResource.Object)
 			})
 			It("updates the volume name to contain the reference", func() {
 				volumes := fakePod.GetSpec().Volumes
 				Expect(volumes[0].Secret.SecretName).To(Equal("test-secret-v001"))
+			})
+		})
+		When("manifest kind is deployment and volume type is configMap", func() {
+			BeforeEach(func() {
+				fakeResource := &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"volumes": []map[string]interface{}{
+										{
+											"configMap": map[string]interface{}{
+												"name": "test-config-map",
+											},
+											"name": "test-config-map",
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				pipelineArtifacts := map[string]clouddriver.TaskCreatedArtifact{
+					"test-config-map": {
+						Name:      "test-config-map",
+						Type:      "kubernetes/configMap",
+						Reference: "test-config-map-v001",
+					},
+				}
+
+				err = kc.VersionVolumes(fakeResource, pipelineArtifacts)
+				Expect(err).To(BeNil())
+				fakeDeployment = kubernetes.NewDeployment(fakeResource.Object)
+			})
+			It("updates the volume name to contain the reference", func() {
+				volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
+				Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v001"))
 			})
 		})
 	})

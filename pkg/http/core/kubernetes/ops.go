@@ -26,7 +26,6 @@ type Operation struct {
 type DeployManifestRequest struct {
 	EnableTraffic     bool                     `json:"enableTraffic"`
 	NamespaceOverride string                   `json:"namespaceOverride"`
-	OptionalArtifacts []interface{}            `json:"optionalArtifacts"`
 	CloudProvider     string                   `json:"cloudProvider"`
 	Manifests         []map[string]interface{} `json:"manifests"`
 	TrafficManagement struct {
@@ -42,6 +41,7 @@ type DeployManifestRequest struct {
 	Account                  string                            `json:"account"`
 	SkipExpressionEvaluation bool                              `json:"skipExpressionEvaluation"`
 	RequiredArtifacts        []clouddriver.TaskCreatedArtifact `json:"requiredArtifacts"`
+	OptionalArtifacts        []clouddriver.TaskCreatedArtifact `json:"optionalArtifacts"`
 }
 
 type PatchManifestRequest struct {

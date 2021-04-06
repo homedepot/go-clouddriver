@@ -57,7 +57,8 @@ func (fake *FakeManifestFilter) FilterOnClusterAnnotation(arg1 []unstructured.Un
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.filterOnClusterAnnotationReturns.result1
+	fakeReturns := fake.filterOnClusterAnnotationReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeManifestFilter) FilterOnClusterAnnotationCallCount() int {
@@ -66,13 +67,22 @@ func (fake *FakeManifestFilter) FilterOnClusterAnnotationCallCount() int {
 	return len(fake.filterOnClusterAnnotationArgsForCall)
 }
 
+func (fake *FakeManifestFilter) FilterOnClusterAnnotationCalls(stub func([]unstructured.Unstructured, string) []unstructured.Unstructured) {
+	fake.filterOnClusterAnnotationMutex.Lock()
+	defer fake.filterOnClusterAnnotationMutex.Unlock()
+	fake.FilterOnClusterAnnotationStub = stub
+}
+
 func (fake *FakeManifestFilter) FilterOnClusterAnnotationArgsForCall(i int) ([]unstructured.Unstructured, string) {
 	fake.filterOnClusterAnnotationMutex.RLock()
 	defer fake.filterOnClusterAnnotationMutex.RUnlock()
-	return fake.filterOnClusterAnnotationArgsForCall[i].arg1, fake.filterOnClusterAnnotationArgsForCall[i].arg2
+	argsForCall := fake.filterOnClusterAnnotationArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeManifestFilter) FilterOnClusterAnnotationReturns(result1 []unstructured.Unstructured) {
+	fake.filterOnClusterAnnotationMutex.Lock()
+	defer fake.filterOnClusterAnnotationMutex.Unlock()
 	fake.FilterOnClusterAnnotationStub = nil
 	fake.filterOnClusterAnnotationReturns = struct {
 		result1 []unstructured.Unstructured
@@ -80,6 +90,8 @@ func (fake *FakeManifestFilter) FilterOnClusterAnnotationReturns(result1 []unstr
 }
 
 func (fake *FakeManifestFilter) FilterOnClusterAnnotationReturnsOnCall(i int, result1 []unstructured.Unstructured) {
+	fake.filterOnClusterAnnotationMutex.Lock()
+	defer fake.filterOnClusterAnnotationMutex.Unlock()
 	fake.FilterOnClusterAnnotationStub = nil
 	if fake.filterOnClusterAnnotationReturnsOnCall == nil {
 		fake.filterOnClusterAnnotationReturnsOnCall = make(map[int]struct {
@@ -111,7 +123,8 @@ func (fake *FakeManifestFilter) FilterOnLabel(arg1 []unstructured.Unstructured, 
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.filterOnLabelReturns.result1
+	fakeReturns := fake.filterOnLabelReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeManifestFilter) FilterOnLabelCallCount() int {
@@ -120,13 +133,22 @@ func (fake *FakeManifestFilter) FilterOnLabelCallCount() int {
 	return len(fake.filterOnLabelArgsForCall)
 }
 
+func (fake *FakeManifestFilter) FilterOnLabelCalls(stub func([]unstructured.Unstructured, string) []unstructured.Unstructured) {
+	fake.filterOnLabelMutex.Lock()
+	defer fake.filterOnLabelMutex.Unlock()
+	fake.FilterOnLabelStub = stub
+}
+
 func (fake *FakeManifestFilter) FilterOnLabelArgsForCall(i int) ([]unstructured.Unstructured, string) {
 	fake.filterOnLabelMutex.RLock()
 	defer fake.filterOnLabelMutex.RUnlock()
-	return fake.filterOnLabelArgsForCall[i].arg1, fake.filterOnLabelArgsForCall[i].arg2
+	argsForCall := fake.filterOnLabelArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeManifestFilter) FilterOnLabelReturns(result1 []unstructured.Unstructured) {
+	fake.filterOnLabelMutex.Lock()
+	defer fake.filterOnLabelMutex.Unlock()
 	fake.FilterOnLabelStub = nil
 	fake.filterOnLabelReturns = struct {
 		result1 []unstructured.Unstructured
@@ -134,6 +156,8 @@ func (fake *FakeManifestFilter) FilterOnLabelReturns(result1 []unstructured.Unst
 }
 
 func (fake *FakeManifestFilter) FilterOnLabelReturnsOnCall(i int, result1 []unstructured.Unstructured) {
+	fake.filterOnLabelMutex.Lock()
+	defer fake.filterOnLabelMutex.Unlock()
 	fake.FilterOnLabelStub = nil
 	if fake.filterOnLabelReturnsOnCall == nil {
 		fake.filterOnLabelReturnsOnCall = make(map[int]struct {

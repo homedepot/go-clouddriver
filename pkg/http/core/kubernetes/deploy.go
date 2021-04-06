@@ -104,6 +104,8 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		return
 	}
 
+	pipelineArtifacts := make(map[string]clouddriver.TaskCreatedArtifact)
+
 	for _, manifest := range manifests {
 		u, err := kc.ToUnstructured(manifest)
 		if err != nil {
@@ -139,7 +141,15 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
-		err = kc.VersionVolumes(u, dm.RequiredArtifacts)
+		for _, artifact := range dm.RequiredArtifacts {
+			pipelineArtifacts[artifact.Name] = artifact
+		}
+
+		for _, artifact := range dm.OptionalArtifacts {
+			pipelineArtifacts[artifact.Name] = artifact
+		}
+
+		err = kc.VersionVolumes(u, pipelineArtifacts)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -201,6 +211,12 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			Kind:         meta.Kind,
 			SpinnakerApp: dm.Moniker.App,
 			Cluster:      cluster(meta.Kind, name),
+		}
+
+		pipelineArtifacts[meta.Name] = clouddriver.TaskCreatedArtifact{
+			Name:      meta.Name,
+			Reference: artifactName,
+			Type:      meta.Kind,
 		}
 
 		err = sc.CreateKubernetesResource(kr)
