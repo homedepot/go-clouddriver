@@ -14,13 +14,13 @@ import (
 	"github.com/google/uuid"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
-	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 )
 
@@ -29,166 +29,91 @@ var (
 )
 
 func Deploy(c *gin.Context, dm DeployManifestRequest) {
-	ac := arcade.Instance(c)
-	kc := kube.ControllerInstance(c)
-	sc := sql.Instance(c)
-	taskID := clouddriver.TaskIDFromContext(c)
+	kubeController := kube.ControllerInstance(c)
 
-	provider, err := sc.GetKubernetesProvider(dm.Account)
+	sqlClient := sql.Instance(c)
+
+	config, err, status := getKubeClientConfig(c, sqlClient, dm.Account)
 	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
+		clouddriver.Error(c, status, err)
 		return
 	}
 
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
-	token, err := ac.Token(provider.TokenProvider)
+	kubeClient, err := kubeController.NewClient(config)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := kc.NewClient(config)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	manifests := []map[string]interface{}{}
-	application := dm.Moniker.App
 	// Merge all list element items into the manifest list.
-	for _, manifest := range dm.Manifests {
-		u, err := kc.ToUnstructured(manifest)
-		if err != nil {
-			clouddriver.Error(c, http.StatusBadRequest, err)
-			return
-		}
-
-		if strings.EqualFold(u.GetKind(), "list") {
-			listElement := kubernetes.ListElement{}
-
-			b, err := json.Marshal(u.Object)
-			if err != nil {
-				clouddriver.Error(c, http.StatusBadRequest, err)
-				return
-			}
-
-			err = json.Unmarshal(b, &listElement)
-			if err != nil {
-				clouddriver.Error(c, http.StatusBadRequest, err)
-				return
-			}
-
-			manifests = append(manifests, listElement.Items...)
-		} else {
-			manifests = append(manifests, u.Object)
-		}
+	manifests, err := mergeManifests(kubeController, dm.Manifests)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	// Sort the manifests by their kind's priority.
-	manifests, err = kc.SortManifests(manifests)
+	manifests, err = kubeController.SortManifests(manifests)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	pipelineArtifacts := make(map[string]clouddriver.TaskCreatedArtifact)
+	// Consolidate all deploy manifest request artifacts
+	artifacts := make(map[string]clouddriver.TaskCreatedArtifact)
+	for _, artifact := range dm.RequiredArtifacts {
+		artifacts[artifact.Name] = artifact
+	}
+
+	for _, artifact := range dm.OptionalArtifacts {
+		artifacts[artifact.Name] = artifact
+	}
+
+	application := dm.Moniker.App
 
 	for _, manifest := range manifests {
-		u, err := kc.ToUnstructured(manifest)
+		u, err := kubeController.ToUnstructured(manifest)
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
+		nameWithoutVersion := u.GetName()
 		// If the kind is a job, its name is not set, and generateName is set,
 		// generate a name for the job as `apply` will throw the error
 		// `resource name may not be empty`.
-		if strings.EqualFold(u.GetKind(), "job") {
-			name := u.GetName()
-
+		if strings.EqualFold(u.GetKind(), "job") && nameWithoutVersion == "" {
 			generateName := u.GetGenerateName()
-
-			if name == "" && generateName != "" {
-				u.SetName(generateName + rand.String(randNameNumber))
-			}
+			u.SetName(generateName + rand.String(randNameNumber))
 		}
 
-		name := u.GetName()
-		artifactName := name
-
-		err = kc.AddSpinnakerAnnotations(u, application)
+		err = kubeController.AddSpinnakerAnnotations(u, application)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		err = kc.AddSpinnakerLabels(u, application)
+		err = kubeController.AddSpinnakerLabels(u, application)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		for _, artifact := range dm.RequiredArtifacts {
-			pipelineArtifacts[artifact.Name] = artifact
-		}
-
-		for _, artifact := range dm.OptionalArtifacts {
-			pipelineArtifacts[artifact.Name] = artifact
-		}
-
-		err = kc.VersionVolumes(u, pipelineArtifacts)
+		err = kubeController.VersionVolumes(u, artifacts)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		if kc.IsVersioned(u) {
-			lo, err := getListOptions(application)
-			if err != nil {
-				clouddriver.Error(c, http.StatusInternalServerError, err)
-				return
-			}
-
-			kind := strings.ToLower(u.GetKind())
-			namespace := u.GetNamespace()
-
-			results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
-			if err != nil {
-				clouddriver.Error(c, http.StatusInternalServerError, err)
-				return
-			}
-
-			currentVersion := kc.GetCurrentVersion(results, kind, name)
-			latestVersion := kc.IncrementVersion(currentVersion)
-			u.SetName(u.GetName() + "-" + latestVersion.Long)
-
-			err = kc.AddSpinnakerVersionAnnotations(u, latestVersion)
-			if err != nil {
-				clouddriver.Error(c, http.StatusInternalServerError, err)
-				return
-			}
-
-			err = kc.AddSpinnakerVersionLabels(u, latestVersion)
+		if kubeController.IsVersioned(u) {
+			err := handleVersionedManifest(kubeClient, kubeController, u, application)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
 
-		meta, err := client.ApplyWithNamespaceOverride(u, dm.NamespaceOverride)
+		meta, err := kubeClient.ApplyWithNamespaceOverride(u, dm.NamespaceOverride)
 		if err != nil {
 			e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
 				u.GetKind(), u.GroupVersionKind().Version, u.GetName(), err.Error())
@@ -197,29 +122,33 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
-		kr := kubernetes.Resource{
+		taskID := clouddriver.TaskIDFromContext(c)
+		kr := kube.Resource{
 			AccountName:  dm.Account,
 			ID:           uuid.New().String(),
 			TaskID:       taskID,
 			Timestamp:    util.CurrentTimeUTC(),
 			APIGroup:     meta.Group,
 			Name:         meta.Name,
-			ArtifactName: artifactName,
+			ArtifactName: nameWithoutVersion,
 			Namespace:    meta.Namespace,
 			Resource:     meta.Resource,
 			Version:      meta.Version,
 			Kind:         meta.Kind,
 			SpinnakerApp: dm.Moniker.App,
-			Cluster:      cluster(meta.Kind, name),
+			Cluster:      cluster(meta.Kind, nameWithoutVersion),
 		}
 
-		pipelineArtifacts[meta.Name] = clouddriver.TaskCreatedArtifact{
-			Name:      meta.Name,
-			Reference: artifactName,
-			Type:      meta.Kind,
+		annotations := u.GetAnnotations()
+		artifactType := annotations[kube.AnnotationSpinnakerArtifactType]
+
+		artifacts[nameWithoutVersion] = clouddriver.TaskCreatedArtifact{
+			Name:      nameWithoutVersion,
+			Reference: meta.Name,
+			Type:      artifactType,
 		}
 
-		err = sc.CreateKubernetesResource(kr)
+		err = sqlClient.CreateKubernetesResource(kr)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -256,11 +185,11 @@ func lowercaseFirst(str string) string {
 func getListOptions(app string) (metav1.ListOptions, error) {
 	labelSelector := metav1.LabelSelector{
 		MatchLabels: map[string]string{
-			kubernetes.LabelKubernetesName: app,
+			kube.LabelKubernetesName: app,
 		},
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{
-				Key:      kubernetes.LabelSpinnakerMonikerSequence,
+				Key:      kube.LabelSpinnakerMonikerSequence,
 				Operator: metav1.LabelSelectorOpExists,
 			},
 		},
@@ -277,4 +206,99 @@ func getListOptions(app string) (metav1.ListOptions, error) {
 	}
 
 	return lo, err
+}
+
+func mergeManifests(kubeController kube.Controller, manifests []map[string]interface{}) ([]map[string]interface{}, error) {
+	mergedManifests := []map[string]interface{}{}
+
+	for _, manifest := range manifests {
+		u, err := kubeController.ToUnstructured(manifest)
+		if err != nil {
+			return mergedManifests, err
+		}
+
+		if strings.EqualFold(u.GetKind(), "list") {
+			listElement := kube.ListElement{}
+
+			b, err := json.Marshal(u.Object)
+			if err != nil {
+				return mergedManifests, err
+			}
+
+			err = json.Unmarshal(b, &listElement)
+			if err != nil {
+				return mergedManifests, err
+			}
+
+			mergedManifests = append(mergedManifests, listElement.Items...)
+		} else {
+			mergedManifests = append(mergedManifests, u.Object)
+		}
+	}
+
+	return mergedManifests, nil
+}
+
+func getKubeClientConfig(c *gin.Context, sqlClient sql.Client, account string) (*rest.Config, error, int) {
+	config := &rest.Config{}
+
+	provider, err := sqlClient.GetKubernetesProvider(account)
+	if err != nil {
+		return config, err, http.StatusBadRequest
+	}
+
+	arcadeClient := arcade.Instance(c)
+
+	token, err := arcadeClient.Token(provider.TokenProvider)
+	if err != nil {
+		return config, err, http.StatusInternalServerError
+	}
+
+	caData, err := base64.StdEncoding.DecodeString(provider.CAData)
+	if err != nil {
+		return config, err, http.StatusBadRequest
+	}
+
+	config = &rest.Config{
+		Host:        provider.Host,
+		BearerToken: token,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: caData,
+		},
+	}
+
+	return config, nil, -1
+}
+
+func handleVersionedManifest(kubeClient kube.Client, kubeController kube.Controller, u *unstructured.Unstructured, application string) error {
+	lo, err := getListOptions(application)
+	if err != nil {
+		return err
+	}
+
+	kind := strings.ToLower(u.GetKind())
+	namespace := u.GetNamespace()
+
+	results, err := kubeClient.ListResourcesByKindAndNamespace(kind, namespace, lo)
+	if err != nil {
+		return err
+	}
+
+	nameWithoutVersion := u.GetName()
+
+	currentVersion := kubeController.GetCurrentVersion(results, kind, nameWithoutVersion)
+	latestVersion := kubeController.IncrementVersion(currentVersion)
+	u.SetName(nameWithoutVersion + "-" + latestVersion.Long)
+
+	err = kubeController.AddSpinnakerVersionAnnotations(u, latestVersion)
+	if err != nil {
+		return err
+	}
+
+	err = kubeController.AddSpinnakerVersionLabels(u, latestVersion)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
