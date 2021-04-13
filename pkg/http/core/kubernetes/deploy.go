@@ -30,10 +30,9 @@ var (
 
 func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	kubeController := kube.ControllerInstance(c)
-
 	sqlClient := sql.Instance(c)
 
-	config, err, status := getKubeClientConfig(c, sqlClient, dm.Account)
+	config, err, status := kubeClientConfig(c, sqlClient, dm.Account)
 	if err != nil {
 		clouddriver.Error(c, status, err)
 		return
@@ -239,7 +238,7 @@ func mergeManifests(kubeController kube.Controller, manifests []map[string]inter
 	return mergedManifests, nil
 }
 
-func getKubeClientConfig(c *gin.Context, sqlClient sql.Client, account string) (*rest.Config, error, int) {
+func kubeClientConfig(c *gin.Context, sqlClient sql.Client, account string) (*rest.Config, error, int) {
 	config := &rest.Config{}
 
 	provider, err := sqlClient.GetKubernetesProvider(account)
