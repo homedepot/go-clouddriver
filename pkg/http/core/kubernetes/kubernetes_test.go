@@ -114,6 +114,20 @@ func newDeployManifestRequest() DeployManifestRequest {
 				"apiVersion": "v1",
 			},
 		},
+		OptionalArtifacts: []clouddriver.TaskCreatedArtifact{
+			{
+				Reference: "gke-versioned-volume-config2-v004",
+				Name:      "gke-versioned-volume-config2",
+				Type:      "kubernetes/configMap",
+			},
+		},
+		RequiredArtifacts: []clouddriver.TaskCreatedArtifact{
+			{
+				Reference: "gke-versioned-volume-config2-v004",
+				Name:      "gke-versioned-volume-config2",
+				Type:      "kubernetes/configMap",
+			},
+		},
 	}
 }
 

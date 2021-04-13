@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"fmt"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,14 +34,7 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
 	manifestFilter := NewManifestFilter(ul.Items)
 
-	re := regexp.MustCompile(`(.*)-v(\d){3}$`)
-	subm := re.FindSubmatch([]byte(name))
-
-	if subm == nil {
-		cluster = kind + " " + name
-	} else {
-		cluster = string(subm[1])
-	}
+	cluster = kind + " " + name
 
 	results := manifestFilter.FilterOnClusterAnnotation(cluster)
 	if len(results) == 0 {
@@ -109,24 +101,19 @@ func (c *controller) IncrementVersion(currentVersion string) SpinnakerVersion {
 	}
 }
 
-func (c *controller) VersionVolumes(u *unstructured.Unstructured, requiredArtifacts []clouddriver.TaskCreatedArtifact) error {
+func (c *controller) VersionVolumes(u *unstructured.Unstructured, artifacts map[string]clouddriver.TaskCreatedArtifact) error {
 	var (
 		err     error
 		volumes []v1.Volume
 	)
 
-	if len(requiredArtifacts) > 0 {
-		requiredArtifactsMap := map[string]clouddriver.TaskCreatedArtifact{}
-		for _, a := range requiredArtifacts {
-			requiredArtifactsMap[a.Name] = a
-		}
-
+	if len(artifacts) > 0 {
 		switch strings.ToLower(u.GetKind()) {
 		case "deployment":
 			d := NewDeployment(u.Object)
 			volumes = d.GetSpec().Template.Spec.Volumes
 
-			overwriteVolumesNames(volumes, requiredArtifactsMap)
+			overwriteVolumesNames(volumes, artifacts)
 
 			*u, err = d.ToUnstructured()
 			if err != nil {
@@ -137,7 +124,7 @@ func (c *controller) VersionVolumes(u *unstructured.Unstructured, requiredArtifa
 			p := NewPod(u.Object)
 			volumes = p.GetSpec().Volumes
 
-			overwriteVolumesNames(volumes, requiredArtifactsMap)
+			overwriteVolumesNames(volumes, artifacts)
 
 			*u, err = p.ToUnstructured()
 			if err != nil {
@@ -149,16 +136,16 @@ func (c *controller) VersionVolumes(u *unstructured.Unstructured, requiredArtifa
 	return nil
 }
 
-func overwriteVolumesNames(volumes []v1.Volume, requiredArtifactsMap map[string]clouddriver.TaskCreatedArtifact) {
+func overwriteVolumesNames(volumes []v1.Volume, artifacts map[string]clouddriver.TaskCreatedArtifact) {
 	for _, volume := range volumes {
 		if volume.VolumeSource.ConfigMap != nil {
-			if val, ok := requiredArtifactsMap[volume.Name]; ok && strings.EqualFold(val.Type, "kubernetes/configMap") {
+			if val, ok := artifacts[volume.ConfigMap.Name]; ok && strings.EqualFold(val.Type, "kubernetes/configMap") {
 				volume.ConfigMap.Name = val.Reference
 			}
 		}
 
 		if volume.VolumeSource.Secret != nil {
-			if val, ok := requiredArtifactsMap[volume.Name]; ok && strings.EqualFold(val.Type, "kubernetes/secret") {
+			if val, ok := artifacts[volume.Secret.SecretName]; ok && strings.EqualFold(val.Type, "kubernetes/secret") {
 				volume.Secret.SecretName = val.Reference
 			}
 		}

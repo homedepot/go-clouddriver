@@ -31,7 +31,7 @@ type Controller interface {
 	GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string
 	IsVersioned(u *unstructured.Unstructured) bool
 	IncrementVersion(currentVersion string) SpinnakerVersion
-	VersionVolumes(u *unstructured.Unstructured, requiredArtifacts []clouddriver.TaskCreatedArtifact) error
+	VersionVolumes(u *unstructured.Unstructured, pipelineArtifacts map[string]clouddriver.TaskCreatedArtifact) error
 }
 
 func NewController() Controller {
