@@ -188,7 +188,8 @@ var _ = Describe("Kubernetes", func() {
 				or := kube.OperationsResponse{}
 				b, _ := ioutil.ReadAll(res.Body)
 				json.Unmarshal(b, &or)
-				Expect(or.ID).To(HaveLen(36))
+				uuidLen := 36
+				Expect(or.ID).To(HaveLen(uuidLen))
 				Expect(or.ResourceURI).To(HavePrefix("/task"))
 			})
 		})
