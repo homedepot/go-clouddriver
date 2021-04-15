@@ -73,14 +73,27 @@ func GetTask(c *gin.Context) {
 
 	for _, r := range resources {
 		// Ignore getting the manifest if task type is "cleanup".
-		if strings.EqualFold(r.TaskType, "cleanup") {
+		if strings.EqualFold(r.TaskType, clouddriver.TaskTypeCleanup) {
 			manifests = append(manifests, map[string]interface{}{})
 			continue
 		}
 
 		result, err := client.Get(r.Resource, r.Name, r.Namespace)
 		if err != nil {
+			// If the task type is "delete" and the resource was not found,
+			// append an empty manifest and continue.
+			// I tried to use `errors.IsNotFound(err)` here to check
+			// if the error was a not found error, but was unable to get the
+			// test to work in doing this, so for now we are just checking
+			// the string suffix.
+			if strings.EqualFold(r.TaskType, clouddriver.TaskTypeDelete) &&
+				strings.HasSuffix(err.Error(), "not found") {
+				manifests = append(manifests, map[string]interface{}{})
+				continue
+			}
+
 			clouddriver.Error(c, http.StatusInternalServerError, err)
+
 			return
 		}
 

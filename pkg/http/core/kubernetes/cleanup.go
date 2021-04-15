@@ -72,7 +72,7 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 			AccountName:  ca.Account,
 			ID:           uuid.New().String(),
 			TaskID:       taskID,
-			TaskType:     "cleanup",
+			TaskType:     clouddriver.TaskTypeCleanup,
 			Timestamp:    util.CurrentTimeUTC(),
 			APIGroup:     gvr.Group,
 			Name:         u.GetName(),

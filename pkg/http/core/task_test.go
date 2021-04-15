@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -112,7 +113,7 @@ var _ = Describe("Task", func() {
 				fakeSQLClient.ListKubernetesResourcesByTaskIDReturns([]kubernetes.Resource{
 					{
 						AccountName: "test-account-name",
-						TaskType:    "cleanup",
+						TaskType:    clouddriver.TaskTypeCleanup,
 					},
 				}, nil)
 			})
@@ -120,6 +121,39 @@ var _ = Describe("Task", func() {
 			It("does not call make calls to the server", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 				Expect(fakeKubeClient.GetCallCount()).To(Equal(0))
+			})
+		})
+
+		Context("when the task type is delete", func() {
+			BeforeEach(func() {
+				fakeSQLClient.ListKubernetesResourcesByTaskIDReturns([]kubernetes.Resource{
+					{
+						AccountName: "test-account-name",
+						TaskType:    clouddriver.TaskTypeDelete,
+					},
+				}, nil)
+			})
+
+			When("the server returns a not found error", func() {
+				BeforeEach(func() {
+					fakeKubeClient.GetReturns(nil, errors.New(`horizontalpodautoscalers.autoscaling "php-apache1-v008" not found`))
+				})
+
+				It("ignores the not found error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+				})
+			})
+
+			When("the server returns a generic error", func() {
+				BeforeEach(func() {
+					fakeKubeClient.GetReturns(nil, errors.New(`generic error`))
+				})
+
+				It("ignores the not found error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+					Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+				})
 			})
 		})
 
