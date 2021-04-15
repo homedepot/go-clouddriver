@@ -91,7 +91,9 @@ func GetTask(c *gin.Context) {
 				manifests = append(manifests, map[string]interface{}{})
 				continue
 			}
+
 			clouddriver.Error(c, http.StatusInternalServerError, err)
+
 			return
 		}
 
