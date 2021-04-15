@@ -33,7 +33,6 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 
 	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
 	manifestFilter := NewManifestFilter(ul.Items)
-
 	cluster = kind + " " + name
 
 	results := manifestFilter.FilterOnClusterAnnotation(cluster)
@@ -41,7 +40,7 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 		return currentVersion
 	}
 
-	//filter out empty moniker.spinnaker.io/sequence labels
+	// Filter out empty moniker.spinnaker.io/sequence labels
 	manifestFilter2 := NewManifestFilter(results)
 	results = manifestFilter2.FilterOnLabel(LabelSpinnakerMonikerSequence)
 
