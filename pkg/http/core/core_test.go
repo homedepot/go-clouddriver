@@ -154,9 +154,7 @@ func setup() {
 	fakeKubeController.ToUnstructuredReturns(&fakeUnstructured, nil)
 
 	fakeArcadeClient = &arcadefakes.FakeClient{}
-
 	fakeFiatClient = &fiatfakes.FakeClient{}
-
 	fakeHelmClient = &helmfakes.FakeClient{}
 
 	fakeGithubServer = ghttp.NewServer()
@@ -192,6 +190,10 @@ func setup() {
 	// This disables request logging which we don't want for tests.
 	r := gin.New()
 	r.Use(gin.Recovery())
+	// Sometimes when pipelines get canceled (or for unknown reasons)
+	// c.Errors is not nil, even though it contains no errors. This
+	// validates that we return a task during these circumstances.
+	r.Use(setContextErrors())
 
 	c := &server.Config{
 		ArcadeClient:                  fakeArcadeClient,
@@ -255,4 +257,11 @@ func getClouddriverError() clouddriver.ErrorResponse {
 	_ = json.Unmarshal(b, &ce)
 
 	return ce
+}
+
+func setContextErrors() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Errors = []*gin.Error{}
+		c.Next()
+	}
 }

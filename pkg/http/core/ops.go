@@ -63,7 +63,7 @@ func CreateKubernetesOperation(c *gin.Context) {
 			kubernetes.Patch(c, *req.PatchManifest)
 		}
 
-		if c.Errors != nil {
+		if c.Errors != nil && len(c.Errors) > 0 {
 			return
 		}
 	}

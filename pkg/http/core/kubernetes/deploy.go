@@ -284,7 +284,6 @@ func handleVersionedManifest(kubeClient kube.Client, kubeController kube.Control
 	}
 
 	nameWithoutVersion := u.GetName()
-
 	currentVersion := kubeController.GetCurrentVersion(results, kind, nameWithoutVersion)
 	latestVersion := kubeController.IncrementVersion(currentVersion)
 	u.SetName(nameWithoutVersion + "-" + latestVersion.Long)
