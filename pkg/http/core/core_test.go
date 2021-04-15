@@ -29,7 +29,6 @@ import (
 )
 
 var (
-	r                                 *gin.Engine
 	err                               error
 	svr                               *httptest.Server
 	uri                               string
@@ -189,7 +188,7 @@ func setup() {
 
 	// Create new gin instead of using gin.Default().
 	// This disables request logging which we don't want for tests.
-	r = gin.New()
+	r := gin.New()
 	r.Use(gin.Recovery())
 	// Sometimes when pipelines get canceled (or for unknown reasons)
 	// c.Errors is not nil, even though it contains no errors. This
