@@ -2,7 +2,11 @@ package clouddriver
 
 import "github.com/gin-gonic/gin"
 
-const TaskIDKey = `TaskID`
+const (
+	TaskIDKey       = `TaskID`
+	TaskTypeCleanup = `cleanup`
+	TaskTypeDelete  = `delete`
+)
 
 func NewDefaultTask(id string) Task {
 	return Task{

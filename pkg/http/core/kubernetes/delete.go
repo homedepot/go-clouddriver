@@ -99,6 +99,7 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 			AccountName:  dm.Account,
 			ID:           uuid.New().String(),
 			TaskID:       taskID,
+			TaskType:     clouddriver.TaskTypeDelete,
 			Timestamp:    util.CurrentTimeUTC(),
 			APIGroup:     gvr.Group,
 			Name:         name,
