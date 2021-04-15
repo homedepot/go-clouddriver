@@ -9,6 +9,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 )
@@ -132,6 +133,8 @@ var _ = Describe("Delete", func() {
 			Expect(*deleteOptions.GracePeriodSeconds).To(Equal(int64(10)))
 			Expect(deleteOptions.PropagationPolicy).ToNot(BeNil())
 			Expect(*deleteOptions.PropagationPolicy).To(Equal(v1.DeletePropagationForeground))
+			kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+			Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeDelete))
 		})
 	})
 })

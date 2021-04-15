@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 )
@@ -101,6 +102,8 @@ var _ = Describe("CleanupArtifacts", func() {
 	When("it succeeds", func() {
 		It("succeeds", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+			Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeCleanup))
 		})
 	})
 })
