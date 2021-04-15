@@ -4,9 +4,12 @@ import (
 	// . "github.com/homedepot/go-clouddriver/pkg/http/v0"
 
 	"bytes"
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 
+	kube "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -182,6 +185,11 @@ var _ = Describe("Kubernetes", func() {
 		When("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				or := kube.OperationsResponse{}
+				b, _ := ioutil.ReadAll(res.Body)
+				json.Unmarshal(b, &or)
+				Expect(or.ID).To(HaveLen(36))
+				Expect(or.ResourceURI).To(HavePrefix("/task"))
 			})
 		})
 	})
