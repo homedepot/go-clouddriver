@@ -812,6 +812,7 @@ func getSequence(annotations map[string]string) int {
 	}
 
 	sequence, _ := strconv.Atoi(annotations["deployment.kubernetes.io/revision"])
+
 	return sequence
 }
 
