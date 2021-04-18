@@ -3,11 +3,13 @@ package core
 import (
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -714,23 +716,36 @@ func listServerGroups(c *gin.Context, wg *sync.WaitGroup, sgs chan ServerGroup,
 		TimeoutSeconds: &listTimeout,
 	}
 
+	t1 := time.Now().UTC()
+
 	pods, err := client.ListResource("pods", lo)
 	if err != nil {
 		clouddriver.Log(err)
 		return
 	}
 
+	t2 := time.Now().UTC()
+	log.Printf("!!! time to list pods: %s", t2.Sub(t1).String())
+
 	for _, resource := range resources {
+		t1 = time.Now().UTC()
+
 		results, err := client.ListResource(resource, lo)
 		if err != nil {
 			clouddriver.Log(err)
 			continue
 		}
 
+		t2 = time.Now().UTC()
+		log.Printf("!!! time to list %s: %s", resource, t2.Sub(t1).String())
+
+		t1 = time.Now().UTC()
 		for _, result := range results.Items {
 			sg := newServerGroup(result, pods, account)
 			sgs <- sg
 		}
+		t2 = time.Now().UTC()
+		log.Printf("!!! time to build server group for %s: %s", resource, t2.Sub(t1).String())
 	}
 }
 
