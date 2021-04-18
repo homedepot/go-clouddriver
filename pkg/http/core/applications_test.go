@@ -470,6 +470,52 @@ var _ = Describe("Application", func() {
 								"ownerReferences": []map[string]interface{}{
 									{
 										"name": "test-rs1",
+										"kind": "replicaSet",
+										"uid":  "test-uid1",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"labels": map[string]interface{}{
+									"label1": "test-label1",
+								},
+								"ownerReferences": []map[string]interface{}{
+									{
+										"name": "test-rs1",
+										"kind": "replicaSet",
+										"uid":  "test-uid2",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"labels": map[string]interface{}{
+									"label1": "test-label1",
+								},
+								"ownerReferences": []map[string]interface{}{
+									{
+										"name": "test-rs1",
+										"kind": "replicaSet",
+										"uid":  "test-uid3",
 									},
 								},
 								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
@@ -496,6 +542,7 @@ var _ = Describe("Application", func() {
 									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 									"deployment.kubernetes.io/revision": "19",
 								},
+								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
 								"replicas": 1,
@@ -538,6 +585,7 @@ var _ = Describe("Application", func() {
 									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 									"deployment.kubernetes.io/revision": "19",
 								},
+								"uid": "test-uid2",
 							},
 							"spec": map[string]interface{}{
 								"replicas": 1,
@@ -581,6 +629,7 @@ var _ = Describe("Application", func() {
 									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 									"deployment.kubernetes.io/revision": "19",
 								},
+								"uid": "test-uid3",
 							},
 							"spec": map[string]interface{}{
 								"replicas": 1,

@@ -3,13 +3,11 @@ package core
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -716,47 +714,102 @@ func listServerGroups(c *gin.Context, wg *sync.WaitGroup, sgs chan ServerGroup,
 		TimeoutSeconds: &listTimeout,
 	}
 
-	t1 := time.Now().UTC()
-
 	pods, err := client.ListResource("pods", lo)
 	if err != nil {
 		clouddriver.Log(err)
 		return
 	}
 
-	t2 := time.Now().UTC()
-	log.Printf("!!! time to list pods: %s", t2.Sub(t1).String())
+	instanceMap := makeInstanceMap(pods)
+	serverGroups := &unstructured.UnstructuredList{}
 
 	for _, resource := range resources {
-		t1 = time.Now().UTC()
-
-		results, err := client.ListResource(resource, lo)
+		ul, err := client.ListResource(resource, lo)
 		if err != nil {
 			clouddriver.Log(err)
 			continue
 		}
 
-		t2 = time.Now().UTC()
-		log.Printf("!!! time to list %s: %s", resource, t2.Sub(t1).String())
+		serverGroups.Items = append(serverGroups.Items, ul.Items...)
+	}
 
-		t1 = time.Now().UTC()
-		for _, result := range results.Items {
-			sg := newServerGroup(result, pods, account)
-			sgs <- sg
-		}
-		t2 = time.Now().UTC()
-		log.Printf("!!! time to build server group for %s: %s", resource, t2.Sub(t1).String())
+	for _, sg := range serverGroups.Items {
+		sg := newServerGroup(sg, instanceMap, account)
+		sgs <- sg
 	}
 }
 
+// makeInstanceMap returns a map of a server group (replicaSet, daemonSet, statefulSet)
+// to a list of instances (pods) that this server group owns.
+//
+// Specifically, the map key is the UID of the owner.
+func makeInstanceMap(pods *unstructured.UnstructuredList) map[string][]Instance {
+	// Map of server group to instances (pods)
+	instanceMap := map[string][]Instance{}
+	// Loop through each pod.
+	for _, pod := range pods.Items {
+		// Loop through each pod's owner reference.
+		p := kubernetes.NewPod(pod.Object)
+		for _, ownerReference := range p.GetObjectMeta().OwnerReferences {
+			key := string(ownerReference.UID)
+			if key == "" {
+				continue
+			}
+
+			if _, ok := instanceMap[key]; !ok {
+				instanceMap[key] = []Instance{}
+			}
+
+			instanceMap[key] = append(instanceMap[key], newInstance(pod))
+		}
+	}
+
+	return instanceMap
+}
+
+// newInstance returns an "Instance" object from a given
+// pod struct.
+func newInstance(pod unstructured.Unstructured) Instance {
+	state := "Up"
+
+	p := kubernetes.NewPod(pod.Object)
+	if p.GetPodStatus().Phase != "Running" {
+		state = "Down"
+	}
+
+	instance := Instance{
+		AvailabilityZone: pod.GetNamespace(),
+		Health: []InstanceHealth{
+			{
+				State: state,
+				Type:  "kubernetes/pod",
+			},
+			{
+				State: state,
+				Type:  "kubernetes/container",
+			},
+		},
+		HealthState: state,
+		ID:          string(pod.GetUID()),
+		Name:        fmt.Sprintf("%s %s", "pod", pod.GetName()),
+	}
+
+	return instance
+}
+
 func newServerGroup(result unstructured.Unstructured,
-	pods *unstructured.UnstructuredList, account string) ServerGroup {
+	instanceMap map[string][]Instance, account string) ServerGroup {
 	images := listImages(&result)
 	desired := getDesiredReplicasCount(&result)
 
 	serverGroupManagers := []ServerGroupServerGroupManager{}
-	instances := buildInstances(pods, result)
+	instances := []Instance{}
 	annotations := result.GetAnnotations()
+	// Get the instances from the instance map.
+	key := string(result.GetUID())
+	if i, ok := instanceMap[key]; ok {
+		instances = i
+	}
 
 	// Build server group manager
 	managerName := annotations["artifact.spinnaker.io/name"]
@@ -911,43 +964,6 @@ func getReadyReplicasCount(result *unstructured.Unstructured) int32 {
 	}
 
 	return ready
-}
-
-func buildInstances(pods *unstructured.UnstructuredList,
-	serverGroup unstructured.Unstructured) []Instance {
-	instances := []Instance{}
-
-	for _, u := range pods.Items {
-		p := kubernetes.NewPod(u.Object)
-		for _, ownerReference := range p.GetObjectMeta().OwnerReferences {
-			if strings.EqualFold(ownerReference.Name, serverGroup.GetName()) {
-				state := "Up"
-				if p.GetPodStatus().Phase != "Running" {
-					state = "Down"
-				}
-
-				instance := Instance{
-					AvailabilityZone: u.GetNamespace(),
-					Health: []InstanceHealth{
-						{
-							State: state,
-							Type:  "kubernetes/pod",
-						},
-						{
-							State: state,
-							Type:  "kubernetes/container",
-						},
-					},
-					HealthState: state,
-					ID:          string(u.GetUID()),
-					Name:        fmt.Sprintf("%s %s", "pod", u.GetName()),
-				}
-				instances = append(instances, instance)
-			}
-		}
-	}
-
-	return instances
 }
 
 // /applications/:application/serverGroups/:account/:location/:name
