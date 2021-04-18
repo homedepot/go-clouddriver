@@ -489,12 +489,12 @@ var _ = Describe("Application", func() {
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
 								"annotations": map[string]interface{}{
-									"artifact.spinnaker.io/name":        "test-deployment1",
-									"artifact.spinnaker.io/type":        "kubernetes/deployment",
-									"artifact.spinnaker.io/location":    "test-namespace1",
-									"moniker.spinnaker.io/application":  "test-deployment1",
-									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
-									"deployment.kubernetes.io/revision": "19",
+									"artifact.spinnaker.io/name":       "test-deployment1",
+									"artifact.spinnaker.io/type":       "kubernetes/deployment",
+									"artifact.spinnaker.io/location":   "test-namespace1",
+									"moniker.spinnaker.io/application": "test-deployment1",
+									"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
+									"moniker.spinnaker.io/sequence":    "19",
 								},
 							},
 							"spec": map[string]interface{}{

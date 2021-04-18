@@ -306,7 +306,7 @@ func buildServerGroups(replicaSets *unstructured.UnstructuredList,
 
 			if strings.EqualFold(name, deployment.GetName()) &&
 				strings.EqualFold(t, "kubernetes/deployment") {
-				sequence, _ := strconv.Atoi(annotations["deployment.kubernetes.io/revision"])
+				sequence := getSequence(annotations)
 				s := ServerGroupManagerServerGroup{
 					Account: account,
 					Moniker: ServerGroupManagerServerGroupMoniker{
@@ -759,7 +759,7 @@ func newServerGroup(result unstructured.Unstructured,
 
 	cluster := annotations["moniker.spinnaker.io/cluster"]
 	app := annotations["moniker.spinnaker.io/application"]
-	sequence, _ := strconv.Atoi(annotations["deployment.kubernetes.io/revision"])
+	sequence := getSequence(annotations)
 
 	return ServerGroup{
 		Account: account,
@@ -798,6 +798,21 @@ func newServerGroup(result unstructured.Unstructured,
 		Type:                "kubernetes",
 		Labels:              result.GetLabels(),
 	}
+}
+
+// getSequence returns the sequence of a given resource.
+// A versioned resource contains its sequence in the
+// `moniker.spinnaker.io/sequence` annotation.
+// A resource which is owned by some deployment defines its sequence in
+// the `deployment.kubernetes.io/revision` annotation.
+func getSequence(annotations map[string]string) int {
+	if _, ok := annotations["moniker.spinnaker.io/sequence"]; ok {
+		sequence, _ := strconv.Atoi(annotations["moniker.spinnaker.io/sequence"])
+		return sequence
+	}
+
+	sequence, _ := strconv.Atoi(annotations["deployment.kubernetes.io/revision"])
+	return sequence
 }
 
 // List images for replicaSets, statefulSets, and daemonSets.
@@ -1070,7 +1085,7 @@ func GetServerGroup(c *gin.Context) {
 	annotations := result.GetAnnotations()
 	cluster := annotations["moniker.spinnaker.io/cluster"]
 	app := annotations["moniker.spinnaker.io/application"]
-	sequence, _ := strconv.Atoi(annotations["deployment.kubernetes.io/revision"])
+	sequence := getSequence(annotations)
 
 	if app == "" {
 		app = application
