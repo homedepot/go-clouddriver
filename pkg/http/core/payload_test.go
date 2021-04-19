@@ -927,7 +927,36 @@ const payloadListServerGroups = `[
                 "unknown": 0,
                 "up": 1
               },
-              "instances": [],
+              "instances": [
+                {
+                  "availabilityZone": "test-namespace1",
+                  "health": [
+                    {
+                      "state": "Down",
+                      "type": "kubernetes/pod"
+                    },
+                    {
+                      "state": "Down",
+                      "type": "kubernetes/container"
+                    }
+                  ],
+                  "healthState": "Down",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "key": {
+                    "account": "",
+                    "group": "",
+                    "kubernetesKind": "",
+                    "name": "",
+                    "namespace": "",
+                    "provider": ""
+                  },
+                  "moniker": {
+                    "app": "",
+                    "cluster": ""
+                  },
+                  "name": "pod test-pod1"
+                }
+              ],
               "isDisabled": false,
               "key": {
                 "account": "",
