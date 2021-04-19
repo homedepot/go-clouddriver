@@ -751,16 +751,12 @@ func makeInstanceMap(pods *unstructured.UnstructuredList) map[string][]Instance 
 		// Loop through each pod's owner reference.
 		p := kubernetes.NewPod(pod.Object)
 		for _, ownerReference := range p.GetObjectMeta().OwnerReferences {
-			key := string(ownerReference.UID)
-			if key == "" {
+			uid := string(ownerReference.UID)
+			if uid == "" {
 				continue
 			}
 
-			if _, ok := instanceMap[key]; !ok {
-				instanceMap[key] = []Instance{}
-			}
-
-			instanceMap[key] = append(instanceMap[key], newInstance(pod))
+			instanceMap[uid] = append(instanceMap[uid], newInstance(pod))
 		}
 	}
 
@@ -797,8 +793,7 @@ func newInstance(pod unstructured.Unstructured) Instance {
 	return instance
 }
 
-func newServerGroup(result unstructured.Unstructured,
-	instanceMap map[string][]Instance, account string) ServerGroup {
+func newServerGroup(result unstructured.Unstructured, instanceMap map[string][]Instance, account string) ServerGroup {
 	images := listImages(&result)
 	desired := getDesiredReplicasCount(&result)
 
@@ -806,9 +801,9 @@ func newServerGroup(result unstructured.Unstructured,
 	instances := []Instance{}
 	annotations := result.GetAnnotations()
 	// Get the instances from the instance map.
-	key := string(result.GetUID())
-	if i, ok := instanceMap[key]; ok {
-		instances = i
+	uid := string(result.GetUID())
+	if v, ok := instanceMap[uid]; ok {
+		instances = v
 	}
 
 	// Build server group manager
