@@ -262,6 +262,7 @@ func listServerGroupManagers(c *gin.Context, wg *sync.WaitGroup, sgms chan Serve
 	for _, deployment := range deployments.Items {
 		sgm := newServerGroupManager(deployment, account, application)
 		sgm.ServerGroups = []ServerGroupManagerServerGroup{}
+
 		uid := string(deployment.GetUID())
 		if v, ok := serverGroupManagerMap[uid]; ok {
 			sgm.ServerGroups = v
