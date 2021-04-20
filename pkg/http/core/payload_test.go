@@ -800,33 +800,12 @@ const payloadCredentialsExpandTrueNoNamespaces = `[
 const payloadServerGroupManagers = `[
             {
               "account": "account1",
-              "accountName": "account1",
+              "apiVersion": "apps/v1",
               "cloudProvider": "kubernetes",
               "createdTime": 1581603123000,
-              "key": {
-                "account": "account1",
-                "group": "deployment",
-                "kubernetesKind": "deployment",
-                "name": "test-deployment1",
-                "namespace": "test-namespace1",
-                "provider": "kubernetes"
-              },
               "kind": "deployment",
               "labels": {
                 "label1": "test-label1"
-              },
-              "manifest": {
-                "apiVersion": "apps/v1",
-                "kind": "Deployment",
-                "metadata": {
-                  "creationTimestamp": "2020-02-13T14:12:03Z",
-                  "labels": {
-                    "label1": "test-label1"
-                  },
-                  "name": "test-deployment1",
-                  "namespace": "test-namespace1",
-                  "uid": "cec15437-4e6a-11ea-9788-4201ac100006"
-                }
               },
               "moniker": {
                 "app": "test-application",
@@ -835,54 +814,29 @@ const payloadServerGroupManagers = `[
               "name": "deployment test-deployment1",
               "displayName": "test-deployment1",
               "namespace": "test-namespace1",
-              "providerType": "kubernetes",
               "region": "test-namespace1",
               "serverGroups": [
                 {
                   "account": "account1",
                   "moniker": {
                     "app": "test-application",
-                    "cluster": "deployment test-deployment1",
+                    "cluster": "deployment test-rs1",
                     "sequence": 236
                   },
                   "name": "replicaSet test-rs1",
                   "namespace": "test-namespace1",
                   "region": "test-namespace1"
                 }
-              ],
-              "type": "kubernetes",
-              "uid": "cec15437-4e6a-11ea-9788-4201ac100006",
-              "zone": "test-application"
+              ]
             },
             {
               "account": "account1",
-              "accountName": "account1",
+              "apiVersion": "apps/v1",
               "cloudProvider": "kubernetes",
               "createdTime": 1581603123000,
-              "key": {
-                "account": "account1",
-                "group": "deployment",
-                "kubernetesKind": "deployment",
-                "name": "test-deployment2",
-                "namespace": "test-namespace2",
-                "provider": "kubernetes"
-              },
               "kind": "deployment",
               "labels": {
                 "label1": "test-label2"
-              },
-              "manifest": {
-                "apiVersion": "apps/v1",
-                "kind": "Deployment",
-                "metadata": {
-                  "creationTimestamp": "2020-02-13T14:12:03Z",
-                  "labels": {
-                    "label1": "test-label2"
-                  },
-                  "name": "test-deployment2",
-                  "namespace": "test-namespace2",
-                  "uid": "cec15437-4e6a-11ea-9788-4201ac100006"
-                }
               },
               "moniker": {
                 "app": "test-application",
@@ -891,12 +845,8 @@ const payloadServerGroupManagers = `[
               "name": "deployment test-deployment2",
               "displayName": "test-deployment2",
               "namespace": "test-namespace2",
-              "providerType": "kubernetes",
               "region": "test-namespace2",
-              "serverGroups": [],
-              "type": "kubernetes",
-              "uid": "cec15437-4e6a-11ea-9788-4201ac100006",
-              "zone": "test-application"
+              "serverGroups": []
             }
           ]`
 
@@ -980,13 +930,7 @@ const payloadListServerGroups = `[
               "providerType": "",
               "region": "test-namespace1",
               "securityGroups": null,
-              "serverGroupManagers": [
-                {
-                  "account": "account1",
-                  "location": "test-namespace1",
-                  "name": "test-deployment1"
-                }
-              ],
+              "serverGroupManagers": [],
               "type": "kubernetes",
               "uid": "",
               "zone": "",
@@ -1164,13 +1108,7 @@ const payloadListServerGroups = `[
               "providerType": "",
               "region": "test-namespace1",
               "securityGroups": null,
-              "serverGroupManagers": [
-                {
-                  "account": "account1",
-                  "location": "test-namespace1",
-                  "name": "test-deployment1"
-                }
-              ],
+              "serverGroupManagers": [],
               "type": "kubernetes",
               "uid": "",
               "zone": "",

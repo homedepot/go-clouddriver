@@ -94,7 +94,7 @@ var _ = Describe("Application", func() {
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
-								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+								"uid": "test-uid1",
 							},
 						},
 					},
@@ -109,7 +109,7 @@ var _ = Describe("Application", func() {
 								"labels": map[string]interface{}{
 									"label1": "test-label2",
 								},
-								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+								"uid": "test-uid2",
 							},
 						},
 					},
@@ -128,6 +128,13 @@ var _ = Describe("Application", func() {
 									"artifact.spinnaker.io/name":        "test-deployment1",
 									"artifact.spinnaker.io/type":        "kubernetes/deployment",
 									"deployment.kubernetes.io/revision": "236",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs1",
+										"kind": "replicaSet",
+										"uid":  "test-uid1",
+									},
 								},
 							},
 						},
@@ -467,8 +474,8 @@ var _ = Describe("Application", func() {
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
-								"ownerReferences": []map[string]interface{}{
-									{
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
 										"name": "test-rs1",
 										"kind": "replicaSet",
 										"uid":  "test-uid1",
@@ -489,9 +496,9 @@ var _ = Describe("Application", func() {
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
-								"ownerReferences": []map[string]interface{}{
-									{
-										"name": "test-rs1",
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs2",
 										"kind": "replicaSet",
 										"uid":  "test-uid2",
 									},
@@ -511,9 +518,9 @@ var _ = Describe("Application", func() {
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
-								"ownerReferences": []map[string]interface{}{
-									{
-										"name": "test-rs1",
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs3",
 										"kind": "replicaSet",
 										"uid":  "test-uid3",
 									},
@@ -541,6 +548,13 @@ var _ = Describe("Application", func() {
 									"moniker.spinnaker.io/application": "test-deployment1",
 									"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
 									"moniker.spinnaker.io/sequence":    "19",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-deployment1",
+										"kind": "Deployment",
+										"uid":  "test-uid3",
+									},
 								},
 								"uid": "test-uid1",
 							},

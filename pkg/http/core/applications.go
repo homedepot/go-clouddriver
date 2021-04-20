@@ -39,6 +39,8 @@ type ApplicationAttributes struct {
 
 const KeyAllApplications = `AllApplications`
 
+// ListApplications returns a list of applications and their associated
+// accounts and clusters.
 func ListApplications(c *gin.Context) {
 	sc := sql.Instance(c)
 
@@ -66,6 +68,9 @@ func ListApplications(c *gin.Context) {
 	c.Set(KeyAllApplications, response)
 }
 
+// uniqueSpinnakerApps returns a slice of unique Spinnaker
+// applications associated with a given list of kubernetes
+// resources.
 func uniqueSpinnakerApps(rs []kubernetes.Resource) []string {
 	apps := []string{}
 
@@ -78,6 +83,7 @@ func uniqueSpinnakerApps(rs []kubernetes.Resource) []string {
 	return apps
 }
 
+// contains returns true if slice s contains element e.
 func contains(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {
@@ -88,6 +94,8 @@ func contains(s []string, e string) bool {
 	return false
 }
 
+// clusterNamesForSpinnakerApp returns a map of Kubernetes provider account names
+// to a list of Kubernetes resources in the format `<KIND> <NAME>`.
 func clusterNamesForSpinnakerApp(application string, rs []kubernetes.Resource) map[string][]string {
 	clusterNames := map[string][]string{}
 
@@ -108,25 +116,20 @@ func clusterNamesForSpinnakerApp(application string, rs []kubernetes.Resource) m
 
 type ServerGroupManagers []ServerGroupManager
 
+// ServerGroupManager is a Kubernetes kind "Deployment".
 type ServerGroupManager struct {
 	Account       string                          `json:"account"`
-	AccountName   string                          `json:"accountName"`
+	APIVersion    string                          `json:"apiVersion"`
 	CloudProvider string                          `json:"cloudProvider"`
 	CreatedTime   int64                           `json:"createdTime"`
-	Key           Key                             `json:"key"`
 	Kind          string                          `json:"kind"`
 	Labels        map[string]string               `json:"labels"`
-	Manifest      map[string]interface{}          `json:"manifest"`
 	Moniker       Moniker                         `json:"moniker"`
 	Name          string                          `json:"name"`
 	DisplayName   string                          `json:"displayName"`
 	Namespace     string                          `json:"namespace"`
-	ProviderType  string                          `json:"providerType"`
 	Region        string                          `json:"region"`
 	ServerGroups  []ServerGroupManagerServerGroup `json:"serverGroups"`
-	Type          string                          `json:"type"`
-	UID           string                          `json:"uid"`
-	Zone          string                          `json:"zone"`
 }
 
 type Key struct {
@@ -157,7 +160,9 @@ type ServerGroupManagerServerGroupMoniker struct {
 	Sequence int    `json:"sequence"`
 }
 
-// Server Group Managers for a kubernetes target are deployments.
+// ListServerGroupManagers returns a list of Kubernetes
+// Deployments and their associated ReplicaSets for a given
+// Spinnaker application.
 func ListServerGroupManagers(c *gin.Context) {
 	sc := sql.Instance(c)
 	application := c.Param("application")
@@ -252,78 +257,84 @@ func listServerGroupManagers(c *gin.Context, wg *sync.WaitGroup, sgms chan Serve
 		return
 	}
 
+	serverGroupManagerMap := makeServerGroupManagerMap(replicaSets, account, application)
+
 	for _, deployment := range deployments.Items {
 		sgm := newServerGroupManager(deployment, account, application)
-		sgm.ServerGroups = buildServerGroups(replicaSets, deployment, account, application)
+		sgm.ServerGroups = []ServerGroupManagerServerGroup{}
+		uid := string(deployment.GetUID())
+		if v, ok := serverGroupManagerMap[uid]; ok {
+			sgm.ServerGroups = v
+		}
 		sgms <- sgm
 	}
 }
 
+// makeServerGroupManagerMap returns a map of a server group manager's (Deployment)
+// UID to a list of ReplicaSets that the Deployment owns.
+func makeServerGroupManagerMap(replicaSets *unstructured.UnstructuredList, account, application string) map[string][]ServerGroupManagerServerGroup {
+	// Map of server group manager's UID to replica sets.
+	serverGroupManagerMap := map[string][]ServerGroupManagerServerGroup{}
+	// Loop through each pod.
+	for _, replicaSet := range replicaSets.Items {
+		// Loop through each replica set's owner reference.
+		for _, ownerReference := range replicaSet.GetOwnerReferences() {
+			uid := string(ownerReference.UID)
+			if uid == "" {
+				continue
+			}
+
+			// Build the server group.
+			annotations := replicaSet.GetAnnotations()
+			sequence := sequence(annotations)
+			s := newServerGroupManagerServerGroup(replicaSet, account,
+				application, ownerReference.Name, sequence)
+
+			// Append the server group to the list of server groups at the manager's UID.
+			serverGroupManagerMap[uid] = append(serverGroupManagerMap[uid], s)
+		}
+	}
+
+	return serverGroupManagerMap
+}
+
+// newServerGroupManagerServerGroup returns a generated instance of ServerGroupManagerServerGroup.
+func newServerGroupManagerServerGroup(replicaSet unstructured.Unstructured, account,
+	application, ownerReferenceName string, sequence int) ServerGroupManagerServerGroup {
+	s := ServerGroupManagerServerGroup{
+		Account: account,
+		Moniker: ServerGroupManagerServerGroupMoniker{
+			App:      application,
+			Cluster:  fmt.Sprintf("%s %s", "deployment", ownerReferenceName),
+			Sequence: sequence,
+		},
+		Name:      fmt.Sprintf("%s %s", "replicaSet", replicaSet.GetName()),
+		Namespace: replicaSet.GetNamespace(),
+		Region:    replicaSet.GetNamespace(),
+	}
+
+	return s
+}
+
+// newServerGroupManager returns an instance of ServerGroupManager.
 func newServerGroupManager(deployment unstructured.Unstructured,
 	account, application string) ServerGroupManager {
 	return ServerGroupManager{
 		Account:       account,
-		AccountName:   account,
+		APIVersion:    deployment.GetAPIVersion(),
 		CloudProvider: "kubernetes",
 		CreatedTime:   deployment.GetCreationTimestamp().Unix() * 1000,
-		Key: Key{
-			Account:        account,
-			Group:          "deployment",
-			KubernetesKind: "deployment",
-			Name:           deployment.GetName(),
-			Namespace:      deployment.GetNamespace(),
-			Provider:       "kubernetes",
-		},
-		Kind:     "deployment",
-		Labels:   deployment.GetLabels(),
-		Manifest: deployment.Object,
+		Kind:          "deployment",
+		Labels:        deployment.GetLabels(),
 		Moniker: Moniker{
 			App:     application,
 			Cluster: fmt.Sprintf("%s %s", "deployment", deployment.GetName()),
 		},
-		Name:         fmt.Sprintf("%s %s", "deployment", deployment.GetName()),
-		DisplayName:  deployment.GetName(),
-		Namespace:    deployment.GetNamespace(),
-		ProviderType: "kubernetes",
-		Region:       deployment.GetNamespace(),
-		Type:         "kubernetes",
-		UID:          string(deployment.GetUID()),
-		Zone:         application,
+		Name:        fmt.Sprintf("%s %s", "deployment", deployment.GetName()),
+		DisplayName: deployment.GetName(),
+		Namespace:   deployment.GetNamespace(),
+		Region:      deployment.GetNamespace(),
 	}
-}
-
-func buildServerGroups(replicaSets *unstructured.UnstructuredList,
-	deployment unstructured.Unstructured,
-	account, application string) []ServerGroupManagerServerGroup {
-	sgs := []ServerGroupManagerServerGroup{}
-
-	// Deployments manage replicasets, so build a list of managed replicasets for each deployment.
-	for _, replicaSet := range replicaSets.Items {
-		annotations := replicaSet.GetAnnotations()
-		if annotations != nil {
-			name := annotations["artifact.spinnaker.io/name"]
-			t := annotations["artifact.spinnaker.io/type"]
-
-			if strings.EqualFold(name, deployment.GetName()) &&
-				strings.EqualFold(t, "kubernetes/deployment") {
-				sequence := getSequence(annotations)
-				s := ServerGroupManagerServerGroup{
-					Account: account,
-					Moniker: ServerGroupManagerServerGroupMoniker{
-						App:      application,
-						Cluster:  fmt.Sprintf("%s %s", "deployment", deployment.GetName()),
-						Sequence: sequence,
-					},
-					Name:      fmt.Sprintf("%s %s", "replicaSet", replicaSet.GetName()),
-					Namespace: replicaSet.GetNamespace(),
-					Region:    replicaSet.GetNamespace(),
-				}
-				sgs = append(sgs, s)
-			}
-		}
-	}
-
-	return sgs
 }
 
 type LoadBalancers []LoadBalancer
@@ -363,7 +374,7 @@ type LoadBalancerServerGroup struct {
 	Region                        string        `json:"region"`
 }
 
-// List "load balancers", which for kubernetes are kinds "ingress" and "service".
+// ListLoadBalancers lists kubernetes "ingresses" and "services".
 func ListLoadBalancers(c *gin.Context) {
 	sc := sql.Instance(c)
 	application := c.Param("application")
@@ -467,6 +478,7 @@ func listLoadBalancers(c *gin.Context, wg *sync.WaitGroup, lbs chan LoadBalancer
 	}
 }
 
+// newLoadBalancer returns an instance of LoadBalancer.
 func newLoadBalancer(u unstructured.Unstructured, account, application string) LoadBalancer {
 	kind := strings.ToLower(u.GetKind())
 
@@ -502,7 +514,8 @@ func newLoadBalancer(u unstructured.Unstructured, account, application string) L
 
 type Clusters map[string][]string
 
-// List clusters for a given application, which for kubernetes is a map of provider names to kubernetes deployment
+// ListClusters returns a list of clusters for a given application,
+// which for kubernetes is a map of provider names to kubernetes deployment
 // kinds and names.
 //
 // Clusters are kinds deployment, statefulSet, replicaSet, ingress, service, and daemonSet.
@@ -598,6 +611,7 @@ type InstanceCounts struct {
 	Up           int32 `json:"up"`
 }
 
+// Instance if a Kuberntes kind "Pod".
 type Instance struct {
 	Account           string                 `json:"account,omitempty"`
 	AccountName       string                 `json:"accountName,omitempty"`
@@ -628,6 +642,8 @@ type InstanceHealth struct {
 	Type     string `json:"type"`
 }
 
+// ListServerGroups returns a list of Kubernetes kinds ReplicaSets, DaemonSets,
+// StatefulSets and their associated Pods.
 func ListServerGroups(c *gin.Context) {
 	sc := sql.Instance(c)
 	application := c.Param("application")
@@ -720,7 +736,7 @@ func listServerGroups(c *gin.Context, wg *sync.WaitGroup, sgs chan ServerGroup,
 		return
 	}
 
-	instanceMap := makeInstanceMap(pods)
+	serverGroupMap := makeServerGroupMap(pods)
 	serverGroups := &unstructured.UnstructuredList{}
 
 	for _, resource := range resources {
@@ -734,33 +750,30 @@ func listServerGroups(c *gin.Context, wg *sync.WaitGroup, sgs chan ServerGroup,
 	}
 
 	for _, sg := range serverGroups.Items {
-		sg := newServerGroup(sg, instanceMap, account)
+		sg := newServerGroup(sg, serverGroupMap, account)
 		sgs <- sg
 	}
 }
 
-// makeInstanceMap returns a map of a server group (replicaSet, daemonSet, statefulSet)
-// to a list of instances (pods) that this server group owns.
-//
-// Specifically, the map key is the UID of the owner.
-func makeInstanceMap(pods *unstructured.UnstructuredList) map[string][]Instance {
+// makeServerGroupMap returns a map of a server group's (replicaSet, daemonSet, statefulSet)
+// UID to a list of instances (pods) that this server group owns.
+func makeServerGroupMap(pods *unstructured.UnstructuredList) map[string][]Instance {
 	// Map of server group to instances (pods)
-	instanceMap := map[string][]Instance{}
+	serverGroupMap := map[string][]Instance{}
 	// Loop through each pod.
 	for _, pod := range pods.Items {
 		// Loop through each pod's owner reference.
-		p := kubernetes.NewPod(pod.Object)
-		for _, ownerReference := range p.GetObjectMeta().OwnerReferences {
+		for _, ownerReference := range pod.GetOwnerReferences() {
 			uid := string(ownerReference.UID)
 			if uid == "" {
 				continue
 			}
 
-			instanceMap[uid] = append(instanceMap[uid], newInstance(pod))
+			serverGroupMap[uid] = append(serverGroupMap[uid], newInstance(pod))
 		}
 	}
 
-	return instanceMap
+	return serverGroupMap
 }
 
 // newInstance returns an "Instance" object from a given
@@ -793,7 +806,10 @@ func newInstance(pod unstructured.Unstructured) Instance {
 	return instance
 }
 
-func newServerGroup(result unstructured.Unstructured, instanceMap map[string][]Instance, account string) ServerGroup {
+// newServerGroup builds an instance of ServerGroup, which is of Kubernetes kind ReplicaSet, DaemonSet, or StatefulSet.
+// It references the given resources owner reference to determine which resource owns it (for example, a ReplicaSet
+// is owned by a given Deployment).
+func newServerGroup(result unstructured.Unstructured, serverGroupMap map[string][]Instance, account string) ServerGroup {
 	images := listImages(&result)
 	desired := getDesiredReplicasCount(&result)
 
@@ -802,27 +818,28 @@ func newServerGroup(result unstructured.Unstructured, instanceMap map[string][]I
 	annotations := result.GetAnnotations()
 	// Get the instances from the instance map.
 	uid := string(result.GetUID())
-	if v, ok := instanceMap[uid]; ok {
+	if v, ok := serverGroupMap[uid]; ok {
 		instances = v
 	}
 
-	// Build server group manager
-	managerName := annotations["artifact.spinnaker.io/name"]
-	managerLocation := annotations["artifact.spinnaker.io/location"]
-	managerType := annotations["artifact.spinnaker.io/type"]
-
-	if managerType == "kubernetes/deployment" {
-		sgm := ServerGroupServerGroupManager{
-			Account:  account,
-			Location: managerLocation,
-			Name:     managerName,
+	// Build server group manager.
+	ownerReferences := result.GetOwnerReferences()
+	for _, ownerReference := range ownerReferences {
+		// If the owner of the server group is a deployment.
+		if strings.EqualFold(ownerReference.Kind, "deployment") {
+			// Define a new server group manager from the owner reference.
+			sgm := ServerGroupServerGroupManager{
+				Account:  account,
+				Location: result.GetNamespace(),
+				Name:     ownerReference.Name,
+			}
+			serverGroupManagers = append(serverGroupManagers, sgm)
 		}
-		serverGroupManagers = append(serverGroupManagers, sgm)
 	}
 
 	cluster := annotations["moniker.spinnaker.io/cluster"]
 	app := annotations["moniker.spinnaker.io/application"]
-	sequence := getSequence(annotations)
+	sequence := sequence(annotations)
 
 	return ServerGroup{
 		Account: account,
@@ -863,12 +880,16 @@ func newServerGroup(result unstructured.Unstructured, instanceMap map[string][]I
 	}
 }
 
-// getSequence returns the sequence of a given resource.
+// sequence returns the sequence of a given resource.
 // A versioned resource contains its sequence in the
 // `moniker.spinnaker.io/sequence` annotation.
 // A resource which is owned by some deployment defines its sequence in
 // the `deployment.kubernetes.io/revision` annotation.
-func getSequence(annotations map[string]string) int {
+func sequence(annotations map[string]string) int {
+	if annotations == nil {
+		return 0
+	}
+
 	if _, ok := annotations["moniker.spinnaker.io/sequence"]; ok {
 		sequence, _ := strconv.Atoi(annotations["moniker.spinnaker.io/sequence"])
 		return sequence
@@ -907,7 +928,8 @@ func listImages(result *unstructured.Unstructured) []string {
 	return images
 }
 
-// Get desired replicas for replicaSets, statefulSets, and daemonSets.
+// getDesiredReplicasCount returns the desired replicas for
+// replicaSets, statefulSets, and daemonSets.
 func getDesiredReplicasCount(result *unstructured.Unstructured) int32 {
 	desired := int32(0)
 
@@ -933,7 +955,8 @@ func getDesiredReplicasCount(result *unstructured.Unstructured) int32 {
 	return desired
 }
 
-// Get total replicas for replicaSets, statefulSets, and daemonSets.
+// getTotalReplicasCount returns total desired replicas for
+// replicaSets, statefulSets, and daemonSets.
 func getTotalReplicasCount(result *unstructured.Unstructured) int32 {
 	total := int32(0)
 
@@ -954,7 +977,8 @@ func getTotalReplicasCount(result *unstructured.Unstructured) int32 {
 	return total
 }
 
-// Get ready replicas for replicaSets, statefulSets, and daemonSets.
+// getTotalReplicasCount returns total replicas in a ready state for replicaSets,
+// statefulSets, and daemonSets.
 func getReadyReplicasCount(result *unstructured.Unstructured) int32 {
 	ready := int32(0)
 
@@ -977,7 +1001,9 @@ func getReadyReplicasCount(result *unstructured.Unstructured) int32 {
 	return ready
 }
 
-// /applications/:application/serverGroups/:account/:location/:name
+// GetServerGroup returns a specific server group (Kubernetes kind ReplicaSet,
+// DaemonSet, or StatefulSet) for a given cluster, namespace, name and Spinnaker application.
+// This endpoint is called when clicking on a given resource in the "Clusters" tab in Deck.
 func GetServerGroup(c *gin.Context) {
 	sc := sql.Instance(c)
 	kc := kubernetes.ControllerInstance(c)
@@ -1112,7 +1138,7 @@ func GetServerGroup(c *gin.Context) {
 	annotations := result.GetAnnotations()
 	cluster := annotations["moniker.spinnaker.io/cluster"]
 	app := annotations["moniker.spinnaker.io/application"]
-	sequence := getSequence(annotations)
+	sequence := sequence(annotations)
 
 	if app == "" {
 		app = application
@@ -1185,6 +1211,8 @@ type JobCompletionDetails struct {
 	Signal   string `json:"signal"`
 }
 
+// GetJob retrieves a given Kubernetes job from a given cluster
+// given a namespace and name.
 func GetJob(c *gin.Context) {
 	sc := sql.Instance(c)
 	kc := kubernetes.ControllerInstance(c)
