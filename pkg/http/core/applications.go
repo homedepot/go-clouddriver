@@ -65,6 +65,11 @@ func ListApplications(c *gin.Context) {
 		response = append(response, application)
 	}
 
+	// Sort applications by name descending.
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].Name < response[j].Name
+	})
+
 	c.Set(KeyAllApplications, response)
 }
 
@@ -193,7 +198,20 @@ func ListServerGroupManagers(c *gin.Context) {
 		response = append(response, sgm)
 	}
 
+	// Sort by account (cluster), then namespace, then kind, then name.
 	sort.Slice(response, func(i, j int) bool {
+		if response[i].Account != response[j].Account {
+			return response[i].Account < response[j].Account
+		}
+
+		if response[i].Namespace != response[j].Namespace {
+			return response[i].Namespace < response[j].Namespace
+		}
+
+		if response[i].Kind != response[j].Kind {
+			return response[i].Kind < response[j].Kind
+		}
+
 		return response[i].Name < response[j].Name
 	})
 
@@ -406,7 +424,20 @@ func ListLoadBalancers(c *gin.Context) {
 		response = append(response, lb)
 	}
 
+	// Sort by account (cluster), then region (namespace), then kind, then name.
 	sort.Slice(response, func(i, j int) bool {
+		if response[i].Account != response[j].Account {
+			return response[i].Account < response[j].Account
+		}
+
+		if response[i].Region != response[j].Region {
+			return response[i].Region < response[j].Region
+		}
+
+		if response[i].Kind != response[j].Kind {
+			return response[i].Kind < response[j].Kind
+		}
+
 		return response[i].Name < response[j].Name
 	})
 
@@ -673,7 +704,20 @@ func ListServerGroups(c *gin.Context) {
 		response = append(response, sg)
 	}
 
+	// Sort by account (cluster), then namespace, then kind, then name.
 	sort.Slice(response, func(i, j int) bool {
+		if response[i].Account != response[j].Account {
+			return response[i].Account < response[j].Account
+		}
+
+		if response[i].Namespace != response[j].Namespace {
+			return response[i].Namespace < response[j].Namespace
+		}
+
+		if response[i].Kind != response[j].Kind {
+			return response[i].Kind < response[j].Kind
+		}
+
 		return response[i].Name < response[j].Name
 	})
 
@@ -761,8 +805,17 @@ func listServerGroups(c *gin.Context, wg *sync.WaitGroup, sgs chan ServerGroup,
 func makeServerGroupMap(pods *unstructured.UnstructuredList) map[string][]Instance {
 	// Map of server group to instances (pods)
 	serverGroupMap := map[string][]Instance{}
+	items := pods.Items
+	// Sort the pods.
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].GetNamespace() != items[j].GetNamespace() {
+			return items[i].GetNamespace() < items[j].GetNamespace()
+		}
+
+		return items[i].GetName() < items[j].GetName()
+	})
 	// Loop through each pod.
-	for _, pod := range pods.Items {
+	for _, pod := range items {
 		// Loop through each pod's owner reference.
 		for _, ownerReference := range pod.GetOwnerReferences() {
 			uid := string(ownerReference.UID)
@@ -854,6 +907,8 @@ func newServerGroup(result unstructured.Unstructured, serverGroupMap map[string]
 		CloudProvider: "kubernetes",
 		Cluster:       cluster,
 		CreatedTime:   result.GetCreationTimestamp().Unix() * 1000,
+		// Include for sorting.
+		Kind: result.GetKind(),
 		InstanceCounts: InstanceCounts{
 			Down:         0,
 			OutOfService: 0,
