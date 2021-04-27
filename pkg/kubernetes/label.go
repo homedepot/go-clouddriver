@@ -13,7 +13,9 @@ const (
 	LabelSpinnakerMonikerSequence = `moniker.spinnaker.io/sequence`
 )
 
-func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, application string) error {
+// AddSpinnakerLabels labels a given unstructured Kubernetes resource
+// with Spinnaker defined labels.
+func AddSpinnakerLabels(u *unstructured.Unstructured, application string) error {
 	var err error
 
 	gvk := u.GroupVersionKind()
@@ -70,7 +72,7 @@ func (c *controller) AddSpinnakerLabels(u *unstructured.Unstructured, applicatio
 
 // AddSpinnakerVersionLabels adds the `moniker.spinnaker.io/sequence` label
 // to the manifest to identify the version number of that resource.
-func (c *controller) AddSpinnakerVersionLabels(u *unstructured.Unstructured, version SpinnakerVersion) error {
+func AddSpinnakerVersionLabels(u *unstructured.Unstructured, version SpinnakerVersion) error {
 	var err error
 
 	label(u, LabelSpinnakerMonikerSequence, version.Short)

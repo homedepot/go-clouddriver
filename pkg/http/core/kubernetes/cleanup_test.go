@@ -22,17 +22,6 @@ var _ = Describe("CleanupArtifacts", func() {
 		CleanupArtifacts(c, cleanupArtifactsRequest)
 	})
 
-	When("getting the unstructured manifest returns an error", func() {
-		BeforeEach(func() {
-			fakeKubeController.ToUnstructuredReturns(nil, errors.New("error converting to unstructured"))
-		})
-
-		It("returns an error", func() {
-			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
-			Expect(c.Errors.Last().Error()).To(Equal("error converting to unstructured"))
-		})
-	})
-
 	When("getting the provider returns an error", func() {
 		BeforeEach(func() {
 			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))

@@ -8,18 +8,13 @@ import (
 
 var _ = Describe("Sort", func() {
 	var (
-		c               Controller
 		err             error
 		m               []map[string]interface{}
 		sortedManifests []map[string]interface{}
 	)
 
-	BeforeEach(func() {
-		c = NewController()
-	})
-
 	JustBeforeEach(func() {
-		sortedManifests, err = c.SortManifests(m)
+		sortedManifests, err = SortManifests(m)
 	})
 
 	Describe("#SortManifests", func() {

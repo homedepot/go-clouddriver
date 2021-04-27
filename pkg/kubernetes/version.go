@@ -15,7 +15,8 @@ const (
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	AnnotationSpinnakerArtifactVersion = `artifact.spinnaker.io/version`
 	AnnotationSpinnakerMonikerSequence = `moniker.spinnaker.io/sequence`
-	Annotation
+	// Maximum latest version before cycling back to V000.
+	maxLatestVersion = 999
 )
 
 type SpinnakerVersion struct {
@@ -23,11 +24,13 @@ type SpinnakerVersion struct {
 	Short string
 }
 
-func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string {
+// GetCurrentVersion returns the latest "Spinnaker version" from an unstructured
+// list of Kubernetes resources.
+func GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string {
 	currentVersion := "-1"
 	cluster := ""
 
-	if len(ul.Items) == 0 {
+	if ul == nil || len(ul.Items) == 0 {
 		return currentVersion
 	}
 
@@ -59,15 +62,17 @@ func (c *controller) GetCurrentVersion(ul *unstructured.UnstructuredList, kind, 
 	return currentVersion
 }
 
-func (c *controller) IsVersioned(u *unstructured.Unstructured) bool {
+// IsVersioned returns true is a given Kubernetes unstructured resource
+// is "versioned". A resource is version if its annotation
+// `strategy.spinnaker.io/versioned` is set to "true" or if it is of kind
+// Pod, ReplicaSet, ConfigMap, or Secret.
+//
+// See https://spinnaker.io/reference/providers/kubernetes-v2/#workloads for more info.
+func IsVersioned(u *unstructured.Unstructured) bool {
 	annotations := u.GetAnnotations()
 	if annotations != nil {
 		if _, ok := annotations[AnnotationSpinnakerStrategyVersioned]; ok {
-			if annotations[AnnotationSpinnakerStrategyVersioned] == "true" {
-				return true
-			} else {
-				return false
-			}
+			return annotations[AnnotationSpinnakerStrategyVersioned] == "true"
 		}
 	}
 
@@ -82,11 +87,11 @@ func (c *controller) IsVersioned(u *unstructured.Unstructured) bool {
 	return false
 }
 
-func (c *controller) IncrementVersion(currentVersion string) SpinnakerVersion {
+func IncrementVersion(currentVersion string) SpinnakerVersion {
 	currentVersionInt, _ := strconv.Atoi(currentVersion)
 	latestVersionInt := currentVersionInt + 1
 
-	if latestVersionInt > 999 {
+	if latestVersionInt > maxLatestVersion {
 		latestVersionInt = 0
 	}
 
@@ -100,7 +105,7 @@ func (c *controller) IncrementVersion(currentVersion string) SpinnakerVersion {
 	}
 }
 
-func (c *controller) VersionVolumes(u *unstructured.Unstructured, artifacts map[string]clouddriver.TaskCreatedArtifact) error {
+func VersionVolumes(u *unstructured.Unstructured, artifacts map[string]clouddriver.TaskCreatedArtifact) error {
 	var (
 		err     error
 		volumes []v1.Volume

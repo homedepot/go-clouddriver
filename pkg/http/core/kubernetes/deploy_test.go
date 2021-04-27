@@ -67,12 +67,14 @@ var _ = Describe("Deploy", func() {
 
 	When("getting the unstructured manifest returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeController.ToUnstructuredReturns(nil, errors.New("error converting to unstructured"))
+			deployManifestRequest.Manifests = []map[string]interface{}{
+				{},
+			}
 		})
 
 		It("returns an error", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
-			Expect(c.Errors.Last().Error()).To(Equal("error converting to unstructured"))
+			Expect(c.Errors.Last().Error()).To(Equal("Object 'Kind' is missing in '{}'"))
 		})
 	})
 
@@ -122,19 +124,9 @@ var _ = Describe("Deploy", func() {
 					"items": manifests,
 				},
 			}
-			fakeKubeController.SortManifestsReturns(manifests, nil)
-			fakeKubeController.ToUnstructuredReturns(&fakeUnstructured, nil)
-		})
-
-		When("the list element is invalid", func() {
-			BeforeEach(func() {
-				fakeUnstructured.Object["items"] = "bad"
-			})
-
-			It("returns an error", func() {
-				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
-				Expect(c.Errors.Last().Error()).To(Equal("json: cannot unmarshal string into Go struct field ListElement.items of type []map[string]interface {}"))
-			})
+			deployManifestRequest.Manifests = []map[string]interface{}{
+				fakeUnstructured.Object,
+			}
 		})
 
 		When("it succeeds", func() {
@@ -142,28 +134,6 @@ var _ = Describe("Deploy", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				Expect(fakeKubeClient.ApplyWithNamespaceOverrideCallCount()).To(Equal(2))
 			})
-		})
-	})
-
-	When("sorting the manifests returns an error", func() {
-		BeforeEach(func() {
-			fakeKubeController.SortManifestsReturns(nil, errors.New("error sorting manifests"))
-		})
-
-		It("returns an error", func() {
-			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-			Expect(c.Errors.Last().Error()).To(Equal("error sorting manifests"))
-		})
-	})
-
-	When("getting the unstructured manifest returns an error before apply", func() {
-		BeforeEach(func() {
-			fakeKubeController.ToUnstructuredReturnsOnCall(1, nil, errors.New("error converting to unstructured"))
-		})
-
-		It("returns an error", func() {
-			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
-			Expect(c.Errors.Last().Error()).To(Equal("error converting to unstructured"))
 		})
 	})
 
@@ -180,15 +150,6 @@ var _ = Describe("Deploy", func() {
 					},
 				},
 			}
-			fakeUnstructured := unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"kind": "Job",
-					"metadata": map[string]interface{}{
-						"generateName": "test-",
-					},
-				},
-			}
-			fakeKubeController.ToUnstructuredReturns(&fakeUnstructured, nil)
 		})
 
 		It("generates a unique name for the job", func() {
@@ -201,86 +162,25 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
-	When("adding the spinnaker annotations returns an error", func() {
-		BeforeEach(func() {
-			fakeKubeController.AddSpinnakerAnnotationsReturns(errors.New("error adding annotations"))
-		})
-
-		It("returns an error", func() {
-			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-			Expect(c.Errors.Last().Error()).To(Equal("error adding annotations"))
-		})
-	})
-
-	When("adding the spinnaker labels returns an error", func() {
-		BeforeEach(func() {
-			fakeKubeController.AddSpinnakerLabelsReturns(errors.New("error adding labels"))
-		})
-
-		It("returns an error", func() {
-			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-			Expect(c.Errors.Last().Error()).To(Equal("error adding labels"))
-		})
-	})
-
-	When("#VersionVolumes returns and error", func() {
-		BeforeEach(func() {
-			fakeKubeController.VersionVolumesReturns(errors.New("error adding labels"))
-		})
-
-		It("returns an error", func() {
-			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-			Expect(c.Errors.Last().Error()).To(Equal("error adding labels"))
-		})
-	})
-
-	When("The manifest is versioned", func() {
-		BeforeEach(func() {
-			fakeKubeController.IsVersionedReturns(true)
-		})
-
-		When("Listing resources by kind and namespace returns an error", func() {
+	When("the manifest is versioned", func() {
+		When("listing resources by kind and namespace returns an error", func() {
 			BeforeEach(func() {
 				fakeKubeClient.ListResourcesByKindAndNamespaceReturns(nil, errors.New("ListResourcesByKindAndNamespaceReturns fake error"))
 			})
 
-			It("ListResourcesByKindAndNamespace returns a fake error", func() {
+			It("returns an error", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
 				Expect(c.Errors.Last().Error()).To(Equal("ListResourcesByKindAndNamespaceReturns fake error"))
 			})
 		})
 
-		When("ListResourcesByKindAndNamespace returns an empty list", func() {
+		When("listing resources by kind and namespace returns an empty list", func() {
 			BeforeEach(func() {
 				fakeKubeClient.ListResourcesByKindAndNamespaceReturns(&unstructured.UnstructuredList{}, nil)
 			})
 
-			It("GetCurrentVersion function is called with an empty list", func() {
+			It("calls GetCurrentVersion with an empty list", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				results, _, _ := fakeKubeController.GetCurrentVersionArgsForCall(0)
-				Expect(results).To(Equal(&unstructured.UnstructuredList{}))
-			})
-		})
-
-		When("AddSpinnakerVersionAnnotations returns an error", func() {
-			BeforeEach(func() {
-				fakeKubeController.AddSpinnakerVersionAnnotationsReturns(errors.New("AddSpinnakerVersionAnnotations fake error"))
-			})
-
-			It("AddSpinnakerVersionAnnotations returns a fake error", func() {
-				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-				Expect(c.Errors.Last().Error()).To(Equal("AddSpinnakerVersionAnnotations fake error"))
-			})
-		})
-
-		When("AddSpinnakerVersionLabels returns an error", func() {
-			BeforeEach(func() {
-				fakeKubeController.AddSpinnakerVersionLabelsReturns(errors.New("AddSpinnakerVersionLabels fake error"))
-			})
-
-			It("AddSpinnakerVersionLabels returns a fake error", func() {
-				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-				Expect(c.Errors.Last().Error()).To(Equal("AddSpinnakerVersionLabels fake error"))
 			})
 		})
 	})
@@ -292,7 +192,7 @@ var _ = Describe("Deploy", func() {
 
 		It("returns an error", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-			Expect(c.Errors.Last().Error()).To(Equal("error applying manifest (kind: test-kind, apiVersion: test-api-version, name: test-name): error applying manifest"))
+			Expect(c.Errors.Last().Error()).To(Equal("error applying manifest (kind: Pod, apiVersion: v1, name: test-name-v000): error applying manifest"))
 		})
 	})
 

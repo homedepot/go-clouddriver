@@ -76,7 +76,7 @@ var (
 // SortManifests takes in a list of manifests and sorts them by the priority of their kind.
 // The kind's priorities are defined above in the var 'priorities'. Lower numbered priorities
 // should be deployed first.
-func (c *controller) SortManifests(manifests []map[string]interface{}) ([]map[string]interface{}, error) {
+func SortManifests(manifests []map[string]interface{}) ([]map[string]interface{}, error) {
 	// Map of priorities to lists of manifests.
 	manifestMap := map[int][]map[string]interface{}{
 		0:    []map[string]interface{}{},
@@ -93,7 +93,7 @@ func (c *controller) SortManifests(manifests []map[string]interface{}) ([]map[st
 	}
 
 	for _, manifest := range manifests {
-		u, err := c.ToUnstructured(manifest)
+		u, err := ToUnstructured(manifest)
 		if err != nil {
 			return nil, fmt.Errorf("kubernetes: error sorting manifests: %w", err)
 		}

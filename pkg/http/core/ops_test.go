@@ -101,14 +101,13 @@ var _ = Describe("Kubernetes", func() {
 				body = &bytes.Buffer{}
 				body.Write([]byte(payloadRequestKubernetesOpsCleanupArtifacts))
 				createRequest(http.MethodPost)
-				fakeKubeController.ToUnstructuredReturns(nil, errors.New("error converting to unstructured"))
 			})
 
 			It("returns an error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
 				Expect(ce.Error).To(HavePrefix("Bad Request"))
-				Expect(ce.Message).To(Equal("error converting to unstructured"))
+				Expect(ce.Message).To(Equal("Object 'Kind' is missing in '{}'"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
 		})
