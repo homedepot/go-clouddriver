@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/jinzhu/gorm"
@@ -30,10 +31,9 @@ const (
 type Client interface {
 	CreateKubernetesProvider(kubernetes.Provider) error
 	CreateKubernetesResource(kubernetes.Resource) error
-	CreateReadPermission(clouddriver.ReadPermission) error
-	CreateWritePermission(clouddriver.WritePermission) error
 	DeleteKubernetesProvider(string) error
 	GetKubernetesProvider(string) (kubernetes.Provider, error)
+	GetKubernetesProviderAndPermissions(string) (kubernetes.Provider, error)
 	ListKubernetesAccountsBySpinnakerApp(string) ([]string, error)
 	ListKubernetesClustersByApplication(string) ([]kubernetes.Resource, error)
 	ListKubernetesClustersByFields(...string) ([]kubernetes.Resource, error)
@@ -80,6 +80,7 @@ func Connect(driver string, connection interface{}) (*gorm.DB, error) {
 	return db, nil
 }
 
+// Instance gets the singleton instance of the client.
 func Instance(c *gin.Context) Client {
 	return c.MustGet(ClientInstanceKey).(Client)
 }
@@ -91,7 +92,7 @@ type Config struct {
 	Name     string
 }
 
-// Get driver and connection string to the DB.
+// Connaction returns the driver and connection string to the DB.
 func Connection(c Config) (string, string) {
 	if c.User == "" || c.Password == "" || c.Host == "" || c.Name == "" {
 		log.Println("[CLOUDDRIVER] SQL config missing field - defaulting to local sqlite DB.")
@@ -102,26 +103,49 @@ func Connection(c Config) (string, string) {
 		c.User, c.Password, c.Host, c.Name)
 }
 
+// CreateKubernetesProvider inserts the provider and permissions into the DB.
 func (c *client) CreateKubernetesProvider(p kubernetes.Provider) error {
-	db := c.db.Create(&p)
-	return db.Error
+	err := c.db.Create(&p).Error
+	if err != nil {
+		return err
+	}
+
+	for _, group := range p.Permissions.Read {
+		rp := clouddriver.ReadPermission{
+			ID:          uuid.New().String(),
+			AccountName: p.Name,
+			ReadGroup:   group,
+		}
+
+		err = c.db.Create(&rp).Error
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, group := range p.Permissions.Write {
+		wp := clouddriver.WritePermission{
+			ID:          uuid.New().String(),
+			AccountName: p.Name,
+			WriteGroup:  group,
+		}
+
+		err = c.db.Create(&wp).Error
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
+// CreateKubernetesResource inserts the resource into the DB.
 func (c *client) CreateKubernetesResource(r kubernetes.Resource) error {
 	db := c.db.Create(&r)
 	return db.Error
 }
 
-func (c *client) CreateWritePermission(w clouddriver.WritePermission) error {
-	db := c.db.Create(&w)
-	return db.Error
-}
-
-func (c *client) CreateReadPermission(r clouddriver.ReadPermission) error {
-	db := c.db.Create(&r)
-	return db.Error
-}
-
+// DeleteKubernetesProvider deletes the provider and permission from the DB.
 func (c *client) DeleteKubernetesProvider(name string) error {
 	err := c.db.Delete(&kubernetes.Provider{Name: name}).Error
 	if err != nil {
@@ -141,6 +165,7 @@ func (c *client) DeleteKubernetesProvider(name string) error {
 	return nil
 }
 
+// GetKubernetesProvider reads the provider from the DB.
 func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error) {
 	var p kubernetes.Provider
 	db := c.db.Select("host, ca_data, bearer_token, token_provider").Where("name = ?", name).First(&p)
@@ -148,7 +173,88 @@ func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error)
 	return p, db.Error
 }
 
-// A Kubernetes cluster is of kind deployment, statefulSet, replicaSet, ingress, service, and daemonSet.
+// GetKubernetesProviderAndPermissions reads the provider and permissions from the DB.
+//
+// 		select a.name, a.host, a.ca_data, a.token_provider, b.read_group, c.write_group from kubernetes_providers a
+//   		left join provider_read_permissions b on a.name = b.account_name
+//   		left join provider_write_permissions c on a.name = c.account_name
+//   	 where a.name = ?;
+func (c *client) GetKubernetesProviderAndPermissions(name string) (kubernetes.Provider, error) {
+	p := kubernetes.Provider{}
+
+	rows, err := c.db.Table("kubernetes_providers a").
+		Select("a.name, "+
+			"a.host, "+
+			"a.ca_data, "+
+			"a.token_provider, "+
+			"b.read_group, "+
+			"c.write_group").
+		Joins("LEFT JOIN provider_read_permissions b ON a.name = b.account_name").
+		Joins("LEFT JOIN provider_write_permissions c ON a.name = c.account_name").
+		Where("a.name = ?", name).
+		Rows()
+	if err != nil {
+		return p, err
+	}
+	defer rows.Close()
+
+	readGroups := map[string][]string{}
+	writeGroups := map[string][]string{}
+
+	for rows.Next() {
+		var r struct {
+			CAData        string
+			Host          string
+			Name          string
+			ReadGroup     *string
+			WriteGroup    *string
+			TokenProvider string
+		}
+
+		err = rows.Scan(&r.Name, &r.Host, &r.CAData, &r.TokenProvider, &r.ReadGroup, &r.WriteGroup)
+		if err != nil {
+			return p, err
+		}
+
+		p = kubernetes.Provider{
+			Name:          r.Name,
+			Host:          r.Host,
+			CAData:        r.CAData,
+			TokenProvider: r.TokenProvider,
+		}
+
+		if r.ReadGroup != nil {
+			if _, ok := readGroups[r.Name]; !ok {
+				readGroups[r.Name] = []string{}
+			}
+
+			if !contains(readGroups[r.Name], *r.ReadGroup) {
+				readGroups[r.Name] = append(readGroups[r.Name], *r.ReadGroup)
+			}
+		}
+
+		if r.WriteGroup != nil {
+			if _, ok := writeGroups[r.Name]; !ok {
+				writeGroups[r.Name] = []string{}
+			}
+
+			if !contains(writeGroups[r.Name], *r.WriteGroup) {
+				writeGroups[r.Name] = append(writeGroups[r.Name], *r.WriteGroup)
+			}
+		}
+	}
+
+	p.Permissions.Read = readGroups[name]
+	p.Permissions.Write = writeGroups[name]
+
+	return p, nil
+}
+
+// ListKubernetesClustersByApplication gets the list of kubernetes clusters
+// for a Spinnaker application from the DB.
+//
+// A Kubernetes cluster is of kind deployment, statefulSet, replicaSet,
+// ingress, service, and daemonSet.
 func (c *client) ListKubernetesClustersByApplication(spinnakerApp string) ([]kubernetes.Resource, error) {
 	var rs []kubernetes.Resource
 	db := c.db.Select("account_name, cluster").
@@ -178,6 +284,9 @@ func (c *client) ListKubernetesClustersByFields(fields ...string) ([]kubernetes.
 	return rs, db.Error
 }
 
+// ListKubernetesResourceNamesByAccountNameAndKindAndNamespace gets the
+// list of kubernetes resource names for a account name, kubernetes kind,
+// and kubernetes namespace from the DB.
 func (c *client) ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(accountName,
 	kind, namespace string) ([]string, error) {
 	rs := []kubernetes.Resource{}
@@ -196,6 +305,7 @@ func (c *client) ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(acc
 	return names, db.Error
 }
 
+// ListKubernetesProviders gets all the kubernetes providers from the DB.
 func (c *client) ListKubernetesProviders() ([]kubernetes.Provider, error) {
 	var ps []kubernetes.Provider
 	db := c.db.Select("name, host, ca_data, token_provider").Find(&ps)
@@ -203,9 +313,12 @@ func (c *client) ListKubernetesProviders() ([]kubernetes.Provider, error) {
 	return ps, db.Error
 }
 
-// select a.name, a.host, a.ca_data, a.token_provider, b.read_group, c.write_group from kubernetes_providers a
-//   left join provider_read_permissions b on a.name = b.account_name
-//   left join provider_write_permissions c on a.name = c.account_name;
+// ListKubernetesProvidersAndPermissions gets all the kubernetes providers,
+// with their read/write permissions, from the DB.
+//
+// 		select a.name, a.host, a.ca_data, a.token_provider, b.read_group, c.write_group from kubernetes_providers a
+//   		left join provider_read_permissions b on a.name = b.account_name
+//   		left join provider_write_permissions c on a.name = c.account_name;
 func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider, error) {
 	ps := []kubernetes.Provider{}
 
@@ -298,6 +411,8 @@ func contains(s []string, e string) bool {
 	return false
 }
 
+// ListKubernetesResourcesByTaskID get the list of kubernetes resources
+// by task ID from the DB.
 func (c *client) ListKubernetesResourcesByTaskID(taskID string) ([]kubernetes.Resource, error) {
 	var rs []kubernetes.Resource
 	db := c.db.Select("account_name, api_group, kind, name, artifact_name, namespace, resource, task_type, version").
@@ -306,6 +421,8 @@ func (c *client) ListKubernetesResourcesByTaskID(taskID string) ([]kubernetes.Re
 	return rs, db.Error
 }
 
+// ListKubernetesResourcesByFields gets the list of unique set of
+// kubernetes resource attributes from the DB.
 func (c *client) ListKubernetesResourcesByFields(fields ...string) ([]kubernetes.Resource, error) {
 	if len(fields) == 0 {
 		return nil, errors.New("no fields provided")
@@ -325,6 +442,8 @@ func (c *client) ListKubernetesResourcesByFields(fields ...string) ([]kubernetes
 	return rs, db.Error
 }
 
+// ListKubernetesAccountsBySpinnakerApp gets the list of account names
+// for a Spinnaker application from the DB.
 func (c *client) ListKubernetesAccountsBySpinnakerApp(spinnakerApp string) ([]string, error) {
 	var rs []kubernetes.Resource
 	db := c.db.Select("account_name").
@@ -340,6 +459,8 @@ func (c *client) ListKubernetesAccountsBySpinnakerApp(spinnakerApp string) ([]st
 	return accounts, db.Error
 }
 
+// ListReadGroupsByAccountName gets the list of groups with read permission
+// for an account name from the DB.
 func (c *client) ListReadGroupsByAccountName(accountName string) ([]string, error) {
 	r := []clouddriver.ReadPermission{}
 	db := c.db.Select("read_group").
@@ -355,6 +476,8 @@ func (c *client) ListReadGroupsByAccountName(accountName string) ([]string, erro
 	return groups, db.Error
 }
 
+// ListWriteGroupsByAccountName gets the list of groups with write permission
+// for an account name from the DB.
 func (c *client) ListWriteGroupsByAccountName(accountName string) ([]string, error) {
 	w := []clouddriver.WritePermission{}
 	db := c.db.Select("write_group").

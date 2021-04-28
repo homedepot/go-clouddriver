@@ -79,28 +79,6 @@ var _ = Describe("Provider", func() {
 			})
 		})
 
-		When("creating a read group returns an error", func() {
-			BeforeEach(func() {
-				fakeSQLClient.CreateReadPermissionReturns(errors.New("error creating read permission"))
-			})
-
-			It("returns status internal server error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				validateResponse(payloadErrorCreatingReadPermission)
-			})
-		})
-
-		When("creating a write group returns an error", func() {
-			BeforeEach(func() {
-				fakeSQLClient.CreateWritePermissionReturns(errors.New("error creating write permission"))
-			})
-
-			It("returns status internal server error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				validateResponse(payloadErrorCreatingWritePermission)
-			})
-		})
-
 		When("it succeeds", func() {
 			It("returns status created", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusCreated))

@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/homedepot/go-clouddriver/pkg/sql"
 
@@ -61,6 +60,10 @@ var _ = Describe("Sql", func() {
 				Name:   "test-name",
 				Host:   "test-host",
 				CAData: "test-ca-data",
+				Permissions: kubernetes.ProviderPermissions{
+					Read:  []string{"test-read-group"},
+					Write: []string{"test-write-group"},
+				},
 			}
 		})
 
@@ -102,6 +105,24 @@ var _ = Describe("Sql", func() {
 					`"ca_data",` +
 					`"bearer_token"` +
 					`\) VALUES \(\?,\?,\?,\?\)$`).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+
+				mock.ExpectBegin()
+				mock.ExpectExec(`(?i)^INSERT INTO "provider_read_permissions" \(` +
+					`"id",` +
+					`"account_name",` +
+					`"read_group"` +
+					`\) VALUES \(\?,\?,\?\)$`).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+
+				mock.ExpectBegin()
+				mock.ExpectExec(`(?i)^INSERT INTO "provider_write_permissions" \(` +
+					`"id",` +
+					`"account_name",` +
+					`"write_group"` +
+					`\) VALUES \(\?,\?,\?\)$`).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			})
@@ -150,72 +171,6 @@ var _ = Describe("Sql", func() {
 					`"spinnaker_app",` +
 					`"cluster"` +
 					`\) VALUES \(\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?\,\?\)$`).
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectCommit()
-			})
-
-			It("succeeds", func() {
-				Expect(err).To(BeNil())
-			})
-		})
-	})
-
-	Describe("#CreateReadPermission", func() {
-		var rp clouddriver.ReadPermission
-
-		BeforeEach(func() {
-			rp = clouddriver.ReadPermission{
-				ID:          "test-id",
-				AccountName: "test-account-name",
-				ReadGroup:   "test-write-group",
-			}
-		})
-
-		JustBeforeEach(func() {
-			err = c.CreateReadPermission(rp)
-		})
-
-		When("it succeeds", func() {
-			BeforeEach(func() {
-				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^INSERT INTO "provider_read_permissions" \(` +
-					`"id",` +
-					`"account_name",` +
-					`"read_group"` +
-					`\) VALUES \(\?,\?,\?\)$`).
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectCommit()
-			})
-
-			It("succeeds", func() {
-				Expect(err).To(BeNil())
-			})
-		})
-	})
-
-	Describe("#CreateWritePermission", func() {
-		var wp clouddriver.WritePermission
-
-		BeforeEach(func() {
-			wp = clouddriver.WritePermission{
-				ID:          "test-id",
-				AccountName: "test-account-name",
-				WriteGroup:  "test-write-group",
-			}
-		})
-
-		JustBeforeEach(func() {
-			err = c.CreateWritePermission(wp)
-		})
-
-		When("it succeeds", func() {
-			BeforeEach(func() {
-				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^INSERT INTO "provider_write_permissions" \(` +
-					`"id",` +
-					`"account_name",` +
-					`"write_group"` +
-					`\) VALUES \(\?,\?,\?\)$`).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			})
@@ -290,6 +245,47 @@ var _ = Describe("Sql", func() {
 				Expect(provider.Name).To(Equal("test-name"))
 				Expect(provider.Host).To(Equal("test-host"))
 				Expect(provider.CAData).To(Equal("test-ca-data"))
+			})
+		})
+	})
+
+	Describe("#GetKubernetesProviderAndPermissions", func() {
+		var provider kubernetes.Provider
+
+		BeforeEach(func() {
+			provider = kubernetes.Provider{}
+		})
+
+		JustBeforeEach(func() {
+			provider, err = c.GetKubernetesProviderAndPermissions("test-name")
+		})
+
+		When("it succeeds", func() {
+			BeforeEach(func() {
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "token_provider", "read_group", "write_group"}).
+					AddRow("test-name", "test-host", "test-ca-data", "test-token-provider", "test-read-group", "test-write-group")
+				mock.ExpectQuery(`(?i)^SELECT a.name,` +
+					` a.host,` +
+					` a.ca_data,` +
+					` a.token_provider,` +
+					` b.read_group,` +
+					` c.write_group` +
+					` FROM kubernetes_providers a` +
+					` LEFT JOIN provider_read_permissions b ON a.name = b.account_name ` +
+					` LEFT JOIN provider_write_permissions c ON a.name = c.account_name` +
+					` WHERE \(a.name = \?\)`).
+					WillReturnRows(sqlRows)
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+				Expect(provider.Name).To(Equal("test-name"))
+				Expect(provider.Host).To(Equal("test-host"))
+				Expect(provider.CAData).To(Equal("test-ca-data"))
+				Expect(provider.TokenProvider).To(Equal("test-token-provider"))
+				Expect(provider.Permissions.Read[0]).To(Equal("test-read-group"))
+				Expect(provider.Permissions.Write[0]).To(Equal("test-write-group"))
 			})
 		})
 	})
