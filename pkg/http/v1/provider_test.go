@@ -79,31 +79,139 @@ var _ = Describe("Provider", func() {
 			})
 		})
 
-		When("creating a read group returns an error", func() {
+		When("it succeeds", func() {
+			It("returns status created", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusCreated))
+				validateResponse(payloadKubernetesProviderCreated)
+			})
+		})
+	})
+
+	Describe("#CreateOrReplaceKubernetesProvider", func() {
+		BeforeEach(func() {
+			setup()
+			uri = svr.URL + "/v1/kubernetes/providers"
+			body.Write([]byte(payloadRequestKubernetesProviders))
+			createRequest(http.MethodPut)
+		})
+
+		AfterEach(func() {
+			teardown()
+		})
+
+		JustBeforeEach(func() {
+			doRequest()
+		})
+
+		When("the request body is bad data", func() {
 			BeforeEach(func() {
-				fakeSQLClient.CreateReadPermissionReturns(errors.New("error creating read permission"))
+				body = &bytes.Buffer{}
+				body.Write([]byte("dasdf[]dsf;;"))
+				createRequest(http.MethodPut)
 			})
 
-			It("returns status internal server error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				validateResponse(payloadErrorCreatingReadPermission)
+			It("returns status bad request", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				validateResponse(payloadBadRequest)
 			})
 		})
 
-		When("creating a write group returns an error", func() {
+		When("the ca data in the request is bad", func() {
 			BeforeEach(func() {
-				fakeSQLClient.CreateWritePermissionReturns(errors.New("error creating write permission"))
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesProvidersBadCAData))
+				createRequest(http.MethodPut)
+			})
+
+			It("returns status bad request", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				validateResponse(payloadErrorDecodingBase64)
+			})
+		})
+
+		When("creating the kubernetes provider returns an error", func() {
+			BeforeEach(func() {
+				fakeSQLClient.CreateKubernetesProviderReturns(errors.New("error creating provider"))
 			})
 
 			It("returns status internal server error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				validateResponse(payloadErrorCreatingWritePermission)
+				validateResponse(payloadErrorCreatingProvider)
 			})
 		})
 
 		When("it succeeds", func() {
-			It("returns status created", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusCreated))
+			When("the provider does not exist", func() {
+				It("returns ok and the provider is created", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadKubernetesProviderCreated)
+				})
+			})
+
+			When("the provider already exists", func() {
+				BeforeEach(func() {
+					fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, nil)
+				})
+
+				It("returns ok and the provider is replaced", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadKubernetesProviderCreated)
+				})
+			})
+		})
+	})
+
+	Describe("#GetKubernetesProvider", func() {
+		BeforeEach(func() {
+			setup()
+			testProvider := kubernetes.Provider{
+				Name:   "test-name",
+				Host:   "test-host",
+				CAData: "dGVzdC1jYS1kYXRhCg==",
+				Permissions: kubernetes.ProviderPermissions{
+					Read:  []string{"gg_test"},
+					Write: []string{"gg_test"},
+				},
+			}
+
+			fakeSQLClient.GetKubernetesProviderAndPermissionsReturns(testProvider, nil)
+			uri = svr.URL + "/v1/kubernetes/providers/test-name"
+			createRequest(http.MethodGet)
+		})
+
+		AfterEach(func() {
+			teardown()
+		})
+
+		JustBeforeEach(func() {
+			doRequest()
+		})
+
+		When("the record is not found", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesProviderAndPermissionsReturns(kubernetes.Provider{}, nil)
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusNotFound))
+				validateResponse(payloadKubernetesProviderNotFound)
+			})
+		})
+
+		When("getting the provider returns a generic error", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesProviderAndPermissionsReturns(kubernetes.Provider{}, errors.New("error getting provider"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				validateResponse(payloadKubernetesProviderGetGenericError)
+			})
+		})
+
+		When("it succeeds", func() {
+			It("returns ok and the provider", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
 				validateResponse(payloadKubernetesProviderCreated)
 			})
 		})

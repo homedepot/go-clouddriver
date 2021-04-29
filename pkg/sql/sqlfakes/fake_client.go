@@ -4,7 +4,6 @@ package sqlfakes
 import (
 	"sync"
 
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 )
@@ -32,28 +31,6 @@ type FakeClient struct {
 	createKubernetesResourceReturnsOnCall map[int]struct {
 		result1 error
 	}
-	CreateReadPermissionStub        func(clouddriver.ReadPermission) error
-	createReadPermissionMutex       sync.RWMutex
-	createReadPermissionArgsForCall []struct {
-		arg1 clouddriver.ReadPermission
-	}
-	createReadPermissionReturns struct {
-		result1 error
-	}
-	createReadPermissionReturnsOnCall map[int]struct {
-		result1 error
-	}
-	CreateWritePermissionStub        func(clouddriver.WritePermission) error
-	createWritePermissionMutex       sync.RWMutex
-	createWritePermissionArgsForCall []struct {
-		arg1 clouddriver.WritePermission
-	}
-	createWritePermissionReturns struct {
-		result1 error
-	}
-	createWritePermissionReturnsOnCall map[int]struct {
-		result1 error
-	}
 	DeleteKubernetesProviderStub        func(string) error
 	deleteKubernetesProviderMutex       sync.RWMutex
 	deleteKubernetesProviderArgsForCall []struct {
@@ -75,6 +52,19 @@ type FakeClient struct {
 		result2 error
 	}
 	getKubernetesProviderReturnsOnCall map[int]struct {
+		result1 kubernetes.Provider
+		result2 error
+	}
+	GetKubernetesProviderAndPermissionsStub        func(string) (kubernetes.Provider, error)
+	getKubernetesProviderAndPermissionsMutex       sync.RWMutex
+	getKubernetesProviderAndPermissionsArgsForCall []struct {
+		arg1 string
+	}
+	getKubernetesProviderAndPermissionsReturns struct {
+		result1 kubernetes.Provider
+		result2 error
+	}
+	getKubernetesProviderAndPermissionsReturnsOnCall map[int]struct {
 		result1 kubernetes.Provider
 		result2 error
 	}
@@ -332,126 +322,6 @@ func (fake *FakeClient) CreateKubernetesResourceReturnsOnCall(i int, result1 err
 	}{result1}
 }
 
-func (fake *FakeClient) CreateReadPermission(arg1 clouddriver.ReadPermission) error {
-	fake.createReadPermissionMutex.Lock()
-	ret, specificReturn := fake.createReadPermissionReturnsOnCall[len(fake.createReadPermissionArgsForCall)]
-	fake.createReadPermissionArgsForCall = append(fake.createReadPermissionArgsForCall, struct {
-		arg1 clouddriver.ReadPermission
-	}{arg1})
-	fake.recordInvocation("CreateReadPermission", []interface{}{arg1})
-	fake.createReadPermissionMutex.Unlock()
-	if fake.CreateReadPermissionStub != nil {
-		return fake.CreateReadPermissionStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.createReadPermissionReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeClient) CreateReadPermissionCallCount() int {
-	fake.createReadPermissionMutex.RLock()
-	defer fake.createReadPermissionMutex.RUnlock()
-	return len(fake.createReadPermissionArgsForCall)
-}
-
-func (fake *FakeClient) CreateReadPermissionCalls(stub func(clouddriver.ReadPermission) error) {
-	fake.createReadPermissionMutex.Lock()
-	defer fake.createReadPermissionMutex.Unlock()
-	fake.CreateReadPermissionStub = stub
-}
-
-func (fake *FakeClient) CreateReadPermissionArgsForCall(i int) clouddriver.ReadPermission {
-	fake.createReadPermissionMutex.RLock()
-	defer fake.createReadPermissionMutex.RUnlock()
-	argsForCall := fake.createReadPermissionArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeClient) CreateReadPermissionReturns(result1 error) {
-	fake.createReadPermissionMutex.Lock()
-	defer fake.createReadPermissionMutex.Unlock()
-	fake.CreateReadPermissionStub = nil
-	fake.createReadPermissionReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) CreateReadPermissionReturnsOnCall(i int, result1 error) {
-	fake.createReadPermissionMutex.Lock()
-	defer fake.createReadPermissionMutex.Unlock()
-	fake.CreateReadPermissionStub = nil
-	if fake.createReadPermissionReturnsOnCall == nil {
-		fake.createReadPermissionReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.createReadPermissionReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) CreateWritePermission(arg1 clouddriver.WritePermission) error {
-	fake.createWritePermissionMutex.Lock()
-	ret, specificReturn := fake.createWritePermissionReturnsOnCall[len(fake.createWritePermissionArgsForCall)]
-	fake.createWritePermissionArgsForCall = append(fake.createWritePermissionArgsForCall, struct {
-		arg1 clouddriver.WritePermission
-	}{arg1})
-	fake.recordInvocation("CreateWritePermission", []interface{}{arg1})
-	fake.createWritePermissionMutex.Unlock()
-	if fake.CreateWritePermissionStub != nil {
-		return fake.CreateWritePermissionStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.createWritePermissionReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeClient) CreateWritePermissionCallCount() int {
-	fake.createWritePermissionMutex.RLock()
-	defer fake.createWritePermissionMutex.RUnlock()
-	return len(fake.createWritePermissionArgsForCall)
-}
-
-func (fake *FakeClient) CreateWritePermissionCalls(stub func(clouddriver.WritePermission) error) {
-	fake.createWritePermissionMutex.Lock()
-	defer fake.createWritePermissionMutex.Unlock()
-	fake.CreateWritePermissionStub = stub
-}
-
-func (fake *FakeClient) CreateWritePermissionArgsForCall(i int) clouddriver.WritePermission {
-	fake.createWritePermissionMutex.RLock()
-	defer fake.createWritePermissionMutex.RUnlock()
-	argsForCall := fake.createWritePermissionArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeClient) CreateWritePermissionReturns(result1 error) {
-	fake.createWritePermissionMutex.Lock()
-	defer fake.createWritePermissionMutex.Unlock()
-	fake.CreateWritePermissionStub = nil
-	fake.createWritePermissionReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) CreateWritePermissionReturnsOnCall(i int, result1 error) {
-	fake.createWritePermissionMutex.Lock()
-	defer fake.createWritePermissionMutex.Unlock()
-	fake.CreateWritePermissionStub = nil
-	if fake.createWritePermissionReturnsOnCall == nil {
-		fake.createWritePermissionReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.createWritePermissionReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
 func (fake *FakeClient) DeleteKubernetesProvider(arg1 string) error {
 	fake.deleteKubernetesProviderMutex.Lock()
 	ret, specificReturn := fake.deleteKubernetesProviderReturnsOnCall[len(fake.deleteKubernetesProviderArgsForCall)]
@@ -570,6 +440,69 @@ func (fake *FakeClient) GetKubernetesProviderReturnsOnCall(i int, result1 kubern
 		})
 	}
 	fake.getKubernetesProviderReturnsOnCall[i] = struct {
+		result1 kubernetes.Provider
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetKubernetesProviderAndPermissions(arg1 string) (kubernetes.Provider, error) {
+	fake.getKubernetesProviderAndPermissionsMutex.Lock()
+	ret, specificReturn := fake.getKubernetesProviderAndPermissionsReturnsOnCall[len(fake.getKubernetesProviderAndPermissionsArgsForCall)]
+	fake.getKubernetesProviderAndPermissionsArgsForCall = append(fake.getKubernetesProviderAndPermissionsArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("GetKubernetesProviderAndPermissions", []interface{}{arg1})
+	fake.getKubernetesProviderAndPermissionsMutex.Unlock()
+	if fake.GetKubernetesProviderAndPermissionsStub != nil {
+		return fake.GetKubernetesProviderAndPermissionsStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.getKubernetesProviderAndPermissionsReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) GetKubernetesProviderAndPermissionsCallCount() int {
+	fake.getKubernetesProviderAndPermissionsMutex.RLock()
+	defer fake.getKubernetesProviderAndPermissionsMutex.RUnlock()
+	return len(fake.getKubernetesProviderAndPermissionsArgsForCall)
+}
+
+func (fake *FakeClient) GetKubernetesProviderAndPermissionsCalls(stub func(string) (kubernetes.Provider, error)) {
+	fake.getKubernetesProviderAndPermissionsMutex.Lock()
+	defer fake.getKubernetesProviderAndPermissionsMutex.Unlock()
+	fake.GetKubernetesProviderAndPermissionsStub = stub
+}
+
+func (fake *FakeClient) GetKubernetesProviderAndPermissionsArgsForCall(i int) string {
+	fake.getKubernetesProviderAndPermissionsMutex.RLock()
+	defer fake.getKubernetesProviderAndPermissionsMutex.RUnlock()
+	argsForCall := fake.getKubernetesProviderAndPermissionsArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClient) GetKubernetesProviderAndPermissionsReturns(result1 kubernetes.Provider, result2 error) {
+	fake.getKubernetesProviderAndPermissionsMutex.Lock()
+	defer fake.getKubernetesProviderAndPermissionsMutex.Unlock()
+	fake.GetKubernetesProviderAndPermissionsStub = nil
+	fake.getKubernetesProviderAndPermissionsReturns = struct {
+		result1 kubernetes.Provider
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetKubernetesProviderAndPermissionsReturnsOnCall(i int, result1 kubernetes.Provider, result2 error) {
+	fake.getKubernetesProviderAndPermissionsMutex.Lock()
+	defer fake.getKubernetesProviderAndPermissionsMutex.Unlock()
+	fake.GetKubernetesProviderAndPermissionsStub = nil
+	if fake.getKubernetesProviderAndPermissionsReturnsOnCall == nil {
+		fake.getKubernetesProviderAndPermissionsReturnsOnCall = make(map[int]struct {
+			result1 kubernetes.Provider
+			result2 error
+		})
+	}
+	fake.getKubernetesProviderAndPermissionsReturnsOnCall[i] = struct {
 		result1 kubernetes.Provider
 		result2 error
 	}{result1, result2}
@@ -1198,14 +1131,12 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.createKubernetesProviderMutex.RUnlock()
 	fake.createKubernetesResourceMutex.RLock()
 	defer fake.createKubernetesResourceMutex.RUnlock()
-	fake.createReadPermissionMutex.RLock()
-	defer fake.createReadPermissionMutex.RUnlock()
-	fake.createWritePermissionMutex.RLock()
-	defer fake.createWritePermissionMutex.RUnlock()
 	fake.deleteKubernetesProviderMutex.RLock()
 	defer fake.deleteKubernetesProviderMutex.RUnlock()
 	fake.getKubernetesProviderMutex.RLock()
 	defer fake.getKubernetesProviderMutex.RUnlock()
+	fake.getKubernetesProviderAndPermissionsMutex.RLock()
+	defer fake.getKubernetesProviderAndPermissionsMutex.RUnlock()
 	fake.listKubernetesAccountsBySpinnakerAppMutex.RLock()
 	defer fake.listKubernetesAccountsBySpinnakerAppMutex.RUnlock()
 	fake.listKubernetesClustersByApplicationMutex.RLock()
