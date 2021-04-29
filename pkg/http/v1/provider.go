@@ -77,14 +77,14 @@ func GetKubernetesProvider(c *gin.Context) {
 	name := c.Param("name")
 
 	p, err := sc.GetKubernetesProviderAndPermissions(name)
-	if err != nil || p.Name == "" {
-		if err == gorm.ErrRecordNotFound || p.Name == "" {
-			c.JSON(http.StatusNotFound, gin.H{"error": "provider not found"})
-			return
-		}
-
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 
+		return
+	}
+
+	if p.Name == "" {
+		c.JSON(http.StatusNotFound, gin.H{"error": "provider not found"})
 		return
 	}
 
