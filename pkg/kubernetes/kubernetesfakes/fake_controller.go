@@ -32,15 +32,17 @@ func (fake *FakeController) NewClient(arg1 *rest.Config) (kubernetes.Client, err
 	fake.newClientArgsForCall = append(fake.newClientArgsForCall, struct {
 		arg1 *rest.Config
 	}{arg1})
+	stub := fake.NewClientStub
+	fakeReturns := fake.newClientReturns
 	fake.recordInvocation("NewClient", []interface{}{arg1})
 	fake.newClientMutex.Unlock()
-	if fake.NewClientStub != nil {
-		return fake.NewClientStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.newClientReturns.result1, fake.newClientReturns.result2
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeController) NewClientCallCount() int {
@@ -49,13 +51,22 @@ func (fake *FakeController) NewClientCallCount() int {
 	return len(fake.newClientArgsForCall)
 }
 
+func (fake *FakeController) NewClientCalls(stub func(*rest.Config) (kubernetes.Client, error)) {
+	fake.newClientMutex.Lock()
+	defer fake.newClientMutex.Unlock()
+	fake.NewClientStub = stub
+}
+
 func (fake *FakeController) NewClientArgsForCall(i int) *rest.Config {
 	fake.newClientMutex.RLock()
 	defer fake.newClientMutex.RUnlock()
-	return fake.newClientArgsForCall[i].arg1
+	argsForCall := fake.newClientArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeController) NewClientReturns(result1 kubernetes.Client, result2 error) {
+	fake.newClientMutex.Lock()
+	defer fake.newClientMutex.Unlock()
 	fake.NewClientStub = nil
 	fake.newClientReturns = struct {
 		result1 kubernetes.Client
@@ -64,6 +75,8 @@ func (fake *FakeController) NewClientReturns(result1 kubernetes.Client, result2 
 }
 
 func (fake *FakeController) NewClientReturnsOnCall(i int, result1 kubernetes.Client, result2 error) {
+	fake.newClientMutex.Lock()
+	defer fake.newClientMutex.Unlock()
 	fake.NewClientStub = nil
 	if fake.newClientReturnsOnCall == nil {
 		fake.newClientReturnsOnCall = make(map[int]struct {

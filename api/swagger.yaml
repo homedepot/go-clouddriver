@@ -283,13 +283,59 @@ paths:
       responses:
         "200":
           description: "OK"
+          schema:
+            $ref: "#/definitions/KubernetesProvider"
         "400":
           description: "Bad Request"
         "409":
           description: "Conflict"
         "500":
           description: "Internal Server Error"
+    put:
+      tags:
+      - "kubernetes"
+      summary: "Create, or replace, a Kubernetes account (provider)"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Object that describes the kubernetes provider"
+        required: true
+        schema:
+          $ref: "#/definitions/KubernetesProvider"
+      responses:
+        "200":
+          description: "OK"
+          schema:
+            $ref: "#/definitions/KubernetesProvider"
+        "400":
+          description: "Bad Request"
+        "500":
+          description: "Internal Server Error"
   /v1/kubernetes/providers/{name}:
+    get:
+      tags:
+      - "kubernetes"
+      parameters:
+      - name: "name"
+        in: "path"
+        required: true
+        type: "string"
+      summary: "Retrieve a Kubernetes account (provider)"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "OK"
+          schema:
+            $ref: "#/definitions/KubernetesProvider"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Internal Server Error"
     delete:
       tags:
       - "kubernetes"
