@@ -125,9 +125,7 @@ const payloadRequestKubernetesOpsDeleteManifest = `[
 const payloadRequestKubernetesOpsCleanupArtifacts = `[
   {
     "cleanupArtifacts": {
-      "manifests": [
-        {}
-      ]
+      "manifests": "asdf"
 		}
   }
 ]`

@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("Label", func() {
 	var (
-		u           *unstructured.Unstructured
+		u           unstructured.Unstructured
 		application string
 		err         error
 		version     SpinnakerVersion
@@ -20,7 +20,7 @@ var _ = Describe("Label", func() {
 
 	Context("#AddSpinnakerLabels", func() {
 		JustBeforeEach(func() {
-			err = AddSpinnakerLabels(u, application)
+			err = AddSpinnakerLabels(&u, application)
 		})
 
 		When("the object is a deployment", func() {
@@ -236,7 +236,7 @@ var _ = Describe("Label", func() {
 
 	Context("#AddSpinnakerVersionLabels", func() {
 		JustBeforeEach(func() {
-			err = AddSpinnakerVersionLabels(u, version)
+			err = AddSpinnakerVersionLabels(&u, version)
 		})
 
 		When("kind is a deployment", func() {

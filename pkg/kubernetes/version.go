@@ -68,7 +68,7 @@ func GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) str
 // Pod, ReplicaSet, ConfigMap, or Secret.
 //
 // See https://spinnaker.io/reference/providers/kubernetes-v2/#workloads for more info.
-func IsVersioned(u *unstructured.Unstructured) bool {
+func IsVersioned(u unstructured.Unstructured) bool {
 	annotations := u.GetAnnotations()
 	if annotations != nil {
 		if _, ok := annotations[AnnotationSpinnakerStrategyVersioned]; ok {

@@ -16,7 +16,7 @@ var _ = Describe("Unstructured", func() {
 	)
 
 	Describe("#ToUnstructured", func() {
-		var u *unstructured.Unstructured
+		var u unstructured.Unstructured
 
 		BeforeEach(func() {
 			m = map[string]interface{}{
@@ -50,7 +50,7 @@ var _ = Describe("Unstructured", func() {
 
 	Describe("#SetDefaultNamespaceIfScopedAndNoneSet", func() {
 		var (
-			u      *unstructured.Unstructured
+			u      unstructured.Unstructured
 			helper *resource.Helper
 		)
 
@@ -68,7 +68,7 @@ var _ = Describe("Unstructured", func() {
 		})
 
 		JustBeforeEach(func() {
-			SetDefaultNamespaceIfScopedAndNoneSet(u, helper)
+			SetDefaultNamespaceIfScopedAndNoneSet(&u, helper)
 		})
 
 		When("it is scoped", func() {

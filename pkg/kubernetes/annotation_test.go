@@ -10,16 +10,16 @@ import (
 
 var _ = Describe("Annotation", func() {
 	var (
-		u           *unstructured.Unstructured
-		application string
+		u           unstructured.Unstructured
 		err         error
+		application string
 		version     SpinnakerVersion
 		m           map[string]interface{}
 	)
 
 	Context("#AddSpinnakerAnnotations", func() {
 		JustBeforeEach(func() {
-			AddSpinnakerAnnotations(u, application)
+			AddSpinnakerAnnotations(&u, application)
 		})
 
 		When("the object is a deployment", func() {
@@ -124,7 +124,7 @@ var _ = Describe("Annotation", func() {
 
 	Context("#AddSpinnakerVersionAnnotations", func() {
 		JustBeforeEach(func() {
-			err = AddSpinnakerVersionAnnotations(u, version)
+			AddSpinnakerVersionAnnotations(&u, version)
 		})
 
 		When("kind is a deployment", func() {
@@ -196,8 +196,7 @@ var _ = Describe("Annotation", func() {
 			})
 
 			AfterEach(func() {
-				u, err = ToUnstructured(m)
-				Expect(err).To(BeNil())
+				u, _ = ToUnstructured(m)
 			})
 
 			It("adds the annotations", func() {
@@ -238,8 +237,7 @@ var _ = Describe("Annotation", func() {
 			})
 
 			AfterEach(func() {
-				u, err = ToUnstructured(m)
-				Expect(err).To(BeNil())
+				u, _ = ToUnstructured(m)
 			})
 
 			It("adds the annotations", func() {
@@ -280,8 +278,7 @@ var _ = Describe("Annotation", func() {
 			})
 
 			AfterEach(func() {
-				u, err = ToUnstructured(m)
-				Expect(err).To(BeNil())
+				u, _ = ToUnstructured(m)
 			})
 
 			It("adds the annotations", func() {

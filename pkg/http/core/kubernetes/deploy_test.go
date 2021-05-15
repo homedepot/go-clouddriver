@@ -65,16 +65,15 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
-	When("getting the unstructured manifest returns an error", func() {
+	When("converting the manifests to unstructured returns an error", func() {
 		BeforeEach(func() {
-			deployManifestRequest.Manifests = []map[string]interface{}{
-				{},
-			}
+			deployManifestRequest.Manifests = []map[string]interface{}{{}}
 		})
 
 		It("returns an error", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
-			Expect(c.Errors.Last().Error()).To(Equal("Object 'Kind' is missing in '{}'"))
+			Expect(c.Errors.Last().Error()).To(Equal("kubernetes: unable to convert manifest to unstructured: " +
+				"Object 'Kind' is missing in '{}'"))
 		})
 	})
 
@@ -109,27 +108,34 @@ var _ = Describe("Deploy", func() {
 					},
 				},
 			}
-			fakeUnstructured = unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"kind":       "list",
-					"apiVersion": "test-api-version",
-					"metadata": map[string]interface{}{
-						"annotations": map[string]interface{}{
-							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-							"deployment.kubernetes.io/revision":        "100",
-						},
-						"name": "test-name",
-					},
-					"items": manifests,
-				},
-			}
-			deployManifestRequest.Manifests = []map[string]interface{}{
-				fakeUnstructured.Object,
-			}
 		})
 
 		When("it succeeds", func() {
+			BeforeEach(func() {
+				items := make([]interface{}, 0, 2)
+				for _, i := range manifests {
+					items = append(items, i)
+				}
+				fakeUnstructured = unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "list",
+						"apiVersion": "test-api-version",
+						"metadata": map[string]interface{}{
+							"annotations": map[string]interface{}{
+								kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+								kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+								"deployment.kubernetes.io/revision":        "100",
+							},
+							"name": "test-name",
+						},
+						"items": items,
+					},
+				}
+				deployManifestRequest.Manifests = []map[string]interface{}{
+					fakeUnstructured.Object,
+				}
+			})
+
 			It("merges the list items", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				Expect(fakeKubeClient.ApplyWithNamespaceOverrideCallCount()).To(Equal(2))

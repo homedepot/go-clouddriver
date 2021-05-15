@@ -171,7 +171,7 @@ var _ = Describe("Version", func() {
 							},
 						},
 					}
-					isVersioned = IsVersioned(&fakeResource)
+					isVersioned = IsVersioned(fakeResource)
 				})
 
 				It("returns true", func() {
@@ -198,7 +198,7 @@ var _ = Describe("Version", func() {
 							},
 						},
 					}
-					isVersioned = IsVersioned(&fakeResource)
+					isVersioned = IsVersioned(fakeResource)
 				})
 
 				It("returns false", func() {
@@ -222,7 +222,7 @@ var _ = Describe("Version", func() {
 							},
 						},
 					}
-					isVersioned = IsVersioned(&fakeResource)
+					isVersioned = IsVersioned(fakeResource)
 				})
 
 				It("returns true", func() {
@@ -246,7 +246,7 @@ var _ = Describe("Version", func() {
 							},
 						},
 					}
-					isVersioned = IsVersioned(&fakeResource)
+					isVersioned = IsVersioned(fakeResource)
 				})
 
 				It("returns false", func() {
