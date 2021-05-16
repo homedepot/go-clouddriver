@@ -156,15 +156,16 @@ func (fake *FakeController) AddSpinnakerAnnotations(arg1 *unstructured.Unstructu
 		arg1 *unstructured.Unstructured
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.AddSpinnakerAnnotationsStub
+	fakeReturns := fake.addSpinnakerAnnotationsReturns
 	fake.recordInvocation("AddSpinnakerAnnotations", []interface{}{arg1, arg2})
 	fake.addSpinnakerAnnotationsMutex.Unlock()
-	if fake.AddSpinnakerAnnotationsStub != nil {
-		return fake.AddSpinnakerAnnotationsStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.addSpinnakerAnnotationsReturns
 	return fakeReturns.result1
 }
 
@@ -217,15 +218,16 @@ func (fake *FakeController) AddSpinnakerLabels(arg1 *unstructured.Unstructured, 
 		arg1 *unstructured.Unstructured
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.AddSpinnakerLabelsStub
+	fakeReturns := fake.addSpinnakerLabelsReturns
 	fake.recordInvocation("AddSpinnakerLabels", []interface{}{arg1, arg2})
 	fake.addSpinnakerLabelsMutex.Unlock()
-	if fake.AddSpinnakerLabelsStub != nil {
-		return fake.AddSpinnakerLabelsStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.addSpinnakerLabelsReturns
 	return fakeReturns.result1
 }
 
@@ -278,15 +280,16 @@ func (fake *FakeController) AddSpinnakerVersionAnnotations(arg1 *unstructured.Un
 		arg1 *unstructured.Unstructured
 		arg2 kubernetes.SpinnakerVersion
 	}{arg1, arg2})
+	stub := fake.AddSpinnakerVersionAnnotationsStub
+	fakeReturns := fake.addSpinnakerVersionAnnotationsReturns
 	fake.recordInvocation("AddSpinnakerVersionAnnotations", []interface{}{arg1, arg2})
 	fake.addSpinnakerVersionAnnotationsMutex.Unlock()
-	if fake.AddSpinnakerVersionAnnotationsStub != nil {
-		return fake.AddSpinnakerVersionAnnotationsStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.addSpinnakerVersionAnnotationsReturns
 	return fakeReturns.result1
 }
 
@@ -339,15 +342,16 @@ func (fake *FakeController) AddSpinnakerVersionLabels(arg1 *unstructured.Unstruc
 		arg1 *unstructured.Unstructured
 		arg2 kubernetes.SpinnakerVersion
 	}{arg1, arg2})
+	stub := fake.AddSpinnakerVersionLabelsStub
+	fakeReturns := fake.addSpinnakerVersionLabelsReturns
 	fake.recordInvocation("AddSpinnakerVersionLabels", []interface{}{arg1, arg2})
 	fake.addSpinnakerVersionLabelsMutex.Unlock()
-	if fake.AddSpinnakerVersionLabelsStub != nil {
-		return fake.AddSpinnakerVersionLabelsStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.addSpinnakerVersionLabelsReturns
 	return fakeReturns.result1
 }
 
@@ -401,15 +405,16 @@ func (fake *FakeController) GetCurrentVersion(arg1 *unstructured.UnstructuredLis
 		arg2 string
 		arg3 string
 	}{arg1, arg2, arg3})
+	stub := fake.GetCurrentVersionStub
+	fakeReturns := fake.getCurrentVersionReturns
 	fake.recordInvocation("GetCurrentVersion", []interface{}{arg1, arg2, arg3})
 	fake.getCurrentVersionMutex.Unlock()
-	if fake.GetCurrentVersionStub != nil {
-		return fake.GetCurrentVersionStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.getCurrentVersionReturns
 	return fakeReturns.result1
 }
 
@@ -461,15 +466,16 @@ func (fake *FakeController) IncrementVersion(arg1 string) kubernetes.SpinnakerVe
 	fake.incrementVersionArgsForCall = append(fake.incrementVersionArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.IncrementVersionStub
+	fakeReturns := fake.incrementVersionReturns
 	fake.recordInvocation("IncrementVersion", []interface{}{arg1})
 	fake.incrementVersionMutex.Unlock()
-	if fake.IncrementVersionStub != nil {
-		return fake.IncrementVersionStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.incrementVersionReturns
 	return fakeReturns.result1
 }
 
@@ -521,15 +527,16 @@ func (fake *FakeController) IsVersioned(arg1 *unstructured.Unstructured) bool {
 	fake.isVersionedArgsForCall = append(fake.isVersionedArgsForCall, struct {
 		arg1 *unstructured.Unstructured
 	}{arg1})
+	stub := fake.IsVersionedStub
+	fakeReturns := fake.isVersionedReturns
 	fake.recordInvocation("IsVersioned", []interface{}{arg1})
 	fake.isVersionedMutex.Unlock()
-	if fake.IsVersionedStub != nil {
-		return fake.IsVersionedStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.isVersionedReturns
 	return fakeReturns.result1
 }
 
@@ -581,15 +588,16 @@ func (fake *FakeController) NewClient(arg1 *rest.Config) (kubernetes.Client, err
 	fake.newClientArgsForCall = append(fake.newClientArgsForCall, struct {
 		arg1 *rest.Config
 	}{arg1})
+	stub := fake.NewClientStub
+	fakeReturns := fake.newClientReturns
 	fake.recordInvocation("NewClient", []interface{}{arg1})
 	fake.newClientMutex.Unlock()
-	if fake.NewClientStub != nil {
-		return fake.NewClientStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.newClientReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -649,15 +657,16 @@ func (fake *FakeController) SortManifests(arg1 []map[string]interface{}) ([]map[
 	fake.sortManifestsArgsForCall = append(fake.sortManifestsArgsForCall, struct {
 		arg1 []map[string]interface{}
 	}{arg1Copy})
+	stub := fake.SortManifestsStub
+	fakeReturns := fake.sortManifestsReturns
 	fake.recordInvocation("SortManifests", []interface{}{arg1Copy})
 	fake.sortManifestsMutex.Unlock()
-	if fake.SortManifestsStub != nil {
-		return fake.SortManifestsStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.sortManifestsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -712,15 +721,16 @@ func (fake *FakeController) ToUnstructured(arg1 map[string]interface{}) (*unstru
 	fake.toUnstructuredArgsForCall = append(fake.toUnstructuredArgsForCall, struct {
 		arg1 map[string]interface{}
 	}{arg1})
+	stub := fake.ToUnstructuredStub
+	fakeReturns := fake.toUnstructuredReturns
 	fake.recordInvocation("ToUnstructured", []interface{}{arg1})
 	fake.toUnstructuredMutex.Unlock()
-	if fake.ToUnstructuredStub != nil {
-		return fake.ToUnstructuredStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.toUnstructuredReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -776,15 +786,16 @@ func (fake *FakeController) VersionVolumes(arg1 *unstructured.Unstructured, arg2
 		arg1 *unstructured.Unstructured
 		arg2 map[string]clouddriver.TaskCreatedArtifact
 	}{arg1, arg2})
+	stub := fake.VersionVolumesStub
+	fakeReturns := fake.versionVolumesReturns
 	fake.recordInvocation("VersionVolumes", []interface{}{arg1, arg2})
 	fake.versionVolumesMutex.Unlock()
-	if fake.VersionVolumesStub != nil {
-		return fake.VersionVolumesStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.versionVolumesReturns
 	return fakeReturns.result1
 }
 

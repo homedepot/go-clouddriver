@@ -31,15 +31,16 @@ func (fake *FakeClient) Authorize(arg1 string) (fiat.Response, error) {
 	fake.authorizeArgsForCall = append(fake.authorizeArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.AuthorizeStub
+	fakeReturns := fake.authorizeReturns
 	fake.recordInvocation("Authorize", []interface{}{arg1})
 	fake.authorizeMutex.Unlock()
-	if fake.AuthorizeStub != nil {
-		return fake.AuthorizeStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.authorizeReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
