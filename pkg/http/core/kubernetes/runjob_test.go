@@ -8,25 +8,11 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var _ = Describe("RunJob", func() {
 	BeforeEach(func() {
 		setup()
-		fakeUnstructured := unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"annotations": map[string]interface{}{
-						kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-						kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-						"deployment.kubernetes.io/revision":        "100",
-					},
-					"generateName": "test-",
-				},
-			},
-		}
-		fakeKubeController.ToUnstructuredReturns(&fakeUnstructured, nil)
 	})
 
 	JustBeforeEach(func() {
@@ -79,34 +65,12 @@ var _ = Describe("RunJob", func() {
 
 	When("getting the unstructured manifest returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeController.ToUnstructuredReturns(nil, errors.New("error converting to unstructured"))
+			runJobRequest.Manifest = map[string]interface{}{}
 		})
 
 		It("returns an error", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-			Expect(c.Errors.Last().Error()).To(Equal("error converting to unstructured"))
-		})
-	})
-
-	When("adding the spinnaker annotations returns an error", func() {
-		BeforeEach(func() {
-			fakeKubeController.AddSpinnakerAnnotationsReturns(errors.New("error adding annotations"))
-		})
-
-		It("returns an error", func() {
-			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-			Expect(c.Errors.Last().Error()).To(Equal("error adding annotations"))
-		})
-	})
-
-	When("adding the spinnaker labels returns an error", func() {
-		BeforeEach(func() {
-			fakeKubeController.AddSpinnakerLabelsReturns(errors.New("error adding labels"))
-		})
-
-		It("returns an error", func() {
-			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
-			Expect(c.Errors.Last().Error()).To(Equal("error adding labels"))
+			Expect(c.Errors.Last().Error()).To(Equal("Object 'Kind' is missing in '{}'"))
 		})
 	})
 

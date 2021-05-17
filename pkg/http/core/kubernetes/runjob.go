@@ -55,19 +55,19 @@ func RunJob(c *gin.Context, rj RunJobRequest) {
 		return
 	}
 
-	u, err := kc.ToUnstructured(rj.Manifest)
+	u, err := kube.ToUnstructured(rj.Manifest)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	err = kc.AddSpinnakerAnnotations(u, rj.Application)
+	err = kube.AddSpinnakerAnnotations(u, rj.Application)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	err = kc.AddSpinnakerLabels(u, rj.Application)
+	err = kube.AddSpinnakerLabels(u, rj.Application)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 )
 
@@ -14,18 +13,13 @@ var _ = Describe("Annotation", func() {
 		u           *unstructured.Unstructured
 		application string
 		err         error
-		kc          Controller
 		version     SpinnakerVersion
 		m           map[string]interface{}
 	)
 
 	Context("#AddSpinnakerAnnotations", func() {
-		BeforeEach(func() {
-			kc = NewController()
-		})
-
 		JustBeforeEach(func() {
-			err = kc.AddSpinnakerAnnotations(u, application)
+			AddSpinnakerAnnotations(u, application)
 		})
 
 		When("the object is a deployment", func() {
@@ -38,7 +32,7 @@ var _ = Describe("Annotation", func() {
 						"name":      "test-name",
 					},
 				}
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 				application = "test-application"
 			})
@@ -71,7 +65,7 @@ var _ = Describe("Annotation", func() {
 						"name":      "test-name",
 					},
 				}
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 				application = "test-application"
 			})
@@ -104,7 +98,7 @@ var _ = Describe("Annotation", func() {
 						"name":      "test-name",
 					},
 				}
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 				application = "test-application"
 			})
@@ -129,12 +123,8 @@ var _ = Describe("Annotation", func() {
 	})
 
 	Context("#AddSpinnakerVersionAnnotations", func() {
-		BeforeEach(func() {
-			kc = NewController()
-		})
-
 		JustBeforeEach(func() {
-			err = kc.AddSpinnakerVersionAnnotations(u, version)
+			err = AddSpinnakerVersionAnnotations(u, version)
 		})
 
 		When("kind is a deployment", func() {
@@ -155,16 +145,16 @@ var _ = Describe("Annotation", func() {
 						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 					},
 				}
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
-				version = kubernetes.SpinnakerVersion{
+				version = SpinnakerVersion{
 					Long:  "v002",
 					Short: "2",
 				}
 			})
 
 			AfterEach(func() {
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 			})
 
@@ -197,16 +187,16 @@ var _ = Describe("Annotation", func() {
 						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 					},
 				}
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
-				version = kubernetes.SpinnakerVersion{
+				version = SpinnakerVersion{
 					Long:  "v002",
 					Short: "2",
 				}
 			})
 
 			AfterEach(func() {
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 			})
 
@@ -239,16 +229,16 @@ var _ = Describe("Annotation", func() {
 						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 					},
 				}
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
-				version = kubernetes.SpinnakerVersion{
+				version = SpinnakerVersion{
 					Long:  "v002",
 					Short: "2",
 				}
 			})
 
 			AfterEach(func() {
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 			})
 
@@ -281,16 +271,16 @@ var _ = Describe("Annotation", func() {
 						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 					},
 				}
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
-				version = kubernetes.SpinnakerVersion{
+				version = SpinnakerVersion{
 					Long:  "v002",
 					Short: "2",
 				}
 			})
 
 			AfterEach(func() {
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 			})
 

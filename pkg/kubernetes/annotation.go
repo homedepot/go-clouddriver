@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"github.com/iancoleman/strcase"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 const (
@@ -17,7 +17,9 @@ const (
 	AnnotationSpinnakerStrategyVersioned  = `strategy.spinnaker.io/versioned`
 )
 
-func (c *controller) AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error {
+// AddSpinnakerAnnotations adds Spinnaker-defined annotations to a given
+// unstructured resource.
+func AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error {
 	var err error
 
 	name := u.GetName()
@@ -91,7 +93,7 @@ func (c *controller) AddSpinnakerAnnotations(u *unstructured.Unstructured, appli
 // `artifact.spinnaker.io/version`
 // `moniker.spinnaker.io/sequence`
 // to the manifest to identify the version number of that resource.
-func (c *controller) AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, version SpinnakerVersion) error {
+func AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, version SpinnakerVersion) error {
 	var err error
 
 	annotate(u, AnnotationSpinnakerArtifactVersion, version.Long)

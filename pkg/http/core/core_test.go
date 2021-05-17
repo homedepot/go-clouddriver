@@ -137,22 +137,6 @@ func setup() {
 	fakeKubeController = &kubernetesfakes.FakeController{}
 	fakeKubeController.NewClientReturns(fakeKubeClient, nil)
 
-	fakeUnstructured := unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"kind":       "test-kind",
-			"apiVersion": "test-api-version",
-			"metadata": map[string]interface{}{
-				"annotations": map[string]interface{}{
-					kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-					kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-					"deployment.kubernetes.io/revision":        "100",
-				},
-				"name": "test-name",
-			},
-		},
-	}
-	fakeKubeController.ToUnstructuredReturns(&fakeUnstructured, nil)
-
 	fakeArcadeClient = &arcadefakes.FakeClient{}
 	fakeFiatClient = &fiatfakes.FakeClient{}
 	fakeHelmClient = &helmfakes.FakeClient{}
