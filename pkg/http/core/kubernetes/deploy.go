@@ -179,6 +179,7 @@ func toUnstructured(manifests []map[string]interface{}) ([]unstructured.Unstruct
 		if err != nil {
 			return nil, fmt.Errorf("kubernetes: unable to convert manifest to unstructured: %w", err)
 		}
+
 		m = append(m, u)
 	}
 
