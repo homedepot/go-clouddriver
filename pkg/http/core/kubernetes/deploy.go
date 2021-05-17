@@ -47,21 +47,20 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
-
-	// Merge all list element items into the manifest list.
-	manifests, err := mergeManifests(dm.Manifests)
+	// First, convert all manifests to unstructured objects.
+	manifests, err := toUnstructured(dm.Manifests)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
-
-	// Sort the manifests by their kind's priority.
-	manifests, err = kube.SortManifests(manifests)
+	// Merge all list element items into the manifest list.
+	manifests, err = mergeManifests(manifests)
 	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
-
+	// Sort the manifests by their kind's priority.
+	manifests = kube.SortManifests(manifests)
 	// Consolidate all deploy manifest request artifacts
 	artifacts := make(map[string]clouddriver.TaskCreatedArtifact)
 	for _, artifact := range dm.RequiredArtifacts {
@@ -75,51 +74,45 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	application := dm.Moniker.App
 
 	for _, manifest := range manifests {
-		u, err := kube.ToUnstructured(manifest)
-		if err != nil {
-			clouddriver.Error(c, http.StatusBadRequest, err)
-			return
-		}
-
-		nameWithoutVersion := u.GetName()
+		nameWithoutVersion := manifest.GetName()
 		// If the kind is a job, its name is not set, and generateName is set,
 		// generate a name for the job as `apply` will throw the error
 		// `resource name may not be empty`.
-		if strings.EqualFold(u.GetKind(), "job") && nameWithoutVersion == "" {
-			generateName := u.GetGenerateName()
-			u.SetName(generateName + rand.String(randNameNumber))
+		if strings.EqualFold(manifest.GetKind(), "job") && nameWithoutVersion == "" {
+			generateName := manifest.GetGenerateName()
+			manifest.SetName(generateName + rand.String(randNameNumber))
 		}
 
-		err = kube.AddSpinnakerAnnotations(u, application)
+		err = kube.AddSpinnakerAnnotations(&manifest, application)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		err = kube.AddSpinnakerLabels(u, application)
+		err = kube.AddSpinnakerLabels(&manifest, application)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		err = kube.VersionVolumes(u, artifacts)
+		err = kube.VersionVolumes(&manifest, artifacts)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		if kube.IsVersioned(u) {
-			err := handleVersionedManifest(kubeClient, u, application)
+		if kube.IsVersioned(manifest) {
+			err := handleVersionedManifest(kubeClient, &manifest, application)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
 
-		meta, err := kubeClient.ApplyWithNamespaceOverride(u, dm.NamespaceOverride)
+		meta, err := kubeClient.ApplyWithNamespaceOverride(&manifest, dm.NamespaceOverride)
 		if err != nil {
 			e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
-				u.GetKind(), u.GroupVersionKind().Version, u.GetName(), err.Error())
+				manifest.GetKind(), manifest.GroupVersionKind().Version, manifest.GetName(), err.Error())
 			clouddriver.Error(c, http.StatusInternalServerError, e)
 
 			return
@@ -142,7 +135,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			Cluster:      cluster(meta.Kind, nameWithoutVersion),
 		}
 
-		annotations := u.GetAnnotations()
+		annotations := manifest.GetAnnotations()
 		artifactType := annotations[kube.AnnotationSpinnakerArtifactType]
 
 		artifacts[nameWithoutVersion] = clouddriver.TaskCreatedArtifact{
@@ -175,6 +168,22 @@ func cluster(kind, name string) string {
 	}
 
 	return cluster
+}
+
+// toUnstructured converts a slice of map[string]interface{} to unstructured.Unstructured.
+func toUnstructured(manifests []map[string]interface{}) ([]unstructured.Unstructured, error) {
+	m := []unstructured.Unstructured{}
+
+	for _, manifest := range manifests {
+		u, err := kube.ToUnstructured(manifest)
+		if err != nil {
+			return nil, fmt.Errorf("kubernetes: unable to convert manifest to unstructured: %w", err)
+		}
+
+		m = append(m, u)
+	}
+
+	return m, nil
 }
 
 func lowercaseFirst(str string) string {
@@ -212,26 +221,19 @@ func getListOptions(app string) (metav1.ListOptions, error) {
 }
 
 // mergeManifests merges manifests of kind List into the parent list of manifets.
-func mergeManifests(manifests []map[string]interface{}) ([]map[string]interface{}, error) {
-	mergedManifests := []map[string]interface{}{}
+func mergeManifests(manifests []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
+	mergedManifests := []unstructured.Unstructured{}
 
 	for _, manifest := range manifests {
-		u, err := kube.ToUnstructured(manifest)
-		if err != nil {
-			return nil, err
-		}
-
-		if u.IsList() {
-			ul, err := u.ToList()
+		if manifest.IsList() {
+			ul, err := manifest.ToList()
 			if err != nil {
 				return nil, fmt.Errorf("error converting manifest to list: %w", err)
 			}
 
-			for _, item := range ul.Items {
-				mergedManifests = append(mergedManifests, item.Object)
-			}
+			mergedManifests = append(mergedManifests, ul.Items...)
 		} else {
-			mergedManifests = append(mergedManifests, u.Object)
+			mergedManifests = append(mergedManifests, manifest)
 		}
 	}
 

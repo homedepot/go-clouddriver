@@ -61,13 +61,13 @@ func RunJob(c *gin.Context, rj RunJobRequest) {
 		return
 	}
 
-	err = kube.AddSpinnakerAnnotations(u, rj.Application)
+	err = kube.AddSpinnakerAnnotations(&u, rj.Application)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	err = kube.AddSpinnakerLabels(u, rj.Application)
+	err = kube.AddSpinnakerLabels(&u, rj.Application)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -80,7 +80,7 @@ func RunJob(c *gin.Context, rj RunJobRequest) {
 		u.SetName(generateName + rand.String(randNameNumber))
 	}
 
-	meta, err := client.Apply(u)
+	meta, err := client.Apply(&u)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

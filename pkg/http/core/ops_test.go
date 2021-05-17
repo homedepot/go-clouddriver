@@ -107,7 +107,7 @@ var _ = Describe("Kubernetes", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
 				Expect(ce.Error).To(HavePrefix("Bad Request"))
-				Expect(ce.Message).To(Equal("Object 'Kind' is missing in '{}'"))
+				Expect(ce.Message).To(Equal("json: cannot unmarshal string into Go struct field CleanupArtifactsRequest.cleanupArtifacts.manifests of type []map[string]interface {}"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
 		})

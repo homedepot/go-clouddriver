@@ -1,9 +1,10 @@
 package kubernetes
 
 import (
-	"fmt"
 	"sort"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 const (
@@ -76,30 +77,25 @@ var (
 // SortManifests takes in a list of manifests and sorts them by the priority of their kind.
 // The kind's priorities are defined above in the var 'priorities'. Lower numbered priorities
 // should be deployed first.
-func SortManifests(manifests []map[string]interface{}) ([]map[string]interface{}, error) {
+func SortManifests(manifests []unstructured.Unstructured) []unstructured.Unstructured {
 	// Map of priorities to lists of manifests.
-	manifestMap := map[int][]map[string]interface{}{
-		0:    []map[string]interface{}{},
-		20:   []map[string]interface{}{},
-		30:   []map[string]interface{}{},
-		40:   []map[string]interface{}{},
-		50:   []map[string]interface{}{},
-		70:   []map[string]interface{}{},
-		80:   []map[string]interface{}{},
-		90:   []map[string]interface{}{},
-		100:  []map[string]interface{}{},
-		110:  []map[string]interface{}{},
-		1000: []map[string]interface{}{},
+	manifestMap := map[int][]unstructured.Unstructured{
+		0:    []unstructured.Unstructured{},
+		20:   []unstructured.Unstructured{},
+		30:   []unstructured.Unstructured{},
+		40:   []unstructured.Unstructured{},
+		50:   []unstructured.Unstructured{},
+		70:   []unstructured.Unstructured{},
+		80:   []unstructured.Unstructured{},
+		90:   []unstructured.Unstructured{},
+		100:  []unstructured.Unstructured{},
+		110:  []unstructured.Unstructured{},
+		1000: []unstructured.Unstructured{},
 	}
 
 	for _, manifest := range manifests {
-		u, err := ToUnstructured(manifest)
-		if err != nil {
-			return nil, fmt.Errorf("kubernetes: error sorting manifests: %w", err)
-		}
-
-		if _, ok := priorities[strings.ToLower(u.GetKind())]; ok {
-			priority := priorities[strings.ToLower(u.GetKind())]
+		if _, ok := priorities[strings.ToLower(manifest.GetKind())]; ok {
+			priority := priorities[strings.ToLower(manifest.GetKind())]
 			s := manifestMap[priority]
 			s = append(s, manifest)
 			manifestMap[priority] = s
@@ -121,10 +117,10 @@ func SortManifests(manifests []map[string]interface{}) ([]map[string]interface{}
 
 	sort.Ints(keys)
 
-	sortedManifests := []map[string]interface{}{}
+	sortedManifests := []unstructured.Unstructured{}
 	for _, key := range keys {
 		sortedManifests = append(sortedManifests, manifestMap[key]...)
 	}
 
-	return sortedManifests, nil
+	return sortedManifests
 }
