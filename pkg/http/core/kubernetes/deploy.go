@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -28,11 +27,16 @@ var (
 	listTimeout = int64(30)
 )
 
+// Deploy performs a "Deploy (Manifest)" Spinnaker operation.
+// It takes in a list of manifest and the Kubernetes provider
+// to "apply" them to. It adds Spinnaker annotations/labels,
+// and handles any Spinnaker versioning, then applies each manifest
+// one by one.
 func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	kubeController := kube.ControllerInstance(c)
 	sqlClient := sql.Instance(c)
 
-	config, err, status := kubeClientConfig(c, sqlClient, dm.Account)
+	config, status, err := kubeClientConfig(c, sqlClient, dm.Account)
 	if err != nil {
 		clouddriver.Error(c, status, err)
 		return
@@ -45,14 +49,14 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	}
 
 	// Merge all list element items into the manifest list.
-	manifests, err := mergeManifests(kubeController, dm.Manifests)
+	manifests, err := mergeManifests(dm.Manifests)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// Sort the manifests by their kind's priority.
-	manifests, err = kubeController.SortManifests(manifests)
+	manifests, err = kube.SortManifests(manifests)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -71,7 +75,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	application := dm.Moniker.App
 
 	for _, manifest := range manifests {
-		u, err := kubeController.ToUnstructured(manifest)
+		u, err := kube.ToUnstructured(manifest)
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
@@ -86,26 +90,26 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			u.SetName(generateName + rand.String(randNameNumber))
 		}
 
-		err = kubeController.AddSpinnakerAnnotations(u, application)
+		err = kube.AddSpinnakerAnnotations(u, application)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		err = kubeController.AddSpinnakerLabels(u, application)
+		err = kube.AddSpinnakerLabels(u, application)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		err = kubeController.VersionVolumes(u, artifacts)
+		err = kube.VersionVolumes(u, artifacts)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		if kubeController.IsVersioned(u) {
-			err := handleVersionedManifest(kubeClient, kubeController, u, application)
+		if kube.IsVersioned(u) {
+			err := handleVersionedManifest(kubeClient, u, application)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -207,29 +211,25 @@ func getListOptions(app string) (metav1.ListOptions, error) {
 	return lo, err
 }
 
-func mergeManifests(kubeController kube.Controller, manifests []map[string]interface{}) ([]map[string]interface{}, error) {
+// mergeManifests merges manifests of kind List into the parent list of manifets.
+func mergeManifests(manifests []map[string]interface{}) ([]map[string]interface{}, error) {
 	mergedManifests := []map[string]interface{}{}
 
 	for _, manifest := range manifests {
-		u, err := kubeController.ToUnstructured(manifest)
+		u, err := kube.ToUnstructured(manifest)
 		if err != nil {
-			return mergedManifests, err
+			return nil, err
 		}
 
-		if strings.EqualFold(u.GetKind(), "list") {
-			listElement := kube.ListElement{}
-
-			b, err := json.Marshal(u.Object)
+		if u.IsList() {
+			ul, err := u.ToList()
 			if err != nil {
-				return mergedManifests, err
+				return nil, fmt.Errorf("error converting manifest to list: %w", err)
 			}
 
-			err = json.Unmarshal(b, &listElement)
-			if err != nil {
-				return mergedManifests, err
+			for _, item := range ul.Items {
+				mergedManifests = append(mergedManifests, item.Object)
 			}
-
-			mergedManifests = append(mergedManifests, listElement.Items...)
 		} else {
 			mergedManifests = append(mergedManifests, u.Object)
 		}
@@ -238,24 +238,24 @@ func mergeManifests(kubeController kube.Controller, manifests []map[string]inter
 	return mergedManifests, nil
 }
 
-func kubeClientConfig(c *gin.Context, sqlClient sql.Client, account string) (*rest.Config, error, int) {
+func kubeClientConfig(c *gin.Context, sqlClient sql.Client, account string) (*rest.Config, int, error) {
 	config := &rest.Config{}
 
 	provider, err := sqlClient.GetKubernetesProvider(account)
 	if err != nil {
-		return config, err, http.StatusBadRequest
+		return config, http.StatusBadRequest, err
 	}
 
 	arcadeClient := arcade.Instance(c)
 
 	token, err := arcadeClient.Token(provider.TokenProvider)
 	if err != nil {
-		return config, err, http.StatusInternalServerError
+		return config, http.StatusInternalServerError, err
 	}
 
 	caData, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
-		return config, err, http.StatusBadRequest
+		return config, http.StatusBadRequest, err
 	}
 
 	config = &rest.Config{
@@ -266,10 +266,10 @@ func kubeClientConfig(c *gin.Context, sqlClient sql.Client, account string) (*re
 		},
 	}
 
-	return config, nil, -1
+	return config, -1, nil
 }
 
-func handleVersionedManifest(kubeClient kube.Client, kubeController kube.Controller, u *unstructured.Unstructured, application string) error {
+func handleVersionedManifest(kubeClient kube.Client, u *unstructured.Unstructured, application string) error {
 	lo, err := getListOptions(application)
 	if err != nil {
 		return err
@@ -284,16 +284,16 @@ func handleVersionedManifest(kubeClient kube.Client, kubeController kube.Control
 	}
 
 	nameWithoutVersion := u.GetName()
-	currentVersion := kubeController.GetCurrentVersion(results, kind, nameWithoutVersion)
-	latestVersion := kubeController.IncrementVersion(currentVersion)
+	currentVersion := kube.GetCurrentVersion(results, kind, nameWithoutVersion)
+	latestVersion := kube.IncrementVersion(currentVersion)
 	u.SetName(nameWithoutVersion + "-" + latestVersion.Long)
 
-	err = kubeController.AddSpinnakerVersionAnnotations(u, latestVersion)
+	err = kube.AddSpinnakerVersionAnnotations(u, latestVersion)
 	if err != nil {
 		return err
 	}
 
-	err = kubeController.AddSpinnakerVersionLabels(u, latestVersion)
+	err = kube.AddSpinnakerVersionLabels(u, latestVersion)
 	if err != nil {
 		return err
 	}

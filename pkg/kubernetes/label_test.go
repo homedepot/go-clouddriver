@@ -14,18 +14,13 @@ var _ = Describe("Label", func() {
 		u           *unstructured.Unstructured
 		application string
 		err         error
-		kc          Controller
 		version     SpinnakerVersion
 		m           map[string]interface{}
 	)
 
 	Context("#AddSpinnakerLabels", func() {
-		BeforeEach(func() {
-			kc = NewController()
-		})
-
 		JustBeforeEach(func() {
-			err = kc.AddSpinnakerLabels(u, application)
+			err = AddSpinnakerLabels(u, application)
 		})
 
 		When("the object is a deployment", func() {
@@ -39,7 +34,7 @@ var _ = Describe("Label", func() {
 							"name":      "test-name",
 						},
 					}
-					u, err = kc.ToUnstructured(m)
+					u, err = ToUnstructured(m)
 					Expect(err).To(BeNil())
 					application = "test-application"
 				})
@@ -80,7 +75,7 @@ var _ = Describe("Label", func() {
 							},
 						},
 					}
-					u, err = kc.ToUnstructured(m)
+					u, err = ToUnstructured(m)
 					Expect(err).To(BeNil())
 					application = "test-application"
 				})
@@ -109,7 +104,7 @@ var _ = Describe("Label", func() {
 							"name":      "test-name",
 						},
 					}
-					u, err = kc.ToUnstructured(m)
+					u, err = ToUnstructured(m)
 					Expect(err).To(BeNil())
 					application = "test-application"
 				})
@@ -150,7 +145,7 @@ var _ = Describe("Label", func() {
 							},
 						},
 					}
-					u, err = kc.ToUnstructured(m)
+					u, err = ToUnstructured(m)
 					Expect(err).To(BeNil())
 					application = "test-application"
 				})
@@ -179,7 +174,7 @@ var _ = Describe("Label", func() {
 							"name":      "test-name",
 						},
 					}
-					u, err = kc.ToUnstructured(m)
+					u, err = ToUnstructured(m)
 					Expect(err).To(BeNil())
 					application = "test-application"
 				})
@@ -220,7 +215,7 @@ var _ = Describe("Label", func() {
 							},
 						},
 					}
-					u, err = kc.ToUnstructured(m)
+					u, err = ToUnstructured(m)
 					Expect(err).To(BeNil())
 					application = "test-application"
 				})
@@ -240,12 +235,8 @@ var _ = Describe("Label", func() {
 	})
 
 	Context("#AddSpinnakerVersionLabels", func() {
-		BeforeEach(func() {
-			kc = NewController()
-		})
-
 		JustBeforeEach(func() {
-			err = kc.AddSpinnakerVersionLabels(u, version)
+			err = AddSpinnakerVersionLabels(u, version)
 		})
 
 		When("kind is a deployment", func() {
@@ -266,7 +257,7 @@ var _ = Describe("Label", func() {
 						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 					},
 				}
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 				version = kubernetes.SpinnakerVersion{
 					Long:  "v002",
@@ -275,7 +266,7 @@ var _ = Describe("Label", func() {
 			})
 
 			AfterEach(func() {
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 			})
 
@@ -287,6 +278,7 @@ var _ = Describe("Label", func() {
 				Expect(templateLabels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
 			})
 		})
+
 		When("kind is a replicaset", func() {
 			BeforeEach(func() {
 				m = map[string]interface{}{
@@ -305,7 +297,7 @@ var _ = Describe("Label", func() {
 						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 					},
 				}
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 				version = kubernetes.SpinnakerVersion{
 					Long:  "v002",
@@ -314,7 +306,7 @@ var _ = Describe("Label", func() {
 			})
 
 			AfterEach(func() {
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 			})
 
@@ -326,6 +318,7 @@ var _ = Describe("Label", func() {
 				Expect(templateLabels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
 			})
 		})
+
 		When("kind is a demonset", func() {
 			BeforeEach(func() {
 				m = map[string]interface{}{
@@ -344,7 +337,7 @@ var _ = Describe("Label", func() {
 						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 					},
 				}
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 				version = kubernetes.SpinnakerVersion{
 					Long:  "v002",
@@ -353,7 +346,7 @@ var _ = Describe("Label", func() {
 			})
 
 			AfterEach(func() {
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 			})
 
@@ -365,6 +358,7 @@ var _ = Describe("Label", func() {
 				Expect(templateLabels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
 			})
 		})
+
 		When("kind is a statefulset", func() {
 			BeforeEach(func() {
 				m = map[string]interface{}{
@@ -383,7 +377,7 @@ var _ = Describe("Label", func() {
 						"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
 					},
 				}
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 				version = kubernetes.SpinnakerVersion{
 					Long:  "v002",
@@ -392,7 +386,7 @@ var _ = Describe("Label", func() {
 			})
 
 			AfterEach(func() {
-				u, err = kc.ToUnstructured(m)
+				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
 			})
 

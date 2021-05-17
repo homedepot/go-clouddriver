@@ -36,15 +36,16 @@ func (fake *FakeClient) Token(arg1 string) (string, error) {
 	fake.tokenArgsForCall = append(fake.tokenArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.TokenStub
+	fakeReturns := fake.tokenReturns
 	fake.recordInvocation("Token", []interface{}{arg1})
 	fake.tokenMutex.Unlock()
-	if fake.TokenStub != nil {
-		return fake.TokenStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.tokenReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -98,9 +99,10 @@ func (fake *FakeClient) WithAPIKey(arg1 string) {
 	fake.withAPIKeyArgsForCall = append(fake.withAPIKeyArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.WithAPIKeyStub
 	fake.recordInvocation("WithAPIKey", []interface{}{arg1})
 	fake.withAPIKeyMutex.Unlock()
-	if fake.WithAPIKeyStub != nil {
+	if stub != nil {
 		fake.WithAPIKeyStub(arg1)
 	}
 }

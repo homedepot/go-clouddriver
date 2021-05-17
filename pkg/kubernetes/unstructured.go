@@ -8,7 +8,7 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 )
 
-func (c *controller) ToUnstructured(manifest map[string]interface{}) (*unstructured.Unstructured, error) {
+func ToUnstructured(manifest map[string]interface{}) (*unstructured.Unstructured, error) {
 	b, err := json.Marshal(manifest)
 	if err != nil {
 		return nil, err

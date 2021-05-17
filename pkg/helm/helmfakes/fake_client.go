@@ -45,15 +45,16 @@ func (fake *FakeClient) GetChart(arg1 string, arg2 string) ([]byte, error) {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.GetChartStub
+	fakeReturns := fake.getChartReturns
 	fake.recordInvocation("GetChart", []interface{}{arg1, arg2})
 	fake.getChartMutex.Unlock()
-	if fake.GetChartStub != nil {
-		return fake.GetChartStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getChartReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -107,15 +108,16 @@ func (fake *FakeClient) GetIndex() (helm.Index, error) {
 	ret, specificReturn := fake.getIndexReturnsOnCall[len(fake.getIndexArgsForCall)]
 	fake.getIndexArgsForCall = append(fake.getIndexArgsForCall, struct {
 	}{})
+	stub := fake.GetIndexStub
+	fakeReturns := fake.getIndexReturns
 	fake.recordInvocation("GetIndex", []interface{}{})
 	fake.getIndexMutex.Unlock()
-	if fake.GetIndexStub != nil {
-		return fake.GetIndexStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getIndexReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

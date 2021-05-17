@@ -208,15 +208,16 @@ func (fake *FakeClient) CreateKubernetesProvider(arg1 kubernetes.Provider) error
 	fake.createKubernetesProviderArgsForCall = append(fake.createKubernetesProviderArgsForCall, struct {
 		arg1 kubernetes.Provider
 	}{arg1})
+	stub := fake.CreateKubernetesProviderStub
+	fakeReturns := fake.createKubernetesProviderReturns
 	fake.recordInvocation("CreateKubernetesProvider", []interface{}{arg1})
 	fake.createKubernetesProviderMutex.Unlock()
-	if fake.CreateKubernetesProviderStub != nil {
-		return fake.CreateKubernetesProviderStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.createKubernetesProviderReturns
 	return fakeReturns.result1
 }
 
@@ -268,15 +269,16 @@ func (fake *FakeClient) CreateKubernetesResource(arg1 kubernetes.Resource) error
 	fake.createKubernetesResourceArgsForCall = append(fake.createKubernetesResourceArgsForCall, struct {
 		arg1 kubernetes.Resource
 	}{arg1})
+	stub := fake.CreateKubernetesResourceStub
+	fakeReturns := fake.createKubernetesResourceReturns
 	fake.recordInvocation("CreateKubernetesResource", []interface{}{arg1})
 	fake.createKubernetesResourceMutex.Unlock()
-	if fake.CreateKubernetesResourceStub != nil {
-		return fake.CreateKubernetesResourceStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.createKubernetesResourceReturns
 	return fakeReturns.result1
 }
 
@@ -328,15 +330,16 @@ func (fake *FakeClient) DeleteKubernetesProvider(arg1 string) error {
 	fake.deleteKubernetesProviderArgsForCall = append(fake.deleteKubernetesProviderArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.DeleteKubernetesProviderStub
+	fakeReturns := fake.deleteKubernetesProviderReturns
 	fake.recordInvocation("DeleteKubernetesProvider", []interface{}{arg1})
 	fake.deleteKubernetesProviderMutex.Unlock()
-	if fake.DeleteKubernetesProviderStub != nil {
-		return fake.DeleteKubernetesProviderStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteKubernetesProviderReturns
 	return fakeReturns.result1
 }
 
@@ -388,15 +391,16 @@ func (fake *FakeClient) GetKubernetesProvider(arg1 string) (kubernetes.Provider,
 	fake.getKubernetesProviderArgsForCall = append(fake.getKubernetesProviderArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetKubernetesProviderStub
+	fakeReturns := fake.getKubernetesProviderReturns
 	fake.recordInvocation("GetKubernetesProvider", []interface{}{arg1})
 	fake.getKubernetesProviderMutex.Unlock()
-	if fake.GetKubernetesProviderStub != nil {
-		return fake.GetKubernetesProviderStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getKubernetesProviderReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -451,15 +455,16 @@ func (fake *FakeClient) GetKubernetesProviderAndPermissions(arg1 string) (kubern
 	fake.getKubernetesProviderAndPermissionsArgsForCall = append(fake.getKubernetesProviderAndPermissionsArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetKubernetesProviderAndPermissionsStub
+	fakeReturns := fake.getKubernetesProviderAndPermissionsReturns
 	fake.recordInvocation("GetKubernetesProviderAndPermissions", []interface{}{arg1})
 	fake.getKubernetesProviderAndPermissionsMutex.Unlock()
-	if fake.GetKubernetesProviderAndPermissionsStub != nil {
-		return fake.GetKubernetesProviderAndPermissionsStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getKubernetesProviderAndPermissionsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -514,15 +519,16 @@ func (fake *FakeClient) ListKubernetesAccountsBySpinnakerApp(arg1 string) ([]str
 	fake.listKubernetesAccountsBySpinnakerAppArgsForCall = append(fake.listKubernetesAccountsBySpinnakerAppArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.ListKubernetesAccountsBySpinnakerAppStub
+	fakeReturns := fake.listKubernetesAccountsBySpinnakerAppReturns
 	fake.recordInvocation("ListKubernetesAccountsBySpinnakerApp", []interface{}{arg1})
 	fake.listKubernetesAccountsBySpinnakerAppMutex.Unlock()
-	if fake.ListKubernetesAccountsBySpinnakerAppStub != nil {
-		return fake.ListKubernetesAccountsBySpinnakerAppStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listKubernetesAccountsBySpinnakerAppReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -577,15 +583,16 @@ func (fake *FakeClient) ListKubernetesClustersByApplication(arg1 string) ([]kube
 	fake.listKubernetesClustersByApplicationArgsForCall = append(fake.listKubernetesClustersByApplicationArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.ListKubernetesClustersByApplicationStub
+	fakeReturns := fake.listKubernetesClustersByApplicationReturns
 	fake.recordInvocation("ListKubernetesClustersByApplication", []interface{}{arg1})
 	fake.listKubernetesClustersByApplicationMutex.Unlock()
-	if fake.ListKubernetesClustersByApplicationStub != nil {
-		return fake.ListKubernetesClustersByApplicationStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listKubernetesClustersByApplicationReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -640,15 +647,16 @@ func (fake *FakeClient) ListKubernetesClustersByFields(arg1 ...string) ([]kubern
 	fake.listKubernetesClustersByFieldsArgsForCall = append(fake.listKubernetesClustersByFieldsArgsForCall, struct {
 		arg1 []string
 	}{arg1})
+	stub := fake.ListKubernetesClustersByFieldsStub
+	fakeReturns := fake.listKubernetesClustersByFieldsReturns
 	fake.recordInvocation("ListKubernetesClustersByFields", []interface{}{arg1})
 	fake.listKubernetesClustersByFieldsMutex.Unlock()
-	if fake.ListKubernetesClustersByFieldsStub != nil {
-		return fake.ListKubernetesClustersByFieldsStub(arg1...)
+	if stub != nil {
+		return stub(arg1...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listKubernetesClustersByFieldsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -702,15 +710,16 @@ func (fake *FakeClient) ListKubernetesProviders() ([]kubernetes.Provider, error)
 	ret, specificReturn := fake.listKubernetesProvidersReturnsOnCall[len(fake.listKubernetesProvidersArgsForCall)]
 	fake.listKubernetesProvidersArgsForCall = append(fake.listKubernetesProvidersArgsForCall, struct {
 	}{})
+	stub := fake.ListKubernetesProvidersStub
+	fakeReturns := fake.listKubernetesProvidersReturns
 	fake.recordInvocation("ListKubernetesProviders", []interface{}{})
 	fake.listKubernetesProvidersMutex.Unlock()
-	if fake.ListKubernetesProvidersStub != nil {
-		return fake.ListKubernetesProvidersStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listKubernetesProvidersReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -757,15 +766,16 @@ func (fake *FakeClient) ListKubernetesProvidersAndPermissions() ([]kubernetes.Pr
 	ret, specificReturn := fake.listKubernetesProvidersAndPermissionsReturnsOnCall[len(fake.listKubernetesProvidersAndPermissionsArgsForCall)]
 	fake.listKubernetesProvidersAndPermissionsArgsForCall = append(fake.listKubernetesProvidersAndPermissionsArgsForCall, struct {
 	}{})
+	stub := fake.ListKubernetesProvidersAndPermissionsStub
+	fakeReturns := fake.listKubernetesProvidersAndPermissionsReturns
 	fake.recordInvocation("ListKubernetesProvidersAndPermissions", []interface{}{})
 	fake.listKubernetesProvidersAndPermissionsMutex.Unlock()
-	if fake.ListKubernetesProvidersAndPermissionsStub != nil {
-		return fake.ListKubernetesProvidersAndPermissionsStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listKubernetesProvidersAndPermissionsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -815,15 +825,16 @@ func (fake *FakeClient) ListKubernetesResourceNamesByAccountNameAndKindAndNamesp
 		arg2 string
 		arg3 string
 	}{arg1, arg2, arg3})
+	stub := fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub
+	fakeReturns := fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns
 	fake.recordInvocation("ListKubernetesResourceNamesByAccountNameAndKindAndNamespace", []interface{}{arg1, arg2, arg3})
 	fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceMutex.Unlock()
-	if fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub != nil {
-		return fake.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -878,15 +889,16 @@ func (fake *FakeClient) ListKubernetesResourcesByFields(arg1 ...string) ([]kuber
 	fake.listKubernetesResourcesByFieldsArgsForCall = append(fake.listKubernetesResourcesByFieldsArgsForCall, struct {
 		arg1 []string
 	}{arg1})
+	stub := fake.ListKubernetesResourcesByFieldsStub
+	fakeReturns := fake.listKubernetesResourcesByFieldsReturns
 	fake.recordInvocation("ListKubernetesResourcesByFields", []interface{}{arg1})
 	fake.listKubernetesResourcesByFieldsMutex.Unlock()
-	if fake.ListKubernetesResourcesByFieldsStub != nil {
-		return fake.ListKubernetesResourcesByFieldsStub(arg1...)
+	if stub != nil {
+		return stub(arg1...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listKubernetesResourcesByFieldsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -941,15 +953,16 @@ func (fake *FakeClient) ListKubernetesResourcesByTaskID(arg1 string) ([]kubernet
 	fake.listKubernetesResourcesByTaskIDArgsForCall = append(fake.listKubernetesResourcesByTaskIDArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.ListKubernetesResourcesByTaskIDStub
+	fakeReturns := fake.listKubernetesResourcesByTaskIDReturns
 	fake.recordInvocation("ListKubernetesResourcesByTaskID", []interface{}{arg1})
 	fake.listKubernetesResourcesByTaskIDMutex.Unlock()
-	if fake.ListKubernetesResourcesByTaskIDStub != nil {
-		return fake.ListKubernetesResourcesByTaskIDStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listKubernetesResourcesByTaskIDReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -1004,15 +1017,16 @@ func (fake *FakeClient) ListReadGroupsByAccountName(arg1 string) ([]string, erro
 	fake.listReadGroupsByAccountNameArgsForCall = append(fake.listReadGroupsByAccountNameArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.ListReadGroupsByAccountNameStub
+	fakeReturns := fake.listReadGroupsByAccountNameReturns
 	fake.recordInvocation("ListReadGroupsByAccountName", []interface{}{arg1})
 	fake.listReadGroupsByAccountNameMutex.Unlock()
-	if fake.ListReadGroupsByAccountNameStub != nil {
-		return fake.ListReadGroupsByAccountNameStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listReadGroupsByAccountNameReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -1067,15 +1081,16 @@ func (fake *FakeClient) ListWriteGroupsByAccountName(arg1 string) ([]string, err
 	fake.listWriteGroupsByAccountNameArgsForCall = append(fake.listWriteGroupsByAccountNameArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.ListWriteGroupsByAccountNameStub
+	fakeReturns := fake.listWriteGroupsByAccountNameReturns
 	fake.recordInvocation("ListWriteGroupsByAccountName", []interface{}{arg1})
 	fake.listWriteGroupsByAccountNameMutex.Unlock()
-	if fake.ListWriteGroupsByAccountNameStub != nil {
-		return fake.ListWriteGroupsByAccountNameStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listWriteGroupsByAccountNameReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

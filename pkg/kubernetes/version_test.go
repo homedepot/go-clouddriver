@@ -2,7 +2,7 @@ package kubernetes_test
 
 import (
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
+	. "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/kubernetesfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,32 +10,31 @@ import (
 )
 
 var (
-	kc                              kubernetes.Controller
 	fakeUnstructuredList            *unstructured.UnstructuredList
 	currentVersion                  string
 	isVersioned                     bool
-	updatedVersion, expectedVersion kubernetes.SpinnakerVersion
+	updatedVersion, expectedVersion SpinnakerVersion
 	err                             error
-	fakeDeployment                  kubernetes.Deployment
-	fakePod                         kubernetes.Pod
+	fakeDeployment                  Deployment
+	fakePod                         Pod
 )
 
 var _ = Describe("Version", func() {
 	Context("#GetCurrentVersion", func() {
 		BeforeEach(func() {
-			kc = kubernetes.NewController()
 			fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{}}
 		})
 
 		When("called with empty resources list", func() {
 			BeforeEach(func() {
-				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "test-kind", "test-name")
+				currentVersion = GetCurrentVersion(fakeUnstructuredList, "test-kind", "test-name")
 			})
 
 			It("returns 0 as the current version", func() {
 				Expect(currentVersion).To(Equal("-1"))
 			})
 		})
+
 		When("The highest version number in the cluster is 4", func() {
 			BeforeEach(func() {
 				fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{
@@ -81,13 +80,14 @@ var _ = Describe("Version", func() {
 					},
 				},
 				}
-				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "pod", "fakeName")
+				currentVersion = GetCurrentVersion(fakeUnstructuredList, "pod", "fakeName")
 			})
 
 			It("return 4 as the current version", func() {
 				Expect(currentVersion).To(Equal("4"))
 			})
 		})
+
 		When("#FilterOnClusterAnnotation returns 0 items", func() {
 			BeforeEach(func() {
 				FakeManifestFilter := kubernetesfakes.FakeManifestFilter{}
@@ -110,13 +110,14 @@ var _ = Describe("Version", func() {
 					},
 				},
 				}}
-				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "test-kind", "test-name")
+				currentVersion = GetCurrentVersion(fakeUnstructuredList, "test-kind", "test-name")
 			})
 
 			It("returns 0 as the current version", func() {
 				Expect(currentVersion).To(Equal("-1"))
 			})
 		})
+
 		When("#FilterOnLabel returns 0 items", func() {
 			BeforeEach(func() {
 				fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{{
@@ -140,7 +141,7 @@ var _ = Describe("Version", func() {
 				}}
 				FakeManifestFilter := kubernetesfakes.FakeManifestFilter{}
 				FakeManifestFilter.FilterOnLabelReturns([]unstructured.Unstructured{})
-				currentVersion = kc.GetCurrentVersion(fakeUnstructuredList, "test-kind", "test-name")
+				currentVersion = GetCurrentVersion(fakeUnstructuredList, "test-kind", "test-name")
 			})
 
 			It("returns 0 as the current version", func() {
@@ -170,12 +171,14 @@ var _ = Describe("Version", func() {
 							},
 						},
 					}
-					isVersioned = kc.IsVersioned(&fakeResource)
+					isVersioned = IsVersioned(&fakeResource)
 				})
+
 				It("returns true", func() {
 					Expect(isVersioned).To(Equal(true))
 				})
 			})
+
 			When("strategy.spinnaker.io/versioned annotaion is false", func() {
 				BeforeEach(func() {
 					fakeResource := unstructured.Unstructured{
@@ -195,12 +198,14 @@ var _ = Describe("Version", func() {
 							},
 						},
 					}
-					isVersioned = kc.IsVersioned(&fakeResource)
+					isVersioned = IsVersioned(&fakeResource)
 				})
+
 				It("returns false", func() {
 					Expect(isVersioned).To(Equal(false))
 				})
 			})
+
 			When("the resource kind is Pod", func() {
 				BeforeEach(func() {
 					fakeResource := unstructured.Unstructured{
@@ -217,12 +222,14 @@ var _ = Describe("Version", func() {
 							},
 						},
 					}
-					isVersioned = kc.IsVersioned(&fakeResource)
+					isVersioned = IsVersioned(&fakeResource)
 				})
+
 				It("returns true", func() {
 					Expect(isVersioned).To(Equal(true))
 				})
 			})
+
 			When("the resource kind is statefulSet", func() {
 				BeforeEach(func() {
 					fakeResource := unstructured.Unstructured{
@@ -239,8 +246,9 @@ var _ = Describe("Version", func() {
 							},
 						},
 					}
-					isVersioned = kc.IsVersioned(&fakeResource)
+					isVersioned = IsVersioned(&fakeResource)
 				})
+
 				It("returns false", func() {
 					Expect(isVersioned).To(Equal(false))
 				})
@@ -251,26 +259,27 @@ var _ = Describe("Version", func() {
 	Context("#IncrementVersion", func() {
 		When("current version is 1", func() {
 			BeforeEach(func() {
-				kc = kubernetes.NewController()
-				updatedVersion = kc.IncrementVersion("1")
-				expectedVersion = kubernetes.SpinnakerVersion{
+				updatedVersion = IncrementVersion("1")
+				expectedVersion = SpinnakerVersion{
 					Long:  "v002",
 					Short: "2",
 				}
 			})
+
 			It("returns expected version", func() {
 				Expect(updatedVersion).To(Equal(expectedVersion))
 			})
 		})
+
 		When("current version is 999", func() {
 			BeforeEach(func() {
-				kc = kubernetes.NewController()
-				updatedVersion = kc.IncrementVersion("999")
-				expectedVersion = kubernetes.SpinnakerVersion{
+				updatedVersion = IncrementVersion("999")
+				expectedVersion = SpinnakerVersion{
 					Long:  "v000",
 					Short: "0",
 				}
 			})
+
 			It("returns expected version", func() {
 				Expect(updatedVersion).To(Equal(expectedVersion))
 			})
@@ -309,15 +318,17 @@ var _ = Describe("Version", func() {
 					},
 				}
 
-				err = kc.VersionVolumes(fakeResource, pipelineArtifacts)
+				err = VersionVolumes(fakeResource, pipelineArtifacts)
 				Expect(err).To(BeNil())
-				fakeDeployment = kubernetes.NewDeployment(fakeResource.Object)
+				fakeDeployment = NewDeployment(fakeResource.Object)
 			})
+
 			It("updates the volume name to contain the reference", func() {
 				volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
 				Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v001"))
 			})
 		})
+
 		When("manifest kind is deployment and volume type is secret", func() {
 			BeforeEach(func() {
 				fakeResource := &unstructured.Unstructured{
@@ -349,15 +360,17 @@ var _ = Describe("Version", func() {
 					},
 				}
 
-				err = kc.VersionVolumes(fakeResource, pipelineArtifacts)
+				err = VersionVolumes(fakeResource, pipelineArtifacts)
 				Expect(err).To(BeNil())
-				fakeDeployment = kubernetes.NewDeployment(fakeResource.Object)
+				fakeDeployment = NewDeployment(fakeResource.Object)
 			})
+
 			It("updates the volume name to contain the reference", func() {
 				volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
 				Expect(volumes[0].Secret.SecretName).To(Equal("test-secret-v001"))
 			})
 		})
+
 		When("manifest kind is pod and volume type is configMap", func() {
 			BeforeEach(func() {
 				fakeResource := &unstructured.Unstructured{
@@ -385,15 +398,17 @@ var _ = Describe("Version", func() {
 					},
 				}
 
-				err = kc.VersionVolumes(fakeResource, requiredArtifacts)
+				err = VersionVolumes(fakeResource, requiredArtifacts)
 				Expect(err).To(BeNil())
-				fakePod = kubernetes.NewPod(fakeResource.Object)
+				fakePod = NewPod(fakeResource.Object)
 			})
+
 			It("updates the volume name to contain the reference", func() {
 				volumes := fakePod.GetSpec().Volumes
 				Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v001"))
 			})
 		})
+
 		When("manifest kind is pod and volume type is secret", func() {
 			BeforeEach(func() {
 				fakeResource := &unstructured.Unstructured{
@@ -421,15 +436,17 @@ var _ = Describe("Version", func() {
 					},
 				}
 
-				err = kc.VersionVolumes(fakeResource, pipelineArtifacts)
+				err = VersionVolumes(fakeResource, pipelineArtifacts)
 				Expect(err).To(BeNil())
-				fakePod = kubernetes.NewPod(fakeResource.Object)
+				fakePod = NewPod(fakeResource.Object)
 			})
+
 			It("updates the volume name to contain the reference", func() {
 				volumes := fakePod.GetSpec().Volumes
 				Expect(volumes[0].Secret.SecretName).To(Equal("test-secret-v001"))
 			})
 		})
+
 		When("manifest kind is deployment and volume type is configMap", func() {
 			BeforeEach(func() {
 				fakeResource := &unstructured.Unstructured{
@@ -461,10 +478,11 @@ var _ = Describe("Version", func() {
 					},
 				}
 
-				err = kc.VersionVolumes(fakeResource, pipelineArtifacts)
+				err = VersionVolumes(fakeResource, pipelineArtifacts)
 				Expect(err).To(BeNil())
-				fakeDeployment = kubernetes.NewDeployment(fakeResource.Object)
+				fakeDeployment = NewDeployment(fakeResource.Object)
 			})
+
 			It("updates the volume name to contain the reference", func() {
 				volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
 				Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v001"))

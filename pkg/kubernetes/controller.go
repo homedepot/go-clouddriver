@@ -7,9 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/cached/disk"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
@@ -20,26 +18,22 @@ const (
 )
 
 //go:generate counterfeiter . Controller
+// Controller holds the ability to generate a new
+// dynamic kubernetes client.
 type Controller interface {
 	NewClient(*rest.Config) (Client, error)
-	ToUnstructured(map[string]interface{}) (*unstructured.Unstructured, error)
-	AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error
-	AddSpinnakerLabels(u *unstructured.Unstructured, application string) error
-	SortManifests([]map[string]interface{}) ([]map[string]interface{}, error)
-	AddSpinnakerVersionAnnotations(u *unstructured.Unstructured, version SpinnakerVersion) error
-	AddSpinnakerVersionLabels(u *unstructured.Unstructured, version SpinnakerVersion) error
-	GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) string
-	IsVersioned(u *unstructured.Unstructured) bool
-	IncrementVersion(currentVersion string) SpinnakerVersion
-	VersionVolumes(u *unstructured.Unstructured, pipelineArtifacts map[string]clouddriver.TaskCreatedArtifact) error
 }
 
+// NewController returns an instance of Controller.
 func NewController() Controller {
 	return &controller{}
 }
 
 type controller struct{}
 
+// NewClient returns a new dynamic Kubernetes client with a default
+// disk cache directory of /var/kube/cache. This is where the client
+// stores and references its discovery of the Kubernetes API server.
 func (c *controller) NewClient(config *rest.Config) (Client, error) {
 	return newClientWithDefaultDiskCache(config)
 }

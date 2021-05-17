@@ -49,15 +49,16 @@ func (fake *FakeManifestFilter) FilterOnClusterAnnotation(arg1 []unstructured.Un
 		arg1 []unstructured.Unstructured
 		arg2 string
 	}{arg1Copy, arg2})
+	stub := fake.FilterOnClusterAnnotationStub
+	fakeReturns := fake.filterOnClusterAnnotationReturns
 	fake.recordInvocation("FilterOnClusterAnnotation", []interface{}{arg1Copy, arg2})
 	fake.filterOnClusterAnnotationMutex.Unlock()
-	if fake.FilterOnClusterAnnotationStub != nil {
-		return fake.FilterOnClusterAnnotationStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.filterOnClusterAnnotationReturns
 	return fakeReturns.result1
 }
 
@@ -115,15 +116,16 @@ func (fake *FakeManifestFilter) FilterOnLabel(arg1 []unstructured.Unstructured, 
 		arg1 []unstructured.Unstructured
 		arg2 string
 	}{arg1Copy, arg2})
+	stub := fake.FilterOnLabelStub
+	fakeReturns := fake.filterOnLabelReturns
 	fake.recordInvocation("FilterOnLabel", []interface{}{arg1Copy, arg2})
 	fake.filterOnLabelMutex.Unlock()
-	if fake.FilterOnLabelStub != nil {
-		return fake.FilterOnLabelStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.filterOnLabelReturns
 	return fakeReturns.result1
 }
 

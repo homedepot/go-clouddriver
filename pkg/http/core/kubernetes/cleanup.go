@@ -24,7 +24,7 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 	taskID := clouddriver.TaskIDFromContext(c)
 
 	for _, manifest := range ca.Manifests {
-		u, err := kc.ToUnstructured(manifest)
+		u, err := kube.ToUnstructured(manifest)
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
