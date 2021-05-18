@@ -27,6 +27,29 @@ const (
 	defaultListTimeoutSeconds = 10
 )
 
+var (
+	// serverGroupManagerResources consist of Kubernetes kinds Deployments
+	// and ReplicaSets.
+	serverGroupManagerResources = []string{
+		"deployments",
+		"replicaSets",
+	}
+	// serverGroupResources consist of Kubernetes kinds Pods, ReplicaSets,
+	// DaemonSets, and StatefulSets.
+	serverGroupResources = []string{
+		"pods",
+		"replicaSets",
+		"daemonSets",
+		"statefulSets",
+	}
+	// loadBalancerResources consist of Kubernetes kinds Services and
+	// Ingresses.
+	loadBalancerResources = []string{
+		"services",
+		"ingresses",
+	}
+)
+
 type Applications []Application
 
 type Application struct {
@@ -171,34 +194,31 @@ type ServerGroupManagerServerGroupMoniker struct {
 // Deployments and their associated ReplicaSets for a given
 // Spinnaker application.
 func ListServerGroupManagers(c *gin.Context) {
-	sc := sql.Instance(c)
-	application := c.Param("application")
 	response := ServerGroupManagers{}
-	wg := &sync.WaitGroup{}
-	mc := make(chan ServerGroupManager, defaultChanSize)
-	// List all accounts associated with the given Spinnaker app.
-	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
+	application := c.Param("application")
+	// List all request resources for the given application.
+	rs, err := listApplicationResources(c, serverGroupManagerResources, application)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
+
 		return
 	}
-	// Add the number of accounts to the wait group.
-	wg.Add(len(accounts))
-	// List all server group managers across accounts concurrently.
-	//
-	// Don't actually return while attempting to create a list of server group managers.
-	// We want to avoid the situation where a user cannot perform operations when any
-	// cluster is not available.
-	for _, account := range accounts {
-		go listServerGroupManagers(c.Copy(), wg, mc, account, application)
-	}
-	// Wait for all concurrent calls to finish.
-	wg.Wait()
-	// Close the channel.
-	close(mc)
-	// Receive all resources from the channel.
-	for sm := range mc {
-		response = append(response, sm)
+	// Declare slices to hold resources.
+	deployments := filterResourcesByKind(rs, "deployment")
+	replicaSets := filterResourcesByKind(rs, "replicaSet")
+	// Make a server group manager map of the replicaSets.
+	serverGroupManagerMap := makeServerGroupManagerMap(replicaSets, application)
+	// Create a new server group manager for each deployment.
+	for _, deployment := range deployments {
+		sgm := newServerGroupManager(deployment.u, deployment.account, application)
+		sgm.ServerGroups = []ServerGroupManagerServerGroup{}
+
+		uid := string(deployment.u.GetUID())
+		if v, ok := serverGroupManagerMap[uid]; ok {
+			sgm.ServerGroups = v
+		}
+
+		response = append(response, sgm)
 	}
 	// Sort by account (cluster), then namespace, then kind, then name.
 	sort.Slice(response, func(i, j int) bool {
@@ -220,66 +240,44 @@ func ListServerGroupManagers(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// listServerGroupManagers lists kinds Deployment and ReplicaSet in parallel
-// for a given cluster and Spinnaker application. It then creates
-// server group manager objects from these responses.
-func listServerGroupManagers(c *gin.Context, wg *sync.WaitGroup, sgms chan ServerGroupManager,
-	account, application string) {
-	defer wg.Done()
-	// Channel of unstructured to send to.
-	uc := make(chan unstructured.Unstructured, defaultChanSize)
-	// Declare a new waitgroup to wait on concurrent resource listing.
-	_wg := &sync.WaitGroup{}
-	// Add the number of resources we will be listing concurrently.
-	numResources := 2
-	_wg.Add(numResources)
-	// List all required resources concurrently.
-	go list(c.Copy(), _wg, uc, "deployments", account, application)
-	go list(c.Copy(), _wg, uc, "replicaSets", account, application)
-	// Wait for the calls to finish.
-	_wg.Wait()
-	// Close the channel.
-	close(uc)
-	// Receive all resources from the channel.
-	ul := []unstructured.Unstructured{}
-	for u := range uc {
-		ul = append(ul, u)
-	}
-	// Declare slices to hold resources.
-	deployments := filterUnstructuredSliceByKind(ul, "deployment")
-	replicaSets := filterUnstructuredSliceByKind(ul, "replicaSet")
-	// Make a server group manager map of the replicaSets.
-	serverGroupManagerMap := makeServerGroupManagerMap(replicaSets, account, application)
-	// Create a new server group manager for each deployment.
-	for _, deployment := range deployments {
-		sgm := newServerGroupManager(deployment, account, application)
-		sgm.ServerGroups = []ServerGroupManagerServerGroup{}
+// resource represents a Kubernetes resource and holds
+// it's unstructured object and associated account.
+type resource struct {
+	account string
+	u       unstructured.Unstructured
+}
 
-		uid := string(deployment.GetUID())
-		if v, ok := serverGroupManagerMap[uid]; ok {
-			sgm.ServerGroups = v
+// filterResourcesByKind filters a resource slice by the given kind and returns the
+// resulting slice.
+func filterResourcesByKind(rs []resource, kind string) []resource {
+	var filtered []resource
+
+	for _, r := range rs {
+		if strings.EqualFold(r.u.GetKind(), kind) {
+			filtered = append(filtered, r)
 		}
-		sgms <- sgm
 	}
+
+	return filtered
 }
 
 // makeServerGroupManagerMap returns a map of a server group manager's (Deployment)
 // UID to a list of ReplicaSets that the Deployment owns.
-func makeServerGroupManagerMap(replicaSets []unstructured.Unstructured, account, application string) map[string][]ServerGroupManagerServerGroup {
+func makeServerGroupManagerMap(replicaSets []resource, application string) map[string][]ServerGroupManagerServerGroup {
 	// Map of server group manager's UID to replica sets.
 	serverGroupManagerMap := map[string][]ServerGroupManagerServerGroup{}
 	// Loop through each pod.
 	for _, replicaSet := range replicaSets {
 		// Loop through each replica set's owner reference.
-		for _, ownerReference := range replicaSet.GetOwnerReferences() {
+		for _, ownerReference := range replicaSet.u.GetOwnerReferences() {
 			uid := string(ownerReference.UID)
 			if uid == "" {
 				continue
 			}
 			// Build the server group.
-			annotations := replicaSet.GetAnnotations()
+			annotations := replicaSet.u.GetAnnotations()
 			sequence := sequence(annotations)
-			s := newServerGroupManagerServerGroup(replicaSet, account,
+			s := newServerGroupManagerServerGroup(replicaSet.u, replicaSet.account,
 				application, ownerReference.Name, sequence)
 			// Append the server group to the list of server groups at the manager's UID.
 			serverGroupManagerMap[uid] = append(serverGroupManagerMap[uid], s)
@@ -367,32 +365,18 @@ type LoadBalancerServerGroup struct {
 
 // ListLoadBalancers lists kubernetes "ingresses" and "services".
 func ListLoadBalancers(c *gin.Context) {
-	sc := sql.Instance(c)
-	application := c.Param("application")
 	response := LoadBalancers{}
-	wg := &sync.WaitGroup{}
-	lbs := make(chan LoadBalancer, defaultChanSize)
-
-	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
+	application := c.Param("application")
+	// List all request resources for the given application.
+	rs, err := listApplicationResources(c, loadBalancerResources, application)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
+
 		return
 	}
-
-	wg.Add(len(accounts))
-
-	// Don't actually return while attempting to create a list of load balancers.
-	// We want to avoid the situation where a user cannot perform operations when any
-	// cluster is not available.
-	for _, account := range accounts {
-		go listLoadBalancers(c.Copy(), wg, lbs, account, application)
-	}
-
-	wg.Wait()
-
-	close(lbs)
-
-	for lb := range lbs {
+	// Create a new load balancer object from the resources returned.
+	for _, r := range rs {
+		lb := newLoadBalancer(r.u, r.account, application)
 		response = append(response, lb)
 	}
 
@@ -414,32 +398,6 @@ func ListLoadBalancers(c *gin.Context) {
 	})
 
 	c.JSON(http.StatusOK, response)
-}
-
-// listLoadBalancers lists Kubernetes kinds Service and Ingress concurrently
-// then creates a new load balancer object from the resources returned.
-func listLoadBalancers(c *gin.Context, wg *sync.WaitGroup, lbs chan LoadBalancer,
-	account, application string) {
-	defer wg.Done()
-	// Channel of unstructured to send to.
-	uc := make(chan unstructured.Unstructured, defaultChanSize)
-	// Declare a new waitgroup to wait on concurrent resource listing.
-	_wg := &sync.WaitGroup{}
-	// Add the number of resources we will be listing concurrently.
-	numResources := 2
-	_wg.Add(numResources)
-	// List all required resources concurrently.
-	go list(c.Copy(), _wg, uc, "services", account, application)
-	go list(c.Copy(), _wg, uc, "ingresses", account, application)
-	// Wait for the calls to finish.
-	_wg.Wait()
-	// Close the channel.
-	close(uc)
-	// Receive from the channel and create a new load balancer for each resource.
-	for u := range uc {
-		lb := newLoadBalancer(u, account, application)
-		lbs <- lb
-	}
 }
 
 // newLoadBalancer returns an instance of LoadBalancer.
@@ -609,33 +567,33 @@ type InstanceHealth struct {
 // ListServerGroups returns a list of Kubernetes kinds ReplicaSets, DaemonSets,
 // StatefulSets and their associated Pods.
 func ListServerGroups(c *gin.Context) {
-	sc := sql.Instance(c)
-	application := c.Param("application")
 	response := ServerGroups{}
-	wg := &sync.WaitGroup{}
-	sgs := make(chan ServerGroup, defaultChanSize)
-
-	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
+	application := c.Param("application")
+	// List all request resources for the given application.
+	rs, err := listApplicationResources(c, serverGroupResources, application)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
+
 		return
 	}
-
-	wg.Add(len(accounts))
-
-	// List server groups concurrently across accounts.
-	for _, account := range accounts {
-		go listServerGroups(c.Copy(), wg, sgs, account, application)
-	}
-
-	wg.Wait()
-
-	close(sgs)
-
-	for sg := range sgs {
+	// Declare slices to hold resources.
+	pods := filterResourcesByKind(rs, "pod")
+	replicaSets := filterResourcesByKind(rs, "replicaSet")
+	daemonSets := filterResourcesByKind(rs, "daemonSet")
+	statefulSets := filterResourcesByKind(rs, "statefulSet")
+	// Make a map of a pod's owner reference to the list of pods
+	// it owns.
+	serverGroupMap := makeServerGroupMap(pods)
+	// Combine the resources into one server group slice.
+	serverGroups := []resource{}
+	serverGroups = append(serverGroups, replicaSets...)
+	serverGroups = append(serverGroups, daemonSets...)
+	serverGroups = append(serverGroups, statefulSets...)
+	// Create a new server group for each of these resources.
+	for _, sg := range serverGroups {
+		sg := newServerGroup(sg.u, serverGroupMap, sg.account)
 		response = append(response, sg)
 	}
-
 	// Sort by account (cluster), then namespace, then kind, then name.
 	sort.Slice(response, func(i, j int) bool {
 		if response[i].Account != response[j].Account {
@@ -656,77 +614,29 @@ func ListServerGroups(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// listServerGroups lists Kubernetes kinds Pod, ReplicaSet, DaemonSet, and
-// StatefulSet concurrently. It then makes a map of a pods owner UID to the
-// list of pods it owns. Finally it creates a new server group object
-// from the ReplicaSets, DaemonSets, and StatefulSets returned.
-func listServerGroups(c *gin.Context, wg *sync.WaitGroup, sgs chan ServerGroup,
-	account, application string) {
-	defer wg.Done()
-	// Channel of unstructured to send to.
-	uc := make(chan unstructured.Unstructured, defaultChanSize)
-	// Declare a new waitgroup to wait on concurrent resource listing.
-	_wg := &sync.WaitGroup{}
-	// Add the number of resources we will be listing concurrently.
-	numResources := 4
-	_wg.Add(numResources)
-	// List all required resources concurrently.
-	go list(c.Copy(), _wg, uc, "pods", account, application)
-	go list(c.Copy(), _wg, uc, "replicaSets", account, application)
-	go list(c.Copy(), _wg, uc, "daemonSets", account, application)
-	go list(c.Copy(), _wg, uc, "statefulSets", account, application)
-	// Wait for the calls to finish.
-	_wg.Wait()
-	// Close the channel.
-	close(uc)
-	// Receive all resources from the channel.
-	ul := []unstructured.Unstructured{}
-	for u := range uc {
-		ul = append(ul, u)
-	}
-	// Declare slices to hold resources.
-	pods := filterUnstructuredSliceByKind(ul, "pod")
-	replicaSets := filterUnstructuredSliceByKind(ul, "replicaSet")
-	daemonSets := filterUnstructuredSliceByKind(ul, "daemonSet")
-	statefulSets := filterUnstructuredSliceByKind(ul, "statefulSet")
-	// Make a map of a pod's owner reference to the list of pods
-	// it owns.
-	serverGroupMap := makeServerGroupMap(pods)
-	// Combine the resources into one server group slice.
-	serverGroups := []unstructured.Unstructured{}
-	serverGroups = append(serverGroups, replicaSets...)
-	serverGroups = append(serverGroups, daemonSets...)
-	serverGroups = append(serverGroups, statefulSets...)
-	// Create a new server group for each of these resources.
-	for _, sg := range serverGroups {
-		sg := newServerGroup(sg, serverGroupMap, account)
-		sgs <- sg
-	}
-}
-
 // makeServerGroupMap returns a map of a server group's (replicaSet, daemonSet, statefulSet)
 // UID to a list of instances (pods) that this server group owns.
-func makeServerGroupMap(pods []unstructured.Unstructured) map[string][]Instance {
+func makeServerGroupMap(pods []resource) map[string][]Instance {
 	// Map of server group to instances (pods)
 	serverGroupMap := map[string][]Instance{}
 	// Sort the pods.
 	sort.Slice(pods, func(i, j int) bool {
-		if pods[i].GetNamespace() != pods[j].GetNamespace() {
-			return pods[i].GetNamespace() < pods[j].GetNamespace()
+		if pods[i].u.GetNamespace() != pods[j].u.GetNamespace() {
+			return pods[i].u.GetNamespace() < pods[j].u.GetNamespace()
 		}
 
-		return pods[i].GetName() < pods[j].GetName()
+		return pods[i].u.GetName() < pods[j].u.GetName()
 	})
 	// Loop through each pod.
 	for _, pod := range pods {
 		// Loop through each pod's owner reference.
-		for _, ownerReference := range pod.GetOwnerReferences() {
+		for _, ownerReference := range pod.u.GetOwnerReferences() {
 			uid := string(ownerReference.UID)
 			if uid == "" {
 				continue
 			}
 
-			serverGroupMap[uid] = append(serverGroupMap[uid], newInstance(pod))
+			serverGroupMap[uid] = append(serverGroupMap[uid], newInstance(pod.u))
 		}
 	}
 
@@ -1195,62 +1105,57 @@ func GetJob(c *gin.Context) {
 	c.JSON(http.StatusOK, job)
 }
 
-// kubeConfigClient returns a new Kubernetes client
-// for a given account.
-func kubeConfigClient(c *gin.Context, account string) (kubernetes.Client, error) {
+// listApplicationsResources lists all accounts for a given app, then concurrently lists
+// all requested resources for the given app concurrently.
+func listApplicationResources(c *gin.Context, rs []string, application string) ([]resource, error) {
 	sc := sql.Instance(c)
-	kc := kubernetes.ControllerInstance(c)
-	ac := arcade.Instance(c)
-
-	provider, err := sc.GetKubernetesProvider(account)
+	wg := &sync.WaitGroup{}
+	// Create channel of resouces to send to.
+	rc := make(chan resource, defaultChanSize)
+	// List all accounts associated with the given Spinnaker app.
+	accounts, err := sc.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
 		return nil, err
 	}
-
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		return nil, err
+	// Add the number of accounts to the wait group.
+	wg.Add(len(accounts))
+	// List all requested resources across accounts concurrently.
+	for _, account := range accounts {
+		go listResources(c.Copy(), wg, rs, rc, account, application)
 	}
-
-	token, err := ac.Token(provider.TokenProvider)
-	if err != nil {
-		return nil, err
+	// Wait for all concurrent calls to finish.
+	wg.Wait()
+	// Close the channel.
+	close(rc)
+	// Receive all resources from the channel.
+	resources := []resource{}
+	for r := range rc {
+		resources = append(resources, r)
 	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := kc.NewClient(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return client, nil
+	// Return the slice of unstructured resources.
+	return resources, nil
 }
 
-// filterUnstructuredSliceByKind filters a slice by the given kind and returns the
-// resulting slice.
-func filterUnstructuredSliceByKind(ul []unstructured.Unstructured, kind string) []unstructured.Unstructured {
-	var filtered []unstructured.Unstructured
-
-	for _, u := range ul {
-		if strings.EqualFold(u.GetKind(), kind) {
-			filtered = append(filtered, u)
-		}
+func listResources(c *gin.Context, wg *sync.WaitGroup, rs []string, rc chan resource,
+	account, application string) {
+	// Increment the wait group counter when we're done here.
+	defer wg.Done()
+	// Declare a new waitgroup to wait on concurrent resource listing.
+	_wg := &sync.WaitGroup{}
+	// Add the number of resources we will be listing concurrently.
+	_wg.Add(len(rs))
+	// List all required resources concurrently.
+	for _, r := range rs {
+		go list(c.Copy(), _wg, rc, r, account, application)
 	}
-
-	return filtered
+	// Wait for the calls to finish.
+	_wg.Wait()
 }
 
 // list lists a given resource and send to a channel of unstructured.Unstructured.
 // It uses a context with a timeout of 10 seconds.
-func list(c *gin.Context, wg *sync.WaitGroup, uc chan unstructured.Unstructured,
-	resource, account, application string) {
+func list(c *gin.Context, wg *sync.WaitGroup, rc chan resource,
+	r, account, application string) {
 	// Finish the wait group when we're done here.
 	defer wg.Done()
 	// Grab the kube client for the given account.
@@ -1267,7 +1172,7 @@ func list(c *gin.Context, wg *sync.WaitGroup, uc chan unstructured.Unstructured,
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*defaultListTimeoutSeconds)
 	defer cancel()
 	// List resources with the context.
-	ul, err := client.ListResourceWithContext(ctx, resource, lo)
+	ul, err := client.ListResourceWithContext(ctx, r, lo)
 	if err != nil {
 		// If there was an error, log and return.
 		clouddriver.Log(err)
@@ -1275,6 +1180,48 @@ func list(c *gin.Context, wg *sync.WaitGroup, uc chan unstructured.Unstructured,
 	}
 	// Send all unstructured objects to the channel.
 	for _, u := range ul.Items {
-		uc <- u
+		res := resource{
+			u:       u,
+			account: account,
+		}
+		rc <- res
 	}
+}
+
+// kubeConfigClient returns a new Kubernetes client
+// for a given account.
+func kubeConfigClient(c *gin.Context, account string) (kubernetes.Client, error) {
+	sc := sql.Instance(c)
+	kc := kubernetes.ControllerInstance(c)
+	ac := arcade.Instance(c)
+	// Get the provider info for the account.
+	provider, err := sc.GetKubernetesProvider(account)
+	if err != nil {
+		return nil, err
+	}
+	// Decode the provider's CA data.
+	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
+	if err != nil {
+		return nil, err
+	}
+	// Grab the auth token from arcade.
+	token, err := ac.Token(provider.TokenProvider)
+	if err != nil {
+		return nil, err
+	}
+	// Generate a new rest config using this information.
+	config := &rest.Config{
+		Host:        provider.Host,
+		BearerToken: token,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: cd,
+		},
+	}
+	// Create a new dynamic client for this config.
+	client, err := kc.NewClient(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
