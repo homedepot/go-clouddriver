@@ -1140,13 +1140,19 @@ func listResources(c *gin.Context, wg *sync.WaitGroup, rs []string, rc chan reso
 	account, application string) {
 	// Increment the wait group counter when we're done here.
 	defer wg.Done()
+	// Grab the kube client for the given account.
+	client, err := kubeConfigClient(c, account)
+	if err != nil {
+		clouddriver.Log(err)
+		return
+	}
 	// Declare a new waitgroup to wait on concurrent resource listing.
 	_wg := &sync.WaitGroup{}
 	// Add the number of resources we will be listing concurrently.
 	_wg.Add(len(rs))
 	// List all required resources concurrently.
 	for _, r := range rs {
-		go list(c.Copy(), _wg, rc, r, account, application)
+		go list(c.Copy(), _wg, rc, client, r, account, application)
 	}
 	// Wait for the calls to finish.
 	_wg.Wait()
@@ -1155,15 +1161,9 @@ func listResources(c *gin.Context, wg *sync.WaitGroup, rs []string, rc chan reso
 // list lists a given resource and send to a channel of unstructured.Unstructured.
 // It uses a context with a timeout of 10 seconds.
 func list(c *gin.Context, wg *sync.WaitGroup, rc chan resource,
-	r, account, application string) {
+	client kubernetes.Client, r, account, application string) {
 	// Finish the wait group when we're done here.
 	defer wg.Done()
-	// Grab the kube client for the given account.
-	client, err := kubeConfigClient(c, account)
-	if err != nil {
-		clouddriver.Log(err)
-		return
-	}
 	// Declare server side filtering options.
 	lo := metav1.ListOptions{
 		LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
