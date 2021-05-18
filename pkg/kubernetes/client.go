@@ -41,6 +41,7 @@ type Client interface {
 	ListByGVR(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	ListByGVRWithContext(context.Context, schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	ListResource(string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
+	ListResourceWithContext(context.Context, string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	Patch(string, string, string, []byte) (Metadata, *unstructured.Unstructured, error)
 	PatchUsingStrategy(string, string, string, []byte, types.PatchType) (Metadata, *unstructured.Unstructured, error)
 	ListResourcesByKindAndNamespace(string, string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
@@ -241,7 +242,7 @@ func (c *client) ListByGVRWithContext(ctx context.Context, gvr schema.GroupVersi
 	return c.c.Resource(gvr).List(ctx, lo)
 }
 
-// List all resources by their kind or resource (e.g. "replicaset" or "replicasets")
+// ListResource lists all resources by their kind or resource (e.g. "replicaset" or "replicasets").
 func (c *client) ListResource(resource string, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	gvr, err := c.GVRForKind(resource)
 	if err != nil {
@@ -249,6 +250,17 @@ func (c *client) ListResource(resource string, lo metav1.ListOptions) (*unstruct
 	}
 
 	return c.c.Resource(gvr).List(context.TODO(), lo)
+}
+
+// ListResourceWithContext lists all resources by their kind or resource (e.g. "replicaset" or "replicasets") with a context.
+func (c *client) ListResourceWithContext(ctx context.Context,
+	resource string, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+	gvr, err := c.GVRForKind(resource)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.c.Resource(gvr).List(ctx, lo)
 }
 
 func (c *client) ListResourcesByKindAndNamespace(kind, namespace string, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {

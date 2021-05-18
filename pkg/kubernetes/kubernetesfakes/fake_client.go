@@ -125,6 +125,21 @@ type FakeClient struct {
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}
+	ListResourceWithContextStub        func(context.Context, string, v1.ListOptions) (*unstructured.UnstructuredList, error)
+	listResourceWithContextMutex       sync.RWMutex
+	listResourceWithContextArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 v1.ListOptions
+	}
+	listResourceWithContextReturns struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}
+	listResourceWithContextReturnsOnCall map[int]struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}
 	ListResourcesByKindAndNamespaceStub        func(string, string, v1.ListOptions) (*unstructured.UnstructuredList, error)
 	listResourcesByKindAndNamespaceMutex       sync.RWMutex
 	listResourcesByKindAndNamespaceArgsForCall []struct {
@@ -700,6 +715,72 @@ func (fake *FakeClient) ListResourceReturnsOnCall(i int, result1 *unstructured.U
 	}{result1, result2}
 }
 
+func (fake *FakeClient) ListResourceWithContext(arg1 context.Context, arg2 string, arg3 v1.ListOptions) (*unstructured.UnstructuredList, error) {
+	fake.listResourceWithContextMutex.Lock()
+	ret, specificReturn := fake.listResourceWithContextReturnsOnCall[len(fake.listResourceWithContextArgsForCall)]
+	fake.listResourceWithContextArgsForCall = append(fake.listResourceWithContextArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 v1.ListOptions
+	}{arg1, arg2, arg3})
+	stub := fake.ListResourceWithContextStub
+	fakeReturns := fake.listResourceWithContextReturns
+	fake.recordInvocation("ListResourceWithContext", []interface{}{arg1, arg2, arg3})
+	fake.listResourceWithContextMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) ListResourceWithContextCallCount() int {
+	fake.listResourceWithContextMutex.RLock()
+	defer fake.listResourceWithContextMutex.RUnlock()
+	return len(fake.listResourceWithContextArgsForCall)
+}
+
+func (fake *FakeClient) ListResourceWithContextCalls(stub func(context.Context, string, v1.ListOptions) (*unstructured.UnstructuredList, error)) {
+	fake.listResourceWithContextMutex.Lock()
+	defer fake.listResourceWithContextMutex.Unlock()
+	fake.ListResourceWithContextStub = stub
+}
+
+func (fake *FakeClient) ListResourceWithContextArgsForCall(i int) (context.Context, string, v1.ListOptions) {
+	fake.listResourceWithContextMutex.RLock()
+	defer fake.listResourceWithContextMutex.RUnlock()
+	argsForCall := fake.listResourceWithContextArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeClient) ListResourceWithContextReturns(result1 *unstructured.UnstructuredList, result2 error) {
+	fake.listResourceWithContextMutex.Lock()
+	defer fake.listResourceWithContextMutex.Unlock()
+	fake.ListResourceWithContextStub = nil
+	fake.listResourceWithContextReturns = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ListResourceWithContextReturnsOnCall(i int, result1 *unstructured.UnstructuredList, result2 error) {
+	fake.listResourceWithContextMutex.Lock()
+	defer fake.listResourceWithContextMutex.Unlock()
+	fake.ListResourceWithContextStub = nil
+	if fake.listResourceWithContextReturnsOnCall == nil {
+		fake.listResourceWithContextReturnsOnCall = make(map[int]struct {
+			result1 *unstructured.UnstructuredList
+			result2 error
+		})
+	}
+	fake.listResourceWithContextReturnsOnCall[i] = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) ListResourcesByKindAndNamespace(arg1 string, arg2 string, arg3 v1.ListOptions) (*unstructured.UnstructuredList, error) {
 	fake.listResourcesByKindAndNamespaceMutex.Lock()
 	ret, specificReturn := fake.listResourcesByKindAndNamespaceReturnsOnCall[len(fake.listResourcesByKindAndNamespaceArgsForCall)]
@@ -936,6 +1017,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.listByGVRWithContextMutex.RUnlock()
 	fake.listResourceMutex.RLock()
 	defer fake.listResourceMutex.RUnlock()
+	fake.listResourceWithContextMutex.RLock()
+	defer fake.listResourceWithContextMutex.RUnlock()
 	fake.listResourcesByKindAndNamespaceMutex.RLock()
 	defer fake.listResourcesByKindAndNamespaceMutex.RUnlock()
 	fake.patchMutex.RLock()

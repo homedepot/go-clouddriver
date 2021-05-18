@@ -111,7 +111,7 @@ var _ = Describe("Application", func() {
 			fakeSQLClient.ListKubernetesAccountsBySpinnakerAppReturns([]string{
 				"account1",
 			}, nil)
-			fakeKubeClient.ListResourceReturnsOnCall(0, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(0, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -145,7 +145,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListResourceReturnsOnCall(1, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -268,7 +268,7 @@ var _ = Describe("Application", func() {
 				fakeSQLClient.ListKubernetesAccountsBySpinnakerAppReturns([]string{
 					"account1",
 				}, nil)
-				fakeKubeClient.ListResourceReturnsOnCall(0, &unstructured.UnstructuredList{
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, &unstructured.UnstructuredList{
 					Items: []unstructured.Unstructured{
 						{
 							Object: map[string]interface{}{
@@ -332,7 +332,7 @@ var _ = Describe("Application", func() {
 						},
 					},
 				}, nil)
-				fakeKubeClient.ListResourceReturnsOnCall(1, &unstructured.UnstructuredList{
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
 					Items: []unstructured.Unstructured{
 						{
 							Object: map[string]interface{}{
@@ -449,7 +449,7 @@ var _ = Describe("Application", func() {
 				"account1",
 				// "account2",
 			}, nil)
-			fakeKubeClient.ListResourceReturnsOnCall(0, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(0, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -468,7 +468,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListResourceReturnsOnCall(1, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -576,7 +576,7 @@ var _ = Describe("Application", func() {
 				fakeSQLClient.ListKubernetesAccountsBySpinnakerAppReturns([]string{
 					"account1",
 				}, nil)
-				fakeKubeClient.ListResourceReturnsOnCall(0, &unstructured.UnstructuredList{
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, &unstructured.UnstructuredList{
 					Items: []unstructured.Unstructured{
 						{
 							Object: map[string]interface{}{
@@ -625,7 +625,7 @@ var _ = Describe("Application", func() {
 						},
 					},
 				}, nil)
-				fakeKubeClient.ListResourceReturnsOnCall(1, &unstructured.UnstructuredList{
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
 					Items: []unstructured.Unstructured{
 						{
 							Object: map[string]interface{}{
@@ -759,7 +759,7 @@ var _ = Describe("Application", func() {
 			fakeSQLClient.ListKubernetesAccountsBySpinnakerAppReturns([]string{
 				"account1",
 			}, nil)
-			fakeKubeClient.ListResourceReturnsOnCall(0, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(0, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -829,7 +829,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListResourceReturnsOnCall(1, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -879,7 +879,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListResourceReturnsOnCall(2, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(2, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -923,7 +923,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListResourceReturnsOnCall(3, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(3, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -1057,7 +1057,7 @@ var _ = Describe("Application", func() {
 
 		When("the resources are not sorted", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceReturnsOnCall(0, &unstructured.UnstructuredList{
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, &unstructured.UnstructuredList{
 					Items: []unstructured.Unstructured{
 						{
 							Object: map[string]interface{}{
@@ -1171,7 +1171,7 @@ var _ = Describe("Application", func() {
 						},
 					},
 				}, nil)
-				fakeKubeClient.ListResourceReturnsOnCall(1, &unstructured.UnstructuredList{
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
 					Items: []unstructured.Unstructured{
 						{
 							Object: map[string]interface{}{
@@ -1221,7 +1221,7 @@ var _ = Describe("Application", func() {
 						},
 					},
 				}, nil)
-				fakeKubeClient.ListResourceReturnsOnCall(2, &unstructured.UnstructuredList{
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(2, &unstructured.UnstructuredList{
 					Items: []unstructured.Unstructured{
 						{
 							Object: map[string]interface{}{
@@ -1305,7 +1305,7 @@ var _ = Describe("Application", func() {
 						},
 					},
 				}, nil)
-				fakeKubeClient.ListResourceReturnsOnCall(3, &unstructured.UnstructuredList{
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(3, &unstructured.UnstructuredList{
 					Items: []unstructured.Unstructured{
 						{
 							Object: map[string]interface{}{
@@ -1408,7 +1408,7 @@ var _ = Describe("Application", func() {
 			setup()
 			uri = svr.URL + "/applications/test-application/serverGroups/test-account/test-namespace/replicaSet test-rs1"
 			createRequest(http.MethodGet)
-			fakeKubeClient.ListResourceReturns(&unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceWithContextReturns(&unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -1575,7 +1575,7 @@ var _ = Describe("Application", func() {
 
 		When("listing pods returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceReturns(nil, errors.New("error listing pods"))
+				fakeKubeClient.ListResourceWithContextReturns(nil, errors.New("error listing pods"))
 			})
 
 			It("returns an error", func() {
