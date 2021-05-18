@@ -242,7 +242,7 @@ func (c *client) ListByGVRWithContext(ctx context.Context, gvr schema.GroupVersi
 	return c.c.Resource(gvr).List(ctx, lo)
 }
 
-// ListResource all resources by their kind or resource (e.g. "replicaset" or "replicasets").
+// ListResource lists all resources by their kind or resource (e.g. "replicaset" or "replicasets").
 func (c *client) ListResource(resource string, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	gvr, err := c.GVRForKind(resource)
 	if err != nil {
@@ -252,7 +252,7 @@ func (c *client) ListResource(resource string, lo metav1.ListOptions) (*unstruct
 	return c.c.Resource(gvr).List(context.TODO(), lo)
 }
 
-// ListResourceWithContext all resources by their kind or resource (e.g. "replicaset" or "replicasets") with a context.
+// ListResourceWithContext lists all resources by their kind or resource (e.g. "replicaset" or "replicasets") with a context.
 func (c *client) ListResourceWithContext(ctx context.Context,
 	resource string, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	gvr, err := c.GVRForKind(resource)
