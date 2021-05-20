@@ -155,7 +155,7 @@ func newDeleteManifestRequest() DeleteManifestRequest {
 		Mode:         "static",
 		ManifestName: "deployment test-deployment",
 		Options: DeleteManifestRequestOptions{
-			Cascading:          true,
+			Cascading:          false,
 			GracePeriodSeconds: &gps,
 		},
 	}

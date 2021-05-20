@@ -150,6 +150,7 @@ type DeleteManifestRequestLabelSelector struct {
 
 type DeleteManifestRequestOptions struct {
 	Cascading          bool   `json:"cascading"`
+	OrphanDependants   *bool  `json:"orphanDependants"`
 	GracePeriodSeconds *int64 `json:"gracePeriodSeconds"`
 }
 

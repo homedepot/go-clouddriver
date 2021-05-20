@@ -62,9 +62,15 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 	if dm.Options.GracePeriodSeconds != nil {
 		do.GracePeriodSeconds = dm.Options.GracePeriodSeconds
 	}
-
+	// There are two options that will set the deletion to cascade. Originally this was set when
+	// `options.cascading = true`, however in later APIs they have this set in
+	// `options.orphanDependants = false`.
+	//
+	// Using a pointer should prevent the older API versions from falsly cascading
+	// when they don't intend to.
 	propagationPolicy := v1.DeletePropagationOrphan
-	if dm.Options.Cascading {
+	if dm.Options.Cascading ||
+		(dm.Options.OrphanDependants != nil && !*dm.Options.OrphanDependants) {
 		propagationPolicy = v1.DeletePropagationForeground
 	}
 

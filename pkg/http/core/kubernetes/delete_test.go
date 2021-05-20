@@ -100,6 +100,47 @@ var _ = Describe("Delete", func() {
 		})
 	})
 
+	When("the cascading option is set", func() {
+		BeforeEach(func() {
+			deleteManifestRequest.Options.Cascading = true
+		})
+
+		It("sets the delete propagation to forground", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			kind, name, namespace, deleteOptions := fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceArgsForCall(0)
+			Expect(kind).To(Equal("deployment"))
+			Expect(name).To(Equal("test-deployment"))
+			Expect(namespace).To(Equal("test-namespace"))
+			Expect(deleteOptions.GracePeriodSeconds).ToNot(BeNil())
+			Expect(*deleteOptions.GracePeriodSeconds).To(Equal(int64(10)))
+			Expect(deleteOptions.PropagationPolicy).ToNot(BeNil())
+			Expect(*deleteOptions.PropagationPolicy).To(Equal(v1.DeletePropagationForeground))
+			kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+			Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeDelete))
+		})
+	})
+
+	When("orphan dependants is set to false", func() {
+		BeforeEach(func() {
+			f := false
+			deleteManifestRequest.Options.OrphanDependants = &f
+		})
+
+		It("sets the delete propagation to forground", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			kind, name, namespace, deleteOptions := fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceArgsForCall(0)
+			Expect(kind).To(Equal("deployment"))
+			Expect(name).To(Equal("test-deployment"))
+			Expect(namespace).To(Equal("test-namespace"))
+			Expect(deleteOptions.GracePeriodSeconds).ToNot(BeNil())
+			Expect(*deleteOptions.GracePeriodSeconds).To(Equal(int64(10)))
+			Expect(deleteOptions.PropagationPolicy).ToNot(BeNil())
+			Expect(*deleteOptions.PropagationPolicy).To(Equal(v1.DeletePropagationForeground))
+			kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+			Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeDelete))
+		})
+	})
+
 	When("the mode is label", func() {
 		BeforeEach(func() {
 			deleteManifestRequest.Mode = "label"
@@ -132,7 +173,7 @@ var _ = Describe("Delete", func() {
 			Expect(deleteOptions.GracePeriodSeconds).ToNot(BeNil())
 			Expect(*deleteOptions.GracePeriodSeconds).To(Equal(int64(10)))
 			Expect(deleteOptions.PropagationPolicy).ToNot(BeNil())
-			Expect(*deleteOptions.PropagationPolicy).To(Equal(v1.DeletePropagationForeground))
+			Expect(*deleteOptions.PropagationPolicy).To(Equal(v1.DeletePropagationOrphan))
 			kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
 			Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeDelete))
 		})
