@@ -1136,6 +1136,8 @@ func listApplicationResources(c *gin.Context, rs []string, application string) (
 	return resources, nil
 }
 
+// listResources initializes discovery for a given client then lists
+// the requested resources concurrently.
 func listResources(c *gin.Context, wg *sync.WaitGroup, rs []string, rc chan resource,
 	account, application string) {
 	// Increment the wait group counter when we're done here.
@@ -1143,6 +1145,18 @@ func listResources(c *gin.Context, wg *sync.WaitGroup, rs []string, rc chan reso
 	// Grab the kube client for the given account.
 	client, err := kubeConfigClient(c, account)
 	if err != nil {
+		clouddriver.Log(err)
+		return
+	}
+	// First, run discovery on this dynamic client before listing resources
+	// concurrently. This is necessary since the rest mapper for dynamic
+	// clients uses a mutex lock. Failure to do this will make concurrent
+	// requests appear to run serially. This is particularly bad if a cluster is not
+	// reachable - even with a timeout of 10 seconds, a request for 4 resources
+	// would take 40 seconds since the API cannot be discovered concurrently.
+	//
+	// See https://github.com/kubernetes/client-go/blob/f6ce18ae578c8cca64d14ab9687824d9e1305a67/restmapper/discovery.go#L194.
+	if err = client.Discover(); err != nil {
 		clouddriver.Log(err)
 		return
 	}
@@ -1210,12 +1224,14 @@ func kubeConfigClient(c *gin.Context, account string) (kubernetes.Client, error)
 		return nil, err
 	}
 	// Generate a new rest config using this information.
+	// Set the timeout to be the list timeout.
 	config := &rest.Config{
 		Host:        provider.Host,
 		BearerToken: token,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: cd,
 		},
+		Timeout: time.Second * defaultListTimeoutSeconds,
 	}
 	// Create a new dynamic client for this config.
 	client, err := kc.NewClient(config)

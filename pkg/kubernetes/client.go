@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/patcher"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -36,6 +37,7 @@ type Client interface {
 	Apply(*unstructured.Unstructured) (Metadata, error)
 	ApplyWithNamespaceOverride(*unstructured.Unstructured, string) (Metadata, error)
 	DeleteResourceByKindAndNameAndNamespace(string, string, string, metav1.DeleteOptions) error
+	Discover() error
 	GVRForKind(string) (schema.GroupVersionResource, error)
 	Get(string, string, string) (*unstructured.Unstructured, error)
 	ListByGVR(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
@@ -191,6 +193,26 @@ func (c *client) DeleteResourceByKindAndNameAndNamespace(kind, name, namespace s
 	}
 
 	return err
+}
+
+// Discover uses the resource singularize function of a client GVR mapping
+// to initialize the API discovery cache.
+//
+// This should be ran before running any client request operations concurrently.
+// First, it will initialize the cache making any future requests use the disk
+// cache for API discovery instead of making requests to the cluster. Second,
+// since the REST mapper has a mutex lock on API discovery, concurrent requests
+// to grab the GVR from the mapper will appear to run serially.
+//
+// See https://github.com/kubernetes/client-go/blob/f6ce18ae578c8cca64d14ab9687824d9e1305a67/restmapper/discovery.go#L194.
+func (c *client) Discover() error {
+	// Just use this function call to cache the API discovery.
+	_, err := c.mapper.ResourceSingularizer("pods")
+	if err != nil {
+		return fmt.Errorf("error discovering API: %w", err)
+	}
+
+	return nil
 }
 
 // Get a manifest by resource/kind (example: 'pods' or 'pod'),
