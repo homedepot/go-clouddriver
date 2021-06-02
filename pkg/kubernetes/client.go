@@ -209,7 +209,7 @@ func (c *client) Discover() error {
 	// Just use this function call to cache the API discovery.
 	_, err := c.mapper.ResourceSingularizer("pods")
 	if err != nil {
-		fmt.Errorf("error discovering API: %w", err)
+		return fmt.Errorf("error discovering API: %w", err)
 	}
 
 	return nil
