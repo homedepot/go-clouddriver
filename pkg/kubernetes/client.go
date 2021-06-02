@@ -203,6 +203,8 @@ func (c *client) DeleteResourceByKindAndNameAndNamespace(kind, name, namespace s
 // cache for API discovery instead of making requests to the cluster. Second,
 // since the REST mapper has a mutex lock on API discovery, concurrent requests
 // to grab the GVR from the mapper will appear to run serially.
+//
+// See https://github.com/kubernetes/client-go/blob/f6ce18ae578c8cca64d14ab9687824d9e1305a67/restmapper/discovery.go#L194.
 func (c *client) Discover() error {
 	// Just use this function call to cache the API discovery.
 	_, err := c.mapper.ResourceSingularizer("pods")

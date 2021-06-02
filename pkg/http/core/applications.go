@@ -1154,6 +1154,8 @@ func listResources(c *gin.Context, wg *sync.WaitGroup, rs []string, rc chan reso
 	// requests appear to run serially. This is particularly bad if a cluster is not
 	// reachable - even with a timeout of 10 seconds, a request for 4 resources
 	// would take 40 seconds since the API cannot be discovered concurrently.
+	//
+	// See https://github.com/kubernetes/client-go/blob/f6ce18ae578c8cca64d14ab9687824d9e1305a67/restmapper/discovery.go#L194.
 	if err = client.Discover(); err != nil {
 		clouddriver.Log(err)
 		return
