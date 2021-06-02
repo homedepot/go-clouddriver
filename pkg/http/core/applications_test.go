@@ -240,8 +240,8 @@ var _ = Describe("Application", func() {
 
 		When("listing deployments returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceReturnsOnCall(0, nil, errors.New("error listing deployments"))
-				fakeKubeClient.ListResourceReturnsOnCall(2, nil, errors.New("error listing deployments"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, nil, errors.New("error listing deployments"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(2, nil, errors.New("error listing deployments"))
 			})
 
 			It("continues", func() {
@@ -251,8 +251,8 @@ var _ = Describe("Application", func() {
 
 		When("listing replicasets returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceReturnsOnCall(1, nil, errors.New("error listing replicaSets"))
-				fakeKubeClient.ListResourceReturnsOnCall(3, nil, errors.New("error listing replicaSets"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, nil, errors.New("error listing replicaSets"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(3, nil, errors.New("error listing replicaSets"))
 			})
 
 			It("continues", func() {
@@ -551,8 +551,8 @@ var _ = Describe("Application", func() {
 
 		When("listing ingresses returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceReturnsOnCall(0, nil, errors.New("error listing ingresses"))
-				fakeKubeClient.ListResourceReturnsOnCall(1, nil, errors.New("error listing ingresses"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, nil, errors.New("error listing ingresses"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, nil, errors.New("error listing ingresses"))
 			})
 
 			It("continues", func() {
@@ -562,8 +562,8 @@ var _ = Describe("Application", func() {
 
 		When("listing services returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceReturnsOnCall(1, nil, errors.New("error listing services"))
-				fakeKubeClient.ListResourceReturnsOnCall(3, nil, errors.New("error listing services"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, nil, errors.New("error listing services"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(3, nil, errors.New("error listing services"))
 			})
 
 			It("continues", func() {
@@ -1033,10 +1033,20 @@ var _ = Describe("Application", func() {
 			})
 		})
 
+		When("discovering the API returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.DiscoverReturns(errors.New("error discovering"))
+			})
+
+			It("continues", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+			})
+		})
+
 		When("listing replicasets returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceReturnsOnCall(0, nil, errors.New("error listing replicasets"))
-				fakeKubeClient.ListResourceReturnsOnCall(2, nil, errors.New("error listing replicasets"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, nil, errors.New("error listing replicasets"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(2, nil, errors.New("error listing replicasets"))
 			})
 
 			It("continues", func() {
@@ -1046,8 +1056,8 @@ var _ = Describe("Application", func() {
 
 		When("listing pods returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceReturnsOnCall(1, nil, errors.New("error listing pods"))
-				fakeKubeClient.ListResourceReturnsOnCall(3, nil, errors.New("error listing pods"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, nil, errors.New("error listing pods"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(3, nil, errors.New("error listing pods"))
 			})
 
 			It("continues", func() {

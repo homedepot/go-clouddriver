@@ -54,6 +54,16 @@ type FakeClient struct {
 	deleteResourceByKindAndNameAndNamespaceReturnsOnCall map[int]struct {
 		result1 error
 	}
+	DiscoverStub        func() error
+	discoverMutex       sync.RWMutex
+	discoverArgsForCall []struct {
+	}
+	discoverReturns struct {
+		result1 error
+	}
+	discoverReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GVRForKindStub        func(string) (schema.GroupVersionResource, error)
 	gVRForKindMutex       sync.RWMutex
 	gVRForKindArgsForCall []struct {
@@ -385,6 +395,59 @@ func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespaceReturnsOnCall(i i
 		})
 	}
 	fake.deleteResourceByKindAndNameAndNamespaceReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) Discover() error {
+	fake.discoverMutex.Lock()
+	ret, specificReturn := fake.discoverReturnsOnCall[len(fake.discoverArgsForCall)]
+	fake.discoverArgsForCall = append(fake.discoverArgsForCall, struct {
+	}{})
+	stub := fake.DiscoverStub
+	fakeReturns := fake.discoverReturns
+	fake.recordInvocation("Discover", []interface{}{})
+	fake.discoverMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeClient) DiscoverCallCount() int {
+	fake.discoverMutex.RLock()
+	defer fake.discoverMutex.RUnlock()
+	return len(fake.discoverArgsForCall)
+}
+
+func (fake *FakeClient) DiscoverCalls(stub func() error) {
+	fake.discoverMutex.Lock()
+	defer fake.discoverMutex.Unlock()
+	fake.DiscoverStub = stub
+}
+
+func (fake *FakeClient) DiscoverReturns(result1 error) {
+	fake.discoverMutex.Lock()
+	defer fake.discoverMutex.Unlock()
+	fake.DiscoverStub = nil
+	fake.discoverReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) DiscoverReturnsOnCall(i int, result1 error) {
+	fake.discoverMutex.Lock()
+	defer fake.discoverMutex.Unlock()
+	fake.DiscoverStub = nil
+	if fake.discoverReturnsOnCall == nil {
+		fake.discoverReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.discoverReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -1007,6 +1070,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.applyWithNamespaceOverrideMutex.RUnlock()
 	fake.deleteResourceByKindAndNameAndNamespaceMutex.RLock()
 	defer fake.deleteResourceByKindAndNameAndNamespaceMutex.RUnlock()
+	fake.discoverMutex.RLock()
+	defer fake.discoverMutex.RUnlock()
 	fake.gVRForKindMutex.RLock()
 	defer fake.gVRForKindMutex.RUnlock()
 	fake.getMutex.RLock()

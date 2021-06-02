@@ -42,14 +42,14 @@ const (
 	// Default cache directory.
 	cacheDir       = "/var/kube/cache"
 	defaultTimeout = 180 * time.Second
-)
-
-var (
-	ttl = 10 * time.Minute
+	ttl            = 10 * time.Minute
 )
 
 func newClientWithDefaultDiskCache(config *rest.Config) (Client, error) {
-	config.Timeout = defaultTimeout
+	// If the timeout is not set, set it to the default timeout.
+	if config.Timeout == 0 {
+		config.Timeout = defaultTimeout
+	}
 
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
