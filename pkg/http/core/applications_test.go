@@ -453,6 +453,76 @@ var _ = Describe("Application", func() {
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"labels": map[string]interface{}{
+									"label1": "test-label1",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs1",
+										"kind": "replicaSet",
+										"uid":  "test-uid1",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"labels": map[string]interface{}{
+									"label1": "test-label1",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs2",
+										"kind": "replicaSet",
+										"uid":  "test-uid2",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"labels": map[string]interface{}{
+									"label1": "test-label1",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs3",
+										"kind": "replicaSet",
+										"uid":  "test-uid3",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+				},
+			}, nil)
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]interface{}{
 							"kind":       "Ingress",
 							"apiVersion": "networking.k8s.io/v1beta1",
 							"metadata": map[string]interface{}{
@@ -468,7 +538,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(2, &unstructured.UnstructuredList{
 				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]interface{}{
@@ -477,6 +547,148 @@ var _ = Describe("Application", func() {
 							"metadata": map[string]interface{}{
 								"name":      "test-service1",
 								"namespace": "test-namespace1",
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]string{
+									"test": "label",
+								},
+							},
+						},
+					},
+				},
+			}, nil)
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(3, &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]interface{}{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":       "test-deployment1",
+									"artifact.spinnaker.io/type":       "kubernetes/deployment",
+									"artifact.spinnaker.io/location":   "test-namespace1",
+									"moniker.spinnaker.io/application": "test-deployment1",
+									"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
+									"moniker.spinnaker.io/sequence":    "19",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-deployment1",
+										"kind": "Deployment",
+										"uid":  "test-uid3",
+									},
+								},
+								"uid": "test-uid1",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label",
+										},
+									},
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+				},
+			}, nil)
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(4, &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]interface{}{
+							"kind":       "StatefulSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":        "test-deployment1",
+									"artifact.spinnaker.io/type":        "kubernetes/deployment",
+									"artifact.spinnaker.io/location":    "test-namespace1",
+									"moniker.spinnaker.io/application":  "test-deployment1",
+									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+									"deployment.kubernetes.io/revision": "19",
+								},
+								"uid": "test-uid3",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "StatefulSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs1",
+								"namespace":         "test-namespace2",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":        "test-deployment1",
+									"artifact.spinnaker.io/type":        "kubernetes/deployment",
+									"artifact.spinnaker.io/location":    "test-namespace1",
+									"moniker.spinnaker.io/application":  "test-deployment1",
+									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+									"deployment.kubernetes.io/revision": "19",
+								},
+								"uid": "test-uid3",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
 							},
 						},
 					},
@@ -580,6 +792,76 @@ var _ = Describe("Application", func() {
 					Items: []unstructured.Unstructured{
 						{
 							Object: map[string]interface{}{
+								"kind":       "Pod",
+								"apiVersion": "v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-pod1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"labels": map[string]interface{}{
+										"test": "label3",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs1",
+											"kind": "replicaSet",
+											"uid":  "test-uid11",
+										},
+									},
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Pod",
+								"apiVersion": "v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-pod1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"labels": map[string]interface{}{
+										"test": "label2",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs2",
+											"kind": "replicaSet",
+											"uid":  "test-uid2",
+										},
+									},
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Pod",
+								"apiVersion": "v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-pod1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"labels": map[string]interface{}{
+										"test": "label1",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs3",
+											"kind": "statefulSet",
+											"uid":  "test-uid3",
+										},
+									},
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+								},
+							},
+						},
+					},
+				}, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{
+						{
+							Object: map[string]interface{}{
 								"kind":       "Ingress",
 								"apiVersion": "networking.k8s.io/v1beta1",
 								"metadata": map[string]interface{}{
@@ -625,7 +907,7 @@ var _ = Describe("Application", func() {
 						},
 					},
 				}, nil)
-				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(2, &unstructured.UnstructuredList{
 					Items: []unstructured.Unstructured{
 						{
 							Object: map[string]interface{}{
@@ -634,6 +916,12 @@ var _ = Describe("Application", func() {
 								"metadata": map[string]interface{}{
 									"name":      "test-service3",
 									"namespace": "test-namespace2",
+									"uid":       "aec15437-4e6a-11ea-9788-4201ac100006",
+								},
+								"spec": map[string]interface{}{
+									"selector": map[string]string{
+										"test": "label",
+									},
 								},
 							},
 						},
@@ -644,6 +932,12 @@ var _ = Describe("Application", func() {
 								"metadata": map[string]interface{}{
 									"name":      "test-service2",
 									"namespace": "test-namespace2",
+									"uid":       "bec15437-4e6a-11ea-9788-4201ac100006",
+								},
+								"spec": map[string]interface{}{
+									"selector": map[string]string{
+										"test": "label1",
+									},
 								},
 							},
 						},
@@ -654,6 +948,154 @@ var _ = Describe("Application", func() {
 								"metadata": map[string]interface{}{
 									"name":      "test-service1",
 									"namespace": "test-namespace1",
+									"uid":       "cec15437-4e6a-11ea-9788-4201ac100006",
+								},
+								"spec": map[string]interface{}{
+									"selector": map[string]string{
+										"test": "label2",
+									},
+								},
+							},
+						},
+					},
+				}, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(3, &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{
+						{
+							Object: map[string]interface{}{
+								"kind":       "ReplicaSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-rs1",
+									"namespace":         "test-namespace2",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"artifact.spinnaker.io/name":       "test-deployment1",
+										"artifact.spinnaker.io/type":       "kubernetes/deployment",
+										"artifact.spinnaker.io/location":   "test-namespace1",
+										"moniker.spinnaker.io/application": "test-deployment1",
+										"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
+										"moniker.spinnaker.io/sequence":    "19",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-deployment1",
+											"kind": "Deployment",
+											"uid":  "test-uid3",
+										},
+									},
+									"uid": "test-uid11",
+								},
+								"spec": map[string]interface{}{
+									"replicas": 1,
+									"template": map[string]interface{}{
+										"metadata": map[string]interface{}{
+											"labels": map[string]interface{}{
+												"test": "label1",
+											},
+										},
+										"spec": map[string]interface{}{
+											"containers": []map[string]interface{}{
+												{
+													"image": "test-image1",
+												},
+												{
+													"image": "test-image2",
+												},
+											},
+										},
+									},
+								},
+								"status": map[string]interface{}{
+									"replicas":      1,
+									"readyReplicas": 0,
+								},
+							},
+						},
+					},
+				}, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(4, &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{
+						{
+							Object: map[string]interface{}{
+								"kind":       "StatefulSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-sts1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"artifact.spinnaker.io/name":        "test-deployment1",
+										"artifact.spinnaker.io/type":        "kubernetes/deployment",
+										"artifact.spinnaker.io/location":    "test-namespace1",
+										"moniker.spinnaker.io/application":  "test-deployment1",
+										"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+										"deployment.kubernetes.io/revision": "19",
+									},
+									"uid": "test-uid3",
+								},
+								"spec": map[string]interface{}{
+									"replicas": 1,
+									"template": map[string]interface{}{
+										"metadata": map[string]interface{}{
+											"labels": map[string]interface{}{
+												"test": "label2",
+											},
+										},
+										"spec": map[string]interface{}{
+											"containers": []map[string]interface{}{
+												{
+													"image": "test-image1",
+												},
+												{
+													"image": "test-image2",
+												},
+											},
+										},
+									},
+								},
+								"status": map[string]interface{}{
+									"replicas":      1,
+									"readyReplicas": 0,
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "StatefulSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-sts2",
+									"namespace":         "test-namespace2",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"artifact.spinnaker.io/name":        "test-deployment1",
+										"artifact.spinnaker.io/type":        "kubernetes/deployment",
+										"artifact.spinnaker.io/location":    "test-namespace1",
+										"moniker.spinnaker.io/application":  "test-deployment1",
+										"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+										"deployment.kubernetes.io/revision": "19",
+									},
+									"uid": "test-uid34",
+								},
+								"spec": map[string]interface{}{
+									"replicas": 1,
+									"template": map[string]interface{}{
+										"spec": map[string]interface{}{
+											"containers": []map[string]interface{}{
+												{
+													"image": "test-image1",
+												},
+												{
+													"image": "test-image2",
+												},
+											},
+										},
+									},
+								},
+								"status": map[string]interface{}{
+									"replicas":      1,
+									"readyReplicas": 0,
 								},
 							},
 						},
@@ -859,6 +1301,11 @@ var _ = Describe("Application", func() {
 							"spec": map[string]interface{}{
 								"replicas": 1,
 								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label",
+										},
+									},
 									"spec": map[string]interface{}{
 										"containers": []map[string]interface{}{
 											{
@@ -930,7 +1377,7 @@ var _ = Describe("Application", func() {
 							"kind":       "StatefulSet",
 							"apiVersion": "apps/v1",
 							"metadata": map[string]interface{}{
-								"name":              "test-rs1",
+								"name":              "test-sts1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
 								"annotations": map[string]interface{}{
@@ -946,6 +1393,11 @@ var _ = Describe("Application", func() {
 							"spec": map[string]interface{}{
 								"replicas": 1,
 								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label2",
+										},
+									},
 									"spec": map[string]interface{}{
 										"containers": []map[string]interface{}{
 											{
@@ -961,6 +1413,42 @@ var _ = Describe("Application", func() {
 							"status": map[string]interface{}{
 								"replicas":      1,
 								"readyReplicas": 0,
+							},
+						},
+					},
+				},
+			}, nil)
+			fakeKubeClient.ListResourceWithContextReturnsOnCall(4, &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]interface{}{
+							"kind":       "Service",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-svc1",
+								"namespace": "test-namespace1",
+								"uid":       "test-uid4",
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]string{
+									"test": "label",
+								},
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Service",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-svc2",
+								"namespace": "test-namespace1",
+								"uid":       "test-uid5",
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]string{
+									"test": "label2",
+								},
 							},
 						},
 					},

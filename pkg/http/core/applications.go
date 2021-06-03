@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -25,6 +26,10 @@ import (
 const (
 	defaultChanSize           = 100000
 	defaultListTimeoutSeconds = 10
+	stateUp                   = "Up"
+	stateDown                 = "Down"
+	statusRunning             = "Running"
+	typeKubernetes            = "kubernetes"
 )
 
 var (
@@ -35,16 +40,20 @@ var (
 		"replicaSets",
 	}
 	// serverGroupResources consist of Kubernetes kinds Pods, ReplicaSets,
-	// DaemonSets, and StatefulSets.
+	// DaemonSets, StatefulSets, and Services.
 	serverGroupResources = []string{
 		"pods",
 		"replicaSets",
 		"daemonSets",
 		"statefulSets",
+		"services",
 	}
-	// loadBalancerResources consist of Kubernetes kinds Services and
-	// Ingresses.
+	// loadBalancerResources consist of Kubernetes kinds Services,
+	// Ingresses, Pods, and ReplicaSets.
 	loadBalancerResources = []string{
+		"pods",
+		"replicaSets",
+		"statefulSets",
 		"services",
 		"ingresses",
 	}
@@ -311,7 +320,7 @@ func newServerGroupManager(deployment unstructured.Unstructured,
 	return ServerGroupManager{
 		Account:       account,
 		APIVersion:    deployment.GetAPIVersion(),
-		CloudProvider: "kubernetes",
+		CloudProvider: typeKubernetes,
 		CreatedTime:   deployment.GetCreationTimestamp().Unix() * 1000,
 		Kind:          "deployment",
 		Labels:        deployment.GetLabels(),
@@ -326,41 +335,51 @@ func newServerGroupManager(deployment unstructured.Unstructured,
 	}
 }
 
+// LoadBalancers is a slice of LoadBalancer.
 type LoadBalancers []LoadBalancer
 
+// LoadBalancer represents Kubernetes kinds Service and Ingress.
 type LoadBalancer struct {
 	Account       string                    `json:"account"`
+	Apiversion    string                    `json:"apiVersion"`
 	CloudProvider string                    `json:"cloudProvider"`
-	DispatchRules []interface{}             `json:"dispatchRules,omitempty"`
-	HTTPURL       string                    `json:"httpUrl,omitempty"`
-	HTTPSURL      string                    `json:"httpsUrl,omitempty"`
+	CreatedTime   int64                     `json:"createdTime,omitempty"`
+	DisplayName   string                    `json:"displayName"`
+	Kind          string                    `json:"kind,omitempty"`
 	Labels        map[string]string         `json:"labels,omitempty"`
 	Moniker       Moniker                   `json:"moniker"`
 	Name          string                    `json:"name"`
-	DisplayName   string                    `json:"displayName"`
-	Project       string                    `json:"project,omitempty"`
+	Namespace     string                    `json:"namespace"`
 	Region        string                    `json:"region"`
-	SelfLink      string                    `json:"selfLink,omitempty"`
 	ServerGroups  []LoadBalancerServerGroup `json:"serverGroups"`
 	Type          string                    `json:"type"`
-	AccountName   string                    `json:"accountName,omitempty"`
-	CreatedTime   int64                     `json:"createdTime,omitempty"`
-	Key           Key                       `json:"key,omitempty"`
-	Kind          string                    `json:"kind,omitempty"`
-	Manifest      map[string]interface{}    `json:"manifest,omitempty"`
-	ProviderType  string                    `json:"providerType,omitempty"`
-	UID           string                    `json:"uid,omitempty"`
-	Zone          string                    `json:"zone,omitempty"`
 }
 
+// LoadBalancerServer groups are ReplicaSets that are fronted by the LoadBalancer.
 type LoadBalancerServerGroup struct {
-	AllowsGradualTrafficMigration bool          `json:"allowsGradualTrafficMigration"`
-	CloudProvider                 string        `json:"cloudProvider"`
-	DetachedInstances             []interface{} `json:"detachedInstances"`
-	Instances                     []interface{} `json:"instances"`
-	IsDisabled                    bool          `json:"isDisabled"`
-	Name                          string        `json:"name"`
-	Region                        string        `json:"region"`
+	Account           string                 `json:"account"`
+	Cloudprovider     string                 `json:"cloudProvider"`
+	Detachedinstances []LoadBalancerInstance `json:"detachedInstances"`
+	Instances         []LoadBalancerInstance `json:"instances"`
+	Isdisabled        bool                   `json:"isDisabled"`
+	Name              string                 `json:"name"`
+	Region            string                 `json:"region"`
+}
+
+// LoadBalancerInstance represents Pods in a ReplicaSet fronted by a LoadBalancer.
+type LoadBalancerInstance struct {
+	Health LoadBalancerInstanceHealth `json:"health"`
+	ID     string                     `json:"id"`
+	Name   string                     `json:"name"`
+	Zone   string                     `json:"zone"`
+}
+
+// LoadBalancerInstanceHealth is the health of a Pod.
+type LoadBalancerInstanceHealth struct {
+	Platform string `json:"platform"`
+	Source   string `json:"source"`
+	State    string `json:"state"`
+	Type     string `json:"type"`
 }
 
 // ListLoadBalancers lists kubernetes "ingresses" and "services".
@@ -374,9 +393,36 @@ func ListLoadBalancers(c *gin.Context) {
 
 		return
 	}
-	// Create a new load balancer object from the resources returned.
-	for _, r := range rs {
+	// Declare slices to hold resources.
+	services := filterResourcesByKind(rs, "service")
+	ingresses := filterResourcesByKind(rs, "ingress")
+	replicaSets := filterResourcesByKind(rs, "replicaSet")
+	statefulSets := filterResourcesByKind(rs, "statefulSet")
+	pods := filterResourcesByKind(rs, "pod")
+	// Make a map of resources to Pods they own.
+	instances := makeLoadBalancerInstanceMap(pods)
+	// Make a map of ReplicaSet/StatefulSet UIDs to Services that front them.
+	frontableServerGroups := []resource{}
+	frontableServerGroups = append(frontableServerGroups, replicaSets...)
+	frontableServerGroups = append(frontableServerGroups, statefulSets...)
+	loadBalancerServerGroups := makeLoadBalancerServerGroupsMap(frontableServerGroups, services, instances)
+
+	// Create a new Load Balancer for each Service.
+	for _, r := range services {
 		lb := newLoadBalancer(r.u, r.account, application)
+		// If this Service fronts some set of Server Groups
+		// (ReplicaSets), then set these as the Load Balancer's
+		// Server Groups.
+		uid := string(r.u.GetUID())
+		if _, ok := loadBalancerServerGroups[uid]; ok {
+			lb.ServerGroups = loadBalancerServerGroups[uid]
+		}
+
+		response = append(response, lb)
+	}
+	// Create a new Load Balancer for each Ingress.
+	for _, i := range ingresses {
+		lb := newLoadBalancer(i.u, i.account, application)
 		response = append(response, lb)
 	}
 
@@ -400,37 +446,153 @@ func ListLoadBalancers(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// makeLoadBalancerInstanceMap returns a map of resource UIDs to
+// a list of instances (pods) they own.
+func makeLoadBalancerInstanceMap(pods []resource) map[string][]LoadBalancerInstance {
+	instances := map[string][]LoadBalancerInstance{}
+
+	for _, r := range pods {
+		p := kubernetes.NewPod(r.u.Object)
+
+		state := stateUp
+		if p.GetPodStatus().Phase != statusRunning {
+			state = stateDown
+		}
+
+		or := r.u.GetOwnerReferences()
+		for _, o := range or {
+			i := LoadBalancerInstance{
+				Health: LoadBalancerInstanceHealth{
+					Platform: "platform",
+					// TODO get the container name that is fronted by the service.
+					Source: fmt.Sprintf("Container %s", "TODO"),
+					State:  state,
+					Type:   "kubernetes/container",
+				},
+				ID:   string(r.u.GetUID()),
+				Name: fmt.Sprintf("pod %s", r.u.GetName()),
+				Zone: r.u.GetNamespace(),
+			}
+			uid := string(o.UID)
+			instances[uid] = append(instances[uid], i)
+		}
+	}
+
+	return instances
+}
+
+// makeLoadBalancerServerGroupsMap generates a map of Service UIDs
+// to resources fronted by that service.
+func makeLoadBalancerServerGroupsMap(serverGroups, services []resource,
+	serverGroupInstances map[string][]LoadBalancerInstance) map[string][]LoadBalancerServerGroup {
+	loadBalancerServerGroups := map[string][]LoadBalancerServerGroup{}
+	// Loop through the resources and find the matching labels.
+	for _, serverGroup := range serverGroups {
+		for _, service := range services {
+			// If the resource and Service are not in the same
+			// namespace then skip.
+			if serverGroup.u.GetNamespace() != service.u.GetNamespace() {
+				continue
+			}
+			// Define the Service and get the selector.
+			s := kubernetes.NewService(service.u.Object)
+			selector := s.Selector()
+			// If there are no selectors, continue.
+			if len(selector) == 0 {
+				continue
+			}
+			// Define the resource and get the pod template labels.
+			var labels map[string]string
+			// Only certain kinds of resources can be fronted by
+			// a service.
+			kind := serverGroup.u.GetKind()
+			if strings.EqualFold(kind, "replicaSet") {
+				rs := kubernetes.NewReplicaSet(serverGroup.u.Object)
+				spec := rs.GetReplicaSetSpec()
+				labels = spec.Template.ObjectMeta.Labels
+			} else if strings.EqualFold(kind, "statefulSet") {
+				sts := kubernetes.NewStatefulSet(serverGroup.u.Object)
+				spec := sts.GetStatefulSetSpec()
+				labels = spec.Template.ObjectMeta.Labels
+			} else {
+				continue
+			}
+			// Define if the current resource is "fronted" by the service.
+			// If the number of label key/value pairs matches that of the
+			// Service's selector, then it is fronted.
+			matching := 0
+			// Loop through the selectors. A Service only fronts
+			// pods owned by a resource if *all* selector key/value pairs
+			// are present in the pod's labels.
+			for k, v := range selector {
+				// If the selector key is not a label key then this Pod Template
+				// is not fronted by the service.
+				if _, ok := labels[k]; !ok {
+					break
+				} else if labels[k] == v {
+					matching++
+				}
+			}
+			// If the number of matching labels in the resource's Pod Template
+			// label's equals the number of selectors in the Service, then
+			// this resource is fronted by the Service.
+			if len(selector) == matching {
+				sg := LoadBalancerServerGroup{
+					Account:           serverGroup.account,
+					Cloudprovider:     typeKubernetes,
+					Detachedinstances: []LoadBalancerInstance{},
+					Instances:         []LoadBalancerInstance{},
+					Isdisabled:        false,
+					Name: fmt.Sprintf("%s %s",
+						lowercaseFirst(serverGroup.u.GetKind()), serverGroup.u.GetName()),
+					Region: serverGroup.u.GetNamespace(),
+				}
+				// If there are Pod instances associated with this resource,
+				// assign them to the LB Server Group here.
+				uid := string(serverGroup.u.GetUID())
+				if _, ok := serverGroupInstances[uid]; ok {
+					sg.Instances = serverGroupInstances[uid]
+				}
+
+				serviceUID := string(service.u.GetUID())
+				loadBalancerServerGroups[serviceUID] = append(loadBalancerServerGroups[serviceUID], sg)
+			}
+		}
+	}
+
+	return loadBalancerServerGroups
+}
+
+// lowercaseFirst lowercases the first letter of a string.
+func lowercaseFirst(str string) string {
+	for i, v := range str {
+		return string(unicode.ToLower(v)) + str[i+1:]
+	}
+
+	return ""
+}
+
 // newLoadBalancer returns an instance of LoadBalancer.
 func newLoadBalancer(u unstructured.Unstructured, account, application string) LoadBalancer {
-	kind := strings.ToLower(u.GetKind())
+	kind := lowercaseFirst(u.GetKind())
 
 	return LoadBalancer{
 		Account:       account,
-		AccountName:   account,
-		CloudProvider: "kubernetes",
+		Apiversion:    u.GetAPIVersion(),
+		CloudProvider: typeKubernetes,
+		CreatedTime:   u.GetCreationTimestamp().Unix() * 1000,
+		DisplayName:   u.GetName(),
+		Kind:          kind,
 		Labels:        u.GetLabels(),
 		Moniker: Moniker{
 			App:     application,
 			Cluster: fmt.Sprintf("%s %s", kind, u.GetName()),
 		},
-		Name:        fmt.Sprintf("%s %s", kind, u.GetName()),
-		DisplayName: u.GetName(),
-		Region:      u.GetNamespace(),
-		Type:        "kubernetes",
-		CreatedTime: u.GetCreationTimestamp().Unix() * 1000,
-		Key: Key{
-			Account:        account,
-			Group:          u.GroupVersionKind().Group,
-			KubernetesKind: kind,
-			Name:           fmt.Sprintf("%s %s", kind, u.GetName()),
-			Namespace:      u.GetNamespace(),
-			Provider:       "kubernetes",
-		},
-		Kind:         kind,
-		Manifest:     u.Object,
-		ProviderType: "kubernetes",
-		UID:          string(u.GetUID()),
-		Zone:         application,
+		Name:         fmt.Sprintf("%s %s", kind, u.GetName()),
+		Namespace:    u.GetNamespace(),
+		Region:       u.GetNamespace(),
+		ServerGroups: []LoadBalancerServerGroup{},
+		Type:         typeKubernetes,
 	}
 }
 
@@ -487,7 +649,7 @@ type ServerGroup struct {
 	Kind           string            `json:"kind"`
 	Labels         map[string]string `json:"labels"`
 	// LaunchConfig struct {} `json:"launchConfig"`
-	LoadBalancers       []interface{}                   `json:"loadBalancers"`
+	LoadBalancers       []string                        `json:"loadBalancers"`
 	Manifest            map[string]interface{}          `json:"manifest"`
 	Moniker             ServerGroupMoniker              `json:"moniker"`
 	Name                string                          `json:"name"`
@@ -581,18 +743,29 @@ func ListServerGroups(c *gin.Context) {
 	replicaSets := filterResourcesByKind(rs, "replicaSet")
 	daemonSets := filterResourcesByKind(rs, "daemonSet")
 	statefulSets := filterResourcesByKind(rs, "statefulSet")
-	// Make a map of a pod's owner reference to the list of pods
+	services := filterResourcesByKind(rs, "service")
+	// Make a map of a Pod's owner reference to the list of pods
 	// it owns.
 	serverGroupMap := makeServerGroupMap(pods)
+	// Make a map of ReplicaSet/StatefulSet UIDs to Services that front them.
+	frontableServerGroups := []resource{}
+	frontableServerGroups = append(frontableServerGroups, replicaSets...)
+	frontableServerGroups = append(frontableServerGroups, statefulSets...)
+	serverGroupLoadBalancers := makeServerGroupLoadBalancersMap(frontableServerGroups, services)
 	// Combine the resources into one server group slice.
 	serverGroups := []resource{}
 	serverGroups = append(serverGroups, replicaSets...)
 	serverGroups = append(serverGroups, daemonSets...)
 	serverGroups = append(serverGroups, statefulSets...)
+
 	// Create a new server group for each of these resources.
 	for _, sg := range serverGroups {
-		sg := newServerGroup(sg.u, serverGroupMap, sg.account)
-		response = append(response, sg)
+		_sg := newServerGroup(sg.u, serverGroupMap, sg.account)
+		if _, ok := serverGroupLoadBalancers[string(sg.u.GetUID())]; ok {
+			_sg.LoadBalancers = serverGroupLoadBalancers[string(sg.u.GetUID())]
+		}
+
+		response = append(response, _sg)
 	}
 	// Sort by account (cluster), then namespace, then kind, then name.
 	sort.Slice(response, func(i, j int) bool {
@@ -612,6 +785,71 @@ func ListServerGroups(c *gin.Context) {
 	})
 
 	c.JSON(http.StatusOK, response)
+}
+
+// makeServerGroupLoadBalancersMap returns a map of resource UIDs to a slice
+// of Service names that front the reource.
+func makeServerGroupLoadBalancersMap(serverGroups, services []resource) map[string][]string {
+	serverGroupLoadBalancers := map[string][]string{}
+	// Loop through the resources and find the matching labels.
+	for _, serverGroup := range serverGroups {
+		for _, service := range services {
+			// If the resource and Service are not in the same
+			// namespace then skip.
+			if serverGroup.u.GetNamespace() != service.u.GetNamespace() {
+				continue
+			}
+			// Define the Service and get the selector.
+			s := kubernetes.NewService(service.u.Object)
+			selector := s.Selector()
+			// If there are no selectors, continue.
+			if len(selector) == 0 {
+				continue
+			}
+			// Define the resource and get the pod template labels.
+			var labels map[string]string
+			// Only certain kinds of resources can be fronted by
+			// a service.
+			kind := serverGroup.u.GetKind()
+			if strings.EqualFold(kind, "replicaSet") {
+				rs := kubernetes.NewReplicaSet(serverGroup.u.Object)
+				spec := rs.GetReplicaSetSpec()
+				labels = spec.Template.ObjectMeta.Labels
+			} else if strings.EqualFold(kind, "statefulSet") {
+				sts := kubernetes.NewStatefulSet(serverGroup.u.Object)
+				spec := sts.GetStatefulSetSpec()
+				labels = spec.Template.ObjectMeta.Labels
+			} else {
+				continue
+			}
+			// Define if the current resource is "fronted" by the service.
+			// If the number of label key/value pairs matches that of the
+			// Service's selector, then it is fronted.
+			matching := 0
+			// Loop through the selectors. A Service only fronts
+			// pods owned by a resource if *all* selector key/value pairs
+			// are present in the pod's labels.
+			for k, v := range selector {
+				// If the selector key is not a label key then this Pod Template
+				// is not fronted by the service.
+				if _, ok := labels[k]; !ok {
+					break
+				} else if labels[k] == v {
+					matching++
+				}
+			}
+			// If the number of matching labels in the resource's Pod Template
+			// label's equals the number of selectors in the Service, then
+			// this resource is fronted by the Service.
+			if len(selector) == matching {
+				uid := string(serverGroup.u.GetUID())
+				serverGroupLoadBalancers[uid] =
+					append(serverGroupLoadBalancers[uid], fmt.Sprintf("service %s", service.u.GetName()))
+			}
+		}
+	}
+
+	return serverGroupLoadBalancers
 }
 
 // makeServerGroupMap returns a map of a server group's (replicaSet, daemonSet, statefulSet)
@@ -646,11 +884,11 @@ func makeServerGroupMap(pods []resource) map[string][]Instance {
 // newInstance returns an "Instance" object from a given
 // pod struct.
 func newInstance(pod unstructured.Unstructured) Instance {
-	state := "Up"
+	state := stateUp
 
 	p := kubernetes.NewPod(pod.Object)
-	if p.GetPodStatus().Phase != "Running" {
-		state = "Down"
+	if p.GetPodStatus().Phase != statusRunning {
+		state = stateDown
 	}
 
 	instance := Instance{
@@ -717,11 +955,11 @@ func newServerGroup(result unstructured.Unstructured, serverGroupMap map[string]
 			Desired: desired,
 			Pinned:  false,
 		},
-		CloudProvider: "kubernetes",
+		CloudProvider: typeKubernetes,
 		Cluster:       cluster,
 		CreatedTime:   result.GetCreationTimestamp().Unix() * 1000,
 		// Include for sorting.
-		Kind: result.GetKind(),
+		Kind: lowercaseFirst(result.GetKind()),
 		InstanceCounts: InstanceCounts{
 			Down:         0,
 			OutOfService: 0,
@@ -739,12 +977,12 @@ func newServerGroup(result unstructured.Unstructured, serverGroupMap map[string]
 			Cluster:  cluster,
 			Sequence: sequence,
 		},
-		Name:                fmt.Sprintf("%s %s", result.GetKind(), result.GetName()),
+		Name:                fmt.Sprintf("%s %s", lowercaseFirst(result.GetKind()), result.GetName()),
 		Namespace:           result.GetNamespace(),
 		Region:              result.GetNamespace(),
 		SecurityGroups:      nil,
 		ServerGroupManagers: serverGroupManagers,
-		Type:                "kubernetes",
+		Type:                typeKubernetes,
 		Labels:              result.GetLabels(),
 	}
 }
@@ -944,7 +1182,7 @@ func GetServerGroup(c *gin.Context) {
 			Desired: desired,
 			Pinned:  false,
 		},
-		CloudProvider:  "kubernetes",
+		CloudProvider:  typeKubernetes,
 		CreatedTime:    result.GetCreationTimestamp().Unix() * 1000,
 		Disabled:       false,
 		DisplayName:    result.GetName(),
@@ -952,28 +1190,28 @@ func GetServerGroup(c *gin.Context) {
 		Instances:      instances,
 		Key: Key{
 			Account:        account,
-			Group:          result.GetKind(),
-			KubernetesKind: result.GetKind(),
+			Group:          lowercaseFirst(result.GetKind()),
+			KubernetesKind: lowercaseFirst(result.GetKind()),
 			Name:           result.GetName(),
 			Namespace:      result.GetNamespace(),
-			Provider:       "kubernetes",
+			Provider:       typeKubernetes,
 		},
-		Kind:          result.GetKind(),
+		Kind:          lowercaseFirst(result.GetKind()),
 		Labels:        result.GetLabels(),
-		LoadBalancers: []interface{}{},
+		LoadBalancers: []string{},
 		Manifest:      result.Object,
 		Moniker: ServerGroupMoniker{
 			App:      app,
 			Cluster:  cluster,
 			Sequence: sequence,
 		},
-		Name:                fmt.Sprintf("%s %s", result.GetKind(), result.GetName()),
+		Name:                fmt.Sprintf("%s %s", lowercaseFirst(result.GetKind()), result.GetName()),
 		Namespace:           result.GetNamespace(),
-		ProviderType:        "kubernetes",
+		ProviderType:        typeKubernetes,
 		Region:              result.GetNamespace(),
 		SecurityGroups:      []interface{}{},
 		ServerGroupManagers: []ServerGroupServerGroupManager{},
-		Type:                "kubernetes",
+		Type:                typeKubernetes,
 		UID:                 string(result.GetUID()),
 		Zone:                result.GetNamespace(),
 		Zones:               []interface{}{},
@@ -986,9 +1224,9 @@ func GetServerGroup(c *gin.Context) {
 // newPodInstance returns a new instance that represents a kind Kubernetes
 // pod.
 func newPodInstance(p kubernetes.Pod, application, account string) Instance {
-	state := "Up"
-	if p.GetPodStatus().Phase != "Running" {
-		state = "Down"
+	state := stateUp
+	if p.GetPodStatus().Phase != statusRunning {
+		state = stateDown
 	}
 
 	annotations := p.GetObjectMeta().Annotations
@@ -1003,7 +1241,7 @@ func newPodInstance(p kubernetes.Pod, application, account string) Instance {
 		Account:          account,
 		AccountName:      account,
 		AvailabilityZone: p.GetNamespace(),
-		CloudProvider:    "kubernetes",
+		CloudProvider:    typeKubernetes,
 		CreatedTime:      p.GetObjectMeta().CreationTimestamp.Unix() * 1000,
 		Health: []InstanceHealth{
 			{
@@ -1024,7 +1262,7 @@ func newPodInstance(p kubernetes.Pod, application, account string) Instance {
 			KubernetesKind: "pod",
 			Name:           p.GetName(),
 			Namespace:      p.GetNamespace(),
-			Provider:       "kubernetes",
+			Provider:       typeKubernetes,
 		},
 		Kind:   "pod",
 		Labels: p.GetLabels(),
@@ -1033,9 +1271,9 @@ func newPodInstance(p kubernetes.Pod, application, account string) Instance {
 			Cluster: cluster,
 		},
 		Name:         fmt.Sprintf("%s %s", "pod", p.GetName()),
-		ProviderType: "kubernetes",
+		ProviderType: typeKubernetes,
 		Region:       p.GetNamespace(),
-		Type:         "kubernetes",
+		Type:         typeKubernetes,
 		UID:          string(p.GetUID()),
 		Zone:         p.GetNamespace(),
 	}
@@ -1099,7 +1337,7 @@ func GetJob(c *gin.Context) {
 		Location:    location,
 		Name:        name,
 		Pods:        []map[string]interface{}{},
-		Provider:    "kubernetes",
+		Provider:    typeKubernetes,
 	}
 
 	c.JSON(http.StatusOK, job)

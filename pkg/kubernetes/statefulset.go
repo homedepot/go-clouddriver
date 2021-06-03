@@ -11,6 +11,7 @@ import (
 )
 
 type StatefulSet interface {
+	GetStatefulSetSpec() v1.StatefulSetSpec
 	Object() *v1.StatefulSet
 	SetReplicas(*int32)
 	Status() manifest.Status
@@ -29,6 +30,10 @@ func NewStatefulSet(m map[string]interface{}) StatefulSet {
 	_ = json.Unmarshal(b, &s)
 
 	return &statefulSet{ss: s}
+}
+
+func (ss *statefulSet) GetStatefulSetSpec() v1.StatefulSetSpec {
+	return ss.ss.Spec
 }
 
 func (ss *statefulSet) Object() *v1.StatefulSet {

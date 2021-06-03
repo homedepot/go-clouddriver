@@ -32,6 +32,15 @@ var _ = Describe("Statefulset", func() {
 		})
 	})
 
+	Describe("#GetStatefulSetSpec", func() {
+		BeforeEach(func() {
+			_ = ss.GetStatefulSetSpec()
+		})
+
+		It("succeeds", func() {
+		})
+	})
+
 	Describe("#Status", func() {
 		var s manifest.Status
 
