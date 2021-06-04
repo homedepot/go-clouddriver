@@ -488,6 +488,24 @@ func makeLoadBalancerServerGroupsMap(serverGroups, services []resource,
 	loadBalancerServerGroups := map[string][]LoadBalancerServerGroup{}
 	// Loop through the resources and find the matching labels.
 	for _, serverGroup := range serverGroups {
+		// Define the resource and get the pod template labels.
+		var labels map[string]string
+		// Only certain kinds of resources can be fronted by
+		// a service.
+		kind := serverGroup.u.GetKind()
+		if strings.EqualFold(kind, "replicaSet") {
+			rs := kubernetes.NewReplicaSet(serverGroup.u.Object)
+			spec := rs.GetReplicaSetSpec()
+			labels = spec.Template.ObjectMeta.Labels
+		} else if strings.EqualFold(kind, "statefulSet") {
+			sts := kubernetes.NewStatefulSet(serverGroup.u.Object)
+			spec := sts.GetStatefulSetSpec()
+			labels = spec.Template.ObjectMeta.Labels
+		} else {
+			continue
+		}
+		// Loop through the services and check if a service
+		// is fronting this server group.
 		for _, service := range services {
 			// If the resource and Service are not in the same
 			// namespace then skip.
@@ -499,22 +517,6 @@ func makeLoadBalancerServerGroupsMap(serverGroups, services []resource,
 			selector := s.Selector()
 			// If there are no selectors, continue.
 			if len(selector) == 0 {
-				continue
-			}
-			// Define the resource and get the pod template labels.
-			var labels map[string]string
-			// Only certain kinds of resources can be fronted by
-			// a service.
-			kind := serverGroup.u.GetKind()
-			if strings.EqualFold(kind, "replicaSet") {
-				rs := kubernetes.NewReplicaSet(serverGroup.u.Object)
-				spec := rs.GetReplicaSetSpec()
-				labels = spec.Template.ObjectMeta.Labels
-			} else if strings.EqualFold(kind, "statefulSet") {
-				sts := kubernetes.NewStatefulSet(serverGroup.u.Object)
-				spec := sts.GetStatefulSetSpec()
-				labels = spec.Template.ObjectMeta.Labels
-			} else {
 				continue
 			}
 			// Define if the current resource is "fronted" by the service.
@@ -793,6 +795,24 @@ func makeServerGroupLoadBalancersMap(serverGroups, services []resource) map[stri
 	serverGroupLoadBalancers := map[string][]string{}
 	// Loop through the resources and find the matching labels.
 	for _, serverGroup := range serverGroups {
+		// Define the resource and get the pod template labels.
+		var labels map[string]string
+		// Only certain kinds of resources can be fronted by
+		// a service.
+		kind := serverGroup.u.GetKind()
+		if strings.EqualFold(kind, "replicaSet") {
+			rs := kubernetes.NewReplicaSet(serverGroup.u.Object)
+			spec := rs.GetReplicaSetSpec()
+			labels = spec.Template.ObjectMeta.Labels
+		} else if strings.EqualFold(kind, "statefulSet") {
+			sts := kubernetes.NewStatefulSet(serverGroup.u.Object)
+			spec := sts.GetStatefulSetSpec()
+			labels = spec.Template.ObjectMeta.Labels
+		} else {
+			continue
+		}
+		// Loop through the services and check if a service
+		// is fronting this server group.
 		for _, service := range services {
 			// If the resource and Service are not in the same
 			// namespace then skip.
@@ -804,22 +824,6 @@ func makeServerGroupLoadBalancersMap(serverGroups, services []resource) map[stri
 			selector := s.Selector()
 			// If there are no selectors, continue.
 			if len(selector) == 0 {
-				continue
-			}
-			// Define the resource and get the pod template labels.
-			var labels map[string]string
-			// Only certain kinds of resources can be fronted by
-			// a service.
-			kind := serverGroup.u.GetKind()
-			if strings.EqualFold(kind, "replicaSet") {
-				rs := kubernetes.NewReplicaSet(serverGroup.u.Object)
-				spec := rs.GetReplicaSetSpec()
-				labels = spec.Template.ObjectMeta.Labels
-			} else if strings.EqualFold(kind, "statefulSet") {
-				sts := kubernetes.NewStatefulSet(serverGroup.u.Object)
-				spec := sts.GetStatefulSetSpec()
-				labels = spec.Template.ObjectMeta.Labels
-			} else {
 				continue
 			}
 			// Define if the current resource is "fronted" by the service.
