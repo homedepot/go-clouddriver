@@ -66,6 +66,10 @@ func Initialize(r *gin.Engine) {
 		api.GET("/manifests/:account/:location/:kind", core.GetManifest)
 		api.GET("/manifests/:account/:location/:kind/cluster/:application/:cluster/dynamic/:target", core.GetManifestByTarget)
 
+		// Instances API controller.
+		api.GET("/instances/:account/:location/:name", core.GetInstance)
+		api.GET("/instances/:account/:location/:name/console", core.GetInstanceConsole)
+
 		// Get results for a task triggered in CreateKubernetesOperation.
 		api.GET("/task/:id", core.GetTask)
 

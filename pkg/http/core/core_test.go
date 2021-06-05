@@ -42,6 +42,7 @@ var (
 	fakeHelmClient                    *helmfakes.FakeClient
 	fakeSQLClient                     *sqlfakes.FakeClient
 	fakeKubeClient                    *kubernetesfakes.FakeClient
+	fakeKubeClientset                 *kubernetesfakes.FakeClientset
 	fakeKubeController                *kubernetesfakes.FakeController
 	fakeGithubServer                  *ghttp.Server
 	fakeFileServer                    *ghttp.Server
@@ -134,8 +135,12 @@ func setup() {
 		},
 	}, nil)
 
+	fakeKubeClientset = &kubernetesfakes.FakeClientset{}
+	fakeKubeClientset.PodLogsReturns("log output", nil)
+
 	fakeKubeController = &kubernetesfakes.FakeController{}
 	fakeKubeController.NewClientReturns(fakeKubeClient, nil)
+	fakeKubeController.NewClientsetReturns(fakeKubeClientset, nil)
 
 	fakeArcadeClient = &arcadefakes.FakeClient{}
 	fakeFiatClient = &fiatfakes.FakeClient{}

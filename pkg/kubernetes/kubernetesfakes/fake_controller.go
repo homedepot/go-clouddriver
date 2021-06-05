@@ -22,6 +22,19 @@ type FakeController struct {
 		result1 kubernetes.Client
 		result2 error
 	}
+	NewClientsetStub        func(*rest.Config) (kubernetes.Clientset, error)
+	newClientsetMutex       sync.RWMutex
+	newClientsetArgsForCall []struct {
+		arg1 *rest.Config
+	}
+	newClientsetReturns struct {
+		result1 kubernetes.Clientset
+		result2 error
+	}
+	newClientsetReturnsOnCall map[int]struct {
+		result1 kubernetes.Clientset
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -90,11 +103,77 @@ func (fake *FakeController) NewClientReturnsOnCall(i int, result1 kubernetes.Cli
 	}{result1, result2}
 }
 
+func (fake *FakeController) NewClientset(arg1 *rest.Config) (kubernetes.Clientset, error) {
+	fake.newClientsetMutex.Lock()
+	ret, specificReturn := fake.newClientsetReturnsOnCall[len(fake.newClientsetArgsForCall)]
+	fake.newClientsetArgsForCall = append(fake.newClientsetArgsForCall, struct {
+		arg1 *rest.Config
+	}{arg1})
+	stub := fake.NewClientsetStub
+	fakeReturns := fake.newClientsetReturns
+	fake.recordInvocation("NewClientset", []interface{}{arg1})
+	fake.newClientsetMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeController) NewClientsetCallCount() int {
+	fake.newClientsetMutex.RLock()
+	defer fake.newClientsetMutex.RUnlock()
+	return len(fake.newClientsetArgsForCall)
+}
+
+func (fake *FakeController) NewClientsetCalls(stub func(*rest.Config) (kubernetes.Clientset, error)) {
+	fake.newClientsetMutex.Lock()
+	defer fake.newClientsetMutex.Unlock()
+	fake.NewClientsetStub = stub
+}
+
+func (fake *FakeController) NewClientsetArgsForCall(i int) *rest.Config {
+	fake.newClientsetMutex.RLock()
+	defer fake.newClientsetMutex.RUnlock()
+	argsForCall := fake.newClientsetArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeController) NewClientsetReturns(result1 kubernetes.Clientset, result2 error) {
+	fake.newClientsetMutex.Lock()
+	defer fake.newClientsetMutex.Unlock()
+	fake.NewClientsetStub = nil
+	fake.newClientsetReturns = struct {
+		result1 kubernetes.Clientset
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeController) NewClientsetReturnsOnCall(i int, result1 kubernetes.Clientset, result2 error) {
+	fake.newClientsetMutex.Lock()
+	defer fake.newClientsetMutex.Unlock()
+	fake.NewClientsetStub = nil
+	if fake.newClientsetReturnsOnCall == nil {
+		fake.newClientsetReturnsOnCall = make(map[int]struct {
+			result1 kubernetes.Clientset
+			result2 error
+		})
+	}
+	fake.newClientsetReturnsOnCall[i] = struct {
+		result1 kubernetes.Clientset
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeController) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.newClientMutex.RLock()
 	defer fake.newClientMutex.RUnlock()
+	fake.newClientsetMutex.RLock()
+	defer fake.newClientsetMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/cached/disk"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 )
@@ -22,6 +23,7 @@ const (
 // dynamic kubernetes client.
 type Controller interface {
 	NewClient(*rest.Config) (Client, error)
+	NewClientset(*rest.Config) (Clientset, error)
 }
 
 // NewController returns an instance of Controller.
@@ -36,6 +38,18 @@ type controller struct{}
 // stores and references its discovery of the Kubernetes API server.
 func (c *controller) NewClient(config *rest.Config) (Client, error) {
 	return newClientWithDefaultDiskCache(config)
+}
+
+// NewClientset returns a new kubernetes Clientset wrapper.
+func (c *controller) NewClientset(config *rest.Config) (Clientset, error) {
+	cs, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &clientset{
+		clientset: cs,
+	}, nil
 }
 
 const (
