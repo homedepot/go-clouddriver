@@ -239,6 +239,10 @@ paths:
         in: "path"
         required: true
         type: "string"
+      - name: "provider"
+        in: "query"
+        required: true
+        type: "string"
       summary: "Get instance console logs for a given account, location, and name"
       responses:
         "200":
