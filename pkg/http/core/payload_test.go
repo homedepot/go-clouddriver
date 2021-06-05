@@ -2440,3 +2440,88 @@ const payloadManifestCoordinates = `{
             "name": "test-name",
             "namespace": "test-namespace"
           }`
+
+const payloadGetInstance = `{
+            "account": "test-account",
+            "apiVersion": "v1",
+            "cloudProvider": "kubernetes",
+            "createdTime": 1581603123000,
+            "displayName": "test-pod1",
+            "health": [
+              {
+                "platform": "platform",
+                "source": "Pod",
+                "state": "Up",
+                "type": "kubernetes/pod"
+              },
+              {
+                "platform": "platform",
+                "source": "Container test-container-name",
+                "state": "Up",
+                "type": "kubernetes/container"
+              }
+            ],
+            "healthState": "Up",
+            "humanReadableName": "pod test-pod1",
+            "kind": "pod",
+            "labels": {
+              "label1": "test-label1"
+            },
+            "moniker": {
+              "app": "test-application",
+              "cluster": "test cluster"
+            },
+            "name": "cec15437-4e6a-11ea-9788-4201ac100006",
+            "namespace": "test-namespace1",
+            "providerType": "kubernetes",
+            "zone": "test-namespace1"
+          }`
+
+const payloadGetDownInstance = `{
+            "account": "test-account",
+            "apiVersion": "v1",
+            "cloudProvider": "kubernetes",
+            "createdTime": 1581603123000,
+            "displayName": "test-pod1",
+            "health": [
+              {
+                "platform": "platform",
+                "source": "Pod",
+                "state": "Down",
+                "type": "kubernetes/pod"
+              },
+              {
+                "platform": "platform",
+                "source": "Container test-container-name",
+                "state": "Up",
+                "type": "kubernetes/container"
+              }
+            ],
+            "healthState": "Down",
+            "humanReadableName": "pod test-pod1",
+            "kind": "pod",
+            "labels": {
+              "label1": "test-label1"
+            },
+            "moniker": {
+              "app": "test-application",
+              "cluster": "test cluster"
+            },
+            "name": "cec15437-4e6a-11ea-9788-4201ac100006",
+            "namespace": "test-namespace1",
+            "providerType": "kubernetes",
+            "zone": "test-namespace1"
+          }`
+
+const payloadGetInstanceConsole = `{
+            "output": [
+              {
+                "name": "test-container-name",
+                "output": "log output"
+              },
+              {
+                "name": "test-init-container-name",
+                "output": "log output"
+              }
+            ]
+          }`

@@ -23,6 +23,8 @@ tags:
   description: "Artifacts API controller"
 - name: "tasks"
   description: "Tasks API controller"
+- name: "instances"
+  description: "Instances API controller"
 schemes:
 - "http"
 paths:
@@ -197,6 +199,58 @@ paths:
           description: "OK"
         "500":
           description: "Internal Server Error"
+  /instances/{account}/{location}/{name}:
+    get:
+      tags:
+      - "instances"
+      parameters:
+      - name: "account"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "location"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        type: "string"
+      summary: "Get an instance for a given account, location, and name"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+  /instances/{account}/{location}/{name}/console:
+    get:
+      tags:
+      - "instances"
+      parameters:
+      - name: "account"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "location"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "provider"
+        in: "query"
+        required: true
+        type: "string"
+      summary: "Get instance console logs for a given account, location, and name"
+      responses:
+        "200":
+          description: "OK"
+        "500":
+          description: "Internal Server Error"
+        "501":
+          description: "Not implemented"
   /task/{id}:
     get:
       tags:
@@ -396,3 +450,4 @@ definitions:
           type: "string"
         description: "List of groups that have WRITE access"
         example: ["group1", "group2"]
+
