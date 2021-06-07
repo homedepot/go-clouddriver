@@ -508,8 +508,9 @@ func makeLoadBalancerServerGroupsMap(serverGroups, services []resource,
 		// is fronting this server group.
 		for _, service := range services {
 			// If the resource and Service are not in the same
-			// namespace then skip.
-			if serverGroup.u.GetNamespace() != service.u.GetNamespace() {
+			// namespace or cluster then skip.
+			if serverGroup.u.GetNamespace() != service.u.GetNamespace() ||
+				serverGroup.account != service.account {
 				continue
 			}
 			// Define the Service and get the selector.
@@ -815,8 +816,9 @@ func makeServerGroupLoadBalancersMap(serverGroups, services []resource) map[stri
 		// is fronting this server group.
 		for _, service := range services {
 			// If the resource and Service are not in the same
-			// namespace then skip.
-			if serverGroup.u.GetNamespace() != service.u.GetNamespace() {
+			// namespace or cluster then skip.
+			if serverGroup.u.GetNamespace() != service.u.GetNamespace() ||
+				serverGroup.account != service.account {
 				continue
 			}
 			// Define the Service and get the selector.
