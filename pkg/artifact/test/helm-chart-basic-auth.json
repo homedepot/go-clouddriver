@@ -1,0 +1,9 @@
+{
+  "name": "helm-basic-auth",
+  "types": [
+    "helm/chart"
+  ],
+  "repository": "https://kubernetes-charts.storage.googleapis.com",
+  "username": "fake-user",
+  "password": "fakk-password"
+}

@@ -194,7 +194,7 @@ var _ = Describe("Controller", func() {
 
 		When("it succeeds", func() {
 			It("succeeds", func() {
-				Expect(artifactCredentials).To(HaveLen(12))
+				Expect(artifactCredentials).To(HaveLen(13))
 				for _, ac := range artifactCredentials {
 					Expect(ac.Repository).To(BeEmpty())
 					Expect(ac.Token).To(BeEmpty())

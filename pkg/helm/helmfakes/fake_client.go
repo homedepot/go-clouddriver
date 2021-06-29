@@ -34,6 +34,12 @@ type FakeClient struct {
 		result1 helm.Index
 		result2 error
 	}
+	WithUsernameAndPasswordStub        func(string, string)
+	withUsernameAndPasswordMutex       sync.RWMutex
+	withUsernameAndPasswordArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -45,16 +51,15 @@ func (fake *FakeClient) GetChart(arg1 string, arg2 string) ([]byte, error) {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
-	stub := fake.GetChartStub
-	fakeReturns := fake.getChartReturns
 	fake.recordInvocation("GetChart", []interface{}{arg1, arg2})
 	fake.getChartMutex.Unlock()
-	if stub != nil {
-		return stub(arg1, arg2)
+	if fake.GetChartStub != nil {
+		return fake.GetChartStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
+	fakeReturns := fake.getChartReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -108,16 +113,15 @@ func (fake *FakeClient) GetIndex() (helm.Index, error) {
 	ret, specificReturn := fake.getIndexReturnsOnCall[len(fake.getIndexArgsForCall)]
 	fake.getIndexArgsForCall = append(fake.getIndexArgsForCall, struct {
 	}{})
-	stub := fake.GetIndexStub
-	fakeReturns := fake.getIndexReturns
 	fake.recordInvocation("GetIndex", []interface{}{})
 	fake.getIndexMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.GetIndexStub != nil {
+		return fake.GetIndexStub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
+	fakeReturns := fake.getIndexReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -159,6 +163,38 @@ func (fake *FakeClient) GetIndexReturnsOnCall(i int, result1 helm.Index, result2
 	}{result1, result2}
 }
 
+func (fake *FakeClient) WithUsernameAndPassword(arg1 string, arg2 string) {
+	fake.withUsernameAndPasswordMutex.Lock()
+	fake.withUsernameAndPasswordArgsForCall = append(fake.withUsernameAndPasswordArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("WithUsernameAndPassword", []interface{}{arg1, arg2})
+	fake.withUsernameAndPasswordMutex.Unlock()
+	if fake.WithUsernameAndPasswordStub != nil {
+		fake.WithUsernameAndPasswordStub(arg1, arg2)
+	}
+}
+
+func (fake *FakeClient) WithUsernameAndPasswordCallCount() int {
+	fake.withUsernameAndPasswordMutex.RLock()
+	defer fake.withUsernameAndPasswordMutex.RUnlock()
+	return len(fake.withUsernameAndPasswordArgsForCall)
+}
+
+func (fake *FakeClient) WithUsernameAndPasswordCalls(stub func(string, string)) {
+	fake.withUsernameAndPasswordMutex.Lock()
+	defer fake.withUsernameAndPasswordMutex.Unlock()
+	fake.WithUsernameAndPasswordStub = stub
+}
+
+func (fake *FakeClient) WithUsernameAndPasswordArgsForCall(i int) (string, string) {
+	fake.withUsernameAndPasswordMutex.RLock()
+	defer fake.withUsernameAndPasswordMutex.RUnlock()
+	argsForCall := fake.withUsernameAndPasswordArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -166,6 +202,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.getChartMutex.RUnlock()
 	fake.getIndexMutex.RLock()
 	defer fake.getIndexMutex.RUnlock()
+	fake.withUsernameAndPasswordMutex.RLock()
+	defer fake.withUsernameAndPasswordMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

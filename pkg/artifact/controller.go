@@ -49,13 +49,15 @@ type Credentials struct {
 	Types []Type `json:"types"`
 	// Helm repository config.
 	Repository string `json:"repository,omitempty"`
+	Username   string `json:"username,omitempty"`
+	Password   string `json:"password,omitempty"`
 	// Github config.
 	BaseURL    string `json:"baseURL,omitempty"`
 	Token      string `json:"token,omitempty"`
 	Enterprise bool   `json:"enterprise,omitempty"`
 }
 
-var (
+const (
 	defaultConfigDir = "/opt/spinnaker/artifacts/config"
 )
 
@@ -126,6 +128,11 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 					}
 
 					helmClient := helm.NewClient(ac.Repository)
+
+					if ac.Username != "" && ac.Password != "" {
+						helmClient.WithUsernameAndPassword(ac.Username, ac.Password)
+					}
+
 					cc.helmClients[ac.Name] = helmClient
 				case TypeGithubFile:
 					var tc *http.Client
