@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 
 	"gopkg.in/yaml.v2"
@@ -42,6 +43,7 @@ type Resource struct {
 //go:generate counterfeiter . Client
 type Client interface {
 	GetIndex() (Index, error)
+	WithUsernameAndPassword(string, string)
 	GetChart(string, string) ([]byte, error)
 }
 
@@ -51,23 +53,34 @@ var (
 	mux   sync.Mutex
 )
 
-func NewClient(u string) Client {
-	return &client{u: u}
+func NewClient(url string) Client {
+	return &client{url: url}
 }
 
 type client struct {
-	u string
+	url      string
+	username string
+	password string
+}
+
+func (c *client) WithUsernameAndPassword(username, password string) {
+	c.username = username
+	c.password = password
 }
 
 func (c *client) GetIndex() (Index, error) {
 	i := Index{}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/index.yaml", c.u), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/index.yaml", c.url), nil)
 	if err != nil {
 		return i, err
 	}
 
 	req.Header.Add("If-None-Match", etag)
+
+	if c.username != "" && c.password != "" {
+		req.SetBasicAuth(c.username, c.password)
+	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -122,7 +135,18 @@ func (c *client) GetChart(name, version string) ([]byte, error) {
 
 	// Loop through all the resource's URLs to get the chart.
 	for _, url := range resource.Urls {
-		res, e := http.Get(url)
+		req, e := http.NewRequest(http.MethodGet, url, nil)
+		if e != nil {
+			err = e
+
+			continue
+		}
+		// Set credentials when chart is hosted in authenticated repository
+		if strings.HasPrefix(url, c.url) && c.username != "" && c.password != "" {
+			req.SetBasicAuth(c.username, c.password)
+		}
+
+		res, e := http.DefaultClient.Do(req)
 		if e != nil {
 			err = e
 

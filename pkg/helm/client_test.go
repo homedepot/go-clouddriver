@@ -92,6 +92,21 @@ var _ = Describe("Client", func() {
 			})
 		})
 
+		When("with username/password", func() {
+			BeforeEach(func() {
+				client.WithUsernameAndPassword("fake-user", "fake-password")
+
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyRequest(http.MethodGet, "/index.yaml"),
+					ghttp.VerifyBasicAuth("fake-user", "fake-password"),
+				))
+			})
+
+			It("it succeeds", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(ghttp.CombineHandlers(
@@ -263,6 +278,23 @@ entries:
 			BeforeEach(func() {
 				server.AppendHandlers(ghttp.CombineHandlers(
 					ghttp.VerifyRequest(http.MethodGet, "/artifactory/helm/hello-app-1.0.0.tgz"),
+					ghttp.RespondWith(http.StatusOK, `some-binary-data`),
+				))
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+				Expect(string(b)).To(Equal("some-binary-data"))
+			})
+		})
+
+		When("with username/password", func() {
+			BeforeEach(func() {
+				client.WithUsernameAndPassword("fake-user", "fake-password")
+
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyRequest(http.MethodGet, "/artifactory/helm/hello-app-1.0.0.tgz"),
+					ghttp.VerifyBasicAuth("fake-user", "fake-password"),
 					ghttp.RespondWith(http.StatusOK, `some-binary-data`),
 				))
 			})

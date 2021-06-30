@@ -53,12 +53,7 @@ func init() {
 		log.Fatal(err.Error())
 	}
 
-	// Grab our artifact credentials from /opt/spinnaker/artifacts/config.
-	artifactCredentialsController, err := artifact.NewDefaultCredentialsController()
-	if err != nil {
-		log.Println("[CLOUDDRIVER] error setting up artifact credentials controller:", err.Error())
-	}
-
+	artifactCredentialsController := getArtifactsCredentialsController()
 	sqlClient := sql.NewClient(db)
 	fiatClient := fiat.NewDefaultClient()
 	kubeController := kubernetes.NewController()
@@ -110,4 +105,29 @@ func reqCntURLLabelMappingFn(c *gin.Context) string {
 	}
 
 	return url
+}
+
+// getArtifactsCredentialsController gets an artifacts credentials controller
+// either using the default directory (/opt/spinnaker/artifacts/config)
+// or, if it exists, using the value of the ARTIFACTS_CREDENTIALS_CONFIG_DIR
+// environment variable.
+func getArtifactsCredentialsController() artifact.CredentialsController {
+	var (
+		artifactCredentialsController artifact.CredentialsController
+		err                           error
+	)
+
+	artifactsCredentialsConfigDir := os.Getenv("ARTIFACTS_CREDENTIALS_CONFIG_DIR")
+	if artifactsCredentialsConfigDir == "" {
+		// Use default directory /opt/spinnaker/artifacts/config.
+		artifactCredentialsController, err = artifact.NewDefaultCredentialsController()
+	} else {
+		artifactCredentialsController, err = artifact.NewCredentialsController(artifactsCredentialsConfigDir)
+	}
+
+	if err != nil {
+		log.Println("[CLOUDDRIVER] error setting up artifact credentials controller:", err.Error())
+	}
+
+	return artifactCredentialsController
 }
