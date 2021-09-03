@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
@@ -22,6 +23,8 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 	ac := arcade.Instance(c)
 	kc := kube.ControllerInstance(c)
 	sc := sql.Instance(c)
+	app := c.GetHeader("X-Spinnaker-Application")
+	taskID := clouddriver.TaskIDFromContext(c)
 
 	provider, err := sc.GetKubernetesProvider(rr.Account)
 	if err != nil {
@@ -65,6 +68,8 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 		return
 	}
 
+	var meta kube.Metadata
+
 	switch strings.ToLower(kind) {
 	case "deployment":
 		d := kubernetes.NewDeployment(u.Object)
@@ -80,7 +85,7 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 			return
 		}
 
-		_, err = client.Apply(&annotatedObject)
+		meta, err = client.Apply(&annotatedObject)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -88,6 +93,25 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 
 	default:
 		clouddriver.Error(c, http.StatusBadRequest, fmt.Errorf("restarting kind %s not currently supported", kind))
+		return
+	}
+
+	kr := kubernetes.Resource{
+		AccountName:  rr.Account,
+		ID:           uuid.New().String(),
+		TaskID:       taskID,
+		APIGroup:     meta.Group,
+		Name:         meta.Name,
+		Namespace:    meta.Namespace,
+		Resource:     meta.Resource,
+		Version:      meta.Version,
+		Kind:         meta.Kind,
+		SpinnakerApp: app,
+	}
+
+	err = sc.CreateKubernetesResource(kr)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 }

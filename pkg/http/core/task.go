@@ -30,10 +30,8 @@ func GetTask(c *gin.Context) {
 		return
 	}
 
-	// If there were no kubernetes resources associated with this task ID,
-	// return the default task.
 	if len(resources) == 0 {
-		c.JSON(http.StatusOK, clouddriver.NewDefaultTask(id))
+		clouddriver.Error(c, http.StatusNotFound, fmt.Errorf("Task not found (id: %s)", id))
 		return
 	}
 

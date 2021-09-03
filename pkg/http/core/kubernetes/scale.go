@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
@@ -20,6 +21,8 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 	ac := arcade.Instance(c)
 	kc := kube.ControllerInstance(c)
 	sc := sql.Instance(c)
+	app := c.GetHeader("X-Spinnaker-Application")
+	taskID := clouddriver.TaskIDFromContext(c)
 
 	provider, err := sc.GetKubernetesProvider(sm.Account)
 	if err != nil {
@@ -63,6 +66,8 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 		return
 	}
 
+	var meta kube.Metadata
+
 	// TODO need to allow scaling for other kinds.
 	switch strings.ToLower(kind) {
 	case "deployment":
@@ -83,7 +88,7 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 			return
 		}
 
-		_, err = client.Apply(&scaledManifestObject)
+		meta, err = client.Apply(&scaledManifestObject)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -92,6 +97,25 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 	default:
 		clouddriver.Error(c, http.StatusBadRequest,
 			fmt.Errorf("scaling kind %s not currently supported", kind))
+		return
+	}
+
+	kr := kubernetes.Resource{
+		AccountName:  sm.Account,
+		ID:           uuid.New().String(),
+		TaskID:       taskID,
+		APIGroup:     meta.Group,
+		Name:         meta.Name,
+		Namespace:    meta.Namespace,
+		Resource:     meta.Resource,
+		Version:      meta.Version,
+		Kind:         meta.Kind,
+		SpinnakerApp: app,
+	}
+
+	err = sc.CreateKubernetesResource(kr)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 }
