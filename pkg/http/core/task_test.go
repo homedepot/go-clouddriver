@@ -45,8 +45,8 @@ var _ = Describe("Task", func() {
 				fakeSQLClient.ListKubernetesResourcesByTaskIDReturns([]kubernetes.Resource{}, nil)
 			})
 
-			It("returns status internal server error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
+			It("returns not found error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusNotFound))
 			})
 		})
 
