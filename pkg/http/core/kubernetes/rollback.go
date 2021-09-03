@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
@@ -50,6 +51,7 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 	kc := kube.ControllerInstance(c)
 	sc := sql.Instance(c)
 	app := c.GetHeader("X-Spinnaker-Application")
+	taskID := clouddriver.TaskIDFromContext(c)
 
 	a := strings.Split(ur.ManifestName, " ")
 	manifestKind := a[0]
@@ -162,7 +164,26 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 		return
 	}
 
-	_, err = client.Apply(&u)
+	meta, err := client.Apply(&u)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	kr := kubernetes.Resource{
+		AccountName:  ur.Account,
+		ID:           uuid.New().String(),
+		TaskID:       taskID,
+		APIGroup:     meta.Group,
+		Name:         meta.Name,
+		Namespace:    meta.Namespace,
+		Resource:     meta.Resource,
+		Version:      meta.Version,
+		Kind:         meta.Kind,
+		SpinnakerApp: app,
+	}
+
+	err = sc.CreateKubernetesResource(kr)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

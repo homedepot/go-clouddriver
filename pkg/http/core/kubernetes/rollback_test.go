@@ -131,6 +131,17 @@ var _ = Describe("Rollback", func() {
 		})
 	})
 
+	When("creating the resource returns an error", func() {
+		BeforeEach(func() {
+			fakeSQLClient.CreateKubernetesResourceReturns(errors.New("error creating resource"))
+		})
+
+		It("returns an error", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("error creating resource"))
+		})
+	})
+
 	Context("when the mode is static", func() {
 		BeforeEach(func() {
 			undoRolloutManifestRequest.Mode = "static"
