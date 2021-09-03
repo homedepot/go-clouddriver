@@ -31,15 +31,7 @@ func GetTask(c *gin.Context) {
 	}
 
 	if len(resources) == 0 {
-		// if strings.Contains(id, "-") {
-		// 	c.JSON(http.StatusOK, clouddriver.NewDefaultTask(id))
-		// } else {
-		c.JSON(http.StatusNotFound, clouddriver.NewError(
-			http.StatusText(http.StatusNotFound),
-			fmt.Sprintf("Task not found (id: %s)", id),
-			http.StatusNotFound,
-		))
-		// }
+		clouddriver.Error(c, http.StatusNotFound, fmt.Errorf("Task not found (id: %s)", id))
 		return
 	}
 
