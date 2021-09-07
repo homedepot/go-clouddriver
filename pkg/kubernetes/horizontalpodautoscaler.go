@@ -8,28 +8,23 @@ import (
 	v1 "k8s.io/api/autoscaling/v1"
 )
 
-type HorizontalPodAutoscaler interface {
-	Status() manifest.Status
-	Object() *v1.HorizontalPodAutoscaler
-}
-
-func NewHorizontalPodAutoscaler(m map[string]interface{}) HorizontalPodAutoscaler {
+func NewHorizontalPodAutoscaler(m map[string]interface{}) *HorizontalPodAutoscaler {
 	hpa := &v1.HorizontalPodAutoscaler{}
 	b, _ := json.Marshal(m)
 	_ = json.Unmarshal(b, &hpa)
 
-	return &horizontalPodAutoscaler{hpa: hpa}
+	return &HorizontalPodAutoscaler{hpa: hpa}
 }
 
-type horizontalPodAutoscaler struct {
+type HorizontalPodAutoscaler struct {
 	hpa *v1.HorizontalPodAutoscaler
 }
 
-func (hpa *horizontalPodAutoscaler) Object() *v1.HorizontalPodAutoscaler {
+func (hpa *HorizontalPodAutoscaler) Object() *v1.HorizontalPodAutoscaler {
 	return hpa.hpa
 }
 
-func (hpa *horizontalPodAutoscaler) Status() manifest.Status {
+func (hpa *HorizontalPodAutoscaler) Status() manifest.Status {
 	s := manifest.DefaultStatus
 
 	hpaStatus := hpa.hpa.Status

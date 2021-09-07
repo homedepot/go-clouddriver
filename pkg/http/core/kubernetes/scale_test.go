@@ -74,17 +74,6 @@ var _ = Describe("Scale", func() {
 		})
 	})
 
-	When("converting the replicas returns an error", func() {
-		BeforeEach(func() {
-			scaleManifestRequest.Replicas = "asdf"
-		})
-
-		It("returns an error", func() {
-			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
-			Expect(c.Errors.Last().Error()).To(Equal("strconv.Atoi: parsing \"asdf\": invalid syntax"))
-		})
-	})
-
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
 			fakeKubeClient.ApplyReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))

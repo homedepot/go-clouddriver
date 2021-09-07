@@ -10,10 +10,10 @@ import (
 
 var _ = Describe("HorizontalPodAutoscaler", func() {
 	var (
-		hpa HorizontalPodAutoscaler
+		hpa *HorizontalPodAutoscaler
 	)
 
-	BeforeEach(func(){
+	BeforeEach(func() {
 		hpa = NewHorizontalPodAutoscaler(map[string]interface{}{})
 	})
 

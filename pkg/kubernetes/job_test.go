@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("Job", func() {
 	var (
-		job Job
+		job *Job
 	)
 
 	BeforeEach(func() {

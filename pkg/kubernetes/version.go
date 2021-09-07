@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -106,51 +105,48 @@ func IncrementVersion(currentVersion string) SpinnakerVersion {
 }
 
 func VersionVolumes(u *unstructured.Unstructured, artifacts map[string]clouddriver.TaskCreatedArtifact) error {
-	var (
-		err     error
-		volumes []v1.Volume
-	)
-
 	if len(artifacts) > 0 {
 		switch strings.ToLower(u.GetKind()) {
 		case "deployment":
-			d := NewDeployment(u.Object)
-			volumes = d.GetSpec().Template.Spec.Volumes
-
-			overwriteVolumesNames(volumes, artifacts)
-
-			*u, err = d.ToUnstructured()
+			v, _, err := unstructured.NestedSlice(u.Object, "spec", "template", "spec", "volumes")
 			if err != nil {
 				return err
 			}
 
+			overwriteVolumesNames(v, artifacts)
+			unstructured.SetNestedSlice(u.Object, v, "spec", "template", "spec", "volumes")
 		case "pod":
-			p := NewPod(u.Object)
-			volumes = p.GetSpec().Volumes
-
-			overwriteVolumesNames(volumes, artifacts)
-
-			*u, err = p.ToUnstructured()
+			v, _, err := unstructured.NestedSlice(u.Object, "spec", "volumes")
 			if err != nil {
 				return err
 			}
+
+			overwriteVolumesNames(v, artifacts)
+			unstructured.SetNestedField(u.Object, v, "spec", "volumes")
 		}
 	}
 
 	return nil
 }
 
-func overwriteVolumesNames(volumes []v1.Volume, artifacts map[string]clouddriver.TaskCreatedArtifact) {
+func overwriteVolumesNames(volumes []interface{}, artifacts map[string]clouddriver.TaskCreatedArtifact) {
 	for _, volume := range volumes {
-		if volume.VolumeSource.ConfigMap != nil {
-			if val, ok := artifacts[volume.ConfigMap.Name]; ok && strings.EqualFold(val.Type, "kubernetes/configMap") {
-				volume.ConfigMap.Name = val.Reference
+		v, ok := volume.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		name, found, err := unstructured.NestedString(v, "configMap", "name")
+		if err == nil && found {
+			if val, ok := artifacts[name]; ok && strings.EqualFold(val.Type, "kubernetes/configMap") {
+				unstructured.SetNestedField(v, val.Reference, "configMap", "name")
 			}
 		}
 
-		if volume.VolumeSource.Secret != nil {
-			if val, ok := artifacts[volume.Secret.SecretName]; ok && strings.EqualFold(val.Type, "kubernetes/secret") {
-				volume.Secret.SecretName = val.Reference
+		name, found, err = unstructured.NestedString(v, "secret", "secretName")
+		if err == nil && found {
+			if val, ok := artifacts[name]; ok && strings.EqualFold(val.Type, "kubernetes/secret") {
+				unstructured.SetNestedField(v, val.Reference, "secret", "secretName")
 			}
 		}
 	}
