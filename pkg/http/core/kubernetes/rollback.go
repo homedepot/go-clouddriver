@@ -161,7 +161,7 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 
 	u := unstructured.Unstructured{}
 
-	b, err := json.Marshal(deployment)
+	b, err := json.Marshal(deployment.Object())
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
