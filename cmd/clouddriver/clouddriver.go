@@ -20,9 +20,8 @@ var (
 )
 
 func main() {
-	err := r.Run(":7002")
-	if err != nil {
-		panic(err)
+	if err := r.Run(":7002"); err != nil {
+		log.Fatal(err)
 	}
 }
 
