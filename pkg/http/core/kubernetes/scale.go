@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -71,7 +72,13 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 	// TODO need to allow scaling for other kinds.
 	switch strings.ToLower(kind) {
 	case "deployment":
-		err = unstructured.SetNestedField(u.Object, sm.Replicas, "spec", "replicas")
+		r, err := strconv.Atoi(sm.Replicas)
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+
+		err = unstructured.SetNestedField(u.Object, int64(r), "spec", "replicas")
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
