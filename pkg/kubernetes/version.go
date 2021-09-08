@@ -114,7 +114,11 @@ func VersionVolumes(u *unstructured.Unstructured, artifacts map[string]clouddriv
 			}
 
 			overwriteVolumesNames(v, artifacts)
-			unstructured.SetNestedSlice(u.Object, v, "spec", "template", "spec", "volumes")
+
+			err = unstructured.SetNestedSlice(u.Object, v, "spec", "template", "spec", "volumes")
+			if err != nil {
+				return err
+			}
 		case "pod":
 			v, _, err := unstructured.NestedSlice(u.Object, "spec", "volumes")
 			if err != nil {
@@ -122,7 +126,11 @@ func VersionVolumes(u *unstructured.Unstructured, artifacts map[string]clouddriv
 			}
 
 			overwriteVolumesNames(v, artifacts)
-			unstructured.SetNestedField(u.Object, v, "spec", "volumes")
+
+			err = unstructured.SetNestedField(u.Object, v, "spec", "volumes")
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -139,14 +147,14 @@ func overwriteVolumesNames(volumes []interface{}, artifacts map[string]clouddriv
 		name, found, err := unstructured.NestedString(v, "configMap", "name")
 		if err == nil && found {
 			if val, ok := artifacts[name]; ok && strings.EqualFold(val.Type, "kubernetes/configMap") {
-				unstructured.SetNestedField(v, val.Reference, "configMap", "name")
+				_ = unstructured.SetNestedField(v, val.Reference, "configMap", "name")
 			}
 		}
 
 		name, found, err = unstructured.NestedString(v, "secret", "secretName")
 		if err == nil && found {
 			if val, ok := artifacts[name]; ok && strings.EqualFold(val.Type, "kubernetes/secret") {
-				unstructured.SetNestedField(v, val.Reference, "secret", "secretName")
+				_ = unstructured.SetNestedField(v, val.Reference, "secret", "secretName")
 			}
 		}
 	}

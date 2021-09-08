@@ -74,8 +74,12 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 	case "deployment":
 		// Add annotation to pod spec:
 		// kubectl.kubernetes.io/restartedAt: "2020-08-21T03:56:27Z"
-		kubernetes.AnnotateTemplate(u, "clouddriver.spinnaker.io/restartedAt",
+		err = kubernetes.AnnotateTemplate(u, "clouddriver.spinnaker.io/restartedAt",
 			time.Now().In(time.UTC).Format(time.RFC3339))
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
 
 		meta, err = client.Apply(u)
 		if err != nil {
