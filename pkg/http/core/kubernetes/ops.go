@@ -133,6 +133,7 @@ type DeleteManifestRequest struct {
 	ManifestName   string                              `json:"manifestName"`
 	CloudProvider  string                              `json:"cloudProvider"`
 	Options        DeleteManifestRequestOptions        `json:"options"`
+	Kinds          []string                            `json:"kinds"`
 	Location       string                              `json:"location"`
 	User           string                              `json:"user"`
 	Account        string                              `json:"account"`

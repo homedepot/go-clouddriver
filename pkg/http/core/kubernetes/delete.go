@@ -16,6 +16,7 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 )
 
@@ -123,8 +124,73 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 			return
 		}
 	case "label":
-		clouddriver.Error(c, http.StatusNotImplemented,
-			fmt.Errorf("requested to delete manifest %s using mode %s which is not implemented", dm.ManifestName, mode))
+		if len(dm.LabelSelectors.Selectors) == 0 {
+			clouddriver.Error(c, http.StatusBadRequest, fmt.Errorf("requested to delete manifests by label, but no label selectors were provided"))
+			return
+		}
+
+		ls := labels.NewSelector()
+		// The set of label selectors will be used across all Kinds.
+		for _, selector := range dm.LabelSelectors.Selectors {
+			req, err := kube.NewRequirement(selector.Kind, selector.Key, selector.Values)
+			if err != nil {
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
+			}
+
+			ls = ls.Add(*req)
+		}
+
+		lo := metav1.ListOptions{
+			LabelSelector: ls.String(),
+			FieldSelector: "metadata.namespace=" + dm.Location,
+		}
+
+		for _, kind := range dm.Kinds {
+			gvr, err := client.GVRForKind(kind)
+			if err != nil {
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
+			}
+			// Find list of resources with label selectors
+			list, err := client.ListByGVR(gvr, lo)
+			if err != nil {
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
+			}
+
+			for _, item := range list.Items {
+				// Delete each resource and record it in the database.
+				err = client.DeleteResourceByKindAndNameAndNamespace(kind, item.GetName(), dm.Location, do)
+				if err != nil {
+					clouddriver.Error(c, http.StatusInternalServerError, err)
+					return
+				}
+
+				kr := kubernetes.Resource{
+					AccountName:  dm.Account,
+					ID:           uuid.New().String(),
+					TaskID:       taskID,
+					TaskType:     clouddriver.TaskTypeDelete,
+					Timestamp:    util.CurrentTimeUTC(),
+					APIGroup:     gvr.Group,
+					Name:         item.GetName(),
+					Namespace:    dm.Location,
+					Resource:     gvr.Resource,
+					Version:      gvr.Version,
+					Kind:         kind,
+					SpinnakerApp: dm.App,
+					Cluster:      cluster(kind, item.GetName()),
+				}
+
+				err = sc.CreateKubernetesResource(kr)
+				if err != nil {
+					clouddriver.Error(c, http.StatusInternalServerError, err)
+					return
+				}
+			}
+		}
+
 		return
 	default:
 		clouddriver.Error(c, http.StatusNotImplemented,
