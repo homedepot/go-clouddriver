@@ -159,6 +159,26 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 				return
 			}
 
+			// Spinnaker OSS does not fail when no resources are found,
+			// so create an 'no op' resource.
+			if list == nil || len(list.Items) == 0 {
+				kr := kubernetes.Resource{
+					AccountName: dm.Account,
+					ID:          uuid.New().String(),
+					TaskID:      taskID,
+					TaskType:    clouddriver.TaskTypeNoOp,
+					Timestamp:   util.CurrentTimeUTC(),
+				}
+
+				err = sc.CreateKubernetesResource(kr)
+				if err != nil {
+					clouddriver.Error(c, http.StatusInternalServerError, err)
+					return
+				}
+
+				continue
+			}
+
 			for _, item := range list.Items {
 				// Delete each resource and record it in the database.
 				err = client.DeleteResourceByKindAndNameAndNamespace(kind, item.GetName(), dm.Location, do)

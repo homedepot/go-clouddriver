@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
@@ -200,6 +201,19 @@ var _ = Describe("Delete", func() {
 			It("returns an error", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
 				Expect(c.Errors.Last().Error()).To(Equal("error creating resource"))
+			})
+		})
+
+		When("there ar no resources to delete", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ListByGVRReturns(&unstructured.UnstructuredList{}, nil)
+			})
+
+			It("gracefully succeeds w/o deleting", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceCallCount()).To(Equal(0))
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeNoOp))
 			})
 		})
 
