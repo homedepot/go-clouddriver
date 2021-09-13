@@ -6,6 +6,7 @@ const (
 	TaskIDKey       = `TaskID`
 	TaskTypeCleanup = `cleanup`
 	TaskTypeDelete  = `delete`
+	TaskTypeNoOp    = `noop`
 )
 
 func NewDefaultTask(id string) Task {

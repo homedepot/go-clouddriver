@@ -124,6 +124,22 @@ var _ = Describe("Task", func() {
 			})
 		})
 
+		When("the task type is noop", func() {
+			BeforeEach(func() {
+				fakeSQLClient.ListKubernetesResourcesByTaskIDReturns([]kubernetes.Resource{
+					{
+						AccountName: "test-account-name",
+						TaskType:    clouddriver.TaskTypeNoOp,
+					},
+				}, nil)
+			})
+
+			It("does not call make calls to the server", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetCallCount()).To(Equal(0))
+			})
+		})
+
 		Context("when the task type is delete", func() {
 			BeforeEach(func() {
 				fakeSQLClient.ListKubernetesResourcesByTaskIDReturns([]kubernetes.Resource{
