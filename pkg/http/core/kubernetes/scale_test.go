@@ -1,6 +1,7 @@
 package kubernetes_test
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -121,6 +122,9 @@ var _ = Describe("Scale", func() {
 	When("it succeeds", func() {
 		It("succeeds", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			u := fakeKubeClient.ApplyArgsForCall(0)
+			b, _ := json.Marshal(&u)
+			Expect(string(b)).To(Equal("{\"spec\":{\"replicas\":16}}"))
 		})
 	})
 })

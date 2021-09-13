@@ -6,94 +6,25 @@ import (
 
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 	v1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func NewDeployment(m map[string]interface{}) Deployment {
+func NewDeployment(m map[string]interface{}) *Deployment {
 	d := &v1.Deployment{}
 	b, _ := json.Marshal(m)
 	_ = json.Unmarshal(b, &d)
 
-	return &deployment{d: d}
+	return &Deployment{d: d}
 }
 
-type Deployment interface {
-	ToUnstructured() (unstructured.Unstructured, error)
-	AnnotateTemplate(string, string)
-	GetSpec() v1.DeploymentSpec
-	SetReplicas(*int32)
-	LabelTemplate(string, string)
-	LabelTemplateIfNotExists(string, string)
-	Status() manifest.Status
-	Object() *v1.Deployment
-}
-
-type deployment struct {
+type Deployment struct {
 	d *v1.Deployment
 }
 
-func (d *deployment) ToUnstructured() (unstructured.Unstructured, error) {
-	u := unstructured.Unstructured{}
-
-	b, err := json.Marshal(d.d)
-	if err != nil {
-		return u, err
-	}
-
-	err = json.Unmarshal(b, &u.Object)
-	if err != nil {
-		return u, err
-	}
-
-	return u, nil
-}
-
-func (d *deployment) Object() *v1.Deployment {
+func (d *Deployment) Object() *v1.Deployment {
 	return d.d
 }
 
-func (d *deployment) AnnotateTemplate(key, value string) {
-	annotations := d.d.Spec.Template.ObjectMeta.Annotations
-	if annotations == nil {
-		annotations = map[string]string{}
-	}
-
-	annotations[key] = value
-	d.d.Spec.Template.ObjectMeta.Annotations = annotations
-}
-
-func (d *deployment) GetSpec() v1.DeploymentSpec {
-	return d.d.Spec
-}
-
-func (d *deployment) SetReplicas(replicas *int32) {
-	d.d.Spec.Replicas = replicas
-}
-
-func (d *deployment) LabelTemplate(key, value string) {
-	labels := d.d.Spec.Template.ObjectMeta.Labels
-	if labels == nil {
-		labels = map[string]string{}
-	}
-
-	labels[key] = value
-	d.d.Spec.Template.ObjectMeta.Labels = labels
-}
-
-func (d *deployment) LabelTemplateIfNotExists(key, value string) {
-	labels := d.d.Spec.Template.ObjectMeta.Labels
-	if labels == nil {
-		labels = map[string]string{}
-	}
-
-	if _, ok := labels[key]; !ok {
-		labels[key] = value
-	}
-
-	d.d.Spec.Template.ObjectMeta.Labels = labels
-}
-
-func (d *deployment) Status() manifest.Status {
+func (d *Deployment) Status() manifest.Status {
 	s := manifest.DefaultStatus
 
 	if d.d.ObjectMeta.Generation != d.d.Status.ObservedGeneration {

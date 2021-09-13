@@ -11,66 +11,12 @@ import (
 
 var _ = Describe("Pod", func() {
 	var (
-		pod Pod
+		pod *Pod
 	)
 
 	BeforeEach(func() {
 		p := map[string]interface{}{}
 		pod = NewPod(p)
-	})
-
-	Describe("#GetObjectMeta", func() {
-		BeforeEach(func() {
-			_ = pod.GetObjectMeta()
-		})
-
-		It("succeeds", func() {
-		})
-	})
-
-	Describe("#GetPodStatus", func() {
-		BeforeEach(func() {
-			_ = pod.GetPodStatus()
-		})
-
-		It("succeeds", func() {
-		})
-	})
-
-	Describe("#GetNamespace", func() {
-		BeforeEach(func() {
-			_ = pod.GetNamespace()
-		})
-
-		It("succeeds", func() {
-		})
-	})
-
-	Describe("#GetName", func() {
-		BeforeEach(func() {
-			_ = pod.GetName()
-		})
-
-		It("succeeds", func() {
-		})
-	})
-
-	Describe("GetUID", func() {
-		BeforeEach(func() {
-			_ = pod.GetUID()
-		})
-
-		It("succeeds", func() {
-		})
-	})
-
-	Describe("GetLabels", func() {
-		BeforeEach(func() {
-			_ = pod.GetLabels()
-		})
-
-		It("succeeds", func() {
-		})
 	})
 
 	Describe("#Status", func() {

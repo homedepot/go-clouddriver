@@ -7,30 +7,24 @@ import (
 	v1 "k8s.io/api/batch/v1"
 )
 
-type Job interface {
-	Status() manifest.Status
-	State() string
-	Object() *v1.Job
-}
-
-func NewJob(m map[string]interface{}) Job {
+func NewJob(m map[string]interface{}) *Job {
 	j := &v1.Job{}
 	b, _ := json.Marshal(m)
 	_ = json.Unmarshal(b, &j)
 
-	return &job{j: j}
+	return &Job{j: j}
 }
 
-type job struct {
+type Job struct {
 	j *v1.Job
 }
 
-func (j *job) Object() *v1.Job {
+func (j *Job) Object() *v1.Job {
 	return j.j
 }
 
 // Calculated at https://github.com/spinnaker/clouddriver/blob/master/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/model/KubernetesJobStatus.java#L71
-func (j *job) State() string {
+func (j *Job) State() string {
 	obj := j.Object()
 	status := obj.Status
 
@@ -66,7 +60,7 @@ func (j *job) State() string {
 	return "Succeeded"
 }
 
-func (j *job) Status() manifest.Status {
+func (j *Job) Status() manifest.Status {
 	s := manifest.DefaultStatus
 
 	completions := int32(1)

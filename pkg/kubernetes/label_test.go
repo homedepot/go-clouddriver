@@ -44,8 +44,7 @@ var _ = Describe("Label", func() {
 					Expect(labels[LabelKubernetesName]).To(Equal(application))
 					Expect(labels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 
-					d := NewDeployment(u.Object).Object()
-					templateLabels := d.Spec.Template.ObjectMeta.Labels
+					templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
 					Expect(templateLabels[LabelKubernetesName]).To(Equal(application))
 					Expect(templateLabels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 				})
@@ -85,9 +84,51 @@ var _ = Describe("Label", func() {
 					Expect(labels[LabelKubernetesName]).To(Equal("test-already-here"))
 					Expect(labels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 
-					d := NewDeployment(u.Object).Object()
-					templateLabels := d.Spec.Template.ObjectMeta.Labels
+					templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
 					Expect(templateLabels[LabelKubernetesName]).To(Equal("test-already-here"))
+					Expect(templateLabels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
+				})
+			})
+
+			Context("template labels already exist", func() {
+				BeforeEach(func() {
+					m := map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"namespace": "default",
+							"name":      "test-name",
+							"labels": map[string]interface{}{
+								"app.kubernetes.io/name": "test-already-here",
+							},
+						},
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"namespace": "default",
+									"name":      "test-name",
+									"labels": map[string]interface{}{
+										"key1": "value1",
+										"key2": "value2",
+									},
+								},
+							},
+						},
+					}
+					u, err = ToUnstructured(m)
+					Expect(err).To(BeNil())
+					application = "test-application"
+				})
+
+				It("keeps the original labels", func() {
+					labels := u.GetLabels()
+					Expect(labels[LabelKubernetesName]).To(Equal("test-already-here"))
+					Expect(labels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
+
+					templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
+					Expect(templateLabels["key1"]).To(Equal("value1"))
+					Expect(templateLabels["key2"]).To(Equal("value2"))
+					Expect(templateLabels[LabelKubernetesName]).To(Equal("test-application"))
 					Expect(templateLabels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 				})
 			})
@@ -114,8 +155,7 @@ var _ = Describe("Label", func() {
 					Expect(labels[LabelKubernetesName]).To(Equal(application))
 					Expect(labels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 
-					d := NewReplicaSet(u.Object).Object()
-					templateLabels := d.Spec.Template.ObjectMeta.Labels
+					templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
 					Expect(templateLabels[LabelKubernetesName]).To(Equal(application))
 					Expect(templateLabels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 				})
@@ -155,9 +195,51 @@ var _ = Describe("Label", func() {
 					Expect(labels[LabelKubernetesName]).To(Equal("test-already-here"))
 					Expect(labels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 
-					d := NewReplicaSet(u.Object).Object()
-					templateLabels := d.Spec.Template.ObjectMeta.Labels
+					templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
 					Expect(templateLabels[LabelKubernetesName]).To(Equal("test-already-here"))
+					Expect(templateLabels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
+				})
+			})
+
+			Context("template labels already exist", func() {
+				BeforeEach(func() {
+					m := map[string]interface{}{
+						"kind":       "ReplicaSet",
+						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"namespace": "default",
+							"name":      "test-name",
+							"labels": map[string]interface{}{
+								"app.kubernetes.io/name": "test-already-here",
+							},
+						},
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"namespace": "default",
+									"name":      "test-name",
+									"labels": map[string]interface{}{
+										"key1": "value1",
+										"key2": "value2",
+									},
+								},
+							},
+						},
+					}
+					u, err = ToUnstructured(m)
+					Expect(err).To(BeNil())
+					application = "test-application"
+				})
+
+				It("keeps the original labels", func() {
+					labels := u.GetLabels()
+					Expect(labels[LabelKubernetesName]).To(Equal("test-already-here"))
+					Expect(labels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
+
+					templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
+					Expect(templateLabels["key1"]).To(Equal("value1"))
+					Expect(templateLabels["key2"]).To(Equal("value2"))
+					Expect(templateLabels[LabelKubernetesName]).To(Equal("test-application"))
 					Expect(templateLabels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 				})
 			})
@@ -184,8 +266,7 @@ var _ = Describe("Label", func() {
 					Expect(labels[LabelKubernetesName]).To(Equal(application))
 					Expect(labels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 
-					d := NewDaemonSet(u.Object).Object()
-					templateLabels := d.Spec.Template.ObjectMeta.Labels
+					templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
 					Expect(templateLabels[LabelKubernetesName]).To(Equal(application))
 					Expect(templateLabels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 				})
@@ -225,9 +306,51 @@ var _ = Describe("Label", func() {
 					Expect(labels[LabelKubernetesName]).To(Equal("test-already-here"))
 					Expect(labels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 
-					d := NewDaemonSet(u.Object).Object()
-					templateLabels := d.Spec.Template.ObjectMeta.Labels
+					templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
 					Expect(templateLabels[LabelKubernetesName]).To(Equal("test-already-here"))
+					Expect(templateLabels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
+				})
+			})
+
+			Context("template labels already exist", func() {
+				BeforeEach(func() {
+					m := map[string]interface{}{
+						"kind":       "DaemonSet",
+						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"namespace": "default",
+							"name":      "test-name",
+							"labels": map[string]interface{}{
+								"app.kubernetes.io/name": "test-already-here",
+							},
+						},
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"namespace": "default",
+									"name":      "test-name",
+									"labels": map[string]interface{}{
+										"key1": "value1",
+										"key2": "value2",
+									},
+								},
+							},
+						},
+					}
+					u, err = ToUnstructured(m)
+					Expect(err).To(BeNil())
+					application = "test-application"
+				})
+
+				It("keeps the original labels", func() {
+					labels := u.GetLabels()
+					Expect(labels[LabelKubernetesName]).To(Equal("test-already-here"))
+					Expect(labels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
+
+					templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
+					Expect(templateLabels["key1"]).To(Equal("value1"))
+					Expect(templateLabels["key2"]).To(Equal("value2"))
+					Expect(templateLabels[LabelKubernetesName]).To(Equal("test-application"))
 					Expect(templateLabels[LabelKubernetesManagedBy]).To(Equal("spinnaker"))
 				})
 			})
@@ -273,8 +396,7 @@ var _ = Describe("Label", func() {
 			It("adds the labels", func() {
 				Labels := u.GetLabels()
 				Expect(Labels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
-				d := NewDeployment(u.Object).Object()
-				templateLabels := d.Spec.Template.ObjectMeta.Labels
+				templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
 				Expect(templateLabels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
 			})
 		})
@@ -313,16 +435,15 @@ var _ = Describe("Label", func() {
 			It("adds the labels", func() {
 				Labels := u.GetLabels()
 				Expect(Labels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
-				d := NewDeployment(u.Object).Object()
-				templateLabels := d.Spec.Template.ObjectMeta.Labels
+				templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
 				Expect(templateLabels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
 			})
 		})
 
-		When("kind is a demonset", func() {
+		When("kind is a daemonset", func() {
 			BeforeEach(func() {
 				m = map[string]interface{}{
-					"kind": "demonset",
+					"kind": "daemonset",
 					"metadata": map[string]interface{}{
 						"name":              "test-name",
 						"namespace":         "test-namespace2",
@@ -353,8 +474,7 @@ var _ = Describe("Label", func() {
 			It("adds the labels", func() {
 				Labels := u.GetLabels()
 				Expect(Labels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
-				d := NewDeployment(u.Object).Object()
-				templateLabels := d.Spec.Template.ObjectMeta.Labels
+				templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
 				Expect(templateLabels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
 			})
 		})
@@ -393,8 +513,7 @@ var _ = Describe("Label", func() {
 			It("adds the labels", func() {
 				Labels := u.GetLabels()
 				Expect(Labels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
-				d := NewDeployment(u.Object).Object()
-				templateLabels := d.Spec.Template.ObjectMeta.Labels
+				templateLabels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
 				Expect(templateLabels[LabelSpinnakerMonikerSequence]).To(Equal("2"))
 			})
 		})
