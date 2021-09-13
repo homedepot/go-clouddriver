@@ -158,6 +158,28 @@ func newDeleteManifestRequest() DeleteManifestRequest {
 			Cascading:          false,
 			GracePeriodSeconds: &gps,
 		},
+		Kinds: []string{
+			"deployment",
+		},
+		LabelSelectors: DeleteManifestRequestLabelSelectors{
+			Selectors: []DeleteManifestRequestLabelSelector{
+				{
+					Kind:   "EQUALS",
+					Key:    "key1",
+					Values: []string{"key1-value1"},
+				},
+				{
+					Kind:   "EXISTS",
+					Key:    "key2",
+					Values: []string{},
+				},
+				{
+					Kind:   "NOT_CONTAINS",
+					Key:    "key3",
+					Values: []string{"key3-value1", "key3-value2"},
+				},
+			},
+		},
 	}
 }
 
