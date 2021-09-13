@@ -2,7 +2,6 @@ package fiat_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	. "github.com/homedepot/go-clouddriver/pkg/fiat"
@@ -127,16 +126,8 @@ var _ = Describe("Client", func() {
 			})
 
 			It("succeeds", func() {
-
 				byt := []byte(fakeResponse)
-				if err := json.Unmarshal(byt, &expectedResponse); err != nil {
-					panic(err)
-				}
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-
+				err := json.Unmarshal(byt, &expectedResponse)
 				Expect(err).To(BeNil())
 				Expect(expectedResponse).To(Equal(response))
 			})
