@@ -71,7 +71,7 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 
 	// TODO need to allow scaling for additional kinds.
 	switch strings.ToLower(kind) {
-	case "deployment":
+	case "deployment", "statefulset":
 		r, err := strconv.Atoi(sm.Replicas)
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
@@ -89,31 +89,6 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
-	case "statefulset":
-		ss := kubernetes.NewStatefulSet(u.Object)
-
-		replicas, err := strconv.Atoi(sm.Replicas)
-		if err != nil {
-			clouddriver.Error(c, http.StatusBadRequest, err)
-			return
-		}
-
-		desiredReplicas := int32(replicas)
-
-		ss.SetReplicas(&desiredReplicas)
-
-		scaledManifestObject, err := ss.ToUnstructured()
-		if err != nil {
-			clouddriver.Error(c, http.StatusInternalServerError, err)
-			return
-		}
-
-		meta, err = client.Apply(&scaledManifestObject)
-		if err != nil {
-			clouddriver.Error(c, http.StatusInternalServerError, err)
-			return
-		}
-
 	default:
 		clouddriver.Error(c, http.StatusBadRequest,
 			fmt.Errorf("scaling kind %s not currently supported", kind))
