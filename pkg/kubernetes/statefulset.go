@@ -7,44 +7,25 @@ import (
 
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes/manifest"
 	v1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-type StatefulSet interface {
-	GetStatefulSetSpec() v1.StatefulSetSpec
-	Object() *v1.StatefulSet
-	SetReplicas(*int32)
-	Status() manifest.Status
-	LabelTemplate(string, string)
-	ToUnstructured() (unstructured.Unstructured, error)
-	AnnotateTemplate(string, string)
-}
-
-type statefulSet struct {
-	ss *v1.StatefulSet
-}
-
-func NewStatefulSet(m map[string]interface{}) StatefulSet {
+func NewStatefulSet(m map[string]interface{}) *StatefulSet {
 	s := &v1.StatefulSet{}
 	b, _ := json.Marshal(m)
 	_ = json.Unmarshal(b, &s)
 
-	return &statefulSet{ss: s}
+	return &StatefulSet{ss: s}
 }
 
-func (ss *statefulSet) GetStatefulSetSpec() v1.StatefulSetSpec {
-	return ss.ss.Spec
+type StatefulSet struct {
+	ss *v1.StatefulSet
 }
 
-func (ss *statefulSet) Object() *v1.StatefulSet {
+func (ss *StatefulSet) Object() *v1.StatefulSet {
 	return ss.ss
 }
 
-func (ss *statefulSet) SetReplicas(replicas *int32) {
-	ss.ss.Spec.Replicas = replicas
-}
-
-func (ss *statefulSet) Status() manifest.Status {
+func (ss *StatefulSet) Status() manifest.Status {
 	s := manifest.DefaultStatus
 	x := ss.ss
 
@@ -123,40 +104,4 @@ func (ss *statefulSet) Status() manifest.Status {
 	}
 
 	return s
-}
-
-func (ss *statefulSet) ToUnstructured() (unstructured.Unstructured, error) {
-	u := unstructured.Unstructured{}
-
-	b, err := json.Marshal(ss.ss)
-	if err != nil {
-		return u, err
-	}
-
-	err = json.Unmarshal(b, &u.Object)
-	if err != nil {
-		return u, err
-	}
-
-	return u, nil
-}
-
-func (ss *statefulSet) LabelTemplate(key, value string) {
-	labels := ss.ss.Spec.Template.ObjectMeta.Labels
-	if labels == nil {
-		labels = map[string]string{}
-	}
-
-	labels[key] = value
-	ss.ss.Spec.Template.ObjectMeta.Labels = labels
-}
-
-func (ss *statefulSet) AnnotateTemplate(key, value string) {
-	annotations := ss.ss.Spec.Template.ObjectMeta.Annotations
-	if annotations == nil {
-		annotations = map[string]string{}
-	}
-
-	annotations[key] = value
-	ss.ss.Spec.Template.ObjectMeta.Annotations = annotations
 }

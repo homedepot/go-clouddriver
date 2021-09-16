@@ -14,6 +14,7 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 )
 
@@ -71,24 +72,19 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 	// TODO need to allow scaling for additional kinds.
 	switch strings.ToLower(kind) {
 	case "deployment":
-		d := kubernetes.NewDeployment(u.Object)
-
-		replicas, err := strconv.Atoi(sm.Replicas)
+		r, err := strconv.Atoi(sm.Replicas)
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
-		desiredReplicas := int32(replicas)
-		d.SetReplicas(&desiredReplicas)
-
-		scaledManifestObject, err := d.ToUnstructured()
+		err = unstructured.SetNestedField(u.Object, int64(r), "spec", "replicas")
 		if err != nil {
-			clouddriver.Error(c, http.StatusInternalServerError, err)
+			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
-		meta, err = client.Apply(&scaledManifestObject)
+		meta, err = client.Apply(u)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return

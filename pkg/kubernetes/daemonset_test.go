@@ -10,96 +10,12 @@ import (
 
 var _ = Describe("DaemonSet", func() {
 	var (
-		daemonSet DaemonSet
-		err       error
+		daemonSet *DaemonSet
 	)
 
 	BeforeEach(func() {
 		ds := map[string]interface{}{}
 		daemonSet = NewDaemonSet(ds)
-	})
-
-	Describe("#ToUnstructured", func() {
-		BeforeEach(func() {
-			_, err = daemonSet.ToUnstructured()
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				Expect(err).To(BeNil())
-			})
-		})
-	})
-
-	Describe("#Object", func() {
-		var ds *v1.DaemonSet
-
-		BeforeEach(func() {
-			ds = daemonSet.Object()
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				Expect(ds).ToNot(BeNil())
-			})
-		})
-	})
-
-	Describe("#AnnotateTemplate", func() {
-		BeforeEach(func() {
-			daemonSet.AnnotateTemplate("test", "value")
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				o := daemonSet.Object()
-				annotations := o.Spec.Template.ObjectMeta.Annotations
-				Expect(annotations["test"]).To(Equal("value"))
-			})
-		})
-	})
-
-	Describe("#LabelTemplate", func() {
-		BeforeEach(func() {
-			daemonSet.LabelTemplate("test", "value")
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				o := daemonSet.Object()
-				labels := o.Spec.Template.ObjectMeta.Labels
-				Expect(labels["test"]).To(Equal("value"))
-			})
-		})
-	})
-
-	Describe("#LabelTemplateIfNotExists", func() {
-		JustBeforeEach(func() {
-			daemonSet.LabelTemplateIfNotExists("test", "value")
-		})
-
-		When("the label exists", func() {
-			BeforeEach(func() {
-				o := daemonSet.Object()
-				o.Spec.Template.ObjectMeta.Labels = map[string]string{
-					"test": "taken",
-				}
-			})
-
-			It("does not label the template", func() {
-				o := daemonSet.Object()
-				labels := o.Spec.Template.ObjectMeta.Labels
-				Expect(labels["test"]).To(Equal("taken"))
-			})
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				o := daemonSet.Object()
-				labels := o.Spec.Template.ObjectMeta.Labels
-				Expect(labels["test"]).To(Equal("value"))
-			})
-		})
 	})
 
 	Describe("#Status", func() {

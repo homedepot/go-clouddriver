@@ -10,25 +10,12 @@ import (
 
 var _ = Describe("Deployment", func() {
 	var (
-		deployment Deployment
-		err        error
+		deployment *Deployment
 	)
 
 	BeforeEach(func() {
 		d := map[string]interface{}{}
 		deployment = NewDeployment(d)
-	})
-
-	Describe("#ToUnstructured", func() {
-		BeforeEach(func() {
-			_, err = deployment.ToUnstructured()
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				Expect(err).To(BeNil())
-			})
-		})
 	})
 
 	Describe("#Object", func() {
@@ -45,93 +32,12 @@ var _ = Describe("Deployment", func() {
 		})
 	})
 
-	Describe("#AnnotateTemplate", func() {
-		BeforeEach(func() {
-			deployment.AnnotateTemplate("test", "value")
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				o := deployment.Object()
-				annotations := o.Spec.Template.ObjectMeta.Annotations
-				Expect(annotations["test"]).To(Equal("value"))
-			})
-		})
-	})
-
-	Describe("#GetSpec", func() {
-		BeforeEach(func() {
-			_ = deployment.GetSpec()
-		})
-
-		It("succeeds", func() {
-		})
-	})
-
-	Describe("#LabelTemplate", func() {
-		BeforeEach(func() {
-			deployment.LabelTemplate("test", "value")
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				o := deployment.Object()
-				labels := o.Spec.Template.ObjectMeta.Labels
-				Expect(labels["test"]).To(Equal("value"))
-			})
-		})
-	})
-
-	Describe("#LabelTemplateIfNotExists", func() {
-		JustBeforeEach(func() {
-			deployment.LabelTemplateIfNotExists("test", "value")
-		})
-
-		When("the label exists", func() {
-			BeforeEach(func() {
-				o := deployment.Object()
-				o.Spec.Template.ObjectMeta.Labels = map[string]string{
-					"test": "taken",
-				}
-			})
-
-			It("does not label the template", func() {
-				o := deployment.Object()
-				labels := o.Spec.Template.ObjectMeta.Labels
-				Expect(labels["test"]).To(Equal("taken"))
-			})
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				o := deployment.Object()
-				labels := o.Spec.Template.ObjectMeta.Labels
-				Expect(labels["test"]).To(Equal("value"))
-			})
-		})
-	})
-
-	Describe("#SetReplicas", func() {
-		BeforeEach(func() {
-			replicas := int32(4)
-			deployment.SetReplicas(&replicas)
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				o := deployment.Object()
-				replicas := o.Spec.Replicas
-				Expect(*replicas).To(Equal(int32(4)))
-			})
-		})
-	})
-
 	Describe("#Status", func() {
 		var s manifest.Status
 
 		BeforeEach(func() {
 			replicas := int32(4)
-			deployment.SetReplicas(&replicas)
+			deployment.Object().Spec.Replicas = &replicas
 		})
 
 		JustBeforeEach(func() {

@@ -6,21 +6,15 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-//go:generate counterfeiter . ManifestFilter
-type ManifestFilter interface {
-	FilterOnClusterAnnotation([]unstructured.Unstructured, string) []unstructured.Unstructured
-	FilterOnLabel([]unstructured.Unstructured, string) []unstructured.Unstructured
+func NewManifestFilter(items []unstructured.Unstructured) *ManifestFilter {
+	return &ManifestFilter{items: items}
 }
 
-type manifestFilter struct {
+type ManifestFilter struct {
 	items []unstructured.Unstructured
 }
 
-func NewManifestFilter(items []unstructured.Unstructured) manifestFilter {
-	return manifestFilter{items: items}
-}
-
-func (f *manifestFilter) FilterOnClusterAnnotation(cluster string) []unstructured.Unstructured {
+func (f *ManifestFilter) FilterOnClusterAnnotation(cluster string) []unstructured.Unstructured {
 	filtered := []unstructured.Unstructured{}
 
 	for _, item := range f.items {
@@ -35,7 +29,7 @@ func (f *manifestFilter) FilterOnClusterAnnotation(cluster string) []unstructure
 	return filtered
 }
 
-func (f *manifestFilter) FilterOnLabel(label string) []unstructured.Unstructured {
+func (f *ManifestFilter) FilterOnLabel(label string) []unstructured.Unstructured {
 	filtered := []unstructured.Unstructured{}
 
 	for _, item := range f.items {

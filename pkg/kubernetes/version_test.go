@@ -3,7 +3,6 @@ package kubernetes_test
 import (
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	. "github.com/homedepot/go-clouddriver/pkg/kubernetes"
-	"github.com/homedepot/go-clouddriver/pkg/kubernetes/kubernetesfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -15,8 +14,8 @@ var (
 	isVersioned                     bool
 	updatedVersion, expectedVersion SpinnakerVersion
 	err                             error
-	fakeDeployment                  Deployment
-	fakePod                         Pod
+	fakeDeployment                  *Deployment
+	fakePod                         *Pod
 )
 
 var _ = Describe("Version", func() {
@@ -90,8 +89,6 @@ var _ = Describe("Version", func() {
 
 		When("#FilterOnClusterAnnotation returns 0 items", func() {
 			BeforeEach(func() {
-				FakeManifestFilter := kubernetesfakes.FakeManifestFilter{}
-				FakeManifestFilter.FilterOnClusterAnnotationReturns([]unstructured.Unstructured{})
 				fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{{
 					Object: map[string]interface{}{
 						"kind": "fakeKind",
@@ -139,8 +136,6 @@ var _ = Describe("Version", func() {
 					},
 				},
 				}}
-				FakeManifestFilter := kubernetesfakes.FakeManifestFilter{}
-				FakeManifestFilter.FilterOnLabelReturns([]unstructured.Unstructured{})
 				currentVersion = GetCurrentVersion(fakeUnstructuredList, "test-kind", "test-name")
 			})
 
@@ -296,8 +291,8 @@ var _ = Describe("Version", func() {
 						"spec": map[string]interface{}{
 							"template": map[string]interface{}{
 								"spec": map[string]interface{}{
-									"volumes": []map[string]interface{}{
-										{
+									"volumes": []interface{}{
+										map[string]interface{}{
 											"configMap": map[string]interface{}{
 												"name": "test-config-map",
 											},
@@ -324,7 +319,7 @@ var _ = Describe("Version", func() {
 			})
 
 			It("updates the volume name to contain the reference", func() {
-				volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
+				volumes := fakeDeployment.Object().Spec.Template.Spec.Volumes
 				Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v001"))
 			})
 		})
@@ -338,8 +333,8 @@ var _ = Describe("Version", func() {
 						"spec": map[string]interface{}{
 							"template": map[string]interface{}{
 								"spec": map[string]interface{}{
-									"volumes": []map[string]interface{}{
-										{
+									"volumes": []interface{}{
+										map[string]interface{}{
 											"secret": map[string]interface{}{
 												"secretName": "test-secret",
 											},
@@ -366,7 +361,7 @@ var _ = Describe("Version", func() {
 			})
 
 			It("updates the volume name to contain the reference", func() {
-				volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
+				volumes := fakeDeployment.Object().Spec.Template.Spec.Volumes
 				Expect(volumes[0].Secret.SecretName).To(Equal("test-secret-v001"))
 			})
 		})
@@ -378,8 +373,8 @@ var _ = Describe("Version", func() {
 						"kind":       "Pod",
 						"apiVersion": "apps/v1",
 						"spec": map[string]interface{}{
-							"volumes": []map[string]interface{}{
-								{
+							"volumes": []interface{}{
+								map[string]interface{}{
 									"configMap": map[string]interface{}{
 										"name": "test-config-map",
 									},
@@ -404,7 +399,7 @@ var _ = Describe("Version", func() {
 			})
 
 			It("updates the volume name to contain the reference", func() {
-				volumes := fakePod.GetSpec().Volumes
+				volumes := fakePod.Object().Spec.Volumes
 				Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v001"))
 			})
 		})
@@ -416,9 +411,9 @@ var _ = Describe("Version", func() {
 						"kind":       "Pod",
 						"apiVersion": "apps/v1",
 						"spec": map[string]interface{}{
-							"volumes": []map[string]interface{}{
-								{
-									"Secret": map[string]interface{}{
+							"volumes": []interface{}{
+								map[string]interface{}{
+									"secret": map[string]interface{}{
 										"secretName": "test-secret",
 									},
 									"name": "test-secret",
@@ -442,7 +437,7 @@ var _ = Describe("Version", func() {
 			})
 
 			It("updates the volume name to contain the reference", func() {
-				volumes := fakePod.GetSpec().Volumes
+				volumes := fakePod.Object().Spec.Volumes
 				Expect(volumes[0].Secret.SecretName).To(Equal("test-secret-v001"))
 			})
 		})
@@ -456,8 +451,8 @@ var _ = Describe("Version", func() {
 						"spec": map[string]interface{}{
 							"template": map[string]interface{}{
 								"spec": map[string]interface{}{
-									"volumes": []map[string]interface{}{
-										{
+									"volumes": []interface{}{
+										map[string]interface{}{
 											"configMap": map[string]interface{}{
 												"name": "test-config-map",
 											},
@@ -484,7 +479,7 @@ var _ = Describe("Version", func() {
 			})
 
 			It("updates the volume name to contain the reference", func() {
-				volumes := fakeDeployment.GetSpec().Template.Spec.Volumes
+				volumes := fakeDeployment.Object().Spec.Template.Spec.Volumes
 				Expect(volumes[0].ConfigMap.Name).To(Equal("test-config-map-v001"))
 			})
 		})

@@ -130,7 +130,7 @@ func calculateInstanceHealth(instance *unstructured.Unstructured) (string, []Ins
 	// is of kind Pod.
 	if strings.EqualFold(instance.GetKind(), "pod") {
 		p := kubernetes.NewPod(instance.Object)
-		status := p.GetPodStatus()
+		status := p.Object().Status
 		// healthState represents the state of the whole Pod.
 		healthState = podState(status)
 		// Define the Pod's health.

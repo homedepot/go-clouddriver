@@ -70,8 +70,8 @@ func GetTask(c *gin.Context) {
 	}
 
 	for _, r := range resources {
-		// Ignore getting the manifest if task type is "cleanup".
-		if strings.EqualFold(r.TaskType, clouddriver.TaskTypeCleanup) {
+		// Ignore getting the manifest if task type is "cleanup" or "noop".
+		if strings.EqualFold(r.TaskType, clouddriver.TaskTypeCleanup) || strings.EqualFold(r.TaskType, clouddriver.TaskTypeNoOp) {
 			manifests = append(manifests, map[string]interface{}{})
 			continue
 		}

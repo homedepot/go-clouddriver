@@ -549,7 +549,7 @@ var _ = Describe("Application", func() {
 								"namespace": "test-namespace1",
 							},
 							"spec": map[string]interface{}{
-								"selector": map[string]string{
+								"selector": map[string]interface{}{
 									"test": "label",
 								},
 							},
@@ -919,7 +919,7 @@ var _ = Describe("Application", func() {
 									"uid":       "aec15437-4e6a-11ea-9788-4201ac100006",
 								},
 								"spec": map[string]interface{}{
-									"selector": map[string]string{
+									"selector": map[string]interface{}{
 										"test": "label",
 									},
 								},
@@ -935,7 +935,7 @@ var _ = Describe("Application", func() {
 									"uid":       "bec15437-4e6a-11ea-9788-4201ac100006",
 								},
 								"spec": map[string]interface{}{
-									"selector": map[string]string{
+									"selector": map[string]interface{}{
 										"test": "label1",
 									},
 								},
@@ -951,7 +951,7 @@ var _ = Describe("Application", func() {
 									"uid":       "cec15437-4e6a-11ea-9788-4201ac100006",
 								},
 								"spec": map[string]interface{}{
-									"selector": map[string]string{
+									"selector": map[string]interface{}{
 										"test": "label2",
 									},
 								},
@@ -1430,7 +1430,7 @@ var _ = Describe("Application", func() {
 								"uid":       "test-uid4",
 							},
 							"spec": map[string]interface{}{
-								"selector": map[string]string{
+								"selector": map[string]interface{}{
 									"test": "label",
 								},
 							},
@@ -1446,7 +1446,7 @@ var _ = Describe("Application", func() {
 								"uid":       "test-uid5",
 							},
 							"spec": map[string]interface{}{
-								"selector": map[string]string{
+								"selector": map[string]interface{}{
 									"test": "label2",
 								},
 							},

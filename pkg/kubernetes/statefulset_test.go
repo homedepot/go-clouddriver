@@ -10,7 +10,7 @@ import (
 
 var _ = Describe("Statefulset", func() {
 	var (
-		ss StatefulSet
+		ss *StatefulSet
 	)
 
 	BeforeEach(func() {
@@ -32,22 +32,13 @@ var _ = Describe("Statefulset", func() {
 		})
 	})
 
-	Describe("#GetStatefulSetSpec", func() {
-		BeforeEach(func() {
-			_ = ss.GetStatefulSetSpec()
-		})
-
-		It("succeeds", func() {
-		})
-	})
-
 	Describe("#Status", func() {
 		var s manifest.Status
 
 		BeforeEach(func() {
 			replicas := int32(4)
-			ss.SetReplicas(&replicas)
 			o := ss.Object()
+			o.Spec.Replicas = &replicas
 			o.Status.Replicas = replicas
 			o.Status.ReadyReplicas = replicas
 			o.Status.UpdatedReplicas = replicas

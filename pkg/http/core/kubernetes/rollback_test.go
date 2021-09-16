@@ -1,6 +1,7 @@
 package kubernetes_test
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -279,6 +280,9 @@ var _ = Describe("Rollback", func() {
 	When("it succeeds", func() {
 		It("succeeds", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			u := fakeKubeClient.ApplyArgsForCall(0)
+			b, _ := json.Marshal(&u)
+			Expect(string(b)).To(Equal("{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/name\":\"test-deployment\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\"},\"creationTimestamp\":null},\"spec\":{\"selector\":null,\"strategy\":{},\"template\":{\"metadata\":{\"creationTimestamp\":null},\"spec\":{\"containers\":null}}},\"status\":{}}"))
 		})
 	})
 })

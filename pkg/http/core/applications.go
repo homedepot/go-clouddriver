@@ -455,7 +455,7 @@ func makeLoadBalancerInstanceMap(pods []resource) map[string][]LoadBalancerInsta
 		p := kubernetes.NewPod(r.u.Object)
 
 		state := stateUp
-		if p.GetPodStatus().Phase != statusRunning {
+		if p.Object().Status.Phase != statusRunning {
 			state = stateDown
 		}
 
@@ -489,19 +489,16 @@ func makeLoadBalancerServerGroupsMap(serverGroups, services []resource,
 	// Loop through the resources and find the matching labels.
 	for _, serverGroup := range serverGroups {
 		// Define the resource and get the pod template labels.
-		var labels map[string]string
 		// Only certain kinds of resources can be fronted by
 		// a service.
 		kind := serverGroup.u.GetKind()
-		if strings.EqualFold(kind, "replicaSet") {
-			rs := kubernetes.NewReplicaSet(serverGroup.u.Object)
-			spec := rs.GetReplicaSetSpec()
-			labels = spec.Template.ObjectMeta.Labels
-		} else if strings.EqualFold(kind, "statefulSet") {
-			sts := kubernetes.NewStatefulSet(serverGroup.u.Object)
-			spec := sts.GetStatefulSetSpec()
-			labels = spec.Template.ObjectMeta.Labels
-		} else {
+		if !strings.EqualFold(kind, "replicaSet") &&
+			!strings.EqualFold(kind, "statefulSet") {
+			continue
+		}
+
+		labels, found, err := unstructured.NestedStringMap(serverGroup.u.Object, "spec", "template", "metadata", "labels")
+		if err != nil || !found {
 			continue
 		}
 		// Loop through the services and check if a service
@@ -514,8 +511,10 @@ func makeLoadBalancerServerGroupsMap(serverGroups, services []resource,
 				continue
 			}
 			// Define the Service and get the selector.
-			s := kubernetes.NewService(service.u.Object)
-			selector := s.Selector()
+			selector, found, err := unstructured.NestedStringMap(service.u.Object, "spec", "selector")
+			if err != nil || !found {
+				continue
+			}
 			// If there are no selectors, continue.
 			if len(selector) == 0 {
 				continue
@@ -797,19 +796,17 @@ func makeServerGroupLoadBalancersMap(serverGroups, services []resource) map[stri
 	// Loop through the resources and find the matching labels.
 	for _, serverGroup := range serverGroups {
 		// Define the resource and get the pod template labels.
-		var labels map[string]string
 		// Only certain kinds of resources can be fronted by
 		// a service.
 		kind := serverGroup.u.GetKind()
-		if strings.EqualFold(kind, "replicaSet") {
-			rs := kubernetes.NewReplicaSet(serverGroup.u.Object)
-			spec := rs.GetReplicaSetSpec()
-			labels = spec.Template.ObjectMeta.Labels
-		} else if strings.EqualFold(kind, "statefulSet") {
-			sts := kubernetes.NewStatefulSet(serverGroup.u.Object)
-			spec := sts.GetStatefulSetSpec()
-			labels = spec.Template.ObjectMeta.Labels
-		} else {
+		if !strings.EqualFold(kind, "replicaSet") &&
+			!strings.EqualFold(kind, "statefulSet") {
+			continue
+		}
+
+		labels, found, err := unstructured.NestedStringMap(serverGroup.u.Object,
+			"spec", "template", "metadata", "labels")
+		if err != nil || !found {
 			continue
 		}
 		// Loop through the services and check if a service
@@ -822,8 +819,10 @@ func makeServerGroupLoadBalancersMap(serverGroups, services []resource) map[stri
 				continue
 			}
 			// Define the Service and get the selector.
-			s := kubernetes.NewService(service.u.Object)
-			selector := s.Selector()
+			selector, found, err := unstructured.NestedStringMap(service.u.Object, "spec", "selector")
+			if err != nil || !found {
+				continue
+			}
 			// If there are no selectors, continue.
 			if len(selector) == 0 {
 				continue
@@ -893,7 +892,7 @@ func newInstance(pod unstructured.Unstructured) Instance {
 	state := stateUp
 
 	p := kubernetes.NewPod(pod.Object)
-	if p.GetPodStatus().Phase != statusRunning {
+	if p.Object().Status.Phase != statusRunning {
 		state = stateDown
 	}
 
@@ -1020,8 +1019,11 @@ func listImages(result *unstructured.Unstructured) []string {
 	switch strings.ToLower(result.GetKind()) {
 	case "replicaset":
 		rs := kubernetes.NewReplicaSet(result.Object)
+		o := rs.Object()
 
-		images = rs.ListImages()
+		for _, container := range o.Spec.Template.Spec.Containers {
+			images = append(images, container.Image)
+		}
 	case "daemonset":
 		ds := kubernetes.NewDaemonSet(result.Object)
 		o := ds.Object()
@@ -1049,8 +1051,8 @@ func getDesiredReplicasCount(result *unstructured.Unstructured) int32 {
 	switch strings.ToLower(result.GetKind()) {
 	case "replicaset":
 		rs := kubernetes.NewReplicaSet(result.Object)
-		if rs.GetReplicaSetSpec().Replicas != nil {
-			desired = *rs.GetReplicaSetSpec().Replicas
+		if rs.Object().Spec.Replicas != nil {
+			desired = *rs.Object().Spec.Replicas
 		}
 	case "daemonset":
 		ds := kubernetes.NewDaemonSet(result.Object)
@@ -1076,7 +1078,7 @@ func getTotalReplicasCount(result *unstructured.Unstructured) int32 {
 	switch strings.ToLower(result.GetKind()) {
 	case "replicaset":
 		rs := kubernetes.NewReplicaSet(result.Object)
-		total = rs.GetReplicaSetStatus().Replicas
+		total = rs.Object().Status.Replicas
 	case "daemonset":
 		ds := kubernetes.NewDaemonSet(result.Object)
 		o := ds.Object()
@@ -1098,8 +1100,8 @@ func getReadyReplicasCount(result *unstructured.Unstructured) int32 {
 	switch strings.ToLower(result.GetKind()) {
 	case "replicaset":
 		rs := kubernetes.NewReplicaSet(result.Object)
-		if rs.GetReplicaSetSpec().Replicas != nil {
-			ready = rs.GetReplicaSetStatus().ReadyReplicas
+		if rs.Object().Spec.Replicas != nil {
+			ready = rs.Object().Status.ReadyReplicas
 		}
 	case "daemonset":
 		ds := kubernetes.NewDaemonSet(result.Object)
@@ -1160,7 +1162,7 @@ func GetServerGroup(c *gin.Context) {
 
 	for _, v := range pods.Items {
 		p := kubernetes.NewPod(v.Object)
-		for _, ownerReference := range p.GetObjectMeta().OwnerReferences {
+		for _, ownerReference := range p.Object().ObjectMeta.OwnerReferences {
 			if ownerReference.UID == result.GetUID() {
 				instance := newPodInstance(p, application, account)
 				instance.Manifest = v.Object
@@ -1229,13 +1231,13 @@ func GetServerGroup(c *gin.Context) {
 
 // newPodInstance returns a new instance that represents a kind Kubernetes
 // pod.
-func newPodInstance(p kubernetes.Pod, application, account string) Instance {
+func newPodInstance(p *kubernetes.Pod, application, account string) Instance {
 	state := stateUp
-	if p.GetPodStatus().Phase != statusRunning {
+	if p.Object().Status.Phase != statusRunning {
 		state = stateDown
 	}
 
-	annotations := p.GetObjectMeta().Annotations
+	annotations := p.Object().ObjectMeta.Annotations
 	cluster := annotations["moniker.spinnaker.io/cluster"]
 	app := annotations["moniker.spinnaker.io/application"]
 
@@ -1246,9 +1248,9 @@ func newPodInstance(p kubernetes.Pod, application, account string) Instance {
 	instance := Instance{
 		Account:          account,
 		AccountName:      account,
-		AvailabilityZone: p.GetNamespace(),
+		AvailabilityZone: p.Object().ObjectMeta.Namespace,
 		CloudProvider:    typeKubernetes,
-		CreatedTime:      p.GetObjectMeta().CreationTimestamp.Unix() * 1000,
+		CreatedTime:      p.Object().ObjectMeta.CreationTimestamp.Unix() * 1000,
 		Health: []InstanceHealth{
 			{
 				State: state,
@@ -1260,28 +1262,28 @@ func newPodInstance(p kubernetes.Pod, application, account string) Instance {
 			},
 		},
 		HealthState:       state,
-		HumanReadableName: fmt.Sprintf("%s %s", "pod", p.GetName()),
-		ID:                string(p.GetUID()),
+		HumanReadableName: fmt.Sprintf("%s %s", "pod", p.Object().ObjectMeta.Name),
+		ID:                string(p.Object().ObjectMeta.UID),
 		Key: Key{
 			Account:        account,
 			Group:          "pod",
 			KubernetesKind: "pod",
-			Name:           p.GetName(),
-			Namespace:      p.GetNamespace(),
+			Name:           p.Object().ObjectMeta.Name,
+			Namespace:      p.Object().ObjectMeta.Namespace,
 			Provider:       typeKubernetes,
 		},
 		Kind:   "pod",
-		Labels: p.GetLabels(),
+		Labels: p.Object().ObjectMeta.Labels,
 		Moniker: Moniker{
 			App:     app,
 			Cluster: cluster,
 		},
-		Name:         fmt.Sprintf("%s %s", "pod", p.GetName()),
+		Name:         fmt.Sprintf("%s %s", "pod", p.Object().ObjectMeta.Name),
 		ProviderType: typeKubernetes,
-		Region:       p.GetNamespace(),
+		Region:       p.Object().ObjectMeta.Namespace,
 		Type:         typeKubernetes,
-		UID:          string(p.GetUID()),
-		Zone:         p.GetNamespace(),
+		UID:          string(p.Object().ObjectMeta.UID),
+		Zone:         p.Object().ObjectMeta.Namespace,
 	}
 
 	return instance

@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"sort"
@@ -158,7 +159,15 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 	// old RS2 {change-cause:edit}, which is not correct.
 	SetDeploymentAnnotationsTo(deployment.Object(), rs)
 
-	u, err := deployment.ToUnstructured()
+	u := unstructured.Unstructured{}
+
+	b, err := json.Marshal(deployment.Object())
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	err = json.Unmarshal(b, &u.Object)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

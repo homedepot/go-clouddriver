@@ -6,70 +6,16 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("Replicaset", func() {
 	var (
-		rs  ReplicaSet
-		err error
+		rs *ReplicaSet
 	)
 
 	BeforeEach(func() {
 		r := map[string]interface{}{}
 		rs = NewReplicaSet(r)
-	})
-
-	Describe("#ToUnstructured", func() {
-		BeforeEach(func() {
-			_, err = rs.ToUnstructured()
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				Expect(err).To(BeNil())
-			})
-		})
-	})
-
-	Describe("#GetReplicaSetSpec", func() {
-		BeforeEach(func() {
-			_ = rs.GetReplicaSetSpec()
-		})
-
-		It("succeeds", func() {
-		})
-	})
-
-	Describe("#GetReplicaSetStatus", func() {
-		BeforeEach(func() {
-			_ = rs.GetReplicaSetStatus()
-		})
-
-		It("succeeds", func() {
-		})
-	})
-
-	Describe("#ListImages", func() {
-		images := []string{}
-
-		BeforeEach(func() {
-			o := rs.Object()
-			containers := []corev1.Container{
-				{
-					Image: "test-image1",
-				},
-				{
-					Image: "test-image2",
-				},
-			}
-			o.Spec.Template.Spec.Containers = containers
-			images = rs.ListImages()
-		})
-
-		It("succeeds", func() {
-			Expect(images).To(HaveLen(2))
-		})
 	})
 
 	Describe("#Object", func() {
@@ -86,69 +32,12 @@ var _ = Describe("Replicaset", func() {
 		})
 	})
 
-	Describe("#AnnotateTemplate", func() {
-		BeforeEach(func() {
-			rs.AnnotateTemplate("test", "value")
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				o := rs.Object()
-				annotations := o.Spec.Template.ObjectMeta.Annotations
-				Expect(annotations["test"]).To(Equal("value"))
-			})
-		})
-	})
-
-	Describe("#LabelTemplate", func() {
-		BeforeEach(func() {
-			rs.LabelTemplate("test", "value")
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				o := rs.Object()
-				labels := o.Spec.Template.ObjectMeta.Labels
-				Expect(labels["test"]).To(Equal("value"))
-			})
-		})
-	})
-
-	Describe("#LabelTemplateIfNotExists", func() {
-		JustBeforeEach(func() {
-			rs.LabelTemplateIfNotExists("test", "value")
-		})
-
-		When("the label exists", func() {
-			BeforeEach(func() {
-				o := rs.Object()
-				o.Spec.Template.ObjectMeta.Labels = map[string]string{
-					"test": "taken",
-				}
-			})
-
-			It("does not label the template", func() {
-				o := rs.Object()
-				labels := o.Spec.Template.ObjectMeta.Labels
-				Expect(labels["test"]).To(Equal("taken"))
-			})
-		})
-
-		When("it succeeds", func() {
-			It("succeeds", func() {
-				o := rs.Object()
-				labels := o.Spec.Template.ObjectMeta.Labels
-				Expect(labels["test"]).To(Equal("value"))
-			})
-		})
-	})
-
 	Describe("#Status", func() {
 		var s manifest.Status
 
 		BeforeEach(func() {
 			replicas := int32(4)
-			rs.SetReplicas(&replicas)
+			rs.Object().Spec.Replicas = &replicas
 		})
 
 		JustBeforeEach(func() {
