@@ -68,7 +68,7 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 
 	var meta kube.Metadata
 
-	// TODO need to allow scaling for other kinds.
+	// TODO need to allow scaling for additional kinds.
 	switch strings.ToLower(kind) {
 	case "deployment":
 		d := kubernetes.NewDeployment(u.Object)
@@ -83,6 +83,30 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 		d.SetReplicas(&desiredReplicas)
 
 		scaledManifestObject, err := d.ToUnstructured()
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
+
+		meta, err = client.Apply(&scaledManifestObject)
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
+	case "statefulset":
+		ss := kubernetes.NewStatefulSet(u.Object)
+
+		replicas, err := strconv.Atoi(sm.Replicas)
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+
+		desiredReplicas := int32(replicas)
+
+		ss.SetReplicas(&desiredReplicas)
+
+		scaledManifestObject, err := ss.ToUnstructured()
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
