@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -33,6 +34,7 @@ const (
 )
 
 var (
+	errCancelJobNotImplemented = errors.New("cancelJob is not implemented for the Kubernetes provider")
 	// serverGroupManagerResources consist of Kubernetes kinds Deployments
 	// and ReplicaSets.
 	serverGroupManagerResources = []string{
@@ -1349,6 +1351,12 @@ func GetJob(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, job)
+}
+
+// DeleteJob is not implemented for the Kubernetes provider V2.
+// See https://github.com/spinnaker/spinnaker/issues/4644#issuecomment-627287782.
+func DeleteJob(c *gin.Context) {
+	clouddriver.Error(c, http.StatusInternalServerError, errCancelJobNotImplemented)
 }
 
 // listApplicationsResources lists all accounts for a given app, then concurrently lists
