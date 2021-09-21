@@ -2222,4 +2222,29 @@ var _ = Describe("Application", func() {
 			})
 		})
 	})
+
+	Describe("#DeleteJob", func() {
+		BeforeEach(func() {
+			setup()
+			uri = svr.URL + "/applications/test-application/jobs/test-account/test-namespace/job test-job1"
+			createRequest(http.MethodDelete)
+			log.SetOutput(ioutil.Discard)
+		})
+
+		AfterEach(func() {
+			teardown()
+		})
+
+		JustBeforeEach(func() {
+			doRequest()
+		})
+
+		It("returns an error", func() {
+			Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+			ce := getClouddriverError()
+			Expect(ce.Error).To(HavePrefix("Internal Server Error"))
+			Expect(ce.Message).To(Equal("cancelJob is not implemented for the Kubernetes provider"))
+			Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+		})
+	})
 })
