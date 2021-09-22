@@ -12,7 +12,7 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/server"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
-	ginprometheus "github.com/mcuadros/go-gin-prometheus"
+	ginprometheus "github.com/zsais/go-gin-prometheus"
 )
 
 var (
@@ -27,7 +27,7 @@ func main() {
 
 func init() {
 	// Setup metrics.
-	p := ginprometheus.NewPrometheus("gin")
+	p := ginprometheus.NewPrometheus("clouddriver")
 	p.MetricsPath = "/metrics"
 	p.Use(r)
 
@@ -86,8 +86,16 @@ func reqCntURLLabelMappingFn(c *gin.Context) string {
 	for _, p := range c.Params {
 		// The following replaces certain path params with a generic name.
 		switch p.Key {
+		case "account":
+			// Leave account information if this is the Manifests API.
+			if !strings.HasPrefix(url, "/manifests") {
+				url = strings.Replace(url, p.Value, ":"+p.Key, 1)
+			}
 		case "application":
-			url = strings.Replace(url, p.Value, ":"+p.Key, 1)
+			// Leave application information if this is the Applications API.
+			if !strings.HasPrefix(url, "/applications") {
+				url = strings.Replace(url, p.Value, ":"+p.Key, 1)
+			}
 		case "location":
 			url = strings.Replace(url, p.Value, ":"+p.Key, 1)
 		case "name":
