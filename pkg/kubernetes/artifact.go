@@ -7,15 +7,36 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// ReplaceDockerImageArtifacts finds containers in a given unstructured
+// BindDockerImageArtifacts finds containers and init containers in a given unstructured
 // Kubernetes object and replaces the `image` value of the container
 // with the artifact reference if the artifact name matches the
 // container's `image` value.
 //
-// Pods define containers at the JSON path ".spec.containers",
-// all other kinds defines containers at the JSON path ".spec.template.spec.containers".
-func ReplaceDockerImageArtifacts(u *unstructured.Unstructured,
+// Pods define containers at the JSON path ".spec.containers" and
+// init containers at ".spec.initContainers".
+// All other kinds define containers at the JSON path ".spec.template.spec.containers"
+// and init containers at ".spec.template.spec.initContainers".
+//
+// Java source code here:
+// https://github.com/spinnaker/clouddriver/blob/58ab154b0ec0d62772201b5b319af349498a4e3f/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/artifact/Replacer.java#L166
+func BindDockerImageArtifacts(u *unstructured.Unstructured,
 	artifacts map[string]clouddriver.TaskCreatedArtifact) error {
+	// Bind artifact to the "containers" field.
+	err := bindDockerImageArtifacts(u, artifacts, "containers")
+	if err != nil {
+		return err
+	}
+	// Bind artifact to the "initContainers" field.
+	err = bindDockerImageArtifacts(u, artifacts, "initContainers")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func bindDockerImageArtifacts(u *unstructured.Unstructured,
+	artifacts map[string]clouddriver.TaskCreatedArtifact, field string) error {
 	var (
 		containers []interface{}
 		found      bool
@@ -27,9 +48,9 @@ func ReplaceDockerImageArtifacts(u *unstructured.Unstructured,
 	}
 
 	if strings.EqualFold(u.GetKind(), "pod") {
-		containers, found, err = unstructured.NestedSlice(u.Object, "spec", "containers")
+		containers, found, err = unstructured.NestedSlice(u.Object, "spec", field)
 	} else {
-		containers, found, err = unstructured.NestedSlice(u.Object, "spec", "template", "spec", "containers")
+		containers, found, err = unstructured.NestedSlice(u.Object, "spec", "template", "spec", field)
 	}
 	// An error is thrown if the nested slice is found but is not of type
 	// []interface{}.
@@ -45,9 +66,9 @@ func ReplaceDockerImageArtifacts(u *unstructured.Unstructured,
 	overwriteContainerImages(containers, artifacts)
 
 	if strings.EqualFold(u.GetKind(), "pod") {
-		err = unstructured.SetNestedSlice(u.Object, containers, "spec", "containers")
+		err = unstructured.SetNestedSlice(u.Object, containers, "spec", field)
 	} else {
-		err = unstructured.SetNestedSlice(u.Object, containers, "spec", "template", "spec", "containers")
+		err = unstructured.SetNestedSlice(u.Object, containers, "spec", "template", "spec", field)
 	}
 
 	return err
