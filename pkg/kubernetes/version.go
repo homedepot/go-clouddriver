@@ -105,32 +105,34 @@ func IncrementVersion(currentVersion string) SpinnakerVersion {
 }
 
 func VersionVolumes(u *unstructured.Unstructured, artifacts map[string]clouddriver.TaskCreatedArtifact) error {
-	if len(artifacts) > 0 {
-		switch strings.ToLower(u.GetKind()) {
-		case "deployment":
-			v, _, err := unstructured.NestedSlice(u.Object, "spec", "template", "spec", "volumes")
-			if err != nil {
-				return err
-			}
+	if len(artifacts) == 0 {
+		return nil
+	}
 
-			overwriteVolumesNames(v, artifacts)
+	switch strings.ToLower(u.GetKind()) {
+	case "deployment":
+		v, _, err := unstructured.NestedSlice(u.Object, "spec", "template", "spec", "volumes")
+		if err != nil {
+			return err
+		}
 
-			err = unstructured.SetNestedSlice(u.Object, v, "spec", "template", "spec", "volumes")
-			if err != nil {
-				return err
-			}
-		case "pod":
-			v, _, err := unstructured.NestedSlice(u.Object, "spec", "volumes")
-			if err != nil {
-				return err
-			}
+		overwriteVolumesNames(v, artifacts)
 
-			overwriteVolumesNames(v, artifacts)
+		err = unstructured.SetNestedSlice(u.Object, v, "spec", "template", "spec", "volumes")
+		if err != nil {
+			return err
+		}
+	case "pod":
+		v, _, err := unstructured.NestedSlice(u.Object, "spec", "volumes")
+		if err != nil {
+			return err
+		}
 
-			err = unstructured.SetNestedField(u.Object, v, "spec", "volumes")
-			if err != nil {
-				return err
-			}
+		overwriteVolumesNames(v, artifacts)
+
+		err = unstructured.SetNestedField(u.Object, v, "spec", "volumes")
+		if err != nil {
+			return err
 		}
 	}
 

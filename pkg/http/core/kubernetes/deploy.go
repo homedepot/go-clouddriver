@@ -61,7 +61,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	}
 	// Sort the manifests by their kind's priority.
 	manifests = kube.SortManifests(manifests)
-	// Consolidate all deploy manifest request artifacts
+	// Consolidate all deploy manifest request artifacts.
 	artifacts := make(map[string]clouddriver.TaskCreatedArtifact)
 	for _, artifact := range dm.RequiredArtifacts {
 		artifacts[artifact.Name] = artifact
@@ -96,6 +96,12 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		err = kube.VersionVolumes(&manifest, artifacts)
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
+
+		err = kube.ReplaceDockerImageArtifacts(&manifest, artifacts)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return

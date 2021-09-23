@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
@@ -188,6 +189,26 @@ var _ = Describe("Deploy", func() {
 			It("calls GetCurrentVersion with an empty list", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 			})
+		})
+	})
+
+	When("the manifest contains a docker image artifact", func() {
+		BeforeEach(func() {
+			deployManifestRequest.RequiredArtifacts = []clouddriver.TaskCreatedArtifact{
+				{
+					Reference: "gcr.io/test-project/test-container-image:v1.0.0",
+					Name:      "gcr.io/test-project/test-container-image",
+					Type:      "docker/image",
+				},
+			}
+		})
+
+		It("replaces the artifact reference", func() {
+			u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			p := kubernetes.NewPod(u.Object)
+			containers := p.Object().Spec.Containers
+			Expect(containers).To(HaveLen(1))
+			Expect(containers[0].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
 		})
 	})
 
