@@ -102,7 +102,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
-		err = kube.ReplaceDockerImageArtifacts(&manifest, artifacts)
+		err = kube.BindDockerImageArtifacts(&manifest, artifacts)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
