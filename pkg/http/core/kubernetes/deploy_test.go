@@ -9,7 +9,9 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var _ = Describe("Deploy", func() {
@@ -187,6 +189,73 @@ var _ = Describe("Deploy", func() {
 
 			It("calls GetCurrentVersion with an empty list", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			})
+		})
+	})
+
+	When("the manifest uses source capacity", func() {
+		BeforeEach(func() {
+			deployManifestRequest = DeployManifestRequest{
+				Manifests: []map[string]interface{}{
+					{
+						"kind":       "Deployment",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"annotations": map[string]interface{}{
+								"strategy.spinnaker.io/use-source-capacity": "true",
+							},
+						},
+						"spec": map[string]interface{}{
+							"replicas": 1,
+						},
+					},
+				},
+			}
+		})
+
+		When("get current resource returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.GetReturns(nil, errors.New("GetReturns fake error"))
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+				Expect(c.Errors.Last().Error()).To(Equal("GetReturns fake error"))
+			})
+		})
+
+		When("current resource is not found", func() {
+			BeforeEach(func() {
+				fakeKubeClient.GetReturns(nil, k8serrors.NewNotFound(schema.GroupResource{Group: "", Resource: "fakse resource"}, "fake resource not found"))
+			})
+
+			It("it does not error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				actual, _, _ := unstructured.NestedInt64(u.Object, "spec", "replicas")
+				Expect(actual).To(Equal(int64(1)))
+			})
+		})
+
+		When("current resource has different replicas value", func() {
+			BeforeEach(func() {
+				currentManifest := unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind": "Deployment",
+						"spec": map[string]interface{}{
+							"replicas": int64(2),
+						},
+					},
+				}
+
+				fakeKubeClient.GetReturns(&currentManifest, nil)
+			})
+
+			It("sets replicas", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				actual, _, _ := unstructured.NestedInt64(u.Object, "spec", "replicas")
+				Expect(actual).To(Equal(int64(2)))
 			})
 		})
 	})

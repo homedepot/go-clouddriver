@@ -16,6 +16,7 @@ import (
 	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -103,6 +104,14 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 
 		if kube.IsVersioned(manifest) {
 			err := handleVersionedManifest(kubeClient, &manifest, application)
+			if err != nil {
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
+			}
+		}
+
+		if kube.UseSourceCapacity(manifest) {
+			err = handleUseSourceCapacity(kubeClient, &manifest, dm.NamespaceOverride)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -298,6 +307,34 @@ func handleVersionedManifest(kubeClient kube.Client, u *unstructured.Unstructure
 	err = kube.AddSpinnakerVersionLabels(u, latestVersion)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func handleUseSourceCapacity(kubeClient kube.Client, u *unstructured.Unstructured, namespaceOverride string) error {
+	current, err := kubeClient.Get(u.GetKind(), u.GetName(), namespaceOverride)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+	// If the resource is currently deployed then replace the replicas value
+	// with the current value, if it has one
+	if current != nil {
+		r, found, err := unstructured.NestedInt64(current.Object, "spec", "replicas")
+		if err != nil {
+			return err
+		}
+
+		if found {
+			err = unstructured.SetNestedField(u.Object, r, "spec", "replicas")
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
