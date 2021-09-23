@@ -9,7 +9,7 @@ import (
 
 // ReplaceDockerImageArtifacts finds containers in a given unstructured
 // Kubernetes object and replaces the `image` value of the container
-// with the artifact reference if the artiface name matches the
+// with the artifact reference if the artifact name matches the
 // container's `image` value.
 //
 // Pods define containers at the JSON path ".spec.containers",
