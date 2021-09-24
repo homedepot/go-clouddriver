@@ -14,6 +14,8 @@ lint:
 		--enable misspell \
 		--enable wsl \
 		--print-issued-lines=false \
+		--skip-files .*_test.go \
+		--timeout=3m0s \
 		--out-format=colored-line-number \
 		--issues-exit-code=1 ./...
 
@@ -30,4 +32,4 @@ tools:
 vendor:
 	go mod vendor
 
-.PHONEY: all clean build lint run test tools
+.PHONY: all clean build lint run test tools
