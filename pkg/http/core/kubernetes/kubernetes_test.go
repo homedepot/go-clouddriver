@@ -109,6 +109,14 @@ func newDeployManifestRequest() DeployManifestRequest {
 					"namespace": "default",
 					"name":      "test-name",
 				},
+				"spec": map[string]interface{}{
+					"containers": []interface{}{
+						map[string]interface{}{
+							"name":  "test-container-name",
+							"image": "gcr.io/test-project/test-container-image",
+						},
+					},
+				},
 			},
 		},
 		OptionalArtifacts: []clouddriver.TaskCreatedArtifact{
