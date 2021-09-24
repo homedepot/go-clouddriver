@@ -69,9 +69,8 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 
 	var meta kube.Metadata
 
-	// TODO need to allow scaling for additional kinds.
 	switch strings.ToLower(kind) {
-	case "deployment", "statefulset":
+	case "deployment", "replicaset", "statefulset":
 		r, err := strconv.Atoi(sm.Replicas)
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)

@@ -118,6 +118,17 @@ var _ = Describe("Scale", func() {
 			Expect(c.Errors.Last().Error()).To(Equal("scaling kind not-supported-kind not currently supported"))
 		})
 	})
+
+	When("The kind is ReplicaSet", func() {
+		BeforeEach(func() {
+			scaleManifestRequest.ManifestName = "replicaset someReplicaSet"
+		})
+
+		It("succeeds", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+		})
+	})
+
 	When("The kind is StatefulSet", func() {
 		BeforeEach(func() {
 			scaleManifestRequest.ManifestName = "statefulset someStatefulSet"
