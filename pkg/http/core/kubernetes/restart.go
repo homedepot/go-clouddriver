@@ -25,11 +25,16 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 	sc := sql.Instance(c)
 	app := c.GetHeader("X-Spinnaker-Application")
 	taskID := clouddriver.TaskIDFromContext(c)
+	namespace := rr.Location
 
 	provider, err := sc.GetKubernetesProvider(rr.Account)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
+	}
+
+	if provider.Namespace != "" {
+		namespace = provider.Namespace
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
@@ -62,7 +67,13 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 	kind := a[0]
 	name := a[1]
 
-	u, err := client.Get(kind, name, rr.Location)
+	err = provider.ValidateKindStatus(kind)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	u, err := client.Get(kind, name, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -81,7 +92,7 @@ func RollingRestart(c *gin.Context, rr RollingRestartManifestRequest) {
 			return
 		}
 
-		meta, err = client.Apply(u)
+		meta, err = client.ApplyWithNamespaceOverride(u, namespace)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return

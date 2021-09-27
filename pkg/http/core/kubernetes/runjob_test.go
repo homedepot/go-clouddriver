@@ -76,7 +76,7 @@ var _ = Describe("RunJob", func() {
 
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeClient.ApplyReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
+			fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
 		})
 
 		It("returns an error", func() {
@@ -103,10 +103,31 @@ var _ = Describe("RunJob", func() {
 
 		It("generates the name correctly", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-			u := fakeKubeClient.ApplyArgsForCall(0)
+			u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
 			name := u.GetName()
+			Expect(string(namespace)).To(Equal("default"))
 			Expect(name).To(HavePrefix("test-"))
 			Expect(name).To(HaveLen(10))
+		})
+	})
+
+	When("Using a namespace-scoped provider", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
+				Name:      "test-account",
+				Namespace: "provider-namespace",
+				Host:      "http://localhost",
+				CAData:    "",
+			}, nil)
+
+			It("succeeds, using providers namespace", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				name := u.GetName()
+				Expect(string(namespace)).To(Equal("provider-namespace"))
+				Expect(name).To(HavePrefix("test-"))
+				Expect(name).To(HaveLen(10))
+			})
 		})
 	})
 })

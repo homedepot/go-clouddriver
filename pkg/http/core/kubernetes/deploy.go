@@ -34,20 +34,48 @@ var (
 // and handles any Spinnaker versioning, then applies each manifest
 // one by one.
 func Deploy(c *gin.Context, dm DeployManifestRequest) {
-	kubeController := kube.ControllerInstance(c)
-	sqlClient := sql.Instance(c)
+	ac := arcade.Instance(c)
+	kc := kube.ControllerInstance(c)
+	sc := sql.Instance(c)
+	taskID := clouddriver.TaskIDFromContext(c)
+	namespace := dm.NamespaceOverride
 
-	config, status, err := kubeClientConfig(c, sqlClient, dm.Account)
+	provider, err := sc.GetKubernetesProvider(dm.Account)
 	if err != nil {
-		clouddriver.Error(c, status, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
-	kubeClient, err := kubeController.NewClient(config)
+	if provider.Namespace != "" {
+		namespace = provider.Namespace
+	}
+
+	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	token, err := ac.Token(provider.TokenProvider)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
+
+	config := &rest.Config{
+		Host:        provider.Host,
+		BearerToken: token,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: cd,
+		},
+	}
+
+	client, err := kc.NewClient(config)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
+	}
+
 	// First, convert all manifests to unstructured objects.
 	manifests, err := toUnstructured(dm.Manifests)
 	if err != nil {
@@ -75,6 +103,12 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	application := dm.Moniker.App
 
 	for _, manifest := range manifests {
+		err = provider.ValidateKindStatus(manifest.GetKind())
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+
 		nameWithoutVersion := manifest.GetName()
 		// If the kind is a job, its name is not set, and generateName is set,
 		// generate a name for the job as `apply` will throw the error
@@ -109,7 +143,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		if kube.IsVersioned(manifest) {
-			err := handleVersionedManifest(kubeClient, &manifest, application)
+			err := handleVersionedManifest(client, &manifest, application)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -117,14 +151,14 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		if kube.UseSourceCapacity(manifest) {
-			err = handleUseSourceCapacity(kubeClient, &manifest, dm.NamespaceOverride)
+			err = handleUseSourceCapacity(client, &manifest, namespace)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
 
-		meta, err := kubeClient.ApplyWithNamespaceOverride(&manifest, dm.NamespaceOverride)
+		meta, err := client.ApplyWithNamespaceOverride(&manifest, namespace)
 		if err != nil {
 			e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
 				manifest.GetKind(), manifest.GroupVersionKind().Version, manifest.GetName(), err.Error())
@@ -133,7 +167,6 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
-		taskID := clouddriver.TaskIDFromContext(c)
 		kr := kube.Resource{
 			AccountName:  dm.Account,
 			ID:           uuid.New().String(),
@@ -159,7 +192,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			Type:      artifactType,
 		}
 
-		err = sqlClient.CreateKubernetesResource(kr)
+		err = sc.CreateKubernetesResource(kr)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -255,38 +288,38 @@ func mergeManifests(manifests []unstructured.Unstructured) ([]unstructured.Unstr
 	return mergedManifests, nil
 }
 
-func kubeClientConfig(c *gin.Context, sqlClient sql.Client, account string) (*rest.Config, int, error) {
-	config := &rest.Config{}
+// func clientConfig(c *gin.Context, sc sql.Client, account string) (*rest.Config, int, error) {
+// 	config := &rest.Config{}
 
-	provider, err := sqlClient.GetKubernetesProvider(account)
-	if err != nil {
-		return config, http.StatusBadRequest, err
-	}
+// 	provider, err := sc.GetKubernetesProvider(account)
+// 	if err != nil {
+// 		return config, http.StatusBadRequest, err
+// 	}
 
-	arcadeClient := arcade.Instance(c)
+// 	arcadeClient := arcade.Instance(c)
 
-	token, err := arcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		return config, http.StatusInternalServerError, err
-	}
+// 	token, err := arcadeClient.Token(provider.TokenProvider)
+// 	if err != nil {
+// 		return config, http.StatusInternalServerError, err
+// 	}
 
-	caData, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		return config, http.StatusBadRequest, err
-	}
+// 	caData, err := base64.StdEncoding.DecodeString(provider.CAData)
+// 	if err != nil {
+// 		return config, http.StatusBadRequest, err
+// 	}
 
-	config = &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: caData,
-		},
-	}
+// 	config = &rest.Config{
+// 		Host:        provider.Host,
+// 		BearerToken: token,
+// 		TLSClientConfig: rest.TLSClientConfig{
+// 			CAData: caData,
+// 		},
+// 	}
 
-	return config, -1, nil
-}
+// 	return config, -1, nil
+// }
 
-func handleVersionedManifest(kubeClient kube.Client, u *unstructured.Unstructured, application string) error {
+func handleVersionedManifest(client kube.Client, u *unstructured.Unstructured, application string) error {
 	lo, err := getListOptions(application)
 	if err != nil {
 		return err
@@ -295,7 +328,7 @@ func handleVersionedManifest(kubeClient kube.Client, u *unstructured.Unstructure
 	kind := strings.ToLower(u.GetKind())
 	namespace := u.GetNamespace()
 
-	results, err := kubeClient.ListResourcesByKindAndNamespace(kind, namespace, lo)
+	results, err := client.ListResourcesByKindAndNamespace(kind, namespace, lo)
 	if err != nil {
 		return err
 	}
@@ -318,8 +351,8 @@ func handleVersionedManifest(kubeClient kube.Client, u *unstructured.Unstructure
 	return nil
 }
 
-func handleUseSourceCapacity(kubeClient kube.Client, u *unstructured.Unstructured, namespaceOverride string) error {
-	current, err := kubeClient.Get(u.GetKind(), u.GetName(), namespaceOverride)
+func handleUseSourceCapacity(client kube.Client, u *unstructured.Unstructured, namespace string) error {
+	current, err := client.Get(u.GetKind(), u.GetName(), namespace)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return nil

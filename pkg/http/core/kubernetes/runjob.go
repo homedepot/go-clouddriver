@@ -80,7 +80,12 @@ func RunJob(c *gin.Context, rj RunJobRequest) {
 		u.SetName(generateName + rand.String(randNameNumber))
 	}
 
-	meta, err := client.Apply(&u)
+	namespace := u.GetNamespace()
+	if provider.Namespace != "" {
+		namespace = provider.Namespace
+	}
+
+	meta, err := client.ApplyWithNamespaceOverride(&u, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

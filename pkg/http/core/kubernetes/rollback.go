@@ -53,6 +53,7 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 	sc := sql.Instance(c)
 	app := c.GetHeader("X-Spinnaker-Application")
 	taskID := clouddriver.TaskIDFromContext(c)
+	namespace := ur.Location
 
 	a := strings.Split(ur.ManifestName, " ")
 	manifestKind := a[0]
@@ -67,6 +68,10 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
+	}
+
+	if provider.Namespace != "" {
+		namespace = provider.Namespace
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
@@ -95,7 +100,13 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 		return
 	}
 
-	d, err := client.Get(manifestKind, manifestName, ur.Location)
+	err = provider.ValidateKindStatus(manifestKind)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	d, err := client.Get(manifestKind, manifestName, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -109,7 +120,7 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 
 	lo := metav1.ListOptions{
 		LabelSelector: kubernetes.LabelKubernetesName + "=" + app,
-		FieldSelector: "metadata.namespace=" + ur.Location,
+		FieldSelector: "metadata.namespace=" + namespace,
 	}
 
 	replicaSets, err := client.ListByGVR(replicaSetGVR, lo)
@@ -122,14 +133,14 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 
 	// Handle undoRolloutManifest stage.
 	if ur.Mode == "static" {
-		tr, err = staticTargetRS(ur, replicaSets, manifestName, manifestKind)
+		tr, err = staticTargetRS(ur, replicaSets, manifestName, manifestKind, namespace)
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 	} else {
 		// Handle undo rollouts triggered in the 'clusters' tab.
-		tr = targetRS(ur, replicaSets, manifestName, manifestKind)
+		tr = targetRS(ur, replicaSets, manifestName, manifestKind, namespace)
 	}
 
 	if tr == nil {
@@ -173,7 +184,7 @@ func Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 		return
 	}
 
-	meta, err := client.Apply(&u)
+	meta, err := client.ApplyWithNamespaceOverride(&u, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -275,7 +286,7 @@ func CloneAndRemoveLabel(labels map[string]string, labelKey string) map[string]s
 
 func targetRS(ur UndoRolloutManifestRequest,
 	replicaSets *unstructured.UnstructuredList,
-	manifestName, manifestKind string) *unstructured.Unstructured {
+	manifestName, manifestKind, namespace string) *unstructured.Unstructured {
 	var targetRS *unstructured.Unstructured
 
 	for i, replicaSet := range replicaSets.Items {
@@ -287,7 +298,7 @@ func targetRS(ur UndoRolloutManifestRequest,
 
 			if strings.EqualFold(name, manifestName) &&
 				strings.EqualFold(t, "kubernetes/"+manifestKind) &&
-				replicaSet.GetNamespace() == ur.Location &&
+				replicaSet.GetNamespace() == namespace &&
 				sequence != "" &&
 				sequence == ur.Revision {
 				targetRS = &replicaSets.Items[i]
@@ -302,7 +313,7 @@ func targetRS(ur UndoRolloutManifestRequest,
 
 func staticTargetRS(ur UndoRolloutManifestRequest,
 	replicaSets *unstructured.UnstructuredList,
-	manifestName, manifestKind string) (*unstructured.Unstructured, error) {
+	manifestName, manifestKind, namespace string) (*unstructured.Unstructured, error) {
 	if ur.NumRevisionsBack < 1 {
 		return nil, errNumRevisionsBackLessThanOne
 	}
@@ -317,7 +328,7 @@ func staticTargetRS(ur UndoRolloutManifestRequest,
 
 			if strings.EqualFold(name, manifestName) &&
 				strings.EqualFold(t, "kubernetes/"+manifestKind) &&
-				replicaSet.GetNamespace() == ur.Location {
+				replicaSet.GetNamespace() == namespace {
 				sequence := annotations["deployment.kubernetes.io/revision"]
 
 				j, err := strconv.Atoi(sequence)

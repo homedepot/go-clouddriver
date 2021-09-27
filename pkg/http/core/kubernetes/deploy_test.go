@@ -406,6 +406,48 @@ var _ = Describe("Deploy", func() {
 	When("it succeeds", func() {
 		It("succeeds", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			_, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			Expect(string(namespace)).To(Equal(""))
+		})
+	})
+
+	When("Using a namespace-scoped provider", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
+				Name:      "test-account",
+				Namespace: "provider-namespace",
+				Host:      "http://localhost",
+				CAData:    "",
+			}, nil)
+		})
+
+		When("the kind is not supported", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "Namespace",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name": "sommeNamespace",
+							},
+						},
+					},
+				}
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: 'Namespace'"))
+			})
+		})
+
+		When("the kind is supported", func() {
+			It("succeeds", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				_, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				Expect(string(namespace)).To(Equal("provider-namespace"))
+			})
 		})
 	})
 })

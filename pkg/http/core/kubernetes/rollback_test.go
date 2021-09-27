@@ -123,7 +123,7 @@ var _ = Describe("Rollback", func() {
 
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeClient.ApplyReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
+			fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
 		})
 
 		It("returns an error", func() {
@@ -280,9 +280,63 @@ var _ = Describe("Rollback", func() {
 	When("it succeeds", func() {
 		It("succeeds", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-			u := fakeKubeClient.ApplyArgsForCall(0)
+			u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
 			b, _ := json.Marshal(&u)
+			Expect(string(namespace)).To(Equal(""))
 			Expect(string(b)).To(Equal("{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/name\":\"test-deployment\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\"},\"creationTimestamp\":null},\"spec\":{\"selector\":null,\"strategy\":{},\"template\":{\"metadata\":{\"creationTimestamp\":null},\"spec\":{\"containers\":null}}},\"status\":{}}"))
+		})
+	})
+
+	When("Using a namespace-scoped provider", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
+				Name:      "test-account",
+				Namespace: "provider-namespace",
+				Host:      "http://localhost",
+				CAData:    "",
+			}, nil)
+			fakeUnstructured := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "test-kind",
+					"apiVersion": "test-api-version",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":        "100",
+						},
+						"name":      "test-name",
+						"namespace": "provider-namespace",
+					},
+				},
+			}
+			fakeUnstructuredList := &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					fakeUnstructured,
+				},
+			}
+			fakeKubeClient.ListByGVRReturns(fakeUnstructuredList, nil)
+		})
+
+		When("the kind is not supported", func() {
+			BeforeEach(func() {
+				undoRolloutManifestRequest.ManifestName = "namespace fake-namespace"
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: 'namespace'"))
+			})
+		})
+
+		When("the kind is supported", func() {
+			It("succeeds", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				b, _ := json.Marshal(&u)
+				Expect(string(namespace)).To(Equal("provider-namespace"))
+				Expect(string(b)).To(Equal("{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/name\":\"test-deployment\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\"},\"creationTimestamp\":null},\"spec\":{\"selector\":null,\"strategy\":{},\"template\":{\"metadata\":{\"creationTimestamp\":null},\"spec\":{\"containers\":null}}},\"status\":{}}"))
+			})
 		})
 	})
 })

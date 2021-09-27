@@ -25,11 +25,16 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 	kc := kube.ControllerInstance(c)
 	sc := sql.Instance(c)
 	taskID := clouddriver.TaskIDFromContext(c)
+	namespace := dm.Location
 
 	provider, err := sc.GetKubernetesProvider(dm.Account)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
+	}
+
+	if provider.Namespace != "" {
+		namespace = provider.Namespace
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
@@ -90,13 +95,19 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 		kind := a[0]
 		name := a[1]
 
+		err = provider.ValidateKindStatus(kind)
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+
 		gvr, err := client.GVRForKind(kind)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		err = client.DeleteResourceByKindAndNameAndNamespace(kind, name, dm.Location, do)
+		err = client.DeleteResourceByKindAndNameAndNamespace(kind, name, namespace, do)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -110,7 +121,7 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 			Timestamp:    util.CurrentTimeUTC(),
 			APIGroup:     gvr.Group,
 			Name:         name,
-			Namespace:    dm.Location,
+			Namespace:    namespace,
 			Resource:     gvr.Resource,
 			Version:      gvr.Version,
 			Kind:         kind,
@@ -143,10 +154,16 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 
 		lo := metav1.ListOptions{
 			LabelSelector: ls.String(),
-			FieldSelector: "metadata.namespace=" + dm.Location,
+			FieldSelector: "metadata.namespace=" + namespace,
 		}
 
 		for _, kind := range dm.Kinds {
+			err = provider.ValidateKindStatus(kind)
+			if err != nil {
+				clouddriver.Error(c, http.StatusBadRequest, err)
+				return
+			}
+
 			gvr, err := client.GVRForKind(kind)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
@@ -160,7 +177,7 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 			}
 
 			// Spinnaker OSS does not fail when no resources are found,
-			// so create an 'no op' resource.
+			// so create a 'no op' resource.
 			if list == nil || len(list.Items) == 0 {
 				kr := kubernetes.Resource{
 					AccountName: dm.Account,
@@ -181,7 +198,7 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 
 			for _, item := range list.Items {
 				// Delete each resource and record it in the database.
-				err = client.DeleteResourceByKindAndNameAndNamespace(kind, item.GetName(), dm.Location, do)
+				err = client.DeleteResourceByKindAndNameAndNamespace(kind, item.GetName(), namespace, do)
 				if err != nil {
 					clouddriver.Error(c, http.StatusInternalServerError, err)
 					return
@@ -195,7 +212,7 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 					Timestamp:    util.CurrentTimeUTC(),
 					APIGroup:     gvr.Group,
 					Name:         item.GetName(),
-					Namespace:    dm.Location,
+					Namespace:    namespace,
 					Resource:     gvr.Resource,
 					Version:      gvr.Version,
 					Kind:         kind,

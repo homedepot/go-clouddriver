@@ -23,11 +23,16 @@ func Patch(c *gin.Context, pm PatchManifestRequest) {
 	kc := kube.ControllerInstance(c)
 	sc := sql.Instance(c)
 	taskID := clouddriver.TaskIDFromContext(c)
+	namespace := pm.Location
 
 	provider, err := sc.GetKubernetesProvider(pm.Account)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
+	}
+
+	if provider.Namespace != "" {
+		namespace = provider.Namespace
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
@@ -73,6 +78,12 @@ func Patch(c *gin.Context, pm PatchManifestRequest) {
 		name = a[1]
 	}
 
+	err = provider.ValidateKindStatus(kind)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
 	// Merge strategy can be "strategic", "json", or "merge".
 	var strategy types.PatchType
 
@@ -89,7 +100,7 @@ func Patch(c *gin.Context, pm PatchManifestRequest) {
 		return
 	}
 
-	meta, _, err := client.PatchUsingStrategy(kind, name, pm.Location, b, strategy)
+	meta, _, err := client.PatchUsingStrategy(kind, name, namespace, b, strategy)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
