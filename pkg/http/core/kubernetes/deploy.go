@@ -63,17 +63,11 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	}
 	// Sort the manifests by their kind's priority.
 	manifests = kube.SortManifests(manifests)
+	application := dm.Moniker.App
 	// Consolidate all deploy manifest request artifacts.
 	artifacts := []clouddriver.Artifact{}
-	for _, artifact := range dm.RequiredArtifacts {
-		artifacts = append(artifacts, artifact)
-	}
-
-	for _, artifact := range dm.OptionalArtifacts {
-		artifacts = append(artifacts, artifact)
-	}
-
-	application := dm.Moniker.App
+	artifacts = append(artifacts, dm.RequiredArtifacts...)
+	artifacts = append(artifacts, dm.OptionalArtifacts...)
 
 	for _, manifest := range manifests {
 		nameWithoutVersion := manifest.GetName()

@@ -172,7 +172,7 @@ func bindArtifact(obj map[string]interface{}, a clouddriver.Artifact, paths ...s
 			bindArtifact(o, a, paths[1:]...)
 		}
 
-		unstructured.SetNestedField(obj, objs, fields(paths[0])...)
+		_ = unstructured.SetNestedField(obj, objs, fields(paths[0])...)
 	} else {
 		name, found, _ := unstructured.NestedString(obj, fields(paths[0])...)
 		if found && a.Name == name {
