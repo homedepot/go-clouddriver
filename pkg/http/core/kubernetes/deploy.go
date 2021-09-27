@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/homedepot/go-clouddriver/pkg/artifact"
 	"github.com/homedepot/go-clouddriver/pkg/util"
 
 	"github.com/gin-gonic/gin"
@@ -63,13 +64,13 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 	// Sort the manifests by their kind's priority.
 	manifests = kube.SortManifests(manifests)
 	// Consolidate all deploy manifest request artifacts.
-	artifacts := make(map[string]clouddriver.TaskCreatedArtifact)
+	artifacts := []clouddriver.Artifact{}
 	for _, artifact := range dm.RequiredArtifacts {
-		artifacts[artifact.Name] = artifact
+		artifacts = append(artifacts, artifact)
 	}
 
 	for _, artifact := range dm.OptionalArtifacts {
-		artifacts[artifact.Name] = artifact
+		artifacts = append(artifacts, artifact)
 	}
 
 	application := dm.Moniker.App
@@ -96,17 +97,7 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
-		err = kube.VersionVolumes(&manifest, artifacts)
-		if err != nil {
-			clouddriver.Error(c, http.StatusInternalServerError, err)
-			return
-		}
-
-		err = kube.BindDockerImageArtifacts(&manifest, artifacts)
-		if err != nil {
-			clouddriver.Error(c, http.StatusInternalServerError, err)
-			return
-		}
+		kube.BindArtifacts(&manifest, artifacts)
 
 		if kube.IsVersioned(manifest) {
 			err := handleVersionedManifest(kubeClient, &manifest, application)
@@ -152,12 +143,12 @@ func Deploy(c *gin.Context, dm DeployManifestRequest) {
 
 		annotations := manifest.GetAnnotations()
 		artifactType := annotations[kube.AnnotationSpinnakerArtifactType]
-
-		artifacts[nameWithoutVersion] = clouddriver.TaskCreatedArtifact{
+		artifact := clouddriver.Artifact{
 			Name:      nameWithoutVersion,
 			Reference: meta.Name,
-			Type:      artifactType,
+			Type:      artifact.Type(artifactType),
 		}
+		artifacts = append(artifacts, artifact)
 
 		err = sqlClient.CreateKubernetesResource(kr)
 		if err != nil {

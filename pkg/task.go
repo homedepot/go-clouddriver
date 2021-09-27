@@ -1,6 +1,8 @@
 package clouddriver
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 const (
 	TaskIDKey       = `TaskID`
@@ -52,26 +54,11 @@ type TaskStatus struct {
 	Status    string `json:"status"`
 }
 
-//Refactor bound artifact to it's own type or make genric type for both BoundArtifacts and CreatedArtifacts
 type TaskResultObject struct {
-	BoundArtifacts                    []TaskCreatedArtifact    `json:"boundArtifacts"`
-	CreatedArtifacts                  []TaskCreatedArtifact    `json:"createdArtifacts"`
+	BoundArtifacts                    []Artifact               `json:"boundArtifacts"`
+	CreatedArtifacts                  []Artifact               `json:"createdArtifacts"`
 	DeployedNamesByLocation           map[string][]string      `json:"deployedNamesByLocation"`
 	ManifestNamesByNamespace          map[string][]string      `json:"manifestNamesByNamespace"`
 	ManifestNamesByNamespaceToRefresh map[string][]string      `json:"manifestNamesByNamespaceToRefresh"`
 	Manifests                         []map[string]interface{} `json:"manifests"`
-}
-
-type TaskCreatedArtifact struct {
-	CustomKind bool                        `json:"customKind"`
-	Location   string                      `json:"location"`
-	Metadata   TaskCreatedArtifactMetadata `json:"metadata"`
-	Name       string                      `json:"name"`
-	Reference  string                      `json:"reference"`
-	Type       string                      `json:"type"`
-	Version    string                      `json:"version"`
-}
-
-type TaskCreatedArtifactMetadata struct {
-	Account string `json:"account"`
 }

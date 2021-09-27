@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	"github.com/homedepot/go-clouddriver/pkg/artifact"
 	. "github.com/homedepot/go-clouddriver/pkg/http/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
@@ -196,11 +197,11 @@ var _ = Describe("Deploy", func() {
 
 	When("the manifest contains a docker image artifact", func() {
 		BeforeEach(func() {
-			deployManifestRequest.RequiredArtifacts = []clouddriver.TaskCreatedArtifact{
+			deployManifestRequest.RequiredArtifacts = []clouddriver.Artifact{
 				{
 					Reference: "gcr.io/test-project/test-container-image:v1.0.0",
 					Name:      "gcr.io/test-project/test-container-image",
-					Type:      "docker/image",
+					Type:      artifact.TypeDockerImage,
 				},
 			}
 		})
