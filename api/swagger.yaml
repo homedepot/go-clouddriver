@@ -430,6 +430,10 @@ definitions:
         description: "The provider of the kubernetes auth token, defaults to google"
         enum: ["google", "rancher"]
         example: "google"
+      namespace:
+        type: "string"
+        description: "The kubernetes namespace that this account is limited to accessing.  If not specified, defaults to all namespaces"
+        example: "example-namespace"
       permissions:
         $ref: "#/definitions/Permissions"
   Permissions:
