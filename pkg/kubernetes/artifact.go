@@ -85,36 +85,36 @@ func BindArtifacts(u *unstructured.Unstructured,
 	for _, a := range artifacts {
 		switch a.Type {
 		case artifact.TypeDockerImage:
-			bindArtifact(u.Object, a, splitIterables(jsonPathDockerImageContainers)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathDockerImageContainersPod)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathDockerImageInitContainers)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathDockerImageInitContainersPod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathDockerImageContainers)...)
+			bindArtifact(u.Object, a, iterables(jsonPathDockerImageContainersPod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathDockerImageInitContainers)...)
+			bindArtifact(u.Object, a, iterables(jsonPathDockerImageInitContainersPod)...)
 		case artifact.TypeKubernetesConfigMap:
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapVolume)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapPodVolume)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapProjectedVolume)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapPodProjectedVolume)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapKeyValueContainers)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapKeyValueContainersPod)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapKeyValueInitContainers)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapKeyValueInitContainersPod)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapEnvContainers)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapEnvContainersPod)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapEnvInitContainers)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathConfigMapEnvInitContainersPod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapVolume)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapPodVolume)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapProjectedVolume)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapPodProjectedVolume)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapKeyValueContainers)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapKeyValueContainersPod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapKeyValueInitContainers)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapKeyValueInitContainersPod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapEnvContainers)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapEnvContainersPod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapEnvInitContainers)...)
+			bindArtifact(u.Object, a, iterables(jsonPathConfigMapEnvInitContainersPod)...)
 		case artifact.TypeKubernetesSecret:
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretVolume)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretVolumePod)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretProjectedVolume)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretProjectedVolumePod)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretKeyValueContainers)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretKeyValueContainersPod)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretKeyValueInitContainers)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretKeyValueInitContainersPod)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretEnvContainers)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretEnvContainersPod)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretEnvInitContainers)...)
-			bindArtifact(u.Object, a, splitIterables(jsonPathSecretEnvInitContainersPod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretVolume)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretVolumePod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretProjectedVolume)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretProjectedVolumePod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretKeyValueContainers)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretKeyValueContainersPod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretKeyValueInitContainers)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretKeyValueInitContainersPod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretEnvContainers)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretEnvContainersPod)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretEnvInitContainers)...)
+			bindArtifact(u.Object, a, iterables(jsonPathSecretEnvInitContainersPod)...)
 		case artifact.TypeKubernetesDeployment:
 			if !strings.EqualFold(u.GetKind(), "horizontalPodAutoscaler") {
 				continue
@@ -181,14 +181,14 @@ func bindArtifact(obj map[string]interface{}, a clouddriver.Artifact, paths ...s
 	}
 }
 
-// splitIterables splits a string on the character '*' returning the resulting
+// iterables splits a string on the character '*' returning the resulting
 // string slice.
-func splitIterables(path string) []string {
+func iterables(path string) []string {
 	return strings.Split(path, "*")
 }
 
-// fields takes a path, removes any '.' prefix and suffix and return the resulting
-// string slice.
+// fields takes a path, removes any '.' prefix and suffix characters and return the resulting
+// string slice split on the '.' character.
 func fields(path string) []string {
 	path = strings.TrimPrefix(path, ".")
 	path = strings.TrimSuffix(path, ".")
