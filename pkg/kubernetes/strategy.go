@@ -14,12 +14,12 @@ const (
 	AnnotationSpinnakerUseSourceCapacity = "strategy.spinnaker.io/use-source-capacity"
 )
 
-// GetMaxVersionHistory returns true if the value of the annotation
+// MaxVersionHistory returns true if the value of the annotation
 // `strategy.spinnaker.io/max-version-history` of the given Kubernetes
 // unstructured resource, or 0 if annotation is not present.
 //
 // See https://spinnaker.io/docs/reference/providers/kubernetes-v2/#strategy for more info.
-func GetMaxVersionHistory(u unstructured.Unstructured) (maxVersionHistory int, err error) {
+func MaxVersionHistory(u unstructured.Unstructured) (maxVersionHistory int, err error) {
 	maxVersionHistory = 0
 
 	annotations := u.GetAnnotations()

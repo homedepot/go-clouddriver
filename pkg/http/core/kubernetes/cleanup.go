@@ -2,7 +2,9 @@ package kubernetes
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/homedepot/go-clouddriver/pkg/util"
 
@@ -13,6 +15,9 @@ import (
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	kube "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 )
 
@@ -68,6 +73,55 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 			return
 		}
 
+		// Grab the cluster of this resource from its annotations.
+		cluster := clusterAnnotation(u)
+		// Handle max version history. Source code here:
+		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/op/artifact/KubernetesCleanupArtifactsOperation.java#L102
+		maxVersionHistory, err := kube.MaxVersionHistory(u)
+		if err == nil && maxVersionHistory > 0 && cluster != "" {
+			// Only list resources that are managed by Spinnaker.
+			lo := metav1.ListOptions{
+				LabelSelector: kubernetes.LabelKubernetesManagedBy + "=spinnaker",
+			}
+
+			ul, err := client.ListResourcesByKindAndNamespace(u.GetKind(), u.GetNamespace(), lo)
+			if err != nil {
+				clouddriver.Error(c, http.StatusInternalServerError,
+					fmt.Errorf("error listing resources to cleanup for max version history (kind: %s, name: %s, namespace: %s): %v",
+						u.GetKind(), u.GetName(), u.GetNamespace(), err))
+
+				return
+			}
+
+			f := kubernetes.NewManifestFilter(ul.Items)
+
+			artifacts := f.FilterOnClusterAnnotation(cluster)
+			if maxVersionHistory < len(artifacts) {
+				// Sort on creation timestamp oldest to newest.
+				sort.Slice(artifacts, func(i, j int) bool {
+					return artifacts[i].GetCreationTimestamp().String() < artifacts[j].GetCreationTimestamp().String()
+				})
+
+				artifactsToDelete := artifacts[0 : len(artifacts)-maxVersionHistory]
+				for _, a := range artifactsToDelete {
+					// Delete the resource and any dependants in the foreground.
+					pp := v1.DeletePropagationForeground
+					do := metav1.DeleteOptions{
+						PropagationPolicy: &pp,
+					}
+
+					err = client.DeleteResourceByKindAndNameAndNamespace(a.GetKind(), a.GetName(), a.GetNamespace(), do)
+					if err != nil {
+						clouddriver.Error(c, http.StatusInternalServerError,
+							fmt.Errorf("error deleting resource to cleanup for max version history (kind: %s, name: %s, namespace: %s): %v",
+								a.GetKind(), a.GetName(), a.GetNamespace(), err))
+
+						return
+					}
+				}
+			}
+		}
+
 		kr := kubernetes.Resource{
 			AccountName:  ca.Account,
 			ID:           uuid.New().String(),
@@ -81,7 +135,7 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 			Version:      gvr.Version,
 			Kind:         u.GetKind(),
 			SpinnakerApp: app,
-			Cluster:      cluster(u.GetKind(), u.GetName()),
+			Cluster:      clusterAnnotation(u),
 		}
 
 		err = sc.CreateKubernetesResource(kr)
@@ -90,4 +144,20 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 			return
 		}
 	}
+}
+
+// clusterAnnotation returns the value of the annotation
+// 'moniker.spinnaker.io/cluster' if it exists, otherwise
+// it returns an empty string.
+func clusterAnnotation(u unstructured.Unstructured) string {
+	cluster := ""
+
+	annotations := u.GetAnnotations()
+	if annotations != nil {
+		if value, ok := annotations[kubernetes.AnnotationSpinnakerMonikerCluster]; ok {
+			cluster = value
+		}
+	}
+
+	return cluster
 }
