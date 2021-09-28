@@ -18,6 +18,21 @@ const payloadRequestKubernetesProviders = `{
 						}
           }`
 
+const payloadRequestKubernetesProvidersEmptyNamespace = `{
+					"name": "test-name",
+					"host": "test-host",
+					"caData": "dGVzdC1jYS1kYXRhCg==",
+					"namespace": "  ",
+					"permissions": {
+						"read": [
+							"gg_test"
+						],
+						"write": [
+							"gg_test"
+						]
+					}
+				}`
+
 const payloadRequestKubernetesProvidersBadCAData = `{
 						"name": "test-name",
 						"host": "test-host",

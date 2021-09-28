@@ -85,6 +85,19 @@ var _ = Describe("Provider", func() {
 				validateResponse(payloadKubernetesProviderCreated)
 			})
 		})
+
+		When("the namespace is empty string", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesProvidersEmptyNamespace))
+				createRequest(http.MethodPost)
+			})
+
+			It("returns ok and the namespace is nil", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusCreated))
+				validateResponse(payloadKubernetesProviderCreated)
+			})
+		})
 	})
 
 	Describe("#CreateOrReplaceKubernetesProvider", func() {
@@ -154,6 +167,19 @@ var _ = Describe("Provider", func() {
 				})
 
 				It("returns ok and the provider is replaced", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadKubernetesProviderCreated)
+				})
+			})
+
+			When("the namespace is empty string", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(payloadRequestKubernetesProvidersEmptyNamespace))
+					createRequest(http.MethodPut)
+				})
+
+				It("returns ok and the namespace is nil", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
 					validateResponse(payloadKubernetesProviderCreated)
 				})

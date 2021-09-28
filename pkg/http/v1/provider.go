@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
@@ -32,6 +33,10 @@ func CreateKubernetesProvider(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error decoding base64 CA data: %s", err.Error())})
 		return
+	}
+
+	if p.Namespace != nil && strings.TrimSpace(*p.Namespace) == "" {
+		p.Namespace = nil
 	}
 
 	err = sc.CreateKubernetesProvider(p)
@@ -123,6 +128,10 @@ func CreateOrReplaceKubernetesProvider(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error decoding base64 CA data: %s", err.Error())})
 		return
+	}
+
+	if p.Namespace != nil && strings.TrimSpace(*p.Namespace) == "" {
+		p.Namespace = nil
 	}
 
 	err = sc.DeleteKubernetesProvider(p.Name)
