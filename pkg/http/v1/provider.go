@@ -91,6 +91,22 @@ func GetKubernetesProvider(c *gin.Context) {
 	c.JSON(http.StatusOK, p)
 }
 
+// ListKubernetesProvider retrieves all the kubernetes accounts (providers).
+func ListKubernetesProvider(c *gin.Context) {
+	var providers []kubernetes.Provider
+
+	sc := sql.Instance(c)
+
+	providers, err := sc.ListKubernetesProvidersAndPermissions()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, providers)
+}
+
 // CreateOrReplaceKubernetesProvider creates the kubernetes account (provider),
 // or if existing account, replaces it.
 func CreateOrReplaceKubernetesProvider(c *gin.Context) {

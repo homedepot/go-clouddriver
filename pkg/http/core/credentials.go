@@ -144,6 +144,11 @@ func listNamespaces(provider kubernetes.Provider,
 	defer wg.Done()
 	defer sendToNsChan(accountNamespacesCh, &provider.Name, &namespaces)
 
+	if provider.Namespace != nil {
+		namespaces = append(namespaces, *provider.Namespace)
+		return
+	}
+
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {
 		clouddriver.Log(err)

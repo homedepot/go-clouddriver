@@ -319,6 +319,21 @@ paths:
         "500":
           description: "Internal Server Error"
   /v1/kubernetes/providers:
+    get:
+      tags:
+      - "kubernetes"
+      summary: "Retrieves list of all Kubernetes accounts (providers)"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "OK"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/KubernetesProvider"
+        "500":
+          description: "Internal Server Error"
     post:
       tags:
       - "kubernetes"
