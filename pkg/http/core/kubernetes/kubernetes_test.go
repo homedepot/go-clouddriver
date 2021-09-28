@@ -8,6 +8,7 @@ import (
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
 	"github.com/homedepot/go-clouddriver/pkg/arcade/arcadefakes"
+	"github.com/homedepot/go-clouddriver/pkg/artifact"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 
@@ -119,18 +120,18 @@ func newDeployManifestRequest() DeployManifestRequest {
 				},
 			},
 		},
-		OptionalArtifacts: []clouddriver.TaskCreatedArtifact{
+		OptionalArtifacts: []clouddriver.Artifact{
 			{
 				Reference: "gke-versioned-volume-config2-v004",
 				Name:      "gke-versioned-volume-config2",
-				Type:      "kubernetes/configMap",
+				Type:      artifact.TypeKubernetesConfigMap,
 			},
 		},
-		RequiredArtifacts: []clouddriver.TaskCreatedArtifact{
+		RequiredArtifacts: []clouddriver.Artifact{
 			{
 				Reference: "gke-versioned-volume-config2-v004",
 				Name:      "gke-versioned-volume-config2",
-				Type:      "kubernetes/configMap",
+				Type:      artifact.TypeKubernetesConfigMap,
 			},
 		},
 	}

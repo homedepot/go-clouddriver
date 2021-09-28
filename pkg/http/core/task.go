@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/pkg/arcade"
+	"github.com/homedepot/go-clouddriver/pkg/artifact"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	"github.com/homedepot/go-clouddriver/pkg/sql"
 	"github.com/iancoleman/strcase"
@@ -118,13 +119,13 @@ func GetTask(c *gin.Context) {
 	c.JSON(http.StatusOK, task)
 }
 
-func buildCreatedArtifacts(resources []kubernetes.Resource) []clouddriver.TaskCreatedArtifact {
+func buildCreatedArtifacts(resources []kubernetes.Resource) []clouddriver.Artifact {
 	var (
 		artifactVersion string
 		lastIndex       int
 	)
 
-	cas := []clouddriver.TaskCreatedArtifact{}
+	cas := []clouddriver.Artifact{}
 
 	for _, resource := range resources {
 		artifactVersion = ""
@@ -134,15 +135,15 @@ func buildCreatedArtifacts(resources []kubernetes.Resource) []clouddriver.TaskCr
 			artifactVersion = resource.Name[lastIndex+1:]
 		}
 
-		ca := clouddriver.TaskCreatedArtifact{
+		ca := clouddriver.Artifact{
 			CustomKind: false,
 			Location:   resource.Namespace,
-			Metadata: clouddriver.TaskCreatedArtifactMetadata{
+			Metadata: clouddriver.ArtifactMetadata{
 				Account: resource.AccountName,
 			},
 			Name:      resource.ArtifactName,
 			Reference: resource.Name,
-			Type:      "kubernetes/" + strcase.ToLowerCamel(resource.Kind),
+			Type:      artifact.Type("kubernetes/" + strcase.ToLowerCamel(resource.Kind)),
 			Version:   artifactVersion,
 		}
 		cas = append(cas, ca)

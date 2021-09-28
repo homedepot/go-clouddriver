@@ -37,11 +37,11 @@ type DeployManifestRequest struct {
 	Moniker struct {
 		App string `json:"app"`
 	} `json:"moniker"`
-	Source                   string                            `json:"source"`
-	Account                  string                            `json:"account"`
-	SkipExpressionEvaluation bool                              `json:"skipExpressionEvaluation"`
-	RequiredArtifacts        []clouddriver.TaskCreatedArtifact `json:"requiredArtifacts"`
-	OptionalArtifacts        []clouddriver.TaskCreatedArtifact `json:"optionalArtifacts"`
+	Source                   string                 `json:"source"`
+	Account                  string                 `json:"account"`
+	SkipExpressionEvaluation bool                   `json:"skipExpressionEvaluation"`
+	RequiredArtifacts        []clouddriver.Artifact `json:"requiredArtifacts"`
+	OptionalArtifacts        []clouddriver.Artifact `json:"optionalArtifacts"`
 }
 
 type PatchManifestRequest struct {

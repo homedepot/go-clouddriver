@@ -1,7 +1,10 @@
 package kubernetes_test
 
 import (
+	"encoding/json"
+
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	"github.com/homedepot/go-clouddriver/pkg/artifact"
 	. "github.com/homedepot/go-clouddriver/pkg/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,343 +13,2346 @@ import (
 
 var _ = Describe("Artifact", func() {
 	var (
-		err       error
 		resource  *unstructured.Unstructured
-		artifacts map[string]clouddriver.TaskCreatedArtifact
+		artifacts []clouddriver.Artifact
 	)
 
 	BeforeEach(func() {
-		artifacts = map[string]clouddriver.TaskCreatedArtifact{
-			"gcr.io/test-project/test-container-image": {
+		artifacts = []clouddriver.Artifact{
+			{
 				Name:      "gcr.io/test-project/test-container-image",
-				Type:      "docker/image",
+				Type:      artifact.TypeDockerImage,
 				Reference: "gcr.io/test-project/test-container-image:v1.0.0",
+			},
+			{
+				Name:      "my-config-map",
+				Type:      artifact.TypeKubernetesConfigMap,
+				Reference: "my-config-map-v000",
+			},
+			{
+				Name:      "my-config-map2",
+				Type:      artifact.TypeKubernetesConfigMap,
+				Reference: "my-config-map2-v000",
+			},
+			{
+				Name:      "my-secret",
+				Type:      artifact.TypeKubernetesSecret,
+				Reference: "my-secret-v000",
+			},
+			{
+				Name:      "my-secret2",
+				Type:      artifact.TypeKubernetesSecret,
+				Reference: "my-secret2-v000",
+			},
+			{
+				Name:      "my-deployment",
+				Type:      artifact.TypeKubernetesDeployment,
+				Reference: "my-deployment-v000",
+			},
+			{
+				Name:      "my-replicaSet",
+				Type:      artifact.TypeKubernetesReplicaSet,
+				Reference: "my-replicaSet-v000",
 			},
 		}
 	})
 
 	JustBeforeEach(func() {
-		err = BindDockerImageArtifacts(resource, artifacts)
+		BindArtifacts(resource, artifacts)
 	})
 
-	Context("#ReplaceDockerImageArtifacts", func() {
-		Context("with the 'containers' field", func() {
-			field := "containers"
+	When("the iterable path is not of type []interface{}", func() {
+		BeforeEach(func() {
+			resource = &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Pod",
+					"apiVersion": "v1",
+					"spec": map[string]interface{}{
+						"containers": map[string]interface{}{},
+					},
+				},
+			}
+		})
 
-			When("no artifacts are passed in", func() {
-				BeforeEach(func() {
-					artifacts = nil
-				})
+		It("leaves the resource as is", func() {
+			b, err := json.Marshal(resource)
+			Expect(err).To(BeNil())
+			Expect(string(b)).To(MatchJSON(`{
+          "apiVersion": "v1",
+          "kind": "Pod",
+          "spec": {
+            "containers": {}
+          }
+        }`))
+		})
+	})
 
-				It("does not fail", func() {
-					Expect(err).To(BeNil())
-				})
-			})
-
-			When("there is an error getting the nested slice", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Pod",
-							"apiVersion": "v1",
+	When("the value of an iterable path is not of type map[string]interface{}", func() {
+		BeforeEach(func() {
+			resource = &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Deployment",
+					"apiVersion": "apps/v1",
+					"spec": map[string]interface{}{
+						"template": map[string]interface{}{
 							"spec": map[string]interface{}{
-								field: []map[string]interface{}{},
-							},
-						},
-					}
-				})
-
-				It("returns an error", func() {
-					Expect(err).ToNot(BeNil())
-					Expect(err.Error()).To(Equal(".spec.containers accessor error: [] is of the type []map[string]interface {}, expected []interface{}"))
-				})
-			})
-
-			When("the kind does not have containers", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Secret",
-							"apiVersion": "v1",
-						},
-					}
-				})
-
-				It("does not fail", func() {
-					Expect(err).To(BeNil())
-				})
-			})
-
-			When("the container is not a map", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Pod",
-							"apiVersion": "v1",
-							"spec": map[string]interface{}{
-								field: []interface{}{
+								"containers": []interface{}{
 									"string",
+									"slice",
 								},
 							},
 						},
-					}
-				})
+					},
+				},
+			}
+		})
 
-				It("does not fail", func() {
-					Expect(err).To(BeNil())
-				})
+		It("leaves the resource as is", func() {
+			b, err := json.Marshal(resource)
+			Expect(err).To(BeNil())
+			Expect(string(b)).To(MatchJSON(`{
+          "apiVersion": "apps/v1",
+          "kind": "Deployment",
+          "spec": {
+            "template": {
+              "spec": {
+                "containers": [
+                  "string",
+                  "slice"
+                ]
+              }
+            }
+          }
+        }`))
+		})
+	})
+
+	When("the expected final nested string value is not a string", func() {
+		BeforeEach(func() {
+			resource = &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Pod",
+					"apiVersion": "v1",
+					"spec": map[string]interface{}{
+						"containers": []interface{}{
+							map[string]interface{}{
+								"name":  "another-test-container-name",
+								"image": []interface{}{"gcr.io/test-project/another-test-container-image"},
+							},
+							map[string]interface{}{
+								"name":  "test-container-name",
+								"image": "gcr.io/test-project/fake-test-container-image",
+							},
+						},
+					},
+				},
+			}
+		})
+
+		It("leaves the resource as is", func() {
+			b, err := json.Marshal(resource)
+			Expect(err).To(BeNil())
+			Expect(string(b)).To(MatchJSON(`{
+          "apiVersion": "v1",
+          "kind": "Pod",
+          "spec": {
+            "containers": [
+              {
+                "image": [
+                  "gcr.io/test-project/another-test-container-image"
+                ],
+                "name": "another-test-container-name"
+              },
+              {
+                "image": "gcr.io/test-project/fake-test-container-image",
+                "name": "test-container-name"
+              }
+            ]
+          }
+        }`))
+		})
+	})
+
+	Describe("docker/image", func() {
+		When(".spec.containers.*.image", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"containers": []interface{}{
+								map[string]interface{}{
+									"name":  "another-test-container-name",
+									"image": "gcr.io/test-project/another-test-container-image",
+								},
+								map[string]interface{}{
+									"name":  "test-container-name",
+									"image": "gcr.io/test-project/test-container-image",
+								},
+							},
+						},
+					},
+				}
 			})
 
-			When("the kind is pod", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Pod",
-							"apiVersion": "v1",
-							"spec": map[string]interface{}{
-								field: []interface{}{
-									map[string]interface{}{
-										"name":  "test-container-name",
-										"image": "gcr.io/test-project/test-container-image",
-									},
-								},
-							},
-						},
-					}
-				})
-
-				It("updates the container image to contain the reference", func() {
-					Expect(err).To(BeNil())
-					p := NewPod(resource.Object)
-					containers := p.Object().Spec.Containers
-					Expect(containers[0].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
-				})
-			})
-
-			When("a container image does not match artifact image", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Deployment",
-							"apiVersion": "apps/v1",
-							"spec": map[string]interface{}{
-								"template": map[string]interface{}{
-									"spec": map[string]interface{}{
-										field: []interface{}{
-											map[string]interface{}{
-												"name":  "test-container-name",
-												"image": "gcr.io/test-project/test-container-image",
-											},
-											map[string]interface{}{
-												"name":  "another-test-container-name",
-												"image": "gcr.io/test-project/another-test-container-image",
-											},
-										},
-									},
-								},
-							},
-						},
-					}
-				})
-
-				It("only updates the container in the artifact", func() {
-					Expect(err).To(BeNil())
-					d := NewDeployment(resource.Object)
-					containers := d.Object().Spec.Template.Spec.Containers
-					Expect(containers).To(HaveLen(2))
-					Expect(containers[0].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
-					Expect(containers[1].Image).To(Equal("gcr.io/test-project/another-test-container-image"))
-				})
-			})
-
-			When("the kind is deployment", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Deployment",
-							"apiVersion": "apps/v1",
-							"spec": map[string]interface{}{
-								"template": map[string]interface{}{
-									"spec": map[string]interface{}{
-										field: []interface{}{
-											map[string]interface{}{
-												"name":  "test-container-name",
-												"image": "gcr.io/test-project/test-container-image",
-											},
-										},
-									},
-								},
-							},
-						},
-					}
-				})
-
-				It("updates the container image to contain the reference", func() {
-					Expect(err).To(BeNil())
-					d := NewDeployment(resource.Object)
-					containers := d.Object().Spec.Template.Spec.Containers
-					Expect(containers[0].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
-				})
+			It("updates the container image to contain the reference", func() {
+				o := NewPod(resource.Object)
+				containers := o.Object().Spec.Containers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].Image).To(Equal("gcr.io/test-project/another-test-container-image"))
+				Expect(containers[1].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
 			})
 		})
 
-		Context("with the 'initContainers' field", func() {
-			field := "initContainers"
-
-			When("no artifacts are passed in", func() {
-				BeforeEach(func() {
-					artifacts = nil
-				})
-
-				It("does not fail", func() {
-					Expect(err).To(BeNil())
-				})
-			})
-
-			When("there is an error getting the nested slice", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Pod",
-							"apiVersion": "v1",
-							"spec": map[string]interface{}{
-								field: []map[string]interface{}{},
-							},
-						},
-					}
-				})
-
-				It("returns an error", func() {
-					Expect(err).ToNot(BeNil())
-					Expect(err.Error()).To(Equal(".spec.initContainers accessor error: [] is of the type []map[string]interface {}, expected []interface{}"))
-				})
-			})
-
-			When("the kind does not have init containers", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Secret",
-							"apiVersion": "v1",
-						},
-					}
-				})
-
-				It("does not fail", func() {
-					Expect(err).To(BeNil())
-				})
-			})
-
-			When("the init container is not a map", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Pod",
-							"apiVersion": "v1",
-							"spec": map[string]interface{}{
-								field: []interface{}{
-									"string",
-								},
-							},
-						},
-					}
-				})
-
-				It("does not fail", func() {
-					Expect(err).To(BeNil())
-				})
-			})
-
-			When("the kind is pod", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Pod",
-							"apiVersion": "v1",
-							"spec": map[string]interface{}{
-								field: []interface{}{
-									map[string]interface{}{
-										"name":  "test-init-container-name",
-										"image": "gcr.io/test-project/test-container-image",
+		When(".spec.template.spec.containers.*.image", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"containers": []interface{}{
+										map[string]interface{}{
+											"name":  "test-container-name",
+											"image": "gcr.io/test-project/test-container-image",
+										},
+										map[string]interface{}{
+											"name":  "another-test-container-name",
+											"image": "gcr.io/test-project/another-test-container-image",
+										},
 									},
 								},
 							},
 						},
-					}
-				})
-
-				It("updates the init container image to contain the reference", func() {
-					Expect(err).To(BeNil())
-					p := NewPod(resource.Object)
-					initContainers := p.Object().Spec.InitContainers
-					Expect(initContainers[0].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
-				})
+					},
+				}
 			})
 
-			When("an init container image does not match artifact image", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Deployment",
-							"apiVersion": "apps/v1",
-							"spec": map[string]interface{}{
-								"template": map[string]interface{}{
-									"spec": map[string]interface{}{
-										field: []interface{}{
-											map[string]interface{}{
-												"name":  "test-init-container-name",
-												"image": "gcr.io/test-project/test-container-image",
+			It("only updates the container in the artifact", func() {
+				o := NewDeployment(resource.Object)
+				containers := o.Object().Spec.Template.Spec.Containers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
+				Expect(containers[1].Image).To(Equal("gcr.io/test-project/another-test-container-image"))
+			})
+		})
+
+		When(".spec.initContainers.*.image", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"initContainers": []interface{}{
+								map[string]interface{}{
+									"name":  "test-init-container-name",
+									"image": "gcr.io/test-project/test-container-image",
+								},
+								map[string]interface{}{
+									"name":  "another-test-init-container-name",
+									"image": "gcr.io/test-project/another-test-container-image",
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("updates the init container image to contain the reference", func() {
+				o := NewPod(resource.Object)
+				initContainers := o.Object().Spec.InitContainers
+				Expect(initContainers).To(HaveLen(2))
+				Expect(initContainers[0].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
+				Expect(initContainers[1].Image).To(Equal("gcr.io/test-project/another-test-container-image"))
+			})
+		})
+
+		When(".spec.template.spec.initContainers.*.image", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"initContainers": []interface{}{
+										map[string]interface{}{
+											"name":  "another-test-init-container-name",
+											"image": "gcr.io/test-project/another-test-container-image",
+										},
+										map[string]interface{}{
+											"name":  "test-init-container-name",
+											"image": "gcr.io/test-project/test-container-image",
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("only updates the init container in the artifact", func() {
+				o := NewDeployment(resource.Object)
+				initContainers := o.Object().Spec.Template.Spec.InitContainers
+				Expect(initContainers).To(HaveLen(2))
+				Expect(initContainers[0].Image).To(Equal("gcr.io/test-project/another-test-container-image"))
+				Expect(initContainers[1].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
+			})
+		})
+	})
+
+	Describe("kubernetes/configMap", func() {
+		Context(".spec.template.spec.volumes.*.configMap.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"volumes": []interface{}{
+										map[string]interface{}{
+											"configMap": map[string]interface{}{
+												"name": "not-my-config-map",
 											},
-											map[string]interface{}{
-												"name":  "another-test-init-container-name",
-												"image": "gcr.io/test-project/another-test-container-image",
+										},
+										map[string]interface{}{
+											"configMap": map[string]interface{}{
+												"name": "my-config-map",
 											},
 										},
 									},
 								},
 							},
 						},
-					}
-				})
-
-				It("only updates the init container in the artifact", func() {
-					Expect(err).To(BeNil())
-					d := NewDeployment(resource.Object)
-					initContainers := d.Object().Spec.Template.Spec.InitContainers
-					Expect(initContainers).To(HaveLen(2))
-					Expect(initContainers[0].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
-					Expect(initContainers[1].Image).To(Equal("gcr.io/test-project/another-test-container-image"))
-				})
+					},
+				}
 			})
 
-			When("the kind is deployment", func() {
-				BeforeEach(func() {
-					resource = &unstructured.Unstructured{
-						Object: map[string]interface{}{
-							"kind":       "Deployment",
-							"apiVersion": "apps/v1",
-							"spec": map[string]interface{}{
-								"template": map[string]interface{}{
-									"spec": map[string]interface{}{
-										field: []interface{}{
-											map[string]interface{}{
-												"name":  "test-init-container-name",
-												"image": "gcr.io/test-project/test-container-image",
+			It("replaces the configMap", func() {
+				o := NewDeployment(resource.Object)
+				volumes := o.Object().Spec.Template.Spec.Volumes
+				Expect(volumes).To(HaveLen(2))
+				Expect(volumes[0].VolumeSource.ConfigMap.Name).To(Equal("not-my-config-map"))
+				Expect(volumes[1].VolumeSource.ConfigMap.Name).To(Equal("my-config-map-v000"))
+			})
+		})
+
+		Context(".spec.volumes.*.configMap.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"volumes": []interface{}{
+								map[string]interface{}{
+									"configMap": map[string]interface{}{
+										"name": "not-my-config-map",
+									},
+								},
+								map[string]interface{}{
+									"configMap": map[string]interface{}{
+										"name": "my-config-map",
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the configMap", func() {
+				o := NewPod(resource.Object)
+				volumes := o.Object().Spec.Volumes
+				Expect(volumes).To(HaveLen(2))
+				Expect(volumes[0].VolumeSource.ConfigMap.Name).To(Equal("not-my-config-map"))
+				Expect(volumes[1].VolumeSource.ConfigMap.Name).To(Equal("my-config-map-v000"))
+			})
+		})
+
+		Context(".spec.template.spec.volumes.*.projected.sources.*.configMap.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"volumes": []interface{}{
+										map[string]interface{}{
+											"projected": map[string]interface{}{
+												"sources": []interface{}{
+													map[string]interface{}{
+														"configMap": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+													map[string]interface{}{
+														"secret": map[string]interface{}{
+															"name": "not-my-secret",
+														},
+													},
+													map[string]interface{}{
+														"configMap": map[string]interface{}{
+															"name": "my-config-map",
+														},
+													},
+													map[string]interface{}{
+														"secret": map[string]interface{}{
+															"name": "not-my-secret2",
+														},
+													},
+												},
+											},
+										},
+										map[string]interface{}{
+											"projected": map[string]interface{}{
+												"sources": []interface{}{
+													map[string]interface{}{
+														"configMap": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+													map[string]interface{}{
+														"secret": map[string]interface{}{
+															"name": "not-my-secret",
+														},
+													},
+													map[string]interface{}{
+														"configMap": map[string]interface{}{
+															"name": "my-config-map2",
+														},
+													},
+													map[string]interface{}{
+														"secret": map[string]interface{}{
+															"name": "not-my-secret2",
+														},
+													},
+												},
 											},
 										},
 									},
 								},
 							},
 						},
-					}
-				})
+					},
+				}
+			})
 
-				It("updates the init container image to contain the reference", func() {
-					Expect(err).To(BeNil())
-					d := NewDeployment(resource.Object)
-					initContainers := d.Object().Spec.Template.Spec.InitContainers
-					Expect(initContainers[0].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
-				})
+			It("replaces the configMap", func() {
+				o := NewDeployment(resource.Object)
+				volumes := o.Object().Spec.Template.Spec.Volumes
+				Expect(volumes).To(HaveLen(2))
+				Expect(volumes[0].VolumeSource.Projected.Sources).To(HaveLen(4))
+				Expect(volumes[0].VolumeSource.Projected.Sources[0].ConfigMap.Name).To(Equal("not-my-config-map"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[1].Secret.Name).To(Equal("not-my-secret"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[2].ConfigMap.Name).To(Equal("my-config-map-v000"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[3].Secret.Name).To(Equal("not-my-secret2"))
+				Expect(volumes[1].VolumeSource.Projected.Sources).To(HaveLen(4))
+				Expect(volumes[1].VolumeSource.Projected.Sources[0].ConfigMap.Name).To(Equal("not-my-config-map"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[1].Secret.Name).To(Equal("not-my-secret"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[2].ConfigMap.Name).To(Equal("my-config-map2-v000"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[3].Secret.Name).To(Equal("not-my-secret2"))
+			})
+		})
+
+		Context(".spec.volumes.*.projected.sources.*configMap.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"volumes": []interface{}{
+								map[string]interface{}{
+									"projected": map[string]interface{}{
+										"sources": []interface{}{
+											map[string]interface{}{
+												"configMap": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+											map[string]interface{}{
+												"secret": map[string]interface{}{
+													"name": "not-my-secret",
+												},
+											},
+											map[string]interface{}{
+												"configMap": map[string]interface{}{
+													"name": "my-config-map",
+												},
+											},
+											map[string]interface{}{
+												"secret": map[string]interface{}{
+													"name": "not-my-secret2",
+												},
+											},
+										},
+									},
+								},
+								map[string]interface{}{
+									"projected": map[string]interface{}{
+										"sources": []interface{}{
+											map[string]interface{}{
+												"configMap": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+											map[string]interface{}{
+												"secret": map[string]interface{}{
+													"name": "not-my-secret",
+												},
+											},
+											map[string]interface{}{
+												"configMap": map[string]interface{}{
+													"name": "my-config-map2",
+												},
+											},
+											map[string]interface{}{
+												"secret": map[string]interface{}{
+													"name": "not-my-secret2",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the configMap", func() {
+				o := NewPod(resource.Object)
+				volumes := o.Object().Spec.Volumes
+				Expect(volumes).To(HaveLen(2))
+				Expect(volumes[0].VolumeSource.Projected.Sources).To(HaveLen(4))
+				Expect(volumes[0].VolumeSource.Projected.Sources[0].ConfigMap.Name).To(Equal("not-my-config-map"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[1].Secret.Name).To(Equal("not-my-secret"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[2].ConfigMap.Name).To(Equal("my-config-map-v000"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[3].Secret.Name).To(Equal("not-my-secret2"))
+				Expect(volumes[1].VolumeSource.Projected.Sources).To(HaveLen(4))
+				Expect(volumes[1].VolumeSource.Projected.Sources[0].ConfigMap.Name).To(Equal("not-my-config-map"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[1].Secret.Name).To(Equal("not-my-secret"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[2].ConfigMap.Name).To(Equal("my-config-map2-v000"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[3].Secret.Name).To(Equal("not-my-secret2"))
+			})
+		})
+
+		Context(".spec.template.spec.containers.*.env.*.valueFrom.configMapKeyRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"containers": []interface{}{
+										map[string]interface{}{
+											"env": []interface{}{
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "my-config-map",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret2",
+														},
+													},
+												},
+											},
+										},
+										map[string]interface{}{
+											"env": []interface{}{
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "my-config-map2",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret2",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the configMap", func() {
+				o := NewDeployment(resource.Object)
+				containers := o.Object().Spec.Template.Spec.Containers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].Env).To(HaveLen(4))
+				Expect(containers[0].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[0].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("my-config-map-v000"))
+				Expect(containers[0].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].Env).To(HaveLen(4))
+				Expect(containers[1].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("my-config-map2-v000"))
+				Expect(containers[1].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+			})
+		})
+
+		Context(".spec.containers.*.env.*.valueFrom.configMapKeyRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"containers": []interface{}{
+								map[string]interface{}{
+									"env": []interface{}{
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "my-config-map",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret2",
+												},
+											},
+										},
+									},
+								},
+								map[string]interface{}{
+									"env": []interface{}{
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "my-config-map2",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret2",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the configMap", func() {
+				o := NewPod(resource.Object)
+				containers := o.Object().Spec.Containers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].Env).To(HaveLen(4))
+				Expect(containers[0].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[0].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("my-config-map-v000"))
+				Expect(containers[0].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].Env).To(HaveLen(4))
+				Expect(containers[1].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("my-config-map2-v000"))
+				Expect(containers[1].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+			})
+		})
+
+		Context(".spec.template.spec.initContainers.*.env.*.valueFrom.configMapKeyRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"initContainers": []interface{}{
+										map[string]interface{}{
+											"env": []interface{}{
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "my-config-map",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret2",
+														},
+													},
+												},
+											},
+										},
+										map[string]interface{}{
+											"env": []interface{}{
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "my-config-map2",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret2",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the configMap", func() {
+				o := NewDeployment(resource.Object)
+				containers := o.Object().Spec.Template.Spec.InitContainers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].Env).To(HaveLen(4))
+				Expect(containers[0].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[0].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("my-config-map-v000"))
+				Expect(containers[0].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].Env).To(HaveLen(4))
+				Expect(containers[1].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("my-config-map2-v000"))
+				Expect(containers[1].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+			})
+		})
+
+		Context(".spec.initContainers.*.env.*.valueFrom.configMapKeyRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"initContainers": []interface{}{
+								map[string]interface{}{
+									"env": []interface{}{
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "my-config-map",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret2",
+												},
+											},
+										},
+									},
+								},
+								map[string]interface{}{
+									"env": []interface{}{
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "my-config-map2",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret2",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the configMap", func() {
+				o := NewPod(resource.Object)
+				containers := o.Object().Spec.InitContainers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].Env).To(HaveLen(4))
+				Expect(containers[0].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[0].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("my-config-map-v000"))
+				Expect(containers[0].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].Env).To(HaveLen(4))
+				Expect(containers[1].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("my-config-map2-v000"))
+				Expect(containers[1].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+			})
+		})
+
+		Context(".spec.template.spec.containers.*.envFrom.*.configMapRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"containers": []interface{}{
+										map[string]interface{}{
+											"envFrom": []interface{}{
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret",
+													},
+												},
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "my-config-map",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret2",
+													},
+												},
+											},
+										},
+										map[string]interface{}{
+											"envFrom": []interface{}{
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret",
+													},
+												},
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "my-config-map2",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret2",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the configMap", func() {
+				o := NewDeployment(resource.Object)
+				containers := o.Object().Spec.Template.Spec.Containers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].EnvFrom).To(HaveLen(4))
+				Expect(containers[0].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[0].EnvFrom[2].ConfigMapRef.Name).To(Equal("my-config-map-v000"))
+				Expect(containers[0].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].EnvFrom).To(HaveLen(4))
+				Expect(containers[1].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].EnvFrom[2].ConfigMapRef.Name).To(Equal("my-config-map2-v000"))
+				Expect(containers[1].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+			})
+		})
+
+		Context(".spec.containers.*.envFrom.*.configMapRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"containers": []interface{}{
+								map[string]interface{}{
+									"envFrom": []interface{}{
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret",
+											},
+										},
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "my-config-map",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret2",
+											},
+										},
+									},
+								},
+								map[string]interface{}{
+									"envFrom": []interface{}{
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret",
+											},
+										},
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "my-config-map2",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret2",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the configMap", func() {
+				o := NewPod(resource.Object)
+				containers := o.Object().Spec.Containers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].EnvFrom).To(HaveLen(4))
+				Expect(containers[0].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[0].EnvFrom[2].ConfigMapRef.Name).To(Equal("my-config-map-v000"))
+				Expect(containers[0].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].EnvFrom).To(HaveLen(4))
+				Expect(containers[1].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].EnvFrom[2].ConfigMapRef.Name).To(Equal("my-config-map2-v000"))
+				Expect(containers[1].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+			})
+		})
+
+		Context(".spec.template.spec.initContainers.*.envFrom.*.configMapRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"initContainers": []interface{}{
+										map[string]interface{}{
+											"envFrom": []interface{}{
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret",
+													},
+												},
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "my-config-map",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret2",
+													},
+												},
+											},
+										},
+										map[string]interface{}{
+											"envFrom": []interface{}{
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret",
+													},
+												},
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "my-config-map2",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret2",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the configMap", func() {
+				o := NewDeployment(resource.Object)
+				containers := o.Object().Spec.Template.Spec.InitContainers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].EnvFrom).To(HaveLen(4))
+				Expect(containers[0].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[0].EnvFrom[2].ConfigMapRef.Name).To(Equal("my-config-map-v000"))
+				Expect(containers[0].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].EnvFrom).To(HaveLen(4))
+				Expect(containers[1].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].EnvFrom[2].ConfigMapRef.Name).To(Equal("my-config-map2-v000"))
+				Expect(containers[1].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+			})
+		})
+
+		Context(".spec.initContainers.*.envFrom.*.configMapRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"initContainers": []interface{}{
+								map[string]interface{}{
+									"envFrom": []interface{}{
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret",
+											},
+										},
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "my-config-map",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret2",
+											},
+										},
+									},
+								},
+								map[string]interface{}{
+									"envFrom": []interface{}{
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret",
+											},
+										},
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "my-config-map2",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret2",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the configMap", func() {
+				o := NewPod(resource.Object)
+				containers := o.Object().Spec.InitContainers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].EnvFrom).To(HaveLen(4))
+				Expect(containers[0].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[0].EnvFrom[2].ConfigMapRef.Name).To(Equal("my-config-map-v000"))
+				Expect(containers[0].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].EnvFrom).To(HaveLen(4))
+				Expect(containers[1].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].EnvFrom[2].ConfigMapRef.Name).To(Equal("my-config-map2-v000"))
+				Expect(containers[1].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+			})
+		})
+	})
+
+	Describe("kubernetes/secret", func() {
+		Context(".spec.template.spec.volumes.*.secret.secretName", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"volumes": []interface{}{
+										map[string]interface{}{
+											"secret": map[string]interface{}{
+												"secretName": "not-my-secret",
+											},
+										},
+										map[string]interface{}{
+											"secret": map[string]interface{}{
+												"secretName": "my-secret",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewDeployment(resource.Object)
+				volumes := o.Object().Spec.Template.Spec.Volumes
+				Expect(volumes).To(HaveLen(2))
+				Expect(volumes[0].VolumeSource.Secret.SecretName).To(Equal("not-my-secret"))
+				Expect(volumes[1].VolumeSource.Secret.SecretName).To(Equal("my-secret-v000"))
+			})
+		})
+
+		Context(".spec.volumes.*.secret.secretName", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"volumes": []interface{}{
+								map[string]interface{}{
+									"secret": map[string]interface{}{
+										"secretName": "not-my-secret",
+									},
+								},
+								map[string]interface{}{
+									"secret": map[string]interface{}{
+										"secretName": "my-secret",
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewPod(resource.Object)
+				volumes := o.Object().Spec.Volumes
+				Expect(volumes).To(HaveLen(2))
+				Expect(volumes[0].VolumeSource.Secret.SecretName).To(Equal("not-my-secret"))
+				Expect(volumes[1].VolumeSource.Secret.SecretName).To(Equal("my-secret-v000"))
+			})
+		})
+
+		Context(".spec.template.spec.volumes.*.projected.sources.*.secret.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"volumes": []interface{}{
+										map[string]interface{}{
+											"projected": map[string]interface{}{
+												"sources": []interface{}{
+													map[string]interface{}{
+														"configMap": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+													map[string]interface{}{
+														"secret": map[string]interface{}{
+															"name": "my-secret",
+														},
+													},
+													map[string]interface{}{
+														"configMap": map[string]interface{}{
+															"name": "not-my-config-map2",
+														},
+													},
+													map[string]interface{}{
+														"secret": map[string]interface{}{
+															"name": "not-my-secret2",
+														},
+													},
+												},
+											},
+										},
+										map[string]interface{}{
+											"projected": map[string]interface{}{
+												"sources": []interface{}{
+													map[string]interface{}{
+														"configMap": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+													map[string]interface{}{
+														"secret": map[string]interface{}{
+															"name": "not-my-secret",
+														},
+													},
+													map[string]interface{}{
+														"configMap": map[string]interface{}{
+															"name": "not-my-config-map2",
+														},
+													},
+													map[string]interface{}{
+														"secret": map[string]interface{}{
+															"name": "my-secret2",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewDeployment(resource.Object)
+				volumes := o.Object().Spec.Template.Spec.Volumes
+				Expect(volumes).To(HaveLen(2))
+				Expect(volumes[0].VolumeSource.Projected.Sources).To(HaveLen(4))
+				Expect(volumes[0].VolumeSource.Projected.Sources[0].ConfigMap.Name).To(Equal("not-my-config-map"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[1].Secret.Name).To(Equal("my-secret-v000"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[2].ConfigMap.Name).To(Equal("not-my-config-map2"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[3].Secret.Name).To(Equal("not-my-secret2"))
+				Expect(volumes[1].VolumeSource.Projected.Sources).To(HaveLen(4))
+				Expect(volumes[1].VolumeSource.Projected.Sources[0].ConfigMap.Name).To(Equal("not-my-config-map"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[1].Secret.Name).To(Equal("not-my-secret"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[2].ConfigMap.Name).To(Equal("not-my-config-map2"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[3].Secret.Name).To(Equal("my-secret2-v000"))
+			})
+		})
+
+		Context(".spec.volumes.*.projected.sources.*.secret.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"volumes": []interface{}{
+								map[string]interface{}{
+									"projected": map[string]interface{}{
+										"sources": []interface{}{
+											map[string]interface{}{
+												"configMap": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+											map[string]interface{}{
+												"secret": map[string]interface{}{
+													"name": "my-secret",
+												},
+											},
+											map[string]interface{}{
+												"configMap": map[string]interface{}{
+													"name": "not-my-config-map2",
+												},
+											},
+											map[string]interface{}{
+												"secret": map[string]interface{}{
+													"name": "not-my-secret2",
+												},
+											},
+										},
+									},
+								},
+								map[string]interface{}{
+									"projected": map[string]interface{}{
+										"sources": []interface{}{
+											map[string]interface{}{
+												"configMap": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+											map[string]interface{}{
+												"secret": map[string]interface{}{
+													"name": "not-my-secret",
+												},
+											},
+											map[string]interface{}{
+												"configMap": map[string]interface{}{
+													"name": "not-my-config-map2",
+												},
+											},
+											map[string]interface{}{
+												"secret": map[string]interface{}{
+													"name": "my-secret2",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewPod(resource.Object)
+				volumes := o.Object().Spec.Volumes
+				Expect(volumes).To(HaveLen(2))
+				Expect(volumes[0].VolumeSource.Projected.Sources).To(HaveLen(4))
+				Expect(volumes[0].VolumeSource.Projected.Sources[0].ConfigMap.Name).To(Equal("not-my-config-map"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[1].Secret.Name).To(Equal("my-secret-v000"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[2].ConfigMap.Name).To(Equal("not-my-config-map2"))
+				Expect(volumes[0].VolumeSource.Projected.Sources[3].Secret.Name).To(Equal("not-my-secret2"))
+				Expect(volumes[1].VolumeSource.Projected.Sources).To(HaveLen(4))
+				Expect(volumes[1].VolumeSource.Projected.Sources[0].ConfigMap.Name).To(Equal("not-my-config-map"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[1].Secret.Name).To(Equal("not-my-secret"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[2].ConfigMap.Name).To(Equal("not-my-config-map2"))
+				Expect(volumes[1].VolumeSource.Projected.Sources[3].Secret.Name).To(Equal("my-secret2-v000"))
+			})
+		})
+
+		Context(".spec.template.spec.containers.*.env.*.valueFrom.secretKeyRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"containers": []interface{}{
+										map[string]interface{}{
+											"env": []interface{}{
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "my-secret",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map2",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret2",
+														},
+													},
+												},
+											},
+										},
+										map[string]interface{}{
+											"env": []interface{}{
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map2",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "my-secret2",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewDeployment(resource.Object)
+				containers := o.Object().Spec.Template.Spec.Containers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].Env).To(HaveLen(4))
+				Expect(containers[0].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("my-secret-v000"))
+				Expect(containers[0].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[0].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].Env).To(HaveLen(4))
+				Expect(containers[1].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[1].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("my-secret2-v000"))
+			})
+		})
+
+		Context(".spec.containers.*.env.*.valueFrom.secretKeyRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"containers": []interface{}{
+								map[string]interface{}{
+									"env": []interface{}{
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "my-secret",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map2",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret2",
+												},
+											},
+										},
+									},
+								},
+								map[string]interface{}{
+									"env": []interface{}{
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map2",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "my-secret2",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewPod(resource.Object)
+				containers := o.Object().Spec.Containers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].Env).To(HaveLen(4))
+				Expect(containers[0].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("my-secret-v000"))
+				Expect(containers[0].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[0].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].Env).To(HaveLen(4))
+				Expect(containers[1].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[1].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("my-secret2-v000"))
+			})
+		})
+
+		Context(".spec.template.spec.initContainers.*.env.*.valueFrom.secretKeyRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"initContainers": []interface{}{
+										map[string]interface{}{
+											"env": []interface{}{
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "my-secret",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map2",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret2",
+														},
+													},
+												},
+											},
+										},
+										map[string]interface{}{
+											"env": []interface{}{
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "not-my-secret",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"configMapKeyRef": map[string]interface{}{
+															"name": "not-my-config-map2",
+														},
+													},
+												},
+												map[string]interface{}{
+													"valueFrom": map[string]interface{}{
+														"secretKeyRef": map[string]interface{}{
+															"name": "my-secret2",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewDeployment(resource.Object)
+				containers := o.Object().Spec.Template.Spec.InitContainers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].Env).To(HaveLen(4))
+				Expect(containers[0].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("my-secret-v000"))
+				Expect(containers[0].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[0].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].Env).To(HaveLen(4))
+				Expect(containers[1].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[1].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("my-secret2-v000"))
+			})
+		})
+
+		Context(".spec.initContainers.*.env.*.valueFrom.secretKeyRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"initContainers": []interface{}{
+								map[string]interface{}{
+									"env": []interface{}{
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "my-secret",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map2",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret2",
+												},
+											},
+										},
+									},
+								},
+								map[string]interface{}{
+									"env": []interface{}{
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "not-my-secret",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"configMapKeyRef": map[string]interface{}{
+													"name": "not-my-config-map2",
+												},
+											},
+										},
+										map[string]interface{}{
+											"valueFrom": map[string]interface{}{
+												"secretKeyRef": map[string]interface{}{
+													"name": "my-secret2",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewPod(resource.Object)
+				containers := o.Object().Spec.InitContainers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].Env).To(HaveLen(4))
+				Expect(containers[0].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("my-secret-v000"))
+				Expect(containers[0].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[0].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].Env).To(HaveLen(4))
+				Expect(containers[1].Env[0].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].Env[1].ValueFrom.SecretKeyRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].Env[2].ValueFrom.ConfigMapKeyRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[1].Env[3].ValueFrom.SecretKeyRef.Name).To(Equal("my-secret2-v000"))
+			})
+		})
+
+		Context(".spec.template.spec.containers.*.envFrom.*.secretRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"containers": []interface{}{
+										map[string]interface{}{
+											"envFrom": []interface{}{
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "my-secret",
+													},
+												},
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map2",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret2",
+													},
+												},
+											},
+										},
+										map[string]interface{}{
+											"envFrom": []interface{}{
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret",
+													},
+												},
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map2",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "my-secret2",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewDeployment(resource.Object)
+				containers := o.Object().Spec.Template.Spec.Containers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].EnvFrom).To(HaveLen(4))
+				Expect(containers[0].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].EnvFrom[1].SecretRef.Name).To(Equal("my-secret-v000"))
+				Expect(containers[0].EnvFrom[2].ConfigMapRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[0].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].EnvFrom).To(HaveLen(4))
+				Expect(containers[1].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].EnvFrom[2].ConfigMapRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[1].EnvFrom[3].SecretRef.Name).To(Equal("my-secret2-v000"))
+			})
+		})
+
+		Context(".spec.containers.*.envFrom.*.secretRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"containers": []interface{}{
+								map[string]interface{}{
+									"envFrom": []interface{}{
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "my-secret",
+											},
+										},
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map2",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret2",
+											},
+										},
+									},
+								},
+								map[string]interface{}{
+									"envFrom": []interface{}{
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret",
+											},
+										},
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map2",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "my-secret2",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewPod(resource.Object)
+				containers := o.Object().Spec.Containers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].EnvFrom).To(HaveLen(4))
+				Expect(containers[0].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].EnvFrom[1].SecretRef.Name).To(Equal("my-secret-v000"))
+				Expect(containers[0].EnvFrom[2].ConfigMapRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[0].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].EnvFrom).To(HaveLen(4))
+				Expect(containers[1].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].EnvFrom[2].ConfigMapRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[1].EnvFrom[3].SecretRef.Name).To(Equal("my-secret2-v000"))
+			})
+		})
+
+		Context(".spec.template.spec.initContainers.*.envFrom.*.configMapRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"initContainers": []interface{}{
+										map[string]interface{}{
+											"envFrom": []interface{}{
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "my-secret",
+													},
+												},
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map2",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret2",
+													},
+												},
+											},
+										},
+										map[string]interface{}{
+											"envFrom": []interface{}{
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "not-my-secret",
+													},
+												},
+												map[string]interface{}{
+													"configMapRef": map[string]interface{}{
+														"name": "not-my-config-map2",
+													},
+												},
+												map[string]interface{}{
+													"secretRef": map[string]interface{}{
+														"name": "my-secret2",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewDeployment(resource.Object)
+				containers := o.Object().Spec.Template.Spec.InitContainers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].EnvFrom).To(HaveLen(4))
+				Expect(containers[0].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].EnvFrom[1].SecretRef.Name).To(Equal("my-secret-v000"))
+				Expect(containers[0].EnvFrom[2].ConfigMapRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[0].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].EnvFrom).To(HaveLen(4))
+				Expect(containers[1].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].EnvFrom[2].ConfigMapRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[1].EnvFrom[3].SecretRef.Name).To(Equal("my-secret2-v000"))
+			})
+		})
+
+		Context(".spec.initContainers.*.envFrom.*.secretRef.name", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"spec": map[string]interface{}{
+							"initContainers": []interface{}{
+								map[string]interface{}{
+									"envFrom": []interface{}{
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "my-secret",
+											},
+										},
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map2",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret2",
+											},
+										},
+									},
+								},
+								map[string]interface{}{
+									"envFrom": []interface{}{
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "not-my-secret",
+											},
+										},
+										map[string]interface{}{
+											"configMapRef": map[string]interface{}{
+												"name": "not-my-config-map2",
+											},
+										},
+										map[string]interface{}{
+											"secretRef": map[string]interface{}{
+												"name": "my-secret2",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("replaces the secret", func() {
+				o := NewPod(resource.Object)
+				containers := o.Object().Spec.InitContainers
+				Expect(containers).To(HaveLen(2))
+				Expect(containers[0].EnvFrom).To(HaveLen(4))
+				Expect(containers[0].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[0].EnvFrom[1].SecretRef.Name).To(Equal("my-secret-v000"))
+				Expect(containers[0].EnvFrom[2].ConfigMapRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[0].EnvFrom[3].SecretRef.Name).To(Equal("not-my-secret2"))
+				Expect(containers[1].EnvFrom).To(HaveLen(4))
+				Expect(containers[1].EnvFrom[0].ConfigMapRef.Name).To(Equal("not-my-config-map"))
+				Expect(containers[1].EnvFrom[1].SecretRef.Name).To(Equal("not-my-secret"))
+				Expect(containers[1].EnvFrom[2].ConfigMapRef.Name).To(Equal("not-my-config-map2"))
+				Expect(containers[1].EnvFrom[3].SecretRef.Name).To(Equal("my-secret2-v000"))
+			})
+		})
+	})
+
+	Describe("kubernetes/deployment", func() {
+		Context("when the manifest kind is not HorizontalPodAutoscaler", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "NotHorizontalPodAutoscaler",
+						"apiVersion": "autoscaling/v2beta2",
+						"spec": map[string]interface{}{
+							"scaleTargetRef": map[string]interface{}{
+								"kind": "deployment",
+								"name": "my-deployment",
+							},
+						},
+					},
+				}
+			})
+
+			It("ignores the manifest", func() {
+				o := NewHorizontalPodAutoscaler(resource.Object)
+				name := o.Object().Spec.ScaleTargetRef.Name
+				Expect(name).To(Equal("my-deployment"))
+			})
+		})
+
+		Context("when the .spec.scaleTargetRef.kind is not a deployment", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "HorizontalPodAutoscaler",
+						"apiVersion": "autoscaling/v2beta2",
+						"spec": map[string]interface{}{
+							"scaleTargetRef": map[string]interface{}{
+								"kind": "fake",
+								"name": "my-replicaset",
+							},
+						},
+					},
+				}
+			})
+
+			It("does not replace the reference", func() {
+				o := NewHorizontalPodAutoscaler(resource.Object)
+				name := o.Object().Spec.ScaleTargetRef.Name
+				Expect(name).To(Equal("my-replicaset"))
+			})
+		})
+
+		Context("when the .spec.scaleTargetRef.kind is a deployment", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "HorizontalPodAutoscaler",
+						"apiVersion": "autoscaling/v2beta2",
+						"spec": map[string]interface{}{
+							"scaleTargetRef": map[string]interface{}{
+								"kind": "Deployment",
+								"name": "my-deployment",
+							},
+						},
+					},
+				}
+			})
+
+			It("does replace the reference", func() {
+				o := NewHorizontalPodAutoscaler(resource.Object)
+				name := o.Object().Spec.ScaleTargetRef.Name
+				Expect(name).To(Equal("my-deployment-v000"))
+			})
+		})
+	})
+
+	Describe("kubernetes/replicaSet", func() {
+		Context("when the manifest kind is not HorizontalPodAutoscaler", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "NotHorizontalPodAutoscaler",
+						"apiVersion": "autoscaling/v2beta2",
+						"spec": map[string]interface{}{
+							"scaleTargetRef": map[string]interface{}{
+								"kind": "replicaSet",
+								"name": "my-replicaset",
+							},
+						},
+					},
+				}
+			})
+
+			It("ignores the manifest", func() {
+				o := NewHorizontalPodAutoscaler(resource.Object)
+				name := o.Object().Spec.ScaleTargetRef.Name
+				Expect(name).To(Equal("my-replicaset"))
+			})
+		})
+
+		Context("when the .spec.scaleTargetRef.kind is not a replicaSet", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "HorizontalPodAutoscaler",
+						"apiVersion": "autoscaling/v2beta2",
+						"spec": map[string]interface{}{
+							"scaleTargetRef": map[string]interface{}{
+								"kind": "fake",
+								"name": "my-deployment",
+							},
+						},
+					},
+				}
+			})
+
+			It("does not replace the reference", func() {
+				o := NewHorizontalPodAutoscaler(resource.Object)
+				name := o.Object().Spec.ScaleTargetRef.Name
+				Expect(name).To(Equal("my-deployment"))
+			})
+		})
+
+		Context("when the .spec.scaleTargetRef.kind is a replicaSet", func() {
+			BeforeEach(func() {
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "HorizontalPodAutoscaler",
+						"apiVersion": "autoscaling/v2beta2",
+						"spec": map[string]interface{}{
+							"scaleTargetRef": map[string]interface{}{
+								"kind": "ReplicaSet",
+								"name": "my-replicaSet",
+							},
+						},
+					},
+				}
+			})
+
+			It("does replace the reference", func() {
+				o := NewHorizontalPodAutoscaler(resource.Object)
+				name := o.Object().Spec.ScaleTargetRef.Name
+				Expect(name).To(Equal("my-replicaSet-v000"))
 			})
 		})
 	})
