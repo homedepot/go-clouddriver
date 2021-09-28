@@ -33,8 +33,8 @@ func Delete(c *gin.Context, dm DeleteManifestRequest) {
 		return
 	}
 
-	if provider.Namespace != "" {
-		namespace = provider.Namespace
+	if provider.Namespace != nil {
+		namespace = *provider.Namespace
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)

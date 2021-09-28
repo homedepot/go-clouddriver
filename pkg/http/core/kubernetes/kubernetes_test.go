@@ -33,20 +33,34 @@ var (
 	rollingRestartManifestRequest RollingRestartManifestRequest
 	patchManifestRequest          PatchManifestRequest
 	runJobRequest                 RunJobRequest
+	clusterScopedProvider         kubernetes.Provider
+	namespaceScopedProvider       kubernetes.Provider
 )
 
 func setup() {
 	gin.SetMode(gin.ReleaseMode)
 
+	var providerNamespace = "provider-namespace"
+
 	// Setup fakes.
 	fakeArcadeClient = &arcadefakes.FakeClient{}
 
+	clusterScopedProvider = kubernetes.Provider{
+		Name:      "test-account",
+		Host:      "http://localhost",
+		CAData:    "",
+		Namespace: nil,
+	}
+
+	namespaceScopedProvider = kubernetes.Provider{
+		Name:      "test-account",
+		Host:      "http://localhost",
+		CAData:    "",
+		Namespace: &providerNamespace,
+	}
+
 	fakeSQLClient = &sqlfakes.FakeClient{}
-	fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-		Name:   "test-account",
-		Host:   "http://localhost",
-		CAData: "",
-	}, nil)
+	fakeSQLClient.GetKubernetesProviderReturns(clusterScopedProvider, nil)
 	fakeSQLClient.ListKubernetesResourcesByTaskIDReturns([]kubernetes.Resource{
 		{
 			AccountName: "test-account-name",

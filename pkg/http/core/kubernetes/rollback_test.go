@@ -289,12 +289,7 @@ var _ = Describe("Rollback", func() {
 
 	When("Using a namespace-scoped provider", func() {
 		BeforeEach(func() {
-			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-				Name:      "test-account",
-				Namespace: "provider-namespace",
-				Host:      "http://localhost",
-				CAData:    "",
-			}, nil)
+			fakeSQLClient.GetKubernetesProviderReturns(namespaceScopedProvider, nil)
 			fakeUnstructured := unstructured.Unstructured{
 				Object: map[string]interface{}{
 					"kind":       "test-kind",

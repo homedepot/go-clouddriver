@@ -151,12 +151,7 @@ var _ = Describe("Scale", func() {
 
 	When("Using a namespace-scoped provider", func() {
 		BeforeEach(func() {
-			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-				Name:      "test-account",
-				Namespace: "provider-namespace",
-				Host:      "http://localhost",
-				CAData:    "",
-			}, nil)
+			fakeSQLClient.GetKubernetesProviderReturns(namespaceScopedProvider, nil)
 		})
 
 		When("the kind is not supported", func() {

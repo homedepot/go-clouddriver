@@ -81,8 +81,8 @@ func RunJob(c *gin.Context, rj RunJobRequest) {
 	}
 
 	namespace := u.GetNamespace()
-	if provider.Namespace != "" {
-		namespace = provider.Namespace
+	if provider.Namespace != nil {
+		namespace = *provider.Namespace
 	}
 
 	meta, err := client.ApplyWithNamespaceOverride(&u, namespace)

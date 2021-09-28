@@ -265,7 +265,7 @@ var _ = Describe("Sql", func() {
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "token_provider", "namespace", "read_group", "write_group"}).
-					AddRow("test-name", "test-host", "test-ca-data", "test-token-provider", "", "test-read-group", "test-write-group")
+					AddRow("test-name", "test-host", "test-ca-data", "test-token-provider", nil, "test-read-group", "test-write-group")
 				mock.ExpectQuery(`(?i)^SELECT a.name,` +
 					` a.host,` +
 					` a.ca_data,` +
@@ -287,7 +287,7 @@ var _ = Describe("Sql", func() {
 				Expect(provider.Host).To(Equal("test-host"))
 				Expect(provider.CAData).To(Equal("test-ca-data"))
 				Expect(provider.TokenProvider).To(Equal("test-token-provider"))
-				Expect(provider.Namespace).To(Equal(""))
+				Expect(provider.Namespace).To(BeNil())
 				Expect(provider.Permissions.Read[0]).To(Equal("test-read-group"))
 				Expect(provider.Permissions.Write[0]).To(Equal("test-write-group"))
 			})
@@ -515,8 +515,8 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "google", "namespace", "read_group", "write_group"}).
 					AddRow("name1", "host1", "ca_data1", "google", "namespace1", "read_group1", "write_group1").
 					AddRow("name1", "host1", "ca_data1", "google", "namespace1", "read_group2", "write_group1").
-					AddRow("name2", "host2", "ca_data2", "rancher", "", "read_group2", "write_group2").
-					AddRow("name2", "host2", "ca_data2", "rancher", "", "read_group2", "write_group3")
+					AddRow("name2", "host2", "ca_data2", "rancher", nil, "read_group2", "write_group2").
+					AddRow("name2", "host2", "ca_data2", "rancher", nil, "read_group2", "write_group3")
 				mock.ExpectQuery(`(?i)^SELECT ` +
 					`a.name, ` +
 					`a.host, ` +
@@ -533,10 +533,13 @@ var _ = Describe("Sql", func() {
 			})
 
 			It("succeeds", func() {
+				var ns = "namespace1"
 				Expect(err).To(BeNil())
 				Expect(providers).To(HaveLen(2))
+				Expect(providers[0].Namespace).To(Equal(&ns))
 				Expect(providers[0].Permissions.Read).To(HaveLen(2))
 				Expect(providers[0].Permissions.Write).To(HaveLen(1))
+				Expect(providers[1].Namespace).To(BeNil())
 				Expect(providers[1].Permissions.Read).To(HaveLen(1))
 				Expect(providers[1].Permissions.Write).To(HaveLen(2))
 			})

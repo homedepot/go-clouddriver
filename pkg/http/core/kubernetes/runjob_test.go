@@ -113,21 +113,16 @@ var _ = Describe("RunJob", func() {
 
 	When("Using a namespace-scoped provider", func() {
 		BeforeEach(func() {
-			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-				Name:      "test-account",
-				Namespace: "provider-namespace",
-				Host:      "http://localhost",
-				CAData:    "",
-			}, nil)
+			fakeSQLClient.GetKubernetesProviderReturns(namespaceScopedProvider, nil)
+		})
 
-			It("succeeds, using providers namespace", func() {
-				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
-				name := u.GetName()
-				Expect(string(namespace)).To(Equal("provider-namespace"))
-				Expect(name).To(HavePrefix("test-"))
-				Expect(name).To(HaveLen(10))
-			})
+		It("succeeds, using providers namespace", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			name := u.GetName()
+			Expect(string(namespace)).To(Equal("provider-namespace"))
+			Expect(name).To(HavePrefix("test-"))
+			Expect(name).To(HaveLen(10))
 		})
 	})
 })

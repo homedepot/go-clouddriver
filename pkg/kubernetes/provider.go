@@ -26,7 +26,7 @@ type Provider struct {
 	CAData        string              `json:"caData" gorm:"size:8192"`
 	BearerToken   string              `json:"bearerToken,omitempty" gorm:"size:2048"`
 	TokenProvider string              `json:"tokenProvider,omitempty" gorm:"size:32;not null;default:'google'"`
-	Namespace     string              `json:"namespace,omitempty" gorm:"size:253"`
+	Namespace     *string             `json:"namespace,omitempty" gorm:"size:253"`
 	Permissions   ProviderPermissions `json:"permissions" gorm:"-"`
 }
 
@@ -58,7 +58,7 @@ func (Provider) TableName() string {
 // See https://github.com/spinnaker/clouddriver/blob/58ab154b0ec0d62772201b5b319af349498a4e3f/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/description/manifest/KubernetesKindProperties.java#L31
 // for clouddriver OSS namespace-scoped kinds.
 func (p Provider) ValidateKindStatus(kind string) error {
-	if p.Namespace != "" {
+	if p.Namespace != nil {
 		for _, value := range clusterScopedKinds {
 			if strings.EqualFold(value, kind) {
 				return fmt.Errorf("namespace-scoped account not allowed to access cluster-scoped kind: '%s'", kind)

@@ -69,8 +69,8 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 		}
 
 		namespace := u.GetNamespace()
-		if provider.Namespace != "" {
-			namespace = provider.Namespace
+		if provider.Namespace != nil {
+			namespace = *provider.Namespace
 		}
 
 		kr := kubernetes.Resource{

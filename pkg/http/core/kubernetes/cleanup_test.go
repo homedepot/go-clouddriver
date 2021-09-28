@@ -109,12 +109,7 @@ var _ = Describe("CleanupArtifacts", func() {
 
 	When("Using a namespace-scoped provider", func() {
 		BeforeEach(func() {
-			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-				Name:      "test-account",
-				Namespace: "provider-namespace",
-				Host:      "http://localhost",
-				CAData:    "",
-			}, nil)
+			fakeSQLClient.GetKubernetesProviderReturns(namespaceScopedProvider, nil)
 		})
 
 		It("succeeds,using provider's namespace", func() {

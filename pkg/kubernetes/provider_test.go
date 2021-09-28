@@ -8,8 +8,9 @@ import (
 
 var _ = Describe("Provider", func() {
 	var (
-		provider Provider
-		kind     string
+		provider  Provider
+		kind      string
+		namespace string = "test-namespace"
 	)
 
 	Context("#ValidateKindStatus", func() {
@@ -24,7 +25,7 @@ var _ = Describe("Provider", func() {
 
 		When("Provider is namespace-scoped", func() {
 			BeforeEach(func() {
-				provider.Namespace = "test-namespace"
+				provider.Namespace = &namespace
 			})
 
 			When("kind is not allowed", func() {

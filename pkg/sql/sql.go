@@ -207,7 +207,7 @@ func (c *client) GetKubernetesProviderAndPermissions(name string) (kubernetes.Pr
 			CAData        string
 			Host          string
 			Name          string
-			Namespace     string
+			Namespace     *string
 			ReadGroup     *string
 			WriteGroup    *string
 			TokenProvider string
@@ -350,7 +350,7 @@ func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider,
 			CAData        string
 			Host          string
 			Name          string
-			Namespace     string
+			Namespace     *string
 			ReadGroup     *string
 			WriteGroup    *string
 			TokenProvider string
