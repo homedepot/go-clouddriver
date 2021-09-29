@@ -319,6 +319,21 @@ paths:
         "500":
           description: "Internal Server Error"
   /v1/kubernetes/providers:
+    get:
+      tags:
+      - "kubernetes"
+      summary: "Retrieves list of all Kubernetes accounts (providers)"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "OK"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/KubernetesProvider"
+        "500":
+          description: "Internal Server Error"
     post:
       tags:
       - "kubernetes"
@@ -430,6 +445,10 @@ definitions:
         description: "The provider of the kubernetes auth token, defaults to google"
         enum: ["google", "rancher"]
         example: "google"
+      namespace:
+        type: "string"
+        description: "The kubernetes namespace that this account is limited to accessing.  If not specified, defaults to all namespaces"
+        example: "example-namespace"
       permissions:
         $ref: "#/definitions/Permissions"
   Permissions:

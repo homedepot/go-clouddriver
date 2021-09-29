@@ -24,11 +24,16 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 	sc := sql.Instance(c)
 	app := c.GetHeader("X-Spinnaker-Application")
 	taskID := clouddriver.TaskIDFromContext(c)
+	namespace := sm.Location
 
 	provider, err := sc.GetKubernetesProvider(sm.Account)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
+	}
+
+	if provider.Namespace != nil {
+		namespace = *provider.Namespace
 	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
@@ -61,7 +66,13 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 	kind := a[0]
 	name := a[1]
 
-	u, err := client.Get(kind, name, sm.Location)
+	err = provider.ValidateKindStatus(kind)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	u, err := client.Get(kind, name, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -83,7 +94,7 @@ func Scale(c *gin.Context, sm ScaleManifestRequest) {
 			return
 		}
 
-		meta, err = client.Apply(u)
+		meta, err = client.ApplyWithNamespaceOverride(u, namespace)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return

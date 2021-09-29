@@ -831,6 +831,69 @@ const payloadCredentialsExpandTrueNoNamespaces = `[
               }
             ]`
 
+const payloadCredentialsExpandTrueNamespaceScopedProvider = `[
+						{
+							"accountType": "provider1",
+							"cacheThreads": 0,
+							"challengeDestructiveActions": false,
+							"cloudProvider": "kubernetes",
+							"dockerRegistries": null,
+							"enabled": false,
+							"environment": "provider1",
+							"name": "provider1",
+							"namespaces": [
+								"namespace1"
+							],
+							"permissions": {
+								"READ": [
+									"gg_test"
+								],
+								"WRITE": [
+									"gg_test"
+								]
+							},
+							"primaryAccount": false,
+							"providerVersion": "v2",
+							"requiredGroupMembership": [],
+							"skin": "v2",
+							"spinnakerKindMap": {
+								"apiService": "unclassified",
+								"clusterRole": "unclassified",
+								"clusterRoleBinding": "unclassified",
+								"configMap": "configs",
+								"controllerRevision": "unclassified",
+								"cronJob": "serverGroups",
+								"customResourceDefinition": "unclassified",
+								"daemonSet": "serverGroups",
+								"deployment": "serverGroupManagers",
+								"event": "unclassified",
+								"horizontalpodautoscaler": "unclassified",
+								"ingress": "loadBalancers",
+								"job": "serverGroups",
+								"limitRange": "unclassified",
+								"mutatingWebhookConfiguration": "unclassified",
+								"namespace": "unclassified",
+								"networkPolicy": "securityGroups",
+								"persistentVolume": "configs",
+								"persistentVolumeClaim": "configs",
+								"pod": "instances",
+								"podDisruptionBudget": "unclassified",
+								"podPreset": "unclassified",
+								"podSecurityPolicy": "unclassified",
+								"replicaSet": "serverGroups",
+								"role": "unclassified",
+								"roleBinding": "unclassified",
+								"secret": "configs",
+								"service": "loadBalancers",
+								"serviceAccount": "unclassified",
+								"statefulSet": "serverGroups",
+								"storageClass": "unclassified",
+								"validatingWebhookConfiguration": "unclassified"
+							},
+							"type": "kubernetes"
+						}
+					]`
+
 const payloadServerGroupManagers = `[
             {
               "account": "account1",

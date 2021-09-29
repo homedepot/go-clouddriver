@@ -168,14 +168,14 @@ func (c *client) DeleteKubernetesProvider(name string) error {
 // GetKubernetesProvider reads the provider from the DB.
 func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error) {
 	var p kubernetes.Provider
-	db := c.db.Select("host, ca_data, bearer_token, token_provider").Where("name = ?", name).First(&p)
+	db := c.db.Select("host, ca_data, bearer_token, token_provider, namespace").Where("name = ?", name).First(&p)
 
 	return p, db.Error
 }
 
 // GetKubernetesProviderAndPermissions reads the provider and permissions from the DB.
 //
-// 		select a.name, a.host, a.ca_data, a.token_provider, b.read_group, c.write_group from kubernetes_providers a
+// 		select a.name, a.host, a.ca_data, a.token_provider, a.namespace, b.read_group, c.write_group from kubernetes_providers a
 //   		left join provider_read_permissions b on a.name = b.account_name
 //   		left join provider_write_permissions c on a.name = c.account_name
 //   	 where a.name = ?;
@@ -187,6 +187,7 @@ func (c *client) GetKubernetesProviderAndPermissions(name string) (kubernetes.Pr
 			"a.host, "+
 			"a.ca_data, "+
 			"a.token_provider, "+
+			"a.namespace, "+
 			"b.read_group, "+
 			"c.write_group").
 		Joins("LEFT JOIN provider_read_permissions b ON a.name = b.account_name").
@@ -206,12 +207,13 @@ func (c *client) GetKubernetesProviderAndPermissions(name string) (kubernetes.Pr
 			CAData        string
 			Host          string
 			Name          string
+			Namespace     *string
 			ReadGroup     *string
 			WriteGroup    *string
 			TokenProvider string
 		}
 
-		err = rows.Scan(&r.Name, &r.Host, &r.CAData, &r.TokenProvider, &r.ReadGroup, &r.WriteGroup)
+		err = rows.Scan(&r.Name, &r.Host, &r.CAData, &r.TokenProvider, &r.Namespace, &r.ReadGroup, &r.WriteGroup)
 		if err != nil {
 			return p, err
 		}
@@ -221,6 +223,7 @@ func (c *client) GetKubernetesProviderAndPermissions(name string) (kubernetes.Pr
 			Host:          r.Host,
 			CAData:        r.CAData,
 			TokenProvider: r.TokenProvider,
+			Namespace:     r.Namespace,
 		}
 
 		if r.ReadGroup != nil {
@@ -308,7 +311,7 @@ func (c *client) ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(acc
 // ListKubernetesProviders gets all the kubernetes providers from the DB.
 func (c *client) ListKubernetesProviders() ([]kubernetes.Provider, error) {
 	var ps []kubernetes.Provider
-	db := c.db.Select("name, host, ca_data, token_provider").Find(&ps)
+	db := c.db.Select("name, host, ca_data, token_provider, namespace").Find(&ps)
 
 	return ps, db.Error
 }
@@ -316,7 +319,7 @@ func (c *client) ListKubernetesProviders() ([]kubernetes.Provider, error) {
 // ListKubernetesProvidersAndPermissions gets all the kubernetes providers,
 // with their read/write permissions, from the DB.
 //
-// 		select a.name, a.host, a.ca_data, a.token_provider, b.read_group, c.write_group from kubernetes_providers a
+// 		select a.name, a.host, a.ca_data, a.token_provider, a.namespace, b.read_group, c.write_group from kubernetes_providers a
 //   		left join provider_read_permissions b on a.name = b.account_name
 //   		left join provider_write_permissions c on a.name = c.account_name;
 func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider, error) {
@@ -327,6 +330,7 @@ func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider,
 			"a.host, " +
 			"a.ca_data, " +
 			"a.token_provider, " +
+			"a.namespace, " +
 			"b.read_group, " +
 			"c.write_group").
 		Joins("LEFT JOIN provider_read_permissions b ON a.name = b.account_name").
@@ -346,12 +350,13 @@ func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider,
 			CAData        string
 			Host          string
 			Name          string
+			Namespace     *string
 			ReadGroup     *string
 			WriteGroup    *string
 			TokenProvider string
 		}
 
-		err = rows.Scan(&r.Name, &r.Host, &r.CAData, &r.TokenProvider, &r.ReadGroup, &r.WriteGroup)
+		err = rows.Scan(&r.Name, &r.Host, &r.CAData, &r.TokenProvider, &r.Namespace, &r.ReadGroup, &r.WriteGroup)
 		if err != nil {
 			return nil, err
 		}
@@ -362,6 +367,7 @@ func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider,
 				Host:          r.Host,
 				CAData:        r.CAData,
 				TokenProvider: r.TokenProvider,
+				Namespace:     r.Namespace,
 			}
 			providers[r.Name] = p
 		}

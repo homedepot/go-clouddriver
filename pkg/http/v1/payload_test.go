@@ -18,6 +18,21 @@ const payloadRequestKubernetesProviders = `{
 						}
           }`
 
+const payloadRequestKubernetesProvidersEmptyNamespace = `{
+					"name": "test-name",
+					"host": "test-host",
+					"caData": "dGVzdC1jYS1kYXRhCg==",
+					"namespace": "  ",
+					"permissions": {
+						"read": [
+							"gg_test"
+						],
+						"write": [
+							"gg_test"
+						]
+					}
+				}`
+
 const payloadRequestKubernetesProvidersBadCAData = `{
 						"name": "test-name",
 						"host": "test-host",
@@ -65,6 +80,36 @@ const payloadKubernetesProviderCreated = `{
               ]
             }
           }`
+
+const payloadListKubernetesProviders = `[
+						{
+							"name": "test-name1",
+							"host": "test-host1",
+							"caData": "dGVzdC1jYS1kYXRhCg==",
+							"permissions": {
+								"read": [
+									"gg_test1"
+								],
+								"write": [
+									"gg_test1"
+								]
+							}
+						},
+						{
+							"name": "test-name2",
+							"host": "test-host2",
+							"caData": "dGVzdC1jYS1kYXRhCg==",
+							"namespace": "test-namespace",
+							"permissions": {
+								"read": [
+									"gg_test2"
+								],
+								"write": [
+									"gg_test2"
+								]
+							}
+						}
+					]`
 
 const payloadKubernetesProviderNotFound = `{
 						"error": "provider not found"

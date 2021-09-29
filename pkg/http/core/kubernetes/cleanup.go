@@ -68,6 +68,11 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 			return
 		}
 
+		namespace := u.GetNamespace()
+		if provider.Namespace != nil {
+			namespace = *provider.Namespace
+		}
+
 		kr := kubernetes.Resource{
 			AccountName:  ca.Account,
 			ID:           uuid.New().String(),
@@ -76,7 +81,7 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 			Timestamp:    util.CurrentTimeUTC(),
 			APIGroup:     gvr.Group,
 			Name:         u.GetName(),
-			Namespace:    u.GetNamespace(),
+			Namespace:    namespace,
 			Resource:     gvr.Resource,
 			Version:      gvr.Version,
 			Kind:         u.GetKind(),

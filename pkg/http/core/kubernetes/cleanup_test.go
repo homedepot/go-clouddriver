@@ -106,4 +106,16 @@ var _ = Describe("CleanupArtifacts", func() {
 			Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeCleanup))
 		})
 	})
+
+	When("Using a namespace-scoped provider", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(namespaceScopedProvider, nil)
+		})
+
+		It("succeeds,using provider's namespace", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+			Expect(string(kr.Namespace)).To(Equal("provider-namespace"))
+		})
+	})
 })

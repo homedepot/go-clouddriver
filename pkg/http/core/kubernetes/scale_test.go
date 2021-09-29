@@ -88,7 +88,7 @@ var _ = Describe("Scale", func() {
 
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeClient.ApplyReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
+			fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
 		})
 
 		It("returns an error", func() {
@@ -142,9 +142,37 @@ var _ = Describe("Scale", func() {
 	When("it succeeds", func() {
 		It("succeeds", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-			u := fakeKubeClient.ApplyArgsForCall(0)
+			u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
 			b, _ := json.Marshal(&u)
+			Expect(string(namespace)).To(Equal(""))
 			Expect(string(b)).To(Equal("{\"spec\":{\"replicas\":16}}"))
+		})
+	})
+
+	When("Using a namespace-scoped provider", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(namespaceScopedProvider, nil)
+		})
+
+		When("the kind is not supported", func() {
+			BeforeEach(func() {
+				scaleManifestRequest.ManifestName = "namespace someNamespace"
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: 'namespace'"))
+			})
+		})
+
+		When("the kind is supported", func() {
+			It("succeeds", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				b, _ := json.Marshal(&u)
+				Expect(string(namespace)).To(Equal("provider-namespace"))
+				Expect(string(b)).To(Equal("{\"spec\":{\"replicas\":16}}"))
+			})
 		})
 	})
 })

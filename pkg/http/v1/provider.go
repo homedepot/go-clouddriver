@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
@@ -32,6 +33,10 @@ func CreateKubernetesProvider(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error decoding base64 CA data: %s", err.Error())})
 		return
+	}
+
+	if p.Namespace != nil && strings.TrimSpace(*p.Namespace) == "" {
+		p.Namespace = nil
 	}
 
 	err = sc.CreateKubernetesProvider(p)
@@ -91,6 +96,22 @@ func GetKubernetesProvider(c *gin.Context) {
 	c.JSON(http.StatusOK, p)
 }
 
+// ListKubernetesProvider retrieves all the kubernetes accounts (providers).
+func ListKubernetesProvider(c *gin.Context) {
+	var providers []kubernetes.Provider
+
+	sc := sql.Instance(c)
+
+	providers, err := sc.ListKubernetesProvidersAndPermissions()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, providers)
+}
+
 // CreateOrReplaceKubernetesProvider creates the kubernetes account (provider),
 // or if existing account, replaces it.
 func CreateOrReplaceKubernetesProvider(c *gin.Context) {
@@ -107,6 +128,10 @@ func CreateOrReplaceKubernetesProvider(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error decoding base64 CA data: %s", err.Error())})
 		return
+	}
+
+	if p.Namespace != nil && strings.TrimSpace(*p.Namespace) == "" {
+		p.Namespace = nil
 	}
 
 	err = sc.DeleteKubernetesProvider(p.Name)
