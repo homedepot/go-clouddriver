@@ -243,6 +243,75 @@ var _ = Describe("Provider", func() {
 		})
 	})
 
+	Describe("#ListKubernetesProvider", func() {
+		BeforeEach(func() {
+			setup()
+			namespace := "test-namespace"
+			testProviders := []kubernetes.Provider{
+				{
+					Name:   "test-name1",
+					Host:   "test-host1",
+					CAData: "dGVzdC1jYS1kYXRhCg==",
+					Permissions: kubernetes.ProviderPermissions{
+						Read:  []string{"gg_test1"},
+						Write: []string{"gg_test1"},
+					},
+				},
+				{
+					Name:      "test-name2",
+					Host:      "test-host2",
+					CAData:    "dGVzdC1jYS1kYXRhCg==",
+					Namespace: &namespace,
+					Permissions: kubernetes.ProviderPermissions{
+						Read:  []string{"gg_test2"},
+						Write: []string{"gg_test2"},
+					},
+				},
+			}
+
+			fakeSQLClient.ListKubernetesProvidersAndPermissionsReturns(testProviders, nil)
+			uri = svr.URL + "/v1/kubernetes/providers"
+			createRequest(http.MethodGet)
+		})
+
+		AfterEach(func() {
+			teardown()
+		})
+
+		JustBeforeEach(func() {
+			doRequest()
+		})
+
+		When("getting providers returns a generic error", func() {
+			BeforeEach(func() {
+				fakeSQLClient.ListKubernetesProvidersAndPermissionsReturns([]kubernetes.Provider{}, errors.New("error getting provider"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				validateResponse(payloadKubernetesProviderGetGenericError)
+			})
+		})
+
+		When("no records found", func() {
+			BeforeEach(func() {
+				fakeSQLClient.ListKubernetesProvidersAndPermissionsReturns([]kubernetes.Provider{}, nil)
+			})
+
+			It("returns empty list", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse("[]")
+			})
+		})
+
+		When("it succeeds", func() {
+			It("returns ok and the provider", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadListKubernetesProviders)
+			})
+		})
+	})
+
 	Describe("#DeleteKubernetesProvider", func() {
 		BeforeEach(func() {
 			setup()
