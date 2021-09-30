@@ -115,11 +115,11 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 						PropagationPolicy: &pp,
 					}
 
-					err = client.DeleteResourceByKindAndNameAndNamespace(a.GetKind(), a.GetName(), a.GetNamespace(), do)
+					err = client.DeleteResourceByKindAndNameAndNamespace(a.GetKind(), a.GetName(), namespace, do)
 					if err != nil {
 						clouddriver.Error(c, http.StatusInternalServerError,
 							fmt.Errorf("error deleting resource to cleanup for max version history (kind: %s, name: %s, namespace: %s): %v",
-								a.GetKind(), a.GetName(), a.GetNamespace(), err))
+								a.GetKind(), a.GetName(), namespace, err))
 
 						return
 					}
