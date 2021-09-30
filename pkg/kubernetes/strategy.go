@@ -14,7 +14,7 @@ const (
 	AnnotationSpinnakerUseSourceCapacity = "strategy.spinnaker.io/use-source-capacity"
 )
 
-// MaxVersionHistory returns true if the value of the annotation
+// MaxVersionHistory returns the value as an int of the annotation
 // `strategy.spinnaker.io/max-version-history` of the given Kubernetes
 // unstructured resource, or 0 if annotation is not present.
 //
