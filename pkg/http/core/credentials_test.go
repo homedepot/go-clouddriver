@@ -237,6 +237,35 @@ var _ = Describe("Credential", func() {
 				})
 			})
 
+			When("provider is namespace-scoped", func() {
+				BeforeEach(func() {
+					namespace := "namespace1"
+					fakeSQLClient.ListKubernetesProvidersAndPermissionsReturns([]kubernetes.Provider{
+						{
+							Name:        "provider1",
+							Namespace:   &namespace,
+							Host:        "host1",
+							CAData:      "dGVzdAo=",
+							BearerToken: "some.bearer.token",
+							Permissions: kubernetes.ProviderPermissions{
+								Read: []string{
+									"gg_test",
+								},
+								Write: []string{
+									"gg_test",
+								},
+							},
+						},
+					}, nil)
+				})
+
+				It("succeeds, without calling cluster", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					Expect(fakeKubeClient.ListByGVRWithContextCallCount()).To(Equal(0))
+					validateResponse(payloadCredentialsExpandTrueNamespaceScopedProvider)
+				})
+			})
+
 			When("it succeeds", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))

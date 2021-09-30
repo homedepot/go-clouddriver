@@ -73,6 +73,11 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 			return
 		}
 
+		namespace := u.GetNamespace()
+		if provider.Namespace != nil {
+			namespace = *provider.Namespace
+		}
+
 		// Grab the cluster of this resource from its annotations.
 		cluster := clusterAnnotation(u)
 		// Handle max version history. Source code here:
@@ -84,11 +89,11 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 				LabelSelector: kubernetes.LabelKubernetesManagedBy + "=spinnaker",
 			}
 
-			ul, err := client.ListResourcesByKindAndNamespace(u.GetKind(), u.GetNamespace(), lo)
+			ul, err := client.ListResourcesByKindAndNamespace(u.GetKind(), namespace, lo)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError,
 					fmt.Errorf("error listing resources to cleanup for max version history (kind: %s, name: %s, namespace: %s): %v",
-						u.GetKind(), u.GetName(), u.GetNamespace(), err))
+						u.GetKind(), u.GetName(), namespace, err))
 
 				return
 			}
@@ -130,12 +135,12 @@ func CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
 			Timestamp:    util.CurrentTimeUTC(),
 			APIGroup:     gvr.Group,
 			Name:         u.GetName(),
-			Namespace:    u.GetNamespace(),
+			Namespace:    namespace,
 			Resource:     gvr.Resource,
 			Version:      gvr.Version,
 			Kind:         u.GetKind(),
 			SpinnakerApp: app,
-			Cluster:      clusterAnnotation(u),
+			Cluster:      cluster,
 		}
 
 		err = sc.CreateKubernetesResource(kr)

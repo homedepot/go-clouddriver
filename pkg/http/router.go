@@ -101,6 +101,7 @@ func Initialize(r *gin.Engine) {
 	{
 		api := r.Group("/v1")
 		// Providers endpoint for kubernetes.
+		api.GET("/kubernetes/providers", v1.ListKubernetesProvider)
 		api.GET("/kubernetes/providers/:name", v1.GetKubernetesProvider)
 		api.POST("/kubernetes/providers", v1.CreateKubernetesProvider)
 		api.PUT("/kubernetes/providers", v1.CreateOrReplaceKubernetesProvider)
