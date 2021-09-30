@@ -18,9 +18,9 @@ var _ = Describe("Strategy", func() {
 		useSourceCapacity bool
 	)
 
-	Context("#GetMaxVersionHistory", func() {
+	Context("#MaxVersionHistory", func() {
 		JustBeforeEach(func() {
-			maxVersionHistory, err = GetMaxVersionHistory(fakeResource)
+			maxVersionHistory, err = MaxVersionHistory(fakeResource)
 		})
 
 		When("annotation is missing", func() {
