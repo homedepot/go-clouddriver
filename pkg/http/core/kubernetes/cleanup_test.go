@@ -333,6 +333,24 @@ var _ = Describe("CleanupArtifacts", func() {
 			})
 		})
 
+		When("the account is namespace-scoped", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesProviderReturns(namespaceScopedProvider, nil)
+			})
+
+			It("uses the provider's namespace", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceCallCount()).To(Equal(1))
+				kind, namespace, _ := fakeKubeClient.ListResourcesByKindAndNamespaceArgsForCall(0)
+				Expect(kind).To(Equal("ReplicaSet"))
+				Expect(namespace).To(Equal("provider-namespace"))
+				kind, name, namespace, _ := fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceArgsForCall(0)
+				Expect(kind).To(Equal("ReplicaSet"))
+				Expect(name).To(Equal("test-name-v000"))
+				Expect(namespace).To(Equal("provider-namespace"))
+			})
+		})
+
 		When("it deletes the resources", func() {
 			It("deletes the oldest resource", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
