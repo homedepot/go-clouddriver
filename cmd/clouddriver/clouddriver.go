@@ -6,12 +6,13 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/homedepot/go-clouddriver/pkg/arcade"
-	"github.com/homedepot/go-clouddriver/pkg/artifact"
-	"github.com/homedepot/go-clouddriver/pkg/fiat"
-	"github.com/homedepot/go-clouddriver/pkg/kubernetes"
-	"github.com/homedepot/go-clouddriver/pkg/server"
-	"github.com/homedepot/go-clouddriver/pkg/sql"
+	"github.com/homedepot/go-clouddriver/internal"
+	"github.com/homedepot/go-clouddriver/internal/api"
+	"github.com/homedepot/go-clouddriver/internal/arcade"
+	"github.com/homedepot/go-clouddriver/internal/artifact"
+	"github.com/homedepot/go-clouddriver/internal/fiat"
+	"github.com/homedepot/go-clouddriver/internal/kubernetes"
+	"github.com/homedepot/go-clouddriver/internal/sql"
 	ginprometheus "github.com/zsais/go-gin-prometheus"
 )
 
@@ -65,18 +66,23 @@ func init() {
 
 	arcadeClient.WithAPIKey(arcadeAPIKey)
 
-	c := &server.Config{
+	ic := &internal.Controller{
 		ArcadeClient:                  arcadeClient,
 		ArtifactCredentialsController: artifactCredentialsController,
 		SQLClient:                     sqlClient,
 		FiatClient:                    fiatClient,
-		KubeController:                kubeController,
-	}
-	if os.Getenv("VERBOSE_REQUEST_LOGGING") == "true" {
-		c.VerboseRequestLogging = true
+		KubernetesController:          kubeController,
 	}
 
-	server.Setup(r, c)
+	server := api.NewServer()
+	server.WithController(ic)
+	server.WithEngine(r)
+
+	if os.Getenv("VERBOSE_REQUEST_LOGGING") == "true" {
+		server.WithVerboseRequestLogging()
+	}
+
+	server.Setup()
 }
 
 func reqCntURLLabelMappingFn(c *gin.Context) string {
