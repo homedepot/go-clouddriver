@@ -53,8 +53,6 @@ type client struct {
 	c      dynamic.Interface
 	config *rest.Config
 	mapper *restmapper.DeferredDiscoveryRESTMapper
-	// ns tells us if this client is "bound" to a Kubernetes namespace.
-	ns string
 }
 
 // Apply a given manifest.

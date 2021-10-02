@@ -44,9 +44,16 @@ func (s *Server) Setup() {
 	// API endpoints without a version will go under "core".
 	{
 		// Declare all controllers.
-		mc := &middleware.Controller{s.c}
-		kc := &kubernetes.Controller{s.c}
-		ctlr := &core.Controller{s.c, kc}
+		mc := &middleware.Controller{
+			Controller: s.c,
+		}
+		kc := &kubernetes.Controller{
+			Controller: s.c,
+		}
+		ctlr := &core.Controller{
+			Controller: s.c,
+			KC:         kc,
+		}
 		api := s.e.Group("")
 		api.GET("/health", core.OK)
 
@@ -135,7 +142,9 @@ func (s *Server) Setup() {
 
 	// V1 endpoint.
 	{
-		ctlr := &v1.Controller{s.c}
+		ctlr := &v1.Controller{
+			Controller: s.c,
+		}
 		api := s.e.Group("/v1")
 		// Providers endpoint for kubernetes.
 		api.GET("/kubernetes/providers", ctlr.ListKubernetesProvider)
