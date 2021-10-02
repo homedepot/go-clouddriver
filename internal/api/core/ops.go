@@ -27,39 +27,42 @@ func (cc *Controller) CreateKubernetesOperation(c *gin.Context) {
 		return
 	}
 
+	kc := kubernetes.Controller{
+		Controller: cc.Controller,
+	}
 	// Loop through each request in the kubernetes operations and perform
 	// each requested action.
 	for _, req := range ko {
 		if req.DeployManifest != nil {
-			cc.KC.Deploy(c, *req.DeployManifest)
+			kc.Deploy(c, *req.DeployManifest)
 		}
 
 		if req.DeleteManifest != nil {
-			cc.KC.Delete(c, *req.DeleteManifest)
+			kc.Delete(c, *req.DeleteManifest)
 		}
 
 		if req.ScaleManifest != nil {
-			cc.KC.Scale(c, *req.ScaleManifest)
+			kc.Scale(c, *req.ScaleManifest)
 		}
 
 		if req.CleanupArtifacts != nil {
-			cc.KC.CleanupArtifacts(c, *req.CleanupArtifacts)
+			kc.CleanupArtifacts(c, *req.CleanupArtifacts)
 		}
 
 		if req.RollingRestartManifest != nil {
-			cc.KC.RollingRestart(c, *req.RollingRestartManifest)
+			kc.RollingRestart(c, *req.RollingRestartManifest)
 		}
 
 		if req.RunJob != nil {
-			cc.KC.RunJob(c, *req.RunJob)
+			kc.RunJob(c, *req.RunJob)
 		}
 
 		if req.UndoRolloutManifest != nil {
-			cc.KC.Rollback(c, *req.UndoRolloutManifest)
+			kc.Rollback(c, *req.UndoRolloutManifest)
 		}
 
 		if req.PatchManifest != nil {
-			cc.KC.Patch(c, *req.PatchManifest)
+			kc.Patch(c, *req.PatchManifest)
 		}
 
 		if c.Errors != nil && len(c.Errors) > 0 {
