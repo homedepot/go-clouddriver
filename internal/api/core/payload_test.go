@@ -118,13 +118,16 @@ const payloadRequestFetchNotImplementedArtifact = `{
 
 const payloadRequestKubernetesOpsDeleteManifest = `[
   {
-    "deleteManifest": {}
+    "deleteManifest": {
+      "account": "spin-cluster-account"
+		}
   }
 ]`
 
 const payloadRequestKubernetesOpsCleanupArtifacts = `[
   {
     "cleanupArtifacts": {
+      "account": "spin-cluster-account",
       "manifests": "asdf"
 		}
   }

@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strings"
@@ -15,14 +14,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/rest"
 )
 
 func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 	taskID := clouddriver.TaskIDFromContext(c)
 	namespace := dm.Location
 
-	provider, err := cc.SQLClient.GetKubernetesProvider(dm.Account)
+	provider, err := cc.KubernetesProvider(dm.Account)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
@@ -30,32 +28,6 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 
 	if provider.Namespace != nil {
 		namespace = *provider.Namespace
-	}
-
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := cc.KubernetesController.NewClient(config)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
 	}
 
 	do := metav1.DeleteOptions{}
@@ -96,13 +68,13 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 			return
 		}
 
-		gvr, err := client.GVRForKind(kind)
+		gvr, err := provider.Client.GVRForKind(kind)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		err = client.DeleteResourceByKindAndNameAndNamespace(kind, name, namespace, do)
+		err = provider.Client.DeleteResourceByKindAndNameAndNamespace(kind, name, namespace, do)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -159,13 +131,13 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 				return
 			}
 
-			gvr, err := client.GVRForKind(kind)
+			gvr, err := provider.Client.GVRForKind(kind)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 			// Find list of resources with label selectors
-			list, err := client.ListByGVR(gvr, lo)
+			list, err := provider.Client.ListByGVR(gvr, lo)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -193,7 +165,7 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 
 			for _, item := range list.Items {
 				// Delete each resource and record it in the database.
-				err = client.DeleteResourceByKindAndNameAndNamespace(kind, item.GetName(), namespace, do)
+				err = provider.Client.DeleteResourceByKindAndNameAndNamespace(kind, item.GetName(), namespace, do)
 				if err != nil {
 					clouddriver.Error(c, http.StatusInternalServerError, err)
 					return

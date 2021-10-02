@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"sort"
@@ -15,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
 )
 
 func (cc *Controller) CleanupArtifacts(c *gin.Context, ca CleanupArtifactsRequest) {
@@ -29,39 +27,13 @@ func (cc *Controller) CleanupArtifacts(c *gin.Context, ca CleanupArtifactsReques
 			return
 		}
 
-		provider, err := cc.SQLClient.GetKubernetesProvider(ca.Account)
+		provider, err := cc.KubernetesProvider(ca.Account)
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
 		}
 
-		cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-		if err != nil {
-			clouddriver.Error(c, http.StatusBadRequest, err)
-			return
-		}
-
-		token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-		if err != nil {
-			clouddriver.Error(c, http.StatusInternalServerError, err)
-			return
-		}
-
-		config := &rest.Config{
-			Host:        provider.Host,
-			BearerToken: token,
-			TLSClientConfig: rest.TLSClientConfig{
-				CAData: cd,
-			},
-		}
-
-		client, err := cc.KubernetesController.NewClient(config)
-		if err != nil {
-			clouddriver.Error(c, http.StatusInternalServerError, err)
-			return
-		}
-
-		gvr, err := client.GVRForKind(u.GetKind())
+		gvr, err := provider.Client.GVRForKind(u.GetKind())
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -83,7 +55,7 @@ func (cc *Controller) CleanupArtifacts(c *gin.Context, ca CleanupArtifactsReques
 				LabelSelector: kubernetes.LabelKubernetesManagedBy + "=spinnaker",
 			}
 
-			ul, err := client.ListResourcesByKindAndNamespace(u.GetKind(), namespace, lo)
+			ul, err := provider.Client.ListResourcesByKindAndNamespace(u.GetKind(), namespace, lo)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError,
 					fmt.Errorf("error listing resources to cleanup for max version history (kind: %s, name: %s, namespace: %s): %v",
@@ -109,7 +81,7 @@ func (cc *Controller) CleanupArtifacts(c *gin.Context, ca CleanupArtifactsReques
 						PropagationPolicy: &pp,
 					}
 
-					err = client.DeleteResourceByKindAndNameAndNamespace(a.GetKind(), a.GetName(), namespace, do)
+					err = provider.Client.DeleteResourceByKindAndNameAndNamespace(a.GetKind(), a.GetName(), namespace, do)
 					if err != nil {
 						clouddriver.Error(c, http.StatusInternalServerError,
 							fmt.Errorf("error deleting resource to cleanup for max version history (kind: %s, name: %s, namespace: %s): %v",
