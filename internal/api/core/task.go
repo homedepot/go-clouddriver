@@ -1,13 +1,11 @@
 package core
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strings"
 
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	"k8s.io/client-go/rest"
 
 	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/internal/artifact"
@@ -15,7 +13,7 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// Get a task - currently only associated with kubernetes 'tasks'.
+// GetTask gets a task - currently only associated with kubernetes 'tasks'.
 func (cc *Controller) GetTask(c *gin.Context) {
 	id := c.Param("id")
 	manifests := []map[string]interface{}{}
@@ -33,46 +31,21 @@ func (cc *Controller) GetTask(c *gin.Context) {
 
 	accountName := resources[0].AccountName
 
-	provider, err := cc.SQLClient.GetKubernetesProvider(accountName)
+	provider, err := cc.KubernetesProvider(accountName)
 	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := cc.KubernetesController.NewClient(config)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
 	for _, r := range resources {
 		// Ignore getting the manifest if task type is "cleanup" or "noop".
-		if strings.EqualFold(r.TaskType, clouddriver.TaskTypeCleanup) || strings.EqualFold(r.TaskType, clouddriver.TaskTypeNoOp) {
+		if strings.EqualFold(r.TaskType, clouddriver.TaskTypeCleanup) ||
+			strings.EqualFold(r.TaskType, clouddriver.TaskTypeNoOp) {
 			manifests = append(manifests, map[string]interface{}{})
 			continue
 		}
 
-		result, err := client.Get(r.Resource, r.Name, r.Namespace)
+		result, err := provider.Client.Get(r.Resource, r.Name, r.Namespace)
 		if err != nil {
 			// If the task type is "delete" and the resource was not found,
 			// append an empty manifest and continue.

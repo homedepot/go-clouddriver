@@ -1,7 +1,6 @@
 package core
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,18 +12,21 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 )
 
 var (
 	manifestListTimeout = int64(30)
 )
 
+// GetManifest returns a manifest for a given account (cluster),
+// namespace, kind, and name.
 func (cc *Controller) GetManifest(c *gin.Context) {
 	account := c.Param("account")
 	namespace := c.Param("location")
-	// The name of this param should really be "id" or "cluster" as it represents a Spinnaker cluster, such as "deployment my-deployment".
-	// However, we have to make this path param match because of an underlying httprouter issue https://github.com/gin-gonic/gin/issues/2016.
+	// The name of this param should really be "id" or "cluster" as it
+	// represents a Spinnaker cluster, such as "deployment my-deployment".
+	// However, we have to make this path param match because of an underlying
+	// httprouter issue https://github.com/gin-gonic/gin/issues/2016.
 	n := c.Param("kind")
 	a := strings.Split(n, " ")
 	kind := a[0]
@@ -37,39 +39,13 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 		kind = a2[0]
 	}
 
-	provider, err := cc.SQLClient.GetKubernetesProvider(account)
+	provider, err := cc.KubernetesProvider(account)
 	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := cc.KubernetesController.NewClient(config)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	result, err := client.Get(kind, name, namespace)
+	result, err := provider.Client.Get(kind, name, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -117,39 +93,13 @@ func (cc *Controller) GetManifestByTarget(c *gin.Context) {
 		kind = a2[0]
 	}
 
-	provider, err := cc.SQLClient.GetKubernetesProvider(account)
+	provider, err := cc.KubernetesProvider(account)
 	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := cc.KubernetesController.NewClient(config)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	gvr, err := client.GVRForKind(kind)
+	gvr, err := provider.Client.GVRForKind(kind)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -166,7 +116,7 @@ func (cc *Controller) GetManifestByTarget(c *gin.Context) {
 		// Limit:          0,
 	}
 
-	list, err := client.ListByGVR(gvr, lo)
+	list, err := provider.Client.ListByGVR(gvr, lo)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -195,20 +145,23 @@ func (cc *Controller) GetManifestByTarget(c *gin.Context) {
 		result = items[0]
 	case "second_newest":
 		if len(items) < 2 {
-			clouddriver.Error(c, http.StatusBadRequest, errors.New("requested target \"Second Newest\" for cluster "+cluster+", but only one resource was found"))
+			clouddriver.Error(c, http.StatusBadRequest,
+				errors.New("requested target \"Second Newest\" for cluster "+cluster+", but only one resource was found"))
 			return
 		}
 
 		result = items[1]
 	case "oldest":
 		if len(items) < 2 {
-			clouddriver.Error(c, http.StatusBadRequest, errors.New("requested target \"Oldest\" for cluster "+cluster+", but only one resource was found"))
+			clouddriver.Error(c, http.StatusBadRequest,
+				errors.New("requested target \"Oldest\" for cluster "+cluster+", but only one resource was found"))
 			return
 		}
 
 		result = items[len(items)-1]
 	default:
-		clouddriver.Error(c, http.StatusNotImplemented, errors.New("requested target \""+target+"\" for cluster "+cluster+" is not supported"))
+		clouddriver.Error(c, http.StatusNotImplemented,
+			errors.New("requested target \""+target+"\" for cluster "+cluster+" is not supported"))
 		return
 	}
 

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -50,61 +50,17 @@ var _ = Describe("Task", func() {
 			})
 		})
 
-		When("creating the kube client returns an error", func() {
-			BeforeEach(func() {
-				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
-			})
-
-			It("returns status internal server error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("bad config"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-			})
-		})
-
 		When("getting the provider returns an error", func() {
 			BeforeEach(func() {
 				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
 			})
 
 			It("returns status internal server error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("error getting provider"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-			})
-		})
-
-		When("there is an error decoding the provider CA data", func() {
-			BeforeEach(func() {
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-					CAData: "@#$%",
-				}, nil)
-			})
-
-			It("returns status internal server error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("illegal base64 data at input byte 0"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-			})
-		})
-
-		When("getting a token returns an error", func() {
-			BeforeEach(func() {
-				fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
-			})
-
-			It("returns status internal server error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("error getting token"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider test-account-name: error getting provider"))
+				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
 		})
 

@@ -156,6 +156,7 @@ func newDeployManifestRequest() DeployManifestRequest {
 
 func newScaleManifestRequest() ScaleManifestRequest {
 	return ScaleManifestRequest{
+		Account:      "spin-cluster-account",
 		Replicas:     "16",
 		ManifestName: "deployment test-deployment",
 	}
@@ -177,6 +178,7 @@ func newDeleteManifestRequest() DeleteManifestRequest {
 	gps := int64(10)
 
 	return DeleteManifestRequest{
+		Account:      "spin-cluster-account",
 		Location:     "test-namespace",
 		Mode:         "static",
 		ManifestName: "deployment test-deployment",
@@ -211,6 +213,7 @@ func newDeleteManifestRequest() DeleteManifestRequest {
 
 func newUndoRolloutManifestRequest() UndoRolloutManifestRequest {
 	return UndoRolloutManifestRequest{
+		Account:      "spin-cluster-account",
 		ManifestName: "deployment test-deployment",
 		Revision:     "100",
 	}
@@ -218,12 +221,14 @@ func newUndoRolloutManifestRequest() UndoRolloutManifestRequest {
 
 func newRollingRestartManifestRequest() RollingRestartManifestRequest {
 	return RollingRestartManifestRequest{
+		Account:      "spin-cluster-account",
 		ManifestName: "deployment test-deployment",
 	}
 }
 
 func newPatchManifestRequest() PatchManifestRequest {
 	return PatchManifestRequest{
+		Account:      "spin-cluster-account",
 		ManifestName: "deployment test-deployment",
 		Options: PatchManifestRequestOptions{
 			MergeStrategy: "strategic",

@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,10 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	kube "github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
 )
 
 func (cc *Controller) Scale(c *gin.Context, sm ScaleManifestRequest) {
@@ -21,7 +18,7 @@ func (cc *Controller) Scale(c *gin.Context, sm ScaleManifestRequest) {
 	taskID := clouddriver.TaskIDFromContext(c)
 	namespace := sm.Location
 
-	provider, err := cc.SQLClient.GetKubernetesProvider(sm.Account)
+	provider, err := cc.KubernetesProvider(sm.Account)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
@@ -29,32 +26,6 @@ func (cc *Controller) Scale(c *gin.Context, sm ScaleManifestRequest) {
 
 	if provider.Namespace != nil {
 		namespace = *provider.Namespace
-	}
-
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := cc.KubernetesController.NewClient(config)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
 	}
 
 	a := strings.Split(sm.ManifestName, " ")
@@ -67,13 +38,13 @@ func (cc *Controller) Scale(c *gin.Context, sm ScaleManifestRequest) {
 		return
 	}
 
-	u, err := client.Get(kind, name, namespace)
+	u, err := provider.Client.Get(kind, name, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	var meta kube.Metadata
+	var meta kubernetes.Metadata
 
 	switch strings.ToLower(kind) {
 	case "deployment", "replicaset", "statefulset":
@@ -89,7 +60,7 @@ func (cc *Controller) Scale(c *gin.Context, sm ScaleManifestRequest) {
 			return
 		}
 
-		meta, err = client.ApplyWithNamespaceOverride(u, namespace)
+		meta, err = provider.Client.ApplyWithNamespaceOverride(u, namespace)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return

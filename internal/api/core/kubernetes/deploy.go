@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strings"
@@ -20,7 +19,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
 )
 
 var (
@@ -36,7 +34,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 	taskID := clouddriver.TaskIDFromContext(c)
 	namespace := dm.NamespaceOverride
 
-	provider, err := cc.SQLClient.GetKubernetesProvider(dm.Account)
+	provider, err := cc.KubernetesProvider(dm.Account)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
@@ -44,32 +42,6 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 
 	if provider.Namespace != nil {
 		namespace = *provider.Namespace
-	}
-
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := cc.KubernetesController.NewClient(config)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
 	}
 
 	// First, convert all manifests to unstructured objects.
@@ -123,7 +95,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		kube.BindArtifacts(&manifest, artifacts)
 
 		if kube.IsVersioned(manifest) {
-			err := handleVersionedManifest(client, &manifest, application)
+			err := handleVersionedManifest(provider.Client, &manifest, application)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -131,14 +103,14 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		if kube.UseSourceCapacity(manifest) {
-			err = handleUseSourceCapacity(client, &manifest, namespace)
+			err = handleUseSourceCapacity(provider.Client, &manifest, namespace)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
 		}
 
-		meta, err := client.ApplyWithNamespaceOverride(&manifest, namespace)
+		meta, err := provider.Client.ApplyWithNamespaceOverride(&manifest, namespace)
 		if err != nil {
 			e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
 				manifest.GetKind(), manifest.GroupVersionKind().Version, manifest.GetName(), err.Error())

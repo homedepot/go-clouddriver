@@ -206,38 +206,6 @@ var _ = Describe("Application", func() {
 			})
 		})
 
-		When("the ca data is bad", func() {
-			BeforeEach(func() {
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-					CAData: "{}",
-				}, nil)
-			})
-
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-			})
-		})
-
-		When("getting the gcloud access token returns an error", func() {
-			BeforeEach(func() {
-				fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
-			})
-
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-			})
-		})
-
-		When("creating the kube client returns an error", func() {
-			BeforeEach(func() {
-				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
-			})
-
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-			})
-		})
-
 		When("listing deployments returns an error", func() {
 			BeforeEach(func() {
 				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, nil, errors.New("error listing deployments"))
@@ -722,38 +690,6 @@ var _ = Describe("Application", func() {
 		When("getting the kubernetes provider for an account errors", func() {
 			BeforeEach(func() {
 				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
-			})
-
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-			})
-		})
-
-		When("the ca data is bad", func() {
-			BeforeEach(func() {
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-					CAData: "{}",
-				}, nil)
-			})
-
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-			})
-		})
-
-		When("getting the gcloud access token returns an error", func() {
-			BeforeEach(func() {
-				fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
-			})
-
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-			})
-		})
-
-		When("creating the kube client returns an error", func() {
-			BeforeEach(func() {
-				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
 			})
 
 			It("continues", func() {
@@ -1489,38 +1425,6 @@ var _ = Describe("Application", func() {
 			})
 		})
 
-		When("the ca data is bad", func() {
-			BeforeEach(func() {
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-					CAData: "{}",
-				}, nil)
-			})
-
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-			})
-		})
-
-		When("getting the gcloud access token returns an error", func() {
-			BeforeEach(func() {
-				fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
-			})
-
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-			})
-		})
-
-		When("creating the kube client returns an error", func() {
-			BeforeEach(func() {
-				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
-			})
-
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-			})
-		})
-
 		When("discovering the API returns an error", func() {
 			BeforeEach(func() {
 				fakeKubeClient.DiscoverReturns(errors.New("error discovering"))
@@ -2005,55 +1909,11 @@ var _ = Describe("Application", func() {
 			})
 
 			It("returns an error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("error getting provider"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-			})
-		})
-
-		When("decoding the ca data returns an error", func() {
-			BeforeEach(func() {
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-					CAData: "{}",
-				}, nil)
-			})
-
-			It("returns an error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("illegal base64 data at input byte 0"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-			})
-		})
-
-		When("getting the gcloud access token returns an error", func() {
-			BeforeEach(func() {
-				fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
-			})
-
-			It("returns an error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("error getting token"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-			})
-		})
-
-		When("creating the kube client returns an error", func() {
-			BeforeEach(func() {
-				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
-			})
-
-			It("returns an error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("bad config"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider test-account: error getting provider"))
+				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
 		})
 
@@ -2149,55 +2009,11 @@ var _ = Describe("Application", func() {
 			})
 
 			It("returns an error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("error getting provider"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-			})
-		})
-
-		When("decoding the ca data returns an error", func() {
-			BeforeEach(func() {
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-					CAData: "{}",
-				}, nil)
-			})
-
-			It("returns an error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("illegal base64 data at input byte 0"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-			})
-		})
-
-		When("getting the gcloud access token returns an error", func() {
-			BeforeEach(func() {
-				fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
-			})
-
-			It("returns an error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("error getting token"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-			})
-		})
-
-		When("creating the kube client returns an error", func() {
-			BeforeEach(func() {
-				fakeKubeController.NewClientReturns(nil, errors.New("bad config"))
-			})
-
-			It("returns an error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("bad config"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider test-account: error getting provider"))
+				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
 		})
 

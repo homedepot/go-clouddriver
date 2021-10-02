@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"encoding/base64"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +9,6 @@ import (
 	kube "github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/client-go/rest"
 )
 
 const randNameNumber = 5
@@ -18,35 +16,9 @@ const randNameNumber = 5
 func (cc *Controller) RunJob(c *gin.Context, rj RunJobRequest) {
 	taskID := clouddriver.TaskIDFromContext(c)
 
-	provider, err := cc.SQLClient.GetKubernetesProvider(rj.Account)
+	provider, err := cc.KubernetesProvider(rj.Account)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := cc.KubernetesController.NewClient(config)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -80,7 +52,7 @@ func (cc *Controller) RunJob(c *gin.Context, rj RunJobRequest) {
 		namespace = *provider.Namespace
 	}
 
-	meta, err := client.ApplyWithNamespaceOverride(&u, namespace)
+	meta, err := provider.Client.ApplyWithNamespaceOverride(&u, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

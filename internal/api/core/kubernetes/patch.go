@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,14 +11,13 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/rest"
 )
 
 func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 	taskID := clouddriver.TaskIDFromContext(c)
 	namespace := pm.Location
 
-	provider, err := cc.SQLClient.GetKubernetesProvider(pm.Account)
+	provider, err := cc.KubernetesProvider(pm.Account)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
@@ -27,32 +25,6 @@ func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 
 	if provider.Namespace != nil {
 		namespace = *provider.Namespace
-	}
-
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := cc.KubernetesController.NewClient(config)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
 	}
 
 	b, err := json.Marshal(pm.PatchBody)
@@ -94,7 +66,7 @@ func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 		return
 	}
 
-	meta, _, err := client.PatchUsingStrategy(kind, name, namespace, b, strategy)
+	meta, _, err := provider.Client.PatchUsingStrategy(kind, name, namespace, b, strategy)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

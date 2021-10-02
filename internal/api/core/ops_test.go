@@ -1,8 +1,6 @@
 package core_test
 
 import (
-	// . "github.com/homedepot/go-clouddriver/internal/api/v0"
-
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -57,7 +55,7 @@ var _ = Describe("Kubernetes", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
 				Expect(ce.Error).To(HavePrefix("Bad Request"))
-				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider spin-cluster-account: error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
 		})
@@ -91,7 +89,7 @@ var _ = Describe("Kubernetes", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
 				Expect(ce.Error).To(HavePrefix("Bad Request"))
-				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider spin-cluster-account: error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
 		})
@@ -124,7 +122,7 @@ var _ = Describe("Kubernetes", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
 				Expect(ce.Error).To(HavePrefix("Bad Request"))
-				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider spin-cluster-account: error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
 		})
@@ -141,7 +139,7 @@ var _ = Describe("Kubernetes", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
 				Expect(ce.Error).To(HavePrefix("Bad Request"))
-				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider spin-cluster-account: error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
 		})
@@ -159,7 +157,7 @@ var _ = Describe("Kubernetes", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
 				Expect(ce.Error).To(HavePrefix("Bad Request"))
-				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider spin-cluster-account: error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
 		})
@@ -176,7 +174,7 @@ var _ = Describe("Kubernetes", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				ce := getClouddriverError()
 				Expect(ce.Error).To(HavePrefix("Bad Request"))
-				Expect(ce.Message).To(Equal("error getting kubernetes provider"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider spin-cluster-account: error getting kubernetes provider"))
 				Expect(ce.Status).To(Equal(http.StatusBadRequest))
 			})
 		})

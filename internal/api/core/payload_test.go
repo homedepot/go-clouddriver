@@ -386,7 +386,9 @@ const payloadRequestKubernetesOpsUndoRolloutManifest = `[
 
 const payloadRequestKubernetesOpsPatchManifest = `[
   {
-    "patchManifest": {}
+    "patchManifest": {
+		  "account": "spin-cluster-account"
+		}
   }
 ]`
 

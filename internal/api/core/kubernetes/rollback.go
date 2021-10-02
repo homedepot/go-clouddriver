@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -19,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
 )
 
 const (
@@ -58,7 +56,7 @@ func (cc *Controller) Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 		return
 	}
 
-	provider, err := cc.SQLClient.GetKubernetesProvider(ur.Account)
+	provider, err := cc.KubernetesProvider(ur.Account)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
@@ -68,45 +66,19 @@ func (cc *Controller) Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 		namespace = *provider.Namespace
 	}
 
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := cc.KubernetesController.NewClient(config)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
 	err = provider.ValidateKindStatus(manifestKind)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
-	d, err := client.Get(manifestKind, manifestName, namespace)
+	d, err := provider.Client.Get(manifestKind, manifestName, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	replicaSetGVR, err := client.GVRForKind("ReplicaSet")
+	replicaSetGVR, err := provider.Client.GVRForKind("ReplicaSet")
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -117,7 +89,7 @@ func (cc *Controller) Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 		FieldSelector: "metadata.namespace=" + namespace,
 	}
 
-	replicaSets, err := client.ListByGVR(replicaSetGVR, lo)
+	replicaSets, err := provider.Client.ListByGVR(replicaSetGVR, lo)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -178,7 +150,7 @@ func (cc *Controller) Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 		return
 	}
 
-	meta, err := client.ApplyWithNamespaceOverride(&u, namespace)
+	meta, err := provider.Client.ApplyWithNamespaceOverride(&u, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

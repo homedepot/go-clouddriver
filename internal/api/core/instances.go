@@ -1,7 +1,6 @@
 package core
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"sort"
@@ -14,7 +13,6 @@ import (
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
 )
 
 const (
@@ -69,15 +67,15 @@ func (cc *Controller) GetInstance(c *gin.Context) {
 		a2 := strings.Split(kind, ".")
 		kind = a2[0]
 	}
-	// Generate the kube config dynamic client for the account (cluster)
-	// requested.
-	client, err := cc.kubeConfigClient(c.Copy(), account)
+	// Grab the Kubernetes provider with a default timeout.
+	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*defaultGetTimeoutSeconds)
 	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
+
 	// Get the instance (Pod) from the cluster.
-	instance, err := client.Get(kind, name, namespace)
+	instance, err := provider.Client.Get(kind, name, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -194,10 +192,10 @@ func (cc *Controller) GetInstanceConsole(c *gin.Context) {
 
 	// If the provider is not kubernetes, fail as we cannot generate a console for
 	// other providers yet.
-	provider := c.Query("provider")
-	if provider != "kubernetes" {
+	qProvider := c.Query("provider")
+	if qProvider != "kubernetes" {
 		clouddriver.Error(c, http.StatusNotImplemented, fmt.Errorf("provider %s console not implemented",
-			provider))
+			qProvider))
 		return
 	}
 
@@ -213,20 +211,14 @@ func (cc *Controller) GetInstanceConsole(c *gin.Context) {
 			kind))
 		return
 	}
-	// Generate a dynamic client to get the instance.
-	client, err := cc.kubeConfigClient(c.Copy(), account)
+	// Grab the Kubernetes provider with a deefault timeout.
+	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*defaultGetTimeoutSeconds)
 	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-	// Generate the Kubernetes Clientset to grab pod logs.
-	clientset, err := cc.kubeConfigClientset(account)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 	// Get the instance.
-	instance, err := client.Get(kind, name, namespace)
+	instance, err := provider.Client.Get(kind, name, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -255,7 +247,7 @@ func (cc *Controller) GetInstanceConsole(c *gin.Context) {
 	// Unlike the dynamic client, the Kubernetes clientset
 	// does not have any hidden mutex locks and can run requests concurrently.
 	for _, container := range containers {
-		go getLogs(wg, cCh, clientset, instance, container)
+		go getLogs(wg, cCh, provider.Clientset, instance, container)
 	}
 	// Wait for all concurrent calls to finish.
 	wg.Wait()
@@ -296,40 +288,4 @@ func getLogs(wg *sync.WaitGroup, cc chan console, clientset kubernetes.Clientset
 	}
 
 	cc <- console{Name: container.Name, Output: output}
-}
-
-// kubeConfigClientset returns a non-dynamic Kubernetes Go Client.
-func (cc *Controller) kubeConfigClientset(account string) (kubernetes.Clientset, error) {
-	// Get the provider info for the account.
-	provider, err := cc.SQLClient.GetKubernetesProvider(account)
-	if err != nil {
-		return nil, err
-	}
-	// Decode the provider's CA data.
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		return nil, err
-	}
-	// Grab the auth token from arcade.
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		return nil, err
-	}
-	// Generate a new rest config using this information.
-	// Set the timeout to be the list timeout.
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-		Timeout: time.Second * defaultGetTimeoutSeconds,
-	}
-
-	clientset, err := cc.KubernetesController.NewClientset(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return clientset, nil
 }

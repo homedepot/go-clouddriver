@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strings"
@@ -10,9 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	kube "github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	"k8s.io/client-go/rest"
 )
 
 // RollingRestart performs a `kubectl rollout restart` by setting an annotation on a pod template
@@ -22,7 +19,7 @@ func (cc *Controller) RollingRestart(c *gin.Context, rr RollingRestartManifestRe
 	taskID := clouddriver.TaskIDFromContext(c)
 	namespace := rr.Location
 
-	provider, err := cc.SQLClient.GetKubernetesProvider(rr.Account)
+	provider, err := cc.KubernetesProvider(rr.Account)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
@@ -30,32 +27,6 @@ func (cc *Controller) RollingRestart(c *gin.Context, rr RollingRestartManifestRe
 
 	if provider.Namespace != nil {
 		namespace = *provider.Namespace
-	}
-
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-	}
-
-	client, err := cc.KubernetesController.NewClient(config)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
 	}
 
 	a := strings.Split(rr.ManifestName, " ")
@@ -68,13 +39,13 @@ func (cc *Controller) RollingRestart(c *gin.Context, rr RollingRestartManifestRe
 		return
 	}
 
-	u, err := client.Get(kind, name, namespace)
+	u, err := provider.Client.Get(kind, name, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	var meta kube.Metadata
+	var meta kubernetes.Metadata
 
 	switch strings.ToLower(kind) {
 	case "deployment":
@@ -87,7 +58,7 @@ func (cc *Controller) RollingRestart(c *gin.Context, rr RollingRestartManifestRe
 			return
 		}
 
-		meta, err = client.ApplyWithNamespaceOverride(u, namespace)
+		meta, err = provider.Client.ApplyWithNamespaceOverride(u, namespace)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return

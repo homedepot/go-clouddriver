@@ -74,9 +74,8 @@ func init() {
 		KubernetesController:          kubeController,
 	}
 
-	server := api.NewServer()
+	server := api.NewServer(r)
 	server.WithController(ic)
-	server.WithEngine(r)
 
 	if os.Getenv("VERBOSE_REQUEST_LOGGING") == "true" {
 		server.WithVerboseRequestLogging()

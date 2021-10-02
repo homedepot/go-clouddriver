@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -19,7 +18,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	"k8s.io/client-go/rest"
 )
 
 const (
@@ -1124,9 +1122,9 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 	kind := nameArray[0]
 	name := nameArray[1]
 
-	client, err := cc.kubeConfigClient(c.Copy(), account)
+	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*defaultListTimeoutSeconds)
 	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1134,7 +1132,7 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 		LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
 	}
 
-	result, err := client.Get(kind, name, location)
+	result, err := provider.Client.Get(kind, name, location)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -1144,7 +1142,7 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*defaultListTimeoutSeconds)
 	defer cancel()
 	// "Instances" in kubernetes are pods.
-	pods, err := client.ListResourceWithContext(ctx, "pods", lo)
+	pods, err := provider.Client.ListResourceWithContext(ctx, "pods", lo)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -1314,13 +1312,13 @@ func (cc *Controller) GetJob(c *gin.Context) {
 	kind := nameArray[0]
 	name := nameArray[1]
 
-	client, err := cc.kubeConfigClient(c.Copy(), account)
+	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*defaultListTimeoutSeconds)
 	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
+		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
-	result, err := client.Get(kind, name, location)
+	result, err := provider.Client.Get(kind, name, location)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -1369,7 +1367,7 @@ func (cc *Controller) listApplicationResources(c *gin.Context, rs []string, appl
 	wg.Add(len(accounts))
 	// List all requested resources across accounts concurrently.
 	for _, account := range accounts {
-		go cc.listResources(c.Copy(), wg, rs, rc, account, application)
+		go cc.listResources(wg, rs, rc, account, application)
 	}
 	// Wait for all concurrent calls to finish.
 	wg.Wait()
@@ -1386,12 +1384,12 @@ func (cc *Controller) listApplicationResources(c *gin.Context, rs []string, appl
 
 // listResources initializes discovery for a given client then lists
 // the requested resources concurrently.
-func (cc *Controller) listResources(c *gin.Context, wg *sync.WaitGroup, rs []string, rc chan resource,
+func (cc *Controller) listResources(wg *sync.WaitGroup, rs []string, rc chan resource,
 	account, application string) {
 	// Increment the wait group counter when we're done here.
 	defer wg.Done()
-	// Grab the kube client for the given account.
-	client, err := cc.kubeConfigClient(c, account)
+	// Grab the kube provider for the given account.
+	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*defaultListTimeoutSeconds)
 	if err != nil {
 		clouddriver.Log(err)
 		return
@@ -1404,7 +1402,7 @@ func (cc *Controller) listResources(c *gin.Context, wg *sync.WaitGroup, rs []str
 	// would take 40 seconds since the API cannot be discovered concurrently.
 	//
 	// See https://github.com/kubernetes/client-go/blob/f6ce18ae578c8cca64d14ab9687824d9e1305a67/restmapper/discovery.go#L194.
-	if err = client.Discover(); err != nil {
+	if err = provider.Client.Discover(); err != nil {
 		clouddriver.Log(err)
 		return
 	}
@@ -1414,7 +1412,7 @@ func (cc *Controller) listResources(c *gin.Context, wg *sync.WaitGroup, rs []str
 	_wg.Add(len(rs))
 	// List all required resources concurrently.
 	for _, r := range rs {
-		go list(c.Copy(), _wg, rc, client, r, account, application)
+		go list(_wg, rc, provider.Client, r, account, application)
 	}
 	// Wait for the calls to finish.
 	_wg.Wait()
@@ -1422,7 +1420,7 @@ func (cc *Controller) listResources(c *gin.Context, wg *sync.WaitGroup, rs []str
 
 // list lists a given resource and send to a channel of unstructured.Unstructured.
 // It uses a context with a timeout of 10 seconds.
-func list(c *gin.Context, wg *sync.WaitGroup, rc chan resource,
+func list(wg *sync.WaitGroup, rc chan resource,
 	client kubernetes.Client, r, account, application string) {
 	// Finish the wait group when we're done here.
 	defer wg.Done()
@@ -1448,41 +1446,4 @@ func list(c *gin.Context, wg *sync.WaitGroup, rc chan resource,
 		}
 		rc <- res
 	}
-}
-
-// kubeConfigClient returns a new Kubernetes client
-// for a given account.
-func (cc *Controller) kubeConfigClient(c *gin.Context, account string) (kubernetes.Client, error) {
-	// Get the provider info for the account.
-	provider, err := cc.SQLClient.GetKubernetesProvider(account)
-	if err != nil {
-		return nil, err
-	}
-	// Decode the provider's CA data.
-	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
-	if err != nil {
-		return nil, err
-	}
-	// Grab the auth token from arcade.
-	token, err := cc.ArcadeClient.Token(provider.TokenProvider)
-	if err != nil {
-		return nil, err
-	}
-	// Generate a new rest config using this information.
-	// Set the timeout to be the list timeout.
-	config := &rest.Config{
-		Host:        provider.Host,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: cd,
-		},
-		Timeout: time.Second * defaultListTimeoutSeconds,
-	}
-	// Create a new dynamic client for this config.
-	client, err := cc.KubernetesController.NewClient(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return client, nil
 }

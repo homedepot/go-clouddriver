@@ -28,6 +28,9 @@ type Provider struct {
 	TokenProvider string              `json:"tokenProvider,omitempty" gorm:"size:32;not null;default:'google'"`
 	Namespace     *string             `json:"namespace,omitempty" gorm:"size:253"`
 	Permissions   ProviderPermissions `json:"permissions" gorm:"-"`
+	// Providers can hold instances of clients.
+	Client    Client    `json:"-" gorm:"-"`
+	Clientset Clientset `json:"-" gorm:"-"`
 }
 
 type ProviderPermissions struct {
@@ -57,7 +60,7 @@ func (Provider) TableName() string {
 //
 // See https://github.com/spinnaker/clouddriver/blob/58ab154b0ec0d62772201b5b319af349498a4e3f/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/description/manifest/KubernetesKindProperties.java#L31
 // for clouddriver OSS namespace-scoped kinds.
-func (p Provider) ValidateKindStatus(kind string) error {
+func (p *Provider) ValidateKindStatus(kind string) error {
 	if p.Namespace != nil {
 		for _, value := range clusterScopedKinds {
 			if strings.EqualFold(value, kind) {
@@ -67,4 +70,14 @@ func (p Provider) ValidateKindStatus(kind string) error {
 	}
 
 	return nil
+}
+
+// WithClient sets the kubernetes client for this provider.
+func (p *Provider) WithClient(client Client) {
+	p.Client = client
+}
+
+// WithClientset sets the kubernetes clientset for this provider.
+func (p *Provider) WithClientset(clientset Clientset) {
+	p.Clientset = clientset
 }
