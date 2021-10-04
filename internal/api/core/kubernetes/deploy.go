@@ -318,7 +318,7 @@ func handleRecreate(kubeClient kube.Client, u *unstructured.Unstructured, namesp
 		return err
 	}
 
-	// If the resource is currently deployed then delete the resource prior to deploying
+	// If the resource is currently deployed, then delete the resource prior to deploying.
 	if current != nil {
 		err := kubeClient.DeleteResourceByKindAndNameAndNamespace(u.GetKind(), u.GetName(), u.GetNamespace(), metav1.DeleteOptions{})
 		if err != nil {
