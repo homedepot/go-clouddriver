@@ -35,6 +35,8 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: test/credentials/test-keyfile.json
 
   golangci:
     name: lint
