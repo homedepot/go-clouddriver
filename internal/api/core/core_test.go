@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"cloud.google.com/go/storage"
+	"github.com/fsouza/fake-gcs-server/fakestorage"
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v32/github"
 	"github.com/homedepot/go-clouddriver/internal"
@@ -39,12 +41,14 @@ var (
 	fakeArcadeClient                  *arcadefakes.FakeClient
 	fakeArtifactCredentialsController *artifactfakes.FakeCredentialsController
 	fakeFiatClient                    *fiatfakes.FakeClient
+	fakeStorageClient                 *storage.Client
 	fakeGithubClient                  *github.Client
 	fakeHelmClient                    *helmfakes.FakeClient
 	fakeSQLClient                     *sqlfakes.FakeClient
 	fakeKubeClient                    *kubernetesfakes.FakeClient
 	fakeKubeClientset                 *kubernetesfakes.FakeClientset
 	fakeKubeController                *kubernetesfakes.FakeController
+	fakeStorageServer                 *fakestorage.Server
 	fakeGithubServer                  *ghttp.Server
 	fakeFileServer                    *ghttp.Server
 )
@@ -145,7 +149,20 @@ func setup() {
 
 	fakeArcadeClient = &arcadefakes.FakeClient{}
 	fakeFiatClient = &fiatfakes.FakeClient{}
+
 	fakeHelmClient = &helmfakes.FakeClient{}
+
+	fakeStorageServer = fakestorage.NewServer([]fakestorage.Object{
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "fake-bucket",
+				Name:       "fake-path/fake-file.txt",
+			},
+			Content: []byte("fake contents"),
+		},
+	})
+	defer fakeStorageServer.Stop()
+	fakeStorageClient = fakeStorageServer.Client()
 
 	fakeGithubServer = ghttp.NewServer()
 	fakeFileServer = ghttp.NewServer()
@@ -168,10 +185,11 @@ func setup() {
 			},
 		},
 	})
-	fakeArtifactCredentialsController.HelmClientForAccountNameReturns(fakeHelmClient, nil)
 	fakeArtifactCredentialsController.GitClientForAccountNameReturns(fakeGithubClient, nil)
-	fakeArtifactCredentialsController.HTTPClientForAccountNameReturns(http.DefaultClient, nil)
 	fakeArtifactCredentialsController.GitRepoClientForAccountNameReturns(http.DefaultClient, nil)
+	fakeArtifactCredentialsController.HelmClientForAccountNameReturns(fakeHelmClient, nil)
+	fakeArtifactCredentialsController.HTTPClientForAccountNameReturns(http.DefaultClient, nil)
+	fakeArtifactCredentialsController.GCSClientForAccountNameReturns(fakeStorageClient, nil)
 
 	// Disable debug logging.
 	gin.SetMode(gin.ReleaseMode)

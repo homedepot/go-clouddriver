@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -13,14 +12,19 @@ import (
 	"net/http"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
+	"cloud.google.com/go/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/internal/artifact"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
 
-var matchToFirstSlashRegexp = regexp.MustCompile("^[^/]*/")
+var (
+	matchToFirstSlashRegexp  = regexp.MustCompile("^[^/]*/")
+	matchGcsObjectNameRegexp = regexp.MustCompile(`^gs://(?P<bucket>[^/]*)/(?P<filepath>[^#]*)#?(?P<generation>.*)?`)
+)
 
 func (cc *Controller) ListArtifactCredentials(c *gin.Context) {
 	c.JSON(http.StatusOK, cc.ArtifactCredentialsController.ListArtifactCredentialsNamesAndTypes())
@@ -118,44 +122,59 @@ func (cc *Controller) GetArtifact(c *gin.Context) {
 	var b []byte
 
 	switch a.Type {
-	case artifact.TypeHTTPFile:
-		hc, err := cc.ArtifactCredentialsController.HTTPClientForAccountName(a.ArtifactAccount)
-		if err != nil {
-			clouddriver.Error(c, http.StatusBadRequest, err)
-			return
-		}
-
-		resp, err := hc.Get(a.Reference)
-		if err != nil {
-			clouddriver.Error(c, http.StatusInternalServerError, err)
-			return
-		}
-		defer resp.Body.Close()
-
-		b, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			clouddriver.Error(c, http.StatusInternalServerError, err)
-			return
-		}
-
-	case artifact.TypeHelmChart:
-		hc, err := cc.ArtifactCredentialsController.HelmClientForAccountName(a.ArtifactAccount)
-		if err != nil {
-			clouddriver.Error(c, http.StatusBadRequest, err)
-			return
-		}
-
-		b, err = hc.GetChart(a.Name, a.Version)
-		if err != nil {
-			clouddriver.Error(c, http.StatusInternalServerError, err)
-			return
-		}
-
 	case artifact.TypeEmbeddedBase64:
 		// TODO when a base64 encoded helm templated manifest makes its way here, it sometimes starts
 		// with "WARNING":"This chart is deprecated" - we should either handle that here by removing
 		// the prefix, or handle it in the deploy manifest operation.
 		b, err = base64.StdEncoding.DecodeString(a.Reference)
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
+
+	case artifact.TypeGCSObject:
+		// Get GCS client
+		gcs, err := cc.ArtifactCredentialsController.GCSClientForAccountName(a.ArtifactAccount)
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+		// Parse filename
+		matches := matchGcsObjectNameRegexp.FindStringSubmatch(a.Reference)
+
+		if matches == nil || len(matches) < 2 {
+			clouddriver.Error(c, http.StatusBadRequest, fmt.Errorf("gcs/object references must be of the format gs://<bucket>/<file-path>[#generation], got: %s", a.Reference))
+			return
+		}
+		// Define GCS object
+		object := gcs.Bucket(matches[1]).Object(matches[2])
+
+		if matches[3] != "" {
+			generation, err := strconv.ParseInt(matches[3], 10, 64)
+			if err != nil {
+				clouddriver.Error(c, http.StatusBadRequest, fmt.Errorf("gcs/object generation values must be numeric, got: %s", matches[3]))
+				return
+			}
+
+			object = object.Generation(generation)
+		}
+		// Get object reader
+		reader, err := object.NewReader(c)
+		if err != nil {
+			if err == storage.ErrObjectNotExist {
+				clouddriver.Error(c, http.StatusNotFound, err)
+				return
+			}
+
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+
+			return
+		}
+
+		defer reader.Close()
+
+		// Read contents
+		b, err = ioutil.ReadAll(reader)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -193,7 +212,7 @@ func (cc *Controller) GetArtifact(c *gin.Context) {
 
 		var buf bytes.Buffer
 
-		_, err = gc.Do(context.TODO(), req, &buf)
+		_, err = gc.Do(c, req, &buf)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -336,6 +355,39 @@ func (cc *Controller) GetArtifact(c *gin.Context) {
 		}
 
 		b = buf.Bytes()
+
+	case artifact.TypeHelmChart:
+		hc, err := cc.ArtifactCredentialsController.HelmClientForAccountName(a.ArtifactAccount)
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+
+		b, err = hc.GetChart(a.Name, a.Version)
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
+
+	case artifact.TypeHTTPFile:
+		hc, err := cc.ArtifactCredentialsController.HTTPClientForAccountName(a.ArtifactAccount)
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+
+		resp, err := hc.Get(a.Reference)
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
+		defer resp.Body.Close()
+
+		b, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
 
 	default:
 		clouddriver.Error(c, http.StatusNotImplemented, fmt.Errorf("getting artifact of type %s not implemented", a.Type))

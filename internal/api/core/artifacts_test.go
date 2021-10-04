@@ -196,49 +196,6 @@ var _ = Describe("Artifacts", func() {
 			})
 		})
 
-		Context("when the artifact is type helm/chart", func() {
-			BeforeEach(func() {
-				body.Write([]byte(payloadRequestFetchHelmArtifact))
-				createRequest(http.MethodPut)
-				fakeHelmClient.GetChartReturns([]byte("some-binary-data"), nil)
-			})
-
-			When("getting the helm client returns an error", func() {
-				BeforeEach(func() {
-					fakeArtifactCredentialsController.HelmClientForAccountNameReturns(nil, errors.New("error getting helm client"))
-				})
-
-				It("returns an error", func() {
-					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
-					ce := getClouddriverError()
-					Expect(ce.Error).To(HavePrefix("Bad Request"))
-					Expect(ce.Message).To(Equal("error getting helm client"))
-					Expect(ce.Status).To(Equal(http.StatusBadRequest))
-				})
-			})
-
-			When("getting the chart returns an error", func() {
-				BeforeEach(func() {
-					fakeHelmClient.GetChartReturns(nil, errors.New("error getting chart"))
-				})
-
-				It("returns an error", func() {
-					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-					ce := getClouddriverError()
-					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-					Expect(ce.Message).To(Equal("error getting chart"))
-					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
-				})
-			})
-
-			When("it succeeds", func() {
-				It("succeeds", func() {
-					Expect(res.StatusCode).To(Equal(http.StatusOK))
-					validateTextResponse("some-binary-data")
-				})
-			})
-		})
-
 		Context("when the artifact is type embedded/base64", func() {
 			BeforeEach(func() {
 				body.Write([]byte(payloadRequestFetchBase64Artifact))
@@ -265,6 +222,82 @@ var _ = Describe("Artifacts", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
 					validateTextResponse("helloworld\n")
+				})
+			})
+		})
+
+		Context("when the artifact is type gcs/object", func() {
+			BeforeEach(func() {
+				body.Write([]byte(payloadRequestFetchGCSObjetArtifact))
+				createRequest(http.MethodPut)
+			})
+
+			When("getting the client returns an error", func() {
+				BeforeEach(func() {
+					fakeArtifactCredentialsController.GCSClientForAccountNameReturns(nil, errors.New("error getting gcs client"))
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
+					Expect(ce.Message).To(Equal("error getting gcs client"))
+					Expect(ce.Status).To(Equal(http.StatusBadRequest))
+				})
+			})
+
+			When("the reference is invalid", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(payloadRequestFetchGCSObjetArtifactBadReference))
+					createRequest(http.MethodPut)
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
+					Expect(ce.Message).To(Equal("gcs/object references must be of the format gs://<bucket>/<file-path>[#generation], got: not-gcs-format"))
+					Expect(ce.Status).To(Equal(http.StatusBadRequest))
+				})
+			})
+
+			When("the file generation is invalid", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(payloadRequestFetchGCSObjetArtifactBadFileGeneration))
+					createRequest(http.MethodPut)
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
+					Expect(ce.Message).To(Equal("gcs/object generation values must be numeric, got: v1"))
+					Expect(ce.Status).To(Equal(http.StatusBadRequest))
+				})
+			})
+
+			When("the file is not found", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(payloadRequestFetchGCSObjetArtifactNotFound))
+					createRequest(http.MethodPut)
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusNotFound))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(HavePrefix("Not Found"))
+					Expect(ce.Message).To(Equal("storage: object doesn't exist"))
+					Expect(ce.Status).To(Equal(http.StatusNotFound))
+				})
+			})
+
+			When("it succeeds", func() {
+				It("succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateTextResponse("fake contents")
 				})
 			})
 		})
@@ -591,6 +624,49 @@ var _ = Describe("Artifacts", func() {
 
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
 					validateGZipResponse(expected)
+				})
+			})
+		})
+
+		Context("when the artifact is type helm/chart", func() {
+			BeforeEach(func() {
+				body.Write([]byte(payloadRequestFetchHelmArtifact))
+				createRequest(http.MethodPut)
+				fakeHelmClient.GetChartReturns([]byte("some-binary-data"), nil)
+			})
+
+			When("getting the helm client returns an error", func() {
+				BeforeEach(func() {
+					fakeArtifactCredentialsController.HelmClientForAccountNameReturns(nil, errors.New("error getting helm client"))
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
+					Expect(ce.Message).To(Equal("error getting helm client"))
+					Expect(ce.Status).To(Equal(http.StatusBadRequest))
+				})
+			})
+
+			When("getting the chart returns an error", func() {
+				BeforeEach(func() {
+					fakeHelmClient.GetChartReturns(nil, errors.New("error getting chart"))
+				})
+
+				It("returns an error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+					ce := getClouddriverError()
+					Expect(ce.Error).To(HavePrefix("Internal Server Error"))
+					Expect(ce.Message).To(Equal("error getting chart"))
+					Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+				})
+			})
+
+			When("it succeeds", func() {
+				It("succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateTextResponse("some-binary-data")
 				})
 			})
 		})
