@@ -110,6 +110,14 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			}
 		}
 
+		if kube.Recreate(manifest) {
+			err = handleRecreate(provider.Client, &manifest, dm.NamespaceOverride)
+			if err != nil {
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
+			}
+		}
+
 		meta, err := provider.Client.ApplyWithNamespaceOverride(&manifest, namespace)
 		if err != nil {
 			e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
@@ -294,6 +302,27 @@ func handleUseSourceCapacity(client kube.Client, u *unstructured.Unstructured, n
 			if err != nil {
 				return err
 			}
+		}
+	}
+
+	return nil
+}
+
+func handleRecreate(kubeClient kube.Client, u *unstructured.Unstructured, namespace string) error {
+	current, err := kubeClient.Get(u.GetKind(), u.GetName(), namespace)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	// If the resource is currently deployed, then delete the resource prior to deploying.
+	if current != nil {
+		err := kubeClient.DeleteResourceByKindAndNameAndNamespace(u.GetKind(), u.GetName(), u.GetNamespace(), metav1.DeleteOptions{})
+		if err != nil {
+			return err
 		}
 	}
 

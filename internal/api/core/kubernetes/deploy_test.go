@@ -215,7 +215,7 @@ var _ = Describe("Deploy", func() {
 
 		When("current resource is not found", func() {
 			BeforeEach(func() {
-				fakeKubeClient.GetReturns(nil, k8serrors.NewNotFound(schema.GroupResource{Group: "", Resource: "fakse resource"}, "fake resource not found"))
+				fakeKubeClient.GetReturns(nil, k8serrors.NewNotFound(schema.GroupResource{Group: "", Resource: "fake resource"}, "fake resource not found"))
 			})
 
 			It("it does not error", func() {
@@ -245,6 +245,71 @@ var _ = Describe("Deploy", func() {
 				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
 				actual, _, _ := unstructured.NestedInt64(u.Object, "spec", "replicas")
 				Expect(actual).To(Equal(int64(2)))
+			})
+		})
+	})
+
+	When("the manifest uses recreate strategy", func() {
+		BeforeEach(func() {
+			deployManifestRequest = DeployManifestRequest{
+				Manifests: []map[string]interface{}{
+					{
+						"kind":       "Job",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"annotations": map[string]interface{}{
+								"strategy.spinnaker.io/recreate": "true",
+							},
+							"name":      "test-name",
+							"namespace": "test-namespace",
+						},
+					},
+				},
+			}
+		})
+
+		When("get current resource returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.GetReturns(nil, errors.New("GetReturns fake error"))
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+				Expect(c.Errors.Last().Error()).To(Equal("GetReturns fake error"))
+			})
+		})
+
+		When("current resource does not exist", func() {
+			BeforeEach(func() {
+				fakeKubeClient.GetReturns(nil, k8serrors.NewNotFound(schema.GroupResource{Group: "", Resource: "fake resource"}, "fake resource not found"))
+			})
+
+			It("skips delete", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceCallCount()).To(Equal(0))
+			})
+		})
+
+		When("current resource exists", func() {
+			BeforeEach(func() {
+				currentManifest := unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind": "Job",
+						"name": "test-name",
+					},
+				}
+
+				fakeKubeClient.GetReturns(&currentManifest, nil)
+			})
+
+			It("deletes resource before deploying", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				kind, name, namespace, deleteOptions := fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceArgsForCall(0)
+				Expect(kind).To(Equal("Job"))
+				Expect(name).To(Equal("test-name"))
+				Expect(namespace).To(Equal("test-namespace"))
+				Expect(deleteOptions.GracePeriodSeconds).To(BeNil())
+				Expect(deleteOptions.PropagationPolicy).To(BeNil())
 			})
 		})
 	})
