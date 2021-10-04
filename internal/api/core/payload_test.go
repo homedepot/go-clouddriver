@@ -79,6 +79,26 @@ const payloadRequestFetchBase64Artifact = `{
 	"reference": "aGVsbG93b3JsZAo="
 }`
 
+const payloadRequestFetchGCSObjetArtifact = `{
+  "type": "gcs/object",
+	"reference": "gs://fake-bucket/fake-path/fake-file.txt"
+}`
+
+const payloadRequestFetchGCSObjetArtifactBadReference = `{
+  "type": "gcs/object",
+	"reference": "not-gcs-format"
+}`
+
+const payloadRequestFetchGCSObjetArtifactBadFileGeneration = `{
+  "type": "gcs/object",
+	"reference": "gs://fake-bucket/fake-path/fake-file.txt#v1"
+}`
+
+const payloadRequestFetchGCSObjetArtifactNotFound = `{
+  "type": "gcs/object",
+	"reference": "gs://fake-bucket/fake-path/not-found.txt"
+}`
+
 const payloadRequestFetchGithubFileArtifact = `{
   "type": "github/file",
 	"reference": "%s/api/v3/repos/homedepot/kubernetes-engine-samples/contents/hello-app/manifests/helloweb-deployment.yaml"

@@ -9,9 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"cloud.google.com/go/storage"
 	"github.com/google/go-github/v32/github"
 	"github.com/homedepot/go-clouddriver/internal/helm"
 	"golang.org/x/oauth2"
+	"google.golang.org/api/option"
 )
 
 type Type string
@@ -36,8 +38,9 @@ const (
 type CredentialsController interface {
 	ListArtifactCredentialsNamesAndTypes() []Credentials
 	HelmClientForAccountName(string) (helm.Client, error)
-	GitClientForAccountName(string) (*github.Client, error)
 	HTTPClientForAccountName(string) (*http.Client, error)
+	GCSClientForAccountName(string) (*storage.Client, error)
+	GitClientForAccountName(string) (*github.Client, error)
 	GitRepoClientForAccountName(string) (*http.Client, error)
 }
 
@@ -53,6 +56,8 @@ type Credentials struct {
 	BaseURL    string `json:"baseURL,omitempty"`
 	Token      string `json:"token,omitempty"`
 	Enterprise bool   `json:"enterprise,omitempty"`
+	// GCS Object config.
+	JSONPath string `json:"jsonPath,omitempty"`
 }
 
 const (
@@ -66,9 +71,10 @@ func NewDefaultCredentialsController() (CredentialsController, error) {
 func NewCredentialsController(dir string) (CredentialsController, error) {
 	cc := credentialsController{
 		artifactCredentials: []Credentials{},
-		helmClients:         map[string]helm.Client{},
+		gcsClients:          map[string]*storage.Client{},
 		gitClients:          map[string]*github.Client{},
 		gitRepoClients:      map[string]*http.Client{},
+		helmClients:         map[string]helm.Client{},
 		httpClients:         map[string]*http.Client{},
 	}
 
@@ -118,20 +124,17 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 			if len(ac.Types) == 1 {
 				t := ac.Types[0]
 				switch t {
-				case TypeHTTPFile:
-					cc.httpClients[ac.Name] = http.DefaultClient
-				case TypeHelmChart:
-					if ac.Repository == "" {
-						return nil, fmt.Errorf("helm chart %s missing required \"repository\" attribute", ac.Name)
+				case TypeGCSObject:
+					opts := []option.ClientOption{option.WithScopes(storage.ScopeReadOnly)}
+					if ac.JSONPath != "" {
+						opts = append(opts, option.WithCredentialsFile(ac.JSONPath))
 					}
 
-					helmClient := helm.NewClient(ac.Repository)
-
-					if ac.Username != "" && ac.Password != "" {
-						helmClient.WithUsernameAndPassword(ac.Username, ac.Password)
+					cc.gcsClients[ac.Name], err = storage.NewClient(context.Background(), opts...)
+					if err != nil {
+						return nil, err
 					}
 
-					cc.helmClients[ac.Name] = helmClient
 				case TypeGithubFile:
 					var tc *http.Client
 
@@ -158,6 +161,7 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 						gitClient := github.NewClient(tc)
 						cc.gitClients[ac.Name] = gitClient
 					}
+
 				case TypeGitRepo:
 					var tc *http.Client
 
@@ -172,6 +176,22 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 					}
 
 					cc.gitRepoClients[ac.Name] = tc
+
+				case TypeHelmChart:
+					if ac.Repository == "" {
+						return nil, fmt.Errorf("helm chart %s missing required \"repository\" attribute", ac.Name)
+					}
+
+					helmClient := helm.NewClient(ac.Repository)
+
+					if ac.Username != "" && ac.Password != "" {
+						helmClient.WithUsernameAndPassword(ac.Username, ac.Password)
+					}
+
+					cc.helmClients[ac.Name] = helmClient
+
+				case TypeHTTPFile:
+					cc.httpClients[ac.Name] = http.DefaultClient
 				}
 			}
 
@@ -186,6 +206,7 @@ type credentialsController struct {
 	artifactCredentials []Credentials
 	httpClients         map[string]*http.Client
 	helmClients         map[string]helm.Client
+	gcsClients          map[string]*storage.Client
 	gitClients          map[string]*github.Client
 	gitRepoClients      map[string]*http.Client
 }
@@ -214,20 +235,28 @@ func (cc *credentialsController) HelmClientForAccountName(accountName string) (h
 	return cc.helmClients[accountName], nil
 }
 
-func (cc *credentialsController) GitClientForAccountName(accountName string) (*github.Client, error) {
-	if _, ok := cc.gitClients[accountName]; !ok {
-		return nil, fmt.Errorf("git account %s not found", accountName)
-	}
-
-	return cc.gitClients[accountName], nil
-}
-
 func (cc *credentialsController) HTTPClientForAccountName(accountName string) (*http.Client, error) {
 	if _, ok := cc.httpClients[accountName]; !ok {
 		return nil, fmt.Errorf("http account %s not found", accountName)
 	}
 
 	return cc.httpClients[accountName], nil
+}
+
+func (cc *credentialsController) GCSClientForAccountName(accountName string) (*storage.Client, error) {
+	if _, ok := cc.gcsClients[accountName]; !ok {
+		return nil, fmt.Errorf("gcs account %s not found", accountName)
+	}
+
+	return cc.gcsClients[accountName], nil
+}
+
+func (cc *credentialsController) GitClientForAccountName(accountName string) (*github.Client, error) {
+	if _, ok := cc.gitClients[accountName]; !ok {
+		return nil, fmt.Errorf("git account %s not found", accountName)
+	}
+
+	return cc.gitClients[accountName], nil
 }
 
 func (cc *credentialsController) GitRepoClientForAccountName(accountName string) (*http.Client, error) {
