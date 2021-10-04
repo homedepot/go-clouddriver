@@ -1,6 +1,6 @@
 package clouddriver
 
-import "github.com/homedepot/go-clouddriver/pkg/artifact"
+import "github.com/homedepot/go-clouddriver/internal/artifact"
 
 type Artifact struct {
 	CustomKind bool             `json:"customKind"`
