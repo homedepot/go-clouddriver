@@ -12,15 +12,15 @@ var (
 )
 
 var _ = Describe("ManifestFilter", func() {
-	Context("#FilterOnClusterAnnotation", func() {
+	Context("#FilterOnAnnotation", func() {
 		BeforeEach(func() {
 			fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{}}
 		})
 
 		When("called with empty list", func() {
 			BeforeEach(func() {
-				manifestFilter := kubernetes.NewManifestFilter([]unstructured.Unstructured{})
-				filteredResourcesArray = manifestFilter.FilterOnClusterAnnotation("test-cluster")
+				filteredResourcesArray = kubernetes.FilterOnAnnotation(fakeUnstructuredList.Items,
+					kubernetes.AnnotationSpinnakerMonikerCluster, "test-cluster")
 			})
 
 			It("returns an empty list", func() {
@@ -112,8 +112,8 @@ var _ = Describe("ManifestFilter", func() {
 						},
 					},
 				}
-				manifestFilter := kubernetes.NewManifestFilter(fakeResourcesArray)
-				filteredResourcesArray = manifestFilter.FilterOnClusterAnnotation("pod fakeName")
+				filteredResourcesArray = kubernetes.FilterOnAnnotation(fakeResourcesArray,
+					kubernetes.AnnotationSpinnakerMonikerCluster, "pod fakeName")
 			})
 
 			It("returns a of 2 items", func() {
@@ -122,15 +122,14 @@ var _ = Describe("ManifestFilter", func() {
 		})
 	})
 
-	Context("#FilterOnLabel", func() {
+	Context("#FilterOnLabelExists", func() {
 		BeforeEach(func() {
 			fakeUnstructuredList = &unstructured.UnstructuredList{Items: []unstructured.Unstructured{}}
 		})
 
 		When("called with empty list", func() {
 			BeforeEach(func() {
-				manifestFilter := kubernetes.NewManifestFilter([]unstructured.Unstructured{})
-				filteredResourcesArray = manifestFilter.FilterOnLabel("firstFakeLabel")
+				filteredResourcesArray = kubernetes.FilterOnLabelExists(fakeUnstructuredList.Items, "firstFakeLabel")
 			})
 
 			It("returns an empty list", func() {
@@ -210,8 +209,7 @@ var _ = Describe("ManifestFilter", func() {
 						},
 					},
 				}
-				manifestFilter := kubernetes.NewManifestFilter(fakeResourcesArray)
-				filteredResourcesArray = manifestFilter.FilterOnLabel("firstFakeLabel")
+				filteredResourcesArray = kubernetes.FilterOnLabelExists(fakeResourcesArray, "firstFakeLabel")
 			})
 
 			It("returns a list of 2 items", func() {

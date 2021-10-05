@@ -1192,7 +1192,7 @@ const payloadListServerGroups = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1280,7 +1280,7 @@ const payloadListServerGroups = `[
 							],
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1374,7 +1374,7 @@ const payloadListServerGroups = `[
 							],
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1519,7 +1519,7 @@ const payloadListServerGroupsSorted = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1605,7 +1605,7 @@ const payloadListServerGroupsSorted = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1697,7 +1697,7 @@ const payloadListServerGroupsSorted = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1839,7 +1839,7 @@ const payloadListServerGroupsSorted = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1925,7 +1925,7 @@ const payloadListServerGroupsSorted = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },

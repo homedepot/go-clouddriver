@@ -51,11 +51,18 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 		return
 	}
 
+	cluster := fmt.Sprintf("%s %s", kind, name)
 	app := "unknown"
-	labels := result.GetLabels()
 
-	if _, ok := labels[kubernetes.LabelKubernetesName]; ok {
-		app = labels[kubernetes.LabelKubernetesName]
+	annotations := result.GetAnnotations()
+	if annotations != nil {
+		if _, ok := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]; ok {
+			app = annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
+		}
+
+		if _, ok := annotations[kubernetes.AnnotationSpinnakerMonikerCluster]; ok {
+			cluster = annotations[kubernetes.AnnotationSpinnakerMonikerCluster]
+		}
 	}
 
 	kmr := ops.ManifestResponse{
@@ -66,7 +73,7 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 		Metrics:  []interface{}{},
 		Moniker: ops.ManifestResponseMoniker{
 			App:     app,
-			Cluster: fmt.Sprintf("%s %s", kind, name),
+			Cluster: cluster,
 		},
 		Name: fmt.Sprintf("%s %s", kind, name),
 		// The 'default' status of a kubernetes resource.
@@ -110,10 +117,9 @@ func (cc *Controller) GetManifestByTarget(c *gin.Context) {
 			Kind:       kind,
 			APIVersion: gvr.Group + "/" + gvr.Version,
 		},
-		LabelSelector:  kubernetes.LabelKubernetesName + "=" + application,
+		LabelSelector:  kubernetes.DefaultLabelSelector(),
 		FieldSelector:  "metadata.namespace=" + namespace,
 		TimeoutSeconds: &manifestListTimeout,
-		// Limit:          0,
 	}
 
 	list, err := provider.Client.ListByGVR(gvr, lo)
@@ -123,9 +129,11 @@ func (cc *Controller) GetManifestByTarget(c *gin.Context) {
 	}
 
 	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
-	manifestFilter := kubernetes.NewManifestFilter(list.Items)
-	items := manifestFilter.FilterOnClusterAnnotation(cluster)
-
+	items := kubernetes.FilterOnAnnotation(list.Items,
+		kubernetes.AnnotationSpinnakerMonikerCluster, cluster)
+	// Filter out all unassociated objects based on the moniker.spinnaker.io/application annotation.
+	items = kubernetes.FilterOnAnnotation(items,
+		kubernetes.AnnotationSpinnakerMonikerApplication, application)
 	if len(items) == 0 {
 		clouddriver.Error(c, http.StatusNotFound, errors.New("no resources found for cluster "+cluster))
 		return

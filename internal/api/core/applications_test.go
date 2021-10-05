@@ -1147,6 +1147,9 @@ var _ = Describe("Application", func() {
 								"name":              "test-pod1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -1169,6 +1172,9 @@ var _ = Describe("Application", func() {
 								"name":              "test-pod1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -1191,6 +1197,9 @@ var _ = Describe("Application", func() {
 								"name":              "test-pod1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -1221,7 +1230,7 @@ var _ = Describe("Application", func() {
 									"artifact.spinnaker.io/name":       "test-deployment1",
 									"artifact.spinnaker.io/type":       "kubernetes/deployment",
 									"artifact.spinnaker.io/location":   "test-namespace1",
-									"moniker.spinnaker.io/application": "test-deployment1",
+									"moniker.spinnaker.io/application": "test-application",
 									"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
 									"moniker.spinnaker.io/sequence":    "19",
 								},
@@ -1276,7 +1285,7 @@ var _ = Describe("Application", func() {
 									"artifact.spinnaker.io/name":        "test-deployment1",
 									"artifact.spinnaker.io/type":        "kubernetes/deployment",
 									"artifact.spinnaker.io/location":    "test-namespace1",
-									"moniker.spinnaker.io/application":  "test-deployment1",
+									"moniker.spinnaker.io/application":  "test-application",
 									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 									"deployment.kubernetes.io/revision": "19",
 								},
@@ -1320,7 +1329,7 @@ var _ = Describe("Application", func() {
 									"artifact.spinnaker.io/name":        "test-deployment1",
 									"artifact.spinnaker.io/type":        "kubernetes/deployment",
 									"artifact.spinnaker.io/location":    "test-namespace1",
-									"moniker.spinnaker.io/application":  "test-deployment1",
+									"moniker.spinnaker.io/application":  "test-application",
 									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 									"deployment.kubernetes.io/revision": "19",
 								},
@@ -1364,6 +1373,9 @@ var _ = Describe("Application", func() {
 								"name":      "test-svc1",
 								"namespace": "test-namespace1",
 								"uid":       "test-uid4",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 							},
 							"spec": map[string]interface{}{
 								"selector": map[string]interface{}{
@@ -1380,6 +1392,9 @@ var _ = Describe("Application", func() {
 								"name":      "test-svc2",
 								"namespace": "test-namespace1",
 								"uid":       "test-uid5",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 							},
 							"spec": map[string]interface{}{
 								"selector": map[string]interface{}{
@@ -1797,7 +1812,7 @@ var _ = Describe("Application", func() {
 			})
 		})
 
-		When("it succeeds", func() {
+		FWhen("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 				validateResponse(payloadListServerGroups)

@@ -942,8 +942,8 @@ func newServerGroup(result unstructured.Unstructured, serverGroupMap map[string]
 		}
 	}
 
-	cluster := annotations["moniker.spinnaker.io/cluster"]
-	app := annotations["moniker.spinnaker.io/application"]
+	cluster := annotations[kubernetes.AnnotationSpinnakerMonikerCluster]
+	app := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
 	sequence := sequence(annotations)
 
 	return ServerGroup{
@@ -1128,10 +1128,6 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 		return
 	}
 
-	lo := metav1.ListOptions{
-		LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
-	}
-
 	result, err := provider.Client.Get(kind, name, location)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
@@ -1141,6 +1137,11 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 	// Declare a context with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*defaultListTimeoutSeconds)
 	defer cancel()
+	// Declare a label selector.
+	lo := metav1.ListOptions{
+		LabelSelector: kubernetes.DefaultLabelSelector(),
+		FieldSelector: "metadata.namespace=" + location,
+	}
 	// "Instances" in kubernetes are pods.
 	pods, err := provider.Client.ListResourceWithContext(ctx, "pods", lo)
 	if err != nil {
@@ -1426,7 +1427,7 @@ func list(wg *sync.WaitGroup, rc chan resource,
 	defer wg.Done()
 	// Declare server side filtering options.
 	lo := metav1.ListOptions{
-		LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
+		LabelSelector: kubernetes.DefaultLabelSelector(),
 	}
 	// Declare a context with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*defaultListTimeoutSeconds)
@@ -1438,6 +1439,9 @@ func list(wg *sync.WaitGroup, rc chan resource,
 		clouddriver.Log(err)
 		return
 	}
+	// Filter the results to only the application annotation requested.
+	ul.Items = kubernetes.FilterOnAnnotation(ul.Items,
+		kubernetes.AnnotationSpinnakerMonikerApplication, application)
 	// Send all unstructured objects to the channel.
 	for _, u := range ul.Items {
 		res := resource{

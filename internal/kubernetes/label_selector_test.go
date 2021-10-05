@@ -361,6 +361,17 @@ var _ = Describe("Label Selector", func() {
 				})
 			})
 		})
+	})
 
+	Context("#DefaultLabelSelector", func() {
+		var selector string
+
+		JustBeforeEach(func() {
+			selector = DefaultLabelSelector()
+		})
+
+		It("succeeds", func() {
+			Expect(selector).To(Equal("app.kubernetes.io/managed-by in (spinnaker,spinnaker-operator)"))
+		})
 	})
 })

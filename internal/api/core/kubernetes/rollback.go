@@ -85,7 +85,7 @@ func (cc *Controller) Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 	}
 
 	lo := metav1.ListOptions{
-		LabelSelector: kubernetes.LabelKubernetesName + "=" + app,
+		LabelSelector: kubernetes.DefaultLabelSelector(),
 		FieldSelector: "metadata.namespace=" + namespace,
 	}
 
@@ -94,6 +94,9 @@ func (cc *Controller) Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
 	}
+	// Filter results to only those associated with this application.
+	replicaSets.Items = kubernetes.FilterOnAnnotation(replicaSets.Items,
+		kubernetes.AnnotationSpinnakerMonikerApplication, app)
 
 	var tr *unstructured.Unstructured
 
