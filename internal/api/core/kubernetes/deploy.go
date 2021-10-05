@@ -110,7 +110,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			}
 		}
 
-		if kube.Recreate(manifest) {
+		if kubernetes.Recreate(manifest) {
 			err = handleRecreate(provider.Client, &manifest, dm.NamespaceOverride)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
@@ -308,7 +308,7 @@ func handleUseSourceCapacity(client kubernetes.Client, u *unstructured.Unstructu
 	return nil
 }
 
-func handleRecreate(kubeClient kube.Client, u *unstructured.Unstructured, namespace string) error {
+func handleRecreate(kubeClient kubernetes.Client, u *unstructured.Unstructured, namespace string) error {
 	current, err := kubeClient.Get(u.GetKind(), u.GetName(), namespace)
 	if err != nil {
 		if errors.IsNotFound(err) {
