@@ -1149,6 +1149,9 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 		return
 	}
 
+	// Filter the results to only the application annotation requested.
+	pods.Items = kubernetes.FilterOnAnnotation(pods.Items,
+		kubernetes.AnnotationSpinnakerMonikerApplication, application)
 	instanceCounts := InstanceCounts{}
 	images := listImages(result)
 	desired := getDesiredReplicasCount(result)
@@ -1234,8 +1237,8 @@ func newPodInstance(p *kubernetes.Pod, application, account string) Instance {
 	}
 
 	annotations := p.Object().ObjectMeta.Annotations
-	cluster := annotations["moniker.spinnaker.io/cluster"]
-	app := annotations["moniker.spinnaker.io/application"]
+	cluster := annotations[kubernetes.AnnotationSpinnakerMonikerCluster]
+	app := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
 
 	if app == "" {
 		app = application
