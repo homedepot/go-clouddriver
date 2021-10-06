@@ -997,8 +997,8 @@ func sequence(annotations map[string]string) int {
 		return 0
 	}
 
-	if _, ok := annotations["moniker.spinnaker.io/sequence"]; ok {
-		sequence, _ := strconv.Atoi(annotations["moniker.spinnaker.io/sequence"])
+	if _, ok := annotations[kubernetes.AnnotationSpinnakerMonikerSequence]; ok {
+		sequence, _ := strconv.Atoi(annotations[kubernetes.AnnotationSpinnakerMonikerSequence])
 		return sequence
 	}
 
@@ -1171,8 +1171,8 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 	}
 
 	annotations := result.GetAnnotations()
-	cluster := annotations["moniker.spinnaker.io/cluster"]
-	app := annotations["moniker.spinnaker.io/application"]
+	cluster := annotations[kubernetes.AnnotationSpinnakerMonikerCluster]
+	app := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
 	sequence := sequence(annotations)
 
 	if app == "" {
@@ -1441,6 +1441,22 @@ func list(wg *sync.WaitGroup, rc chan resource,
 		// If there was an error, log and return.
 		clouddriver.Log(err)
 		return
+	}
+	// Sometimes the application annotation has a double quote ('"')
+	// character prefix and suffix, remove those to make sure we associate
+	// the resources correctly. This happens with the Spinnaker Operator, for example.
+	for _, item := range ul.Items {
+		annotations := item.GetAnnotations()
+		if annotations != nil {
+			if _, ok := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]; ok {
+				a := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
+				a = strings.TrimPrefix(a, "\"")
+				a = strings.TrimSuffix(a, "\"")
+				annotations[kubernetes.AnnotationSpinnakerMonikerApplication] = a
+			}
+
+			item.SetAnnotations(annotations)
+		}
 	}
 	// Filter the results to only the application annotation requested.
 	ul.Items = kubernetes.FilterOnAnnotation(ul.Items,

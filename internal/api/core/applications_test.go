@@ -503,6 +503,125 @@ var _ = Describe("Application", func() {
 			})
 		})
 
+		When("the application annotation is wrapped in double quotes", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{
+						{
+							Object: map[string]interface{}{
+								"kind":       "Deployment",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-deployment1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "wrong-application",
+									},
+									"labels": map[string]interface{}{
+										"label1": "test-label1",
+									},
+									"uid": "test-uid1",
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Deployment",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-deployment1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "\"test-application\"",
+									},
+									"labels": map[string]interface{}{
+										"label1": "test-label1",
+									},
+									"uid": "test-uid1",
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Deployment",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-deployment2",
+									"namespace":         "test-namespace2",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "\"test-application\"",
+									},
+									"labels": map[string]interface{}{
+										"label1": "test-label2",
+									},
+									"uid": "test-uid2",
+								},
+							},
+						},
+					},
+				}, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{
+						{
+							Object: map[string]interface{}{
+								"kind":       "ReplicaSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":      "test-rs1",
+									"namespace": "test-namespace1",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application":  "wrong-application",
+										"artifact.spinnaker.io/name":        "test-deployment1",
+										"artifact.spinnaker.io/type":        "kubernetes/deployment",
+										"deployment.kubernetes.io/revision": "236",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs1",
+											"kind": "replicaSet",
+											"uid":  "test-uid1",
+										},
+									},
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "ReplicaSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":      "test-rs1",
+									"namespace": "test-namespace1",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application":  "\"test-application\"",
+										"artifact.spinnaker.io/name":        "test-deployment1",
+										"artifact.spinnaker.io/type":        "kubernetes/deployment",
+										"deployment.kubernetes.io/revision": "236",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs1",
+											"kind": "replicaSet",
+											"uid":  "test-uid1",
+										},
+									},
+								},
+							},
+						},
+					},
+				}, nil)
+				log.SetOutput(ioutil.Discard)
+			})
+
+			It("succeeds", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadServerGroupManagers)
+			})
+		})
+
 		When("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
