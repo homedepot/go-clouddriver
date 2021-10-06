@@ -32,19 +32,12 @@ func GetCurrentVersion(ul *unstructured.UnstructuredList, kind, name string) str
 		return currentVersion
 	}
 
-	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
-	manifestFilter := NewManifestFilter(ul.Items)
+	// Filter out all unassociated objects based on the
+	// moniker.spinnaker.io/cluster annotation.
 	cluster = kind + " " + name
-
-	results := manifestFilter.FilterOnClusterAnnotation(cluster)
-	if len(results) == 0 {
-		return currentVersion
-	}
-
+	results := FilterOnAnnotation(ul.Items, AnnotationSpinnakerMonikerCluster, cluster)
 	// Filter out empty moniker.spinnaker.io/sequence labels
-	manifestFilter2 := NewManifestFilter(results)
-	results = manifestFilter2.FilterOnLabel(LabelSpinnakerMonikerSequence)
-
+	results = FilterOnLabelExists(results, LabelSpinnakerMonikerSequence)
 	if len(results) == 0 {
 		return currentVersion
 	}

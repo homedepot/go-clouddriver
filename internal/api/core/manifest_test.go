@@ -75,7 +75,7 @@ var _ = Describe("Manifest", func() {
 		})
 
 		JustBeforeEach(func() {
-			uri = svr.URL + "/manifests/test-account/test-namespace/test-kind/cluster/test-app/deployment test-deployment/dynamic/" + target
+			uri = svr.URL + "/manifests/test-account/test-namespace/test-kind/cluster/test-application/deployment test-deployment/dynamic/" + target
 			createRequest(http.MethodGet)
 			doRequest()
 		})
@@ -149,7 +149,18 @@ var _ = Describe("Manifest", func() {
 								Object: map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"annotations": map[string]interface{}{
-											kubernetes.AnnotationSpinnakerMonikerCluster: "deployment test-deployment",
+											kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+											kubernetes.AnnotationSpinnakerMonikerApplication: "wrong-application",
+										},
+									},
+								},
+							},
+							{
+								Object: map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+											kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
 										},
 									},
 								},
@@ -188,7 +199,18 @@ var _ = Describe("Manifest", func() {
 								Object: map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"annotations": map[string]interface{}{
-											kubernetes.AnnotationSpinnakerMonikerCluster: "deployment test-deployment",
+											kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+											kubernetes.AnnotationSpinnakerMonikerApplication: "wrong-application",
+										},
+									},
+								},
+							},
+							{
+								Object: map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+											kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
 										},
 									},
 								},

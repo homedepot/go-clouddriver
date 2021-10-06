@@ -75,7 +75,8 @@ func setup() {
 				Object: map[string]interface{}{
 					"metadata": map[string]interface{}{
 						"annotations": map[string]interface{}{
-							kubernetes.AnnotationSpinnakerMonikerCluster: "deployment test-deployment",
+							kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+							kubernetes.AnnotationSpinnakerMonikerApplication: "wrong-application",
 						},
 						"name":      "test-name",
 						"namespace": "test-namespace",
@@ -86,7 +87,20 @@ func setup() {
 				Object: map[string]interface{}{
 					"metadata": map[string]interface{}{
 						"annotations": map[string]interface{}{
-							kubernetes.AnnotationSpinnakerMonikerCluster: "deployment test-deployment",
+							kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+							kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+						},
+						"name":      "test-name",
+						"namespace": "test-namespace",
+					},
+				},
+			},
+			{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+							kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
 						},
 						"name":      "test-name",
 						"namespace": "test-namespace",
@@ -134,6 +148,22 @@ func setup() {
 						"annotations": map[string]interface{}{
 							kubernetes.AnnotationSpinnakerMonikerCluster: "deployment test-deployment",
 						},
+					},
+				},
+			},
+		},
+	}, nil)
+	fakeKubeClient.ListResourcesByKindAndNamespaceReturns(&unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+							kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+						},
+						"name":      "test-name",
+						"namespace": "test-namespace",
 					},
 				},
 			},

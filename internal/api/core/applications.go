@@ -942,8 +942,8 @@ func newServerGroup(result unstructured.Unstructured, serverGroupMap map[string]
 		}
 	}
 
-	cluster := annotations["moniker.spinnaker.io/cluster"]
-	app := annotations["moniker.spinnaker.io/application"]
+	cluster := annotations[kubernetes.AnnotationSpinnakerMonikerCluster]
+	app := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
 	sequence := sequence(annotations)
 
 	return ServerGroup{
@@ -997,8 +997,8 @@ func sequence(annotations map[string]string) int {
 		return 0
 	}
 
-	if _, ok := annotations["moniker.spinnaker.io/sequence"]; ok {
-		sequence, _ := strconv.Atoi(annotations["moniker.spinnaker.io/sequence"])
+	if _, ok := annotations[kubernetes.AnnotationSpinnakerMonikerSequence]; ok {
+		sequence, _ := strconv.Atoi(annotations[kubernetes.AnnotationSpinnakerMonikerSequence])
 		return sequence
 	}
 
@@ -1128,10 +1128,6 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 		return
 	}
 
-	lo := metav1.ListOptions{
-		LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
-	}
-
 	result, err := provider.Client.Get(kind, name, location)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
@@ -1141,6 +1137,11 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 	// Declare a context with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*defaultListTimeoutSeconds)
 	defer cancel()
+	// Declare a label selector.
+	lo := metav1.ListOptions{
+		LabelSelector: kubernetes.DefaultLabelSelector(),
+		FieldSelector: "metadata.namespace=" + location,
+	}
 	// "Instances" in kubernetes are pods.
 	pods, err := provider.Client.ListResourceWithContext(ctx, "pods", lo)
 	if err != nil {
@@ -1148,6 +1149,9 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 		return
 	}
 
+	// Filter the results to only the application annotation requested.
+	pods.Items = kubernetes.FilterOnAnnotation(pods.Items,
+		kubernetes.AnnotationSpinnakerMonikerApplication, application)
 	instanceCounts := InstanceCounts{}
 	images := listImages(result)
 	desired := getDesiredReplicasCount(result)
@@ -1167,8 +1171,8 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 	}
 
 	annotations := result.GetAnnotations()
-	cluster := annotations["moniker.spinnaker.io/cluster"]
-	app := annotations["moniker.spinnaker.io/application"]
+	cluster := annotations[kubernetes.AnnotationSpinnakerMonikerCluster]
+	app := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
 	sequence := sequence(annotations)
 
 	if app == "" {
@@ -1233,8 +1237,8 @@ func newPodInstance(p *kubernetes.Pod, application, account string) Instance {
 	}
 
 	annotations := p.Object().ObjectMeta.Annotations
-	cluster := annotations["moniker.spinnaker.io/cluster"]
-	app := annotations["moniker.spinnaker.io/application"]
+	cluster := annotations[kubernetes.AnnotationSpinnakerMonikerCluster]
+	app := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
 
 	if app == "" {
 		app = application
@@ -1426,7 +1430,7 @@ func list(wg *sync.WaitGroup, rc chan resource,
 	defer wg.Done()
 	// Declare server side filtering options.
 	lo := metav1.ListOptions{
-		LabelSelector: kubernetes.LabelKubernetesName + "=" + application,
+		LabelSelector: kubernetes.DefaultLabelSelector(),
 	}
 	// Declare a context with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*defaultListTimeoutSeconds)
@@ -1438,6 +1442,25 @@ func list(wg *sync.WaitGroup, rc chan resource,
 		clouddriver.Log(err)
 		return
 	}
+	// Sometimes the application annotation has a double quote ('"')
+	// character prefix and suffix, remove those to make sure we associate
+	// the resources correctly. This happens with the Spinnaker Operator, for example.
+	for _, item := range ul.Items {
+		annotations := item.GetAnnotations()
+		if annotations != nil {
+			if _, ok := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]; ok {
+				a := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
+				a = strings.TrimPrefix(a, "\"")
+				a = strings.TrimSuffix(a, "\"")
+				annotations[kubernetes.AnnotationSpinnakerMonikerApplication] = a
+			}
+
+			item.SetAnnotations(annotations)
+		}
+	}
+	// Filter the results to only the application annotation requested.
+	ul.Items = kubernetes.FilterOnAnnotation(ul.Items,
+		kubernetes.AnnotationSpinnakerMonikerApplication, application)
 	// Send all unstructured objects to the channel.
 	for _, u := range ul.Items {
 		res := resource{

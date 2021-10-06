@@ -144,9 +144,10 @@ var _ = Describe("Rollback", func() {
 					"apiVersion": "test-api-version",
 					"metadata": map[string]interface{}{
 						"annotations": map[string]interface{}{
-							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-							"deployment.kubernetes.io/revision":        "asdf",
+							kubernetes.AnnotationSpinnakerMonikerApplication: "test-app",
+							kubernetes.AnnotationSpinnakerArtifactName:       "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType:       "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":              "asdf",
 						},
 						"name": "test-name",
 					},
@@ -158,9 +159,10 @@ var _ = Describe("Rollback", func() {
 					"apiVersion": "test-api-version",
 					"metadata": map[string]interface{}{
 						"annotations": map[string]interface{}{
-							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-							"deployment.kubernetes.io/revision":        "100",
+							kubernetes.AnnotationSpinnakerMonikerApplication: "test-app",
+							kubernetes.AnnotationSpinnakerArtifactName:       "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType:       "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":              "100",
 						},
 						"name": "test-name",
 					},
@@ -172,9 +174,10 @@ var _ = Describe("Rollback", func() {
 					"apiVersion": "test-api-version",
 					"metadata": map[string]interface{}{
 						"annotations": map[string]interface{}{
-							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-							"deployment.kubernetes.io/revision":        "101",
+							kubernetes.AnnotationSpinnakerMonikerApplication: "test-app",
+							kubernetes.AnnotationSpinnakerArtifactName:       "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType:       "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":              "101",
 						},
 						"name": "test-name",
 					},
@@ -204,9 +207,10 @@ var _ = Describe("Rollback", func() {
 					"apiVersion": "test-api-version",
 					"metadata": map[string]interface{}{
 						"annotations": map[string]interface{}{
-							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-							"deployment.kubernetes.io/revision":        "99",
+							kubernetes.AnnotationSpinnakerMonikerApplication: "test-app",
+							kubernetes.AnnotationSpinnakerArtifactName:       "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType:       "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":              "99",
 						},
 						"name": "test-name",
 					},
@@ -218,9 +222,10 @@ var _ = Describe("Rollback", func() {
 					"apiVersion": "test-api-version",
 					"metadata": map[string]interface{}{
 						"annotations": map[string]interface{}{
-							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-							"deployment.kubernetes.io/revision":        "100",
+							kubernetes.AnnotationSpinnakerMonikerApplication: "test-app",
+							kubernetes.AnnotationSpinnakerArtifactName:       "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType:       "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":              "100",
 						},
 						"name": "test-name",
 					},
@@ -243,13 +248,45 @@ var _ = Describe("Rollback", func() {
 		})
 	})
 
+	When("the annotation moniker is incorrect", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(namespaceScopedProvider, nil)
+			fakeUnstructured := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "test-kind",
+					"apiVersion": "test-api-version",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerMonikerApplication: "wrong-app",
+							kubernetes.AnnotationSpinnakerArtifactName:       "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType:       "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":              "100",
+						},
+						"name":      "test-name",
+						"namespace": "provider-namespace",
+					},
+				},
+			}
+			fakeUnstructuredList := &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					fakeUnstructured,
+				},
+			}
+			fakeKubeClient.ListByGVRReturns(fakeUnstructuredList, nil)
+		})
+
+		It("returns status 404 not found", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusNotFound))
+		})
+	})
+
 	When("it succeeds", func() {
 		It("succeeds", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 			u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
 			b, _ := json.Marshal(&u)
 			Expect(string(namespace)).To(Equal(""))
-			Expect(string(b)).To(Equal("{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/name\":\"test-deployment\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\"},\"creationTimestamp\":null},\"spec\":{\"selector\":null,\"strategy\":{},\"template\":{\"metadata\":{\"creationTimestamp\":null},\"spec\":{\"containers\":null}}},\"status\":{}}"))
+			Expect(string(b)).To(Equal("{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/name\":\"test-deployment\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\",\"moniker.spinnaker.io/application\":\"test-app\"},\"creationTimestamp\":null},\"spec\":{\"selector\":null,\"strategy\":{},\"template\":{\"metadata\":{\"creationTimestamp\":null},\"spec\":{\"containers\":null}}},\"status\":{}}"))
 		})
 	})
 
@@ -262,9 +299,10 @@ var _ = Describe("Rollback", func() {
 					"apiVersion": "test-api-version",
 					"metadata": map[string]interface{}{
 						"annotations": map[string]interface{}{
-							kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-							kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-							"deployment.kubernetes.io/revision":        "100",
+							kubernetes.AnnotationSpinnakerMonikerApplication: "test-app",
+							kubernetes.AnnotationSpinnakerArtifactName:       "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType:       "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":              "100",
 						},
 						"name":      "test-name",
 						"namespace": "provider-namespace",
@@ -296,7 +334,7 @@ var _ = Describe("Rollback", func() {
 				u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
 				b, _ := json.Marshal(&u)
 				Expect(string(namespace)).To(Equal("provider-namespace"))
-				Expect(string(b)).To(Equal("{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/name\":\"test-deployment\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\"},\"creationTimestamp\":null},\"spec\":{\"selector\":null,\"strategy\":{},\"template\":{\"metadata\":{\"creationTimestamp\":null},\"spec\":{\"containers\":null}}},\"status\":{}}"))
+				Expect(string(b)).To(Equal("{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/name\":\"test-deployment\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\",\"moniker.spinnaker.io/application\":\"test-app\"},\"creationTimestamp\":null},\"spec\":{\"selector\":null,\"strategy\":{},\"template\":{\"metadata\":{\"creationTimestamp\":null},\"spec\":{\"containers\":null}}},\"status\":{}}"))
 			})
 		})
 	})

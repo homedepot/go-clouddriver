@@ -1192,7 +1192,7 @@ const payloadListServerGroups = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1280,7 +1280,7 @@ const payloadListServerGroups = `[
 							],
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1374,7 +1374,7 @@ const payloadListServerGroups = `[
 							],
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1519,7 +1519,7 @@ const payloadListServerGroupsSorted = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1605,7 +1605,7 @@ const payloadListServerGroupsSorted = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1697,7 +1697,7 @@ const payloadListServerGroupsSorted = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1839,7 +1839,7 @@ const payloadListServerGroupsSorted = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -1925,7 +1925,7 @@ const payloadListServerGroupsSorted = `[
               "loadBalancers": null,
               "manifest": null,
               "moniker": {
-                "app": "test-deployment1",
+                "app": "test-application",
                 "cluster": "deployment test-deployment1",
                 "sequence": 19
               },
@@ -2243,6 +2243,9 @@ const payloadGetServerGroup = `{
                   "apiVersion": "v1",
                   "kind": "Pod",
                   "metadata": {
+										"annotations": {
+											"moniker.spinnaker.io/application": "test-application"
+										},
                     "creationTimestamp": "2020-02-13T14:12:03Z",
                     "labels": {
                       "label1": "test-label1"
@@ -2303,6 +2306,9 @@ const payloadGetServerGroup = `{
                   "apiVersion": "v1",
                   "kind": "Pod",
                   "metadata": {
+										"annotations": {
+											"moniker.spinnaker.io/application": "test-application"
+										},
                     "creationTimestamp": "2020-02-13T14:12:03Z",
                     "labels": {
                       "label1": "test-label1"
@@ -2350,7 +2356,7 @@ const payloadGetServerGroup = `{
                   "artifact.spinnaker.io/name": "test-deployment2",
                   "artifact.spinnaker.io/type": "kubernetes/deployment",
                   "deployment.kubernetes.io/revision": "19",
-                  "moniker.spinnaker.io/application": "test-deployment2",
+                  "moniker.spinnaker.io/application": "test-application",
                   "moniker.spinnaker.io/cluster": "deployment test-deployment1"
                 },
                 "creationTimestamp": "2020-02-13T14:12:03Z",
@@ -2378,7 +2384,7 @@ const payloadGetServerGroup = `{
               }
             },
             "moniker": {
-              "app": "test-deployment2",
+              "app": "test-application",
               "cluster": "deployment test-deployment1",
               "sequence": 19
             },

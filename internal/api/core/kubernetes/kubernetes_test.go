@@ -72,9 +72,10 @@ func setup() {
 			"apiVersion": "test-api-version",
 			"metadata": map[string]interface{}{
 				"annotations": map[string]interface{}{
-					kubernetes.AnnotationSpinnakerArtifactName: "test-deployment",
-					kubernetes.AnnotationSpinnakerArtifactType: "kubernetes/deployment",
-					"deployment.kubernetes.io/revision":        "100",
+					kubernetes.AnnotationSpinnakerMonikerApplication: "test-app",
+					kubernetes.AnnotationSpinnakerArtifactName:       "test-deployment",
+					kubernetes.AnnotationSpinnakerArtifactType:       "kubernetes/deployment",
+					"deployment.kubernetes.io/revision":              "100",
 				},
 				"name": "test-name",
 			},
@@ -89,6 +90,7 @@ func setup() {
 	fakeKubeClient = &kubernetesfakes.FakeClient{}
 	fakeKubeClient.GetReturns(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil)
 	fakeKubeClient.ListByGVRReturns(fakeUnstructuredList, nil)
+	fakeKubeClient.ListResourcesByKindAndNamespaceReturns(fakeUnstructuredList, nil)
 
 	fakeKubeController = &kubernetesfakes.FakeController{}
 	fakeKubeController.NewClientReturns(fakeKubeClient, nil)

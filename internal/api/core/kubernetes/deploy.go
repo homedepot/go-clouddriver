@@ -8,10 +8,10 @@ import (
 
 	"github.com/homedepot/go-clouddriver/internal"
 	"github.com/homedepot/go-clouddriver/internal/artifact"
+	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	kube "github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -57,7 +57,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		return
 	}
 	// Sort the manifests by their kind's priority.
-	manifests = kube.SortManifests(manifests)
+	manifests = kubernetes.SortManifests(manifests)
 	application := dm.Moniker.App
 	// Consolidate all deploy manifest request artifacts.
 	artifacts := []clouddriver.Artifact{}
@@ -80,21 +80,21 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			manifest.SetName(generateName + rand.String(randNameNumber))
 		}
 
-		err = kube.AddSpinnakerAnnotations(&manifest, application)
+		err = kubernetes.AddSpinnakerAnnotations(&manifest, application)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		err = kube.AddSpinnakerLabels(&manifest, application)
+		err = kubernetes.AddSpinnakerLabels(&manifest, application)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
 
-		kube.BindArtifacts(&manifest, artifacts)
+		kubernetes.BindArtifacts(&manifest, artifacts)
 
-		if kube.IsVersioned(manifest) {
+		if kubernetes.IsVersioned(manifest) {
 			err := handleVersionedManifest(provider.Client, &manifest, application)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
@@ -102,7 +102,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			}
 		}
 
-		if kube.UseSourceCapacity(manifest) {
+		if kubernetes.UseSourceCapacity(manifest) {
 			err = handleUseSourceCapacity(provider.Client, &manifest, namespace)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
@@ -110,7 +110,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			}
 		}
 
-		if kube.Recreate(manifest) {
+		if kubernetes.Recreate(manifest) {
 			err = handleRecreate(provider.Client, &manifest, dm.NamespaceOverride)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
@@ -127,7 +127,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
-		kr := kube.Resource{
+		kr := kubernetes.Resource{
 			AccountName:  dm.Account,
 			ID:           uuid.New().String(),
 			TaskID:       taskID,
@@ -144,7 +144,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		annotations := manifest.GetAnnotations()
-		artifactType := annotations[kube.AnnotationSpinnakerArtifactType]
+		artifactType := annotations[kubernetes.AnnotationSpinnakerArtifactType]
 		artifact := clouddriver.Artifact{
 			Name:      nameWithoutVersion,
 			Reference: meta.Name,
@@ -183,7 +183,7 @@ func toUnstructured(manifests []map[string]interface{}) ([]unstructured.Unstruct
 	m := []unstructured.Unstructured{}
 
 	for _, manifest := range manifests {
-		u, err := kube.ToUnstructured(manifest)
+		u, err := kubernetes.ToUnstructured(manifest)
 		if err != nil {
 			return nil, fmt.Errorf("kubernetes: unable to convert manifest to unstructured: %w", err)
 		}
@@ -204,12 +204,9 @@ func lowercaseFirst(str string) string {
 
 func getListOptions(app string) (metav1.ListOptions, error) {
 	labelSelector := metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			kube.LabelKubernetesName: app,
-		},
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{
-				Key:      kube.LabelSpinnakerMonikerSequence,
+				Key:      kubernetes.LabelSpinnakerMonikerSequence,
 				Operator: metav1.LabelSelectorOpExists,
 			},
 		},
@@ -248,7 +245,7 @@ func mergeManifests(manifests []unstructured.Unstructured) ([]unstructured.Unstr
 	return mergedManifests, nil
 }
 
-func handleVersionedManifest(client kube.Client, u *unstructured.Unstructured, application string) error {
+func handleVersionedManifest(client kubernetes.Client, u *unstructured.Unstructured, application string) error {
 	lo, err := getListOptions(application)
 	if err != nil {
 		return err
@@ -262,17 +259,20 @@ func handleVersionedManifest(client kube.Client, u *unstructured.Unstructured, a
 		return err
 	}
 
+	// Filter results to only those associated with this application.
+	results.Items = kubernetes.FilterOnAnnotation(results.Items,
+		kubernetes.AnnotationSpinnakerMonikerApplication, application)
 	nameWithoutVersion := u.GetName()
-	currentVersion := kube.GetCurrentVersion(results, kind, nameWithoutVersion)
-	latestVersion := kube.IncrementVersion(currentVersion)
+	currentVersion := kubernetes.GetCurrentVersion(results, kind, nameWithoutVersion)
+	latestVersion := kubernetes.IncrementVersion(currentVersion)
 	u.SetName(nameWithoutVersion + "-" + latestVersion.Long)
 
-	err = kube.AddSpinnakerVersionAnnotations(u, latestVersion)
+	err = kubernetes.AddSpinnakerVersionAnnotations(u, latestVersion)
 	if err != nil {
 		return err
 	}
 
-	err = kube.AddSpinnakerVersionLabels(u, latestVersion)
+	err = kubernetes.AddSpinnakerVersionLabels(u, latestVersion)
 	if err != nil {
 		return err
 	}
@@ -280,7 +280,7 @@ func handleVersionedManifest(client kube.Client, u *unstructured.Unstructured, a
 	return nil
 }
 
-func handleUseSourceCapacity(client kube.Client, u *unstructured.Unstructured, namespace string) error {
+func handleUseSourceCapacity(client kubernetes.Client, u *unstructured.Unstructured, namespace string) error {
 	current, err := client.Get(u.GetKind(), u.GetName(), namespace)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -308,7 +308,7 @@ func handleUseSourceCapacity(client kube.Client, u *unstructured.Unstructured, n
 	return nil
 }
 
-func handleRecreate(kubeClient kube.Client, u *unstructured.Unstructured, namespace string) error {
+func handleRecreate(kubeClient kubernetes.Client, u *unstructured.Unstructured, namespace string) error {
 	current, err := kubeClient.Get(u.GetKind(), u.GetName(), namespace)
 	if err != nil {
 		if errors.IsNotFound(err) {

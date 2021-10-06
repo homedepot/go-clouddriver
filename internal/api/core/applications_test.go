@@ -1,8 +1,6 @@
 package core_test
 
 import (
-	// . "github.com/homedepot/go-clouddriver/internal/api/v0"
-
 	"errors"
 	"io/ioutil"
 	"log"
@@ -121,6 +119,27 @@ var _ = Describe("Application", func() {
 								"name":              "test-deployment1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "wrong-application",
+								},
+								"labels": map[string]interface{}{
+									"label1": "test-label1",
+								},
+								"uid": "test-uid1",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Deployment",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-deployment1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -136,6 +155,9 @@ var _ = Describe("Application", func() {
 								"name":              "test-deployment2",
 								"namespace":         "test-namespace2",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label2",
 								},
@@ -155,6 +177,30 @@ var _ = Describe("Application", func() {
 								"name":      "test-rs1",
 								"namespace": "test-namespace1",
 								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application":  "wrong-application",
+									"artifact.spinnaker.io/name":        "test-deployment1",
+									"artifact.spinnaker.io/type":        "kubernetes/deployment",
+									"deployment.kubernetes.io/revision": "236",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs1",
+										"kind": "replicaSet",
+										"uid":  "test-uid1",
+									},
+								},
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-rs1",
+								"namespace": "test-namespace1",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application":  "test-application",
 									"artifact.spinnaker.io/name":        "test-deployment1",
 									"artifact.spinnaker.io/type":        "kubernetes/deployment",
 									"deployment.kubernetes.io/revision": "236",
@@ -246,6 +292,27 @@ var _ = Describe("Application", func() {
 									"name":              "test-deployment3",
 									"namespace":         "test-namespace3",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "wrong-application",
+									},
+									"labels": map[string]interface{}{
+										"label1": "test-label3",
+									},
+									"uid": "test-uid3",
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Deployment",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-deployment3",
+									"namespace":         "test-namespace3",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label3",
 									},
@@ -261,6 +328,9 @@ var _ = Describe("Application", func() {
 									"name":              "test-deployment4",
 									"namespace":         "test-namespace2",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label2",
 									},
@@ -276,6 +346,9 @@ var _ = Describe("Application", func() {
 									"name":              "test-deployment1",
 									"namespace":         "test-namespace1",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label1",
 									},
@@ -291,6 +364,9 @@ var _ = Describe("Application", func() {
 									"name":              "test-deployment2",
 									"namespace":         "test-namespace2",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label2",
 									},
@@ -310,6 +386,30 @@ var _ = Describe("Application", func() {
 									"name":      "test-rs4",
 									"namespace": "test-namespace2",
 									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application":  "wrong-application",
+										"artifact.spinnaker.io/name":        "test-deployment2",
+										"artifact.spinnaker.io/type":        "kubernetes/deployment",
+										"deployment.kubernetes.io/revision": "236",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs2",
+											"kind": "Deployment",
+											"uid":  "test-uid2",
+										},
+									},
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "ReplicaSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":      "test-rs4",
+									"namespace": "test-namespace2",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application":  "test-application",
 										"artifact.spinnaker.io/name":        "test-deployment2",
 										"artifact.spinnaker.io/type":        "kubernetes/deployment",
 										"deployment.kubernetes.io/revision": "236",
@@ -332,6 +432,7 @@ var _ = Describe("Application", func() {
 									"name":      "test-rs3",
 									"namespace": "test-namespace3",
 									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application":  "test-application",
 										"artifact.spinnaker.io/name":        "test-deployment3",
 										"artifact.spinnaker.io/type":        "kubernetes/deployment",
 										"deployment.kubernetes.io/revision": "236",
@@ -354,6 +455,7 @@ var _ = Describe("Application", func() {
 									"name":      "test-rs2",
 									"namespace": "test-namespace2",
 									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application":  "test-application",
 										"artifact.spinnaker.io/name":        "test-deployment2",
 										"artifact.spinnaker.io/type":        "kubernetes/deployment",
 										"deployment.kubernetes.io/revision": "236",
@@ -376,6 +478,7 @@ var _ = Describe("Application", func() {
 									"name":      "test-rs1",
 									"namespace": "test-namespace1",
 									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application":  "test-application",
 										"artifact.spinnaker.io/name":        "test-deployment1",
 										"artifact.spinnaker.io/type":        "kubernetes/deployment",
 										"deployment.kubernetes.io/revision": "236",
@@ -397,6 +500,125 @@ var _ = Describe("Application", func() {
 			It("returns a sorted list of server group managers", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 				validateResponse(payloadServerGroupManagersSorted)
+			})
+		})
+
+		When("the application annotation is wrapped in double quotes", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{
+						{
+							Object: map[string]interface{}{
+								"kind":       "Deployment",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-deployment1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "wrong-application",
+									},
+									"labels": map[string]interface{}{
+										"label1": "test-label1",
+									},
+									"uid": "test-uid1",
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Deployment",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-deployment1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "\"test-application\"",
+									},
+									"labels": map[string]interface{}{
+										"label1": "test-label1",
+									},
+									"uid": "test-uid1",
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Deployment",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-deployment2",
+									"namespace":         "test-namespace2",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "\"test-application\"",
+									},
+									"labels": map[string]interface{}{
+										"label1": "test-label2",
+									},
+									"uid": "test-uid2",
+								},
+							},
+						},
+					},
+				}, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{
+						{
+							Object: map[string]interface{}{
+								"kind":       "ReplicaSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":      "test-rs1",
+									"namespace": "test-namespace1",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application":  "wrong-application",
+										"artifact.spinnaker.io/name":        "test-deployment1",
+										"artifact.spinnaker.io/type":        "kubernetes/deployment",
+										"deployment.kubernetes.io/revision": "236",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs1",
+											"kind": "replicaSet",
+											"uid":  "test-uid1",
+										},
+									},
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "ReplicaSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":      "test-rs1",
+									"namespace": "test-namespace1",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application":  "\"test-application\"",
+										"artifact.spinnaker.io/name":        "test-deployment1",
+										"artifact.spinnaker.io/type":        "kubernetes/deployment",
+										"deployment.kubernetes.io/revision": "236",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs1",
+											"kind": "replicaSet",
+											"uid":  "test-uid1",
+										},
+									},
+								},
+							},
+						},
+					},
+				}, nil)
+				log.SetOutput(ioutil.Discard)
+			})
+
+			It("succeeds", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadServerGroupManagers)
 			})
 		})
 
@@ -427,6 +649,9 @@ var _ = Describe("Application", func() {
 								"name":              "test-pod1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "wrong-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -449,6 +674,34 @@ var _ = Describe("Application", func() {
 								"name":              "test-pod1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
+								"labels": map[string]interface{}{
+									"label1": "test-label1",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs1",
+										"kind": "replicaSet",
+										"uid":  "test-uid1",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -471,6 +724,9 @@ var _ = Describe("Application", func() {
 								"name":              "test-pod1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -497,6 +753,27 @@ var _ = Describe("Application", func() {
 								"name":              "test-ingress1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "wrong-application",
+								},
+								"labels": map[string]interface{}{
+									"label1": "test-label1",
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Ingress",
+							"apiVersion": "networking.k8s.io/v1beta1",
+							"metadata": map[string]interface{}{
+								"name":              "test-ingress1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -513,6 +790,27 @@ var _ = Describe("Application", func() {
 							"kind":       "Service",
 							"apiVersion": "v1",
 							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "wrong-application",
+								},
+								"name":      "test-service1",
+								"namespace": "test-namespace1",
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]interface{}{
+									"test": "label",
+								},
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Service",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"name":      "test-service1",
 								"namespace": "test-namespace1",
 							},
@@ -539,7 +837,58 @@ var _ = Describe("Application", func() {
 									"artifact.spinnaker.io/name":       "test-deployment1",
 									"artifact.spinnaker.io/type":       "kubernetes/deployment",
 									"artifact.spinnaker.io/location":   "test-namespace1",
-									"moniker.spinnaker.io/application": "test-deployment1",
+									"moniker.spinnaker.io/application": "wrong-application",
+									"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
+									"moniker.spinnaker.io/sequence":    "19",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-deployment1",
+										"kind": "Deployment",
+										"uid":  "test-uid3",
+									},
+								},
+								"uid": "test-uid1",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label",
+										},
+									},
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":       "test-deployment1",
+									"artifact.spinnaker.io/type":       "kubernetes/deployment",
+									"artifact.spinnaker.io/location":   "test-namespace1",
+									"moniker.spinnaker.io/application": "test-application",
 									"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
 									"moniker.spinnaker.io/sequence":    "19",
 								},
@@ -594,7 +943,46 @@ var _ = Describe("Application", func() {
 									"artifact.spinnaker.io/name":        "test-deployment1",
 									"artifact.spinnaker.io/type":        "kubernetes/deployment",
 									"artifact.spinnaker.io/location":    "test-namespace1",
-									"moniker.spinnaker.io/application":  "test-deployment1",
+									"moniker.spinnaker.io/application":  "wrong-application",
+									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+									"deployment.kubernetes.io/revision": "19",
+								},
+								"uid": "test-uid3",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "StatefulSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":        "test-deployment1",
+									"artifact.spinnaker.io/type":        "kubernetes/deployment",
+									"artifact.spinnaker.io/location":    "test-namespace1",
+									"moniker.spinnaker.io/application":  "test-application",
 									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 									"deployment.kubernetes.io/revision": "19",
 								},
@@ -633,7 +1021,7 @@ var _ = Describe("Application", func() {
 									"artifact.spinnaker.io/name":        "test-deployment1",
 									"artifact.spinnaker.io/type":        "kubernetes/deployment",
 									"artifact.spinnaker.io/location":    "test-namespace1",
-									"moniker.spinnaker.io/application":  "test-deployment1",
+									"moniker.spinnaker.io/application":  "test-application",
 									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 									"deployment.kubernetes.io/revision": "19",
 								},
@@ -734,6 +1122,9 @@ var _ = Describe("Application", func() {
 									"name":              "test-pod1",
 									"namespace":         "test-namespace1",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "wrong-application",
+									},
 									"labels": map[string]interface{}{
 										"test": "label3",
 									},
@@ -756,6 +1147,34 @@ var _ = Describe("Application", func() {
 									"name":              "test-pod1",
 									"namespace":         "test-namespace1",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
+									"labels": map[string]interface{}{
+										"test": "label3",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs1",
+											"kind": "replicaSet",
+											"uid":  "test-uid11",
+										},
+									},
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Pod",
+								"apiVersion": "v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-pod1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"test": "label2",
 									},
@@ -778,6 +1197,9 @@ var _ = Describe("Application", func() {
 									"name":              "test-pod1",
 									"namespace":         "test-namespace1",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"test": "label1",
 									},
@@ -804,6 +1226,27 @@ var _ = Describe("Application", func() {
 									"name":              "test-ingress3",
 									"namespace":         "test-namespace2",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "wrong-application",
+									},
+									"labels": map[string]interface{}{
+										"label1": "test-label1",
+									},
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Ingress",
+								"apiVersion": "networking.k8s.io/v1beta1",
+								"metadata": map[string]interface{}{
+									"name":              "test-ingress3",
+									"namespace":         "test-namespace2",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label1",
 									},
@@ -819,6 +1262,9 @@ var _ = Describe("Application", func() {
 									"name":              "test-ingress2",
 									"namespace":         "test-namespace2",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label1",
 									},
@@ -834,6 +1280,9 @@ var _ = Describe("Application", func() {
 									"name":              "test-ingress1",
 									"namespace":         "test-namespace1",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label1",
 									},
@@ -850,6 +1299,9 @@ var _ = Describe("Application", func() {
 								"kind":       "Service",
 								"apiVersion": "v1",
 								"metadata": map[string]interface{}{
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "wrong-application",
+									},
 									"name":      "test-service3",
 									"namespace": "test-namespace2",
 									"uid":       "aec15437-4e6a-11ea-9788-4201ac100006",
@@ -866,6 +1318,28 @@ var _ = Describe("Application", func() {
 								"kind":       "Service",
 								"apiVersion": "v1",
 								"metadata": map[string]interface{}{
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
+									"name":      "test-service3",
+									"namespace": "test-namespace2",
+									"uid":       "aec15437-4e6a-11ea-9788-4201ac100006",
+								},
+								"spec": map[string]interface{}{
+									"selector": map[string]interface{}{
+										"test": "label",
+									},
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Service",
+								"apiVersion": "v1",
+								"metadata": map[string]interface{}{
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"name":      "test-service2",
 									"namespace": "test-namespace2",
 									"uid":       "bec15437-4e6a-11ea-9788-4201ac100006",
@@ -882,6 +1356,9 @@ var _ = Describe("Application", func() {
 								"kind":       "Service",
 								"apiVersion": "v1",
 								"metadata": map[string]interface{}{
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"name":      "test-service1",
 									"namespace": "test-namespace1",
 									"uid":       "cec15437-4e6a-11ea-9788-4201ac100006",
@@ -909,7 +1386,58 @@ var _ = Describe("Application", func() {
 										"artifact.spinnaker.io/name":       "test-deployment1",
 										"artifact.spinnaker.io/type":       "kubernetes/deployment",
 										"artifact.spinnaker.io/location":   "test-namespace1",
-										"moniker.spinnaker.io/application": "test-deployment1",
+										"moniker.spinnaker.io/application": "wrong-application",
+										"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
+										"moniker.spinnaker.io/sequence":    "19",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-deployment1",
+											"kind": "Deployment",
+											"uid":  "test-uid3",
+										},
+									},
+									"uid": "test-uid11",
+								},
+								"spec": map[string]interface{}{
+									"replicas": 1,
+									"template": map[string]interface{}{
+										"metadata": map[string]interface{}{
+											"labels": map[string]interface{}{
+												"test": "label1",
+											},
+										},
+										"spec": map[string]interface{}{
+											"containers": []map[string]interface{}{
+												{
+													"image": "test-image1",
+												},
+												{
+													"image": "test-image2",
+												},
+											},
+										},
+									},
+								},
+								"status": map[string]interface{}{
+									"replicas":      1,
+									"readyReplicas": 0,
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "ReplicaSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-rs1",
+									"namespace":         "test-namespace2",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"artifact.spinnaker.io/name":       "test-deployment1",
+										"artifact.spinnaker.io/type":       "kubernetes/deployment",
+										"artifact.spinnaker.io/location":   "test-namespace1",
+										"moniker.spinnaker.io/application": "test-application",
 										"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
 										"moniker.spinnaker.io/sequence":    "19",
 									},
@@ -964,7 +1492,51 @@ var _ = Describe("Application", func() {
 										"artifact.spinnaker.io/name":        "test-deployment1",
 										"artifact.spinnaker.io/type":        "kubernetes/deployment",
 										"artifact.spinnaker.io/location":    "test-namespace1",
-										"moniker.spinnaker.io/application":  "test-deployment1",
+										"moniker.spinnaker.io/application":  "wrong-application",
+										"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+										"deployment.kubernetes.io/revision": "19",
+									},
+									"uid": "test-uid3",
+								},
+								"spec": map[string]interface{}{
+									"replicas": 1,
+									"template": map[string]interface{}{
+										"metadata": map[string]interface{}{
+											"labels": map[string]interface{}{
+												"test": "label2",
+											},
+										},
+										"spec": map[string]interface{}{
+											"containers": []map[string]interface{}{
+												{
+													"image": "test-image1",
+												},
+												{
+													"image": "test-image2",
+												},
+											},
+										},
+									},
+								},
+								"status": map[string]interface{}{
+									"replicas":      1,
+									"readyReplicas": 0,
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "StatefulSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-sts1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"artifact.spinnaker.io/name":        "test-deployment1",
+										"artifact.spinnaker.io/type":        "kubernetes/deployment",
+										"artifact.spinnaker.io/location":    "test-namespace1",
+										"moniker.spinnaker.io/application":  "test-application",
 										"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 										"deployment.kubernetes.io/revision": "19",
 									},
@@ -1008,7 +1580,7 @@ var _ = Describe("Application", func() {
 										"artifact.spinnaker.io/name":        "test-deployment1",
 										"artifact.spinnaker.io/type":        "kubernetes/deployment",
 										"artifact.spinnaker.io/location":    "test-namespace1",
-										"moniker.spinnaker.io/application":  "test-deployment1",
+										"moniker.spinnaker.io/application":  "test-application",
 										"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 										"deployment.kubernetes.io/revision": "19",
 									},
@@ -1147,6 +1719,9 @@ var _ = Describe("Application", func() {
 								"name":              "test-pod1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "wrong-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -1169,6 +1744,34 @@ var _ = Describe("Application", func() {
 								"name":              "test-pod1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
+								"labels": map[string]interface{}{
+									"label1": "test-label1",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs1",
+										"kind": "replicaSet",
+										"uid":  "test-uid1",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -1191,6 +1794,9 @@ var _ = Describe("Application", func() {
 								"name":              "test-pod1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -1221,7 +1827,58 @@ var _ = Describe("Application", func() {
 									"artifact.spinnaker.io/name":       "test-deployment1",
 									"artifact.spinnaker.io/type":       "kubernetes/deployment",
 									"artifact.spinnaker.io/location":   "test-namespace1",
-									"moniker.spinnaker.io/application": "test-deployment1",
+									"moniker.spinnaker.io/application": "wrong-application",
+									"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
+									"moniker.spinnaker.io/sequence":    "19",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-deployment1",
+										"kind": "Deployment",
+										"uid":  "test-uid3",
+									},
+								},
+								"uid": "test-uid1",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label",
+										},
+									},
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":       "test-deployment1",
+									"artifact.spinnaker.io/type":       "kubernetes/deployment",
+									"artifact.spinnaker.io/location":   "test-namespace1",
+									"moniker.spinnaker.io/application": "test-application",
 									"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
 									"moniker.spinnaker.io/sequence":    "19",
 								},
@@ -1276,7 +1933,47 @@ var _ = Describe("Application", func() {
 									"artifact.spinnaker.io/name":        "test-deployment1",
 									"artifact.spinnaker.io/type":        "kubernetes/deployment",
 									"artifact.spinnaker.io/location":    "test-namespace1",
-									"moniker.spinnaker.io/application":  "test-deployment1",
+									"moniker.spinnaker.io/application":  "wrong-application",
+									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+									"deployment.kubernetes.io/revision": "19",
+								},
+								"uid": "test-uid2",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"desiredNumberScheduled": 2,
+								"currentNumberScheduled": 1,
+								"numberReady":            1,
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "DaemonSet",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-ds1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":        "test-deployment1",
+									"artifact.spinnaker.io/type":        "kubernetes/deployment",
+									"artifact.spinnaker.io/location":    "test-namespace1",
+									"moniker.spinnaker.io/application":  "test-application",
 									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 									"deployment.kubernetes.io/revision": "19",
 								},
@@ -1320,7 +2017,51 @@ var _ = Describe("Application", func() {
 									"artifact.spinnaker.io/name":        "test-deployment1",
 									"artifact.spinnaker.io/type":        "kubernetes/deployment",
 									"artifact.spinnaker.io/location":    "test-namespace1",
-									"moniker.spinnaker.io/application":  "test-deployment1",
+									"moniker.spinnaker.io/application":  "wrong-application",
+									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+									"deployment.kubernetes.io/revision": "19",
+								},
+								"uid": "test-uid3",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label2",
+										},
+									},
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "StatefulSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-sts1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":        "test-deployment1",
+									"artifact.spinnaker.io/type":        "kubernetes/deployment",
+									"artifact.spinnaker.io/location":    "test-namespace1",
+									"moniker.spinnaker.io/application":  "test-application",
 									"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 									"deployment.kubernetes.io/revision": "19",
 								},
@@ -1364,6 +2105,28 @@ var _ = Describe("Application", func() {
 								"name":      "test-svc1",
 								"namespace": "test-namespace1",
 								"uid":       "test-uid4",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "wrong-application",
+								},
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]interface{}{
+									"test": "label",
+								},
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Service",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-svc1",
+								"namespace": "test-namespace1",
+								"uid":       "test-uid4",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 							},
 							"spec": map[string]interface{}{
 								"selector": map[string]interface{}{
@@ -1380,6 +2143,9 @@ var _ = Describe("Application", func() {
 								"name":      "test-svc2",
 								"namespace": "test-namespace1",
 								"uid":       "test-uid5",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 							},
 							"spec": map[string]interface{}{
 								"selector": map[string]interface{}{
@@ -1469,6 +2235,34 @@ var _ = Describe("Application", func() {
 									"name":              "test-pod3",
 									"namespace":         "test-namespace1",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "wrong-application",
+									},
+									"labels": map[string]interface{}{
+										"label1": "test-label1",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs1",
+											"kind": "replicaSet",
+											"uid":  "test-uid1",
+										},
+									},
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Pod",
+								"apiVersion": "v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-pod3",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label1",
 									},
@@ -1491,6 +2285,9 @@ var _ = Describe("Application", func() {
 									"name":              "test-pod4",
 									"namespace":         "test-namespace1",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label1",
 									},
@@ -1513,6 +2310,9 @@ var _ = Describe("Application", func() {
 									"name":              "test-pod3",
 									"namespace":         "test-namespace1",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label1",
 									},
@@ -1535,6 +2335,9 @@ var _ = Describe("Application", func() {
 									"name":              "test-pod2",
 									"namespace":         "test-namespace1",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label1",
 									},
@@ -1557,6 +2360,9 @@ var _ = Describe("Application", func() {
 									"name":              "test-pod1",
 									"namespace":         "test-namespace1",
 									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
 									"labels": map[string]interface{}{
 										"label1": "test-label1",
 									},
@@ -1587,7 +2393,53 @@ var _ = Describe("Application", func() {
 										"artifact.spinnaker.io/name":       "test-deployment1",
 										"artifact.spinnaker.io/type":       "kubernetes/deployment",
 										"artifact.spinnaker.io/location":   "test-namespace1",
-										"moniker.spinnaker.io/application": "test-deployment1",
+										"moniker.spinnaker.io/application": "wrong-application",
+										"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
+										"moniker.spinnaker.io/sequence":    "19",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-deployment1",
+											"kind": "Deployment",
+											"uid":  "test-uid3",
+										},
+									},
+									"uid": "test-uid1",
+								},
+								"spec": map[string]interface{}{
+									"replicas": 1,
+									"template": map[string]interface{}{
+										"spec": map[string]interface{}{
+											"containers": []map[string]interface{}{
+												{
+													"image": "test-image1",
+												},
+												{
+													"image": "test-image2",
+												},
+											},
+										},
+									},
+								},
+								"status": map[string]interface{}{
+									"replicas":      1,
+									"readyReplicas": 0,
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "ReplicaSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-rs1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"artifact.spinnaker.io/name":       "test-deployment1",
+										"artifact.spinnaker.io/type":       "kubernetes/deployment",
+										"artifact.spinnaker.io/location":   "test-namespace1",
+										"moniker.spinnaker.io/application": "test-application",
 										"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
 										"moniker.spinnaker.io/sequence":    "19",
 									},
@@ -1637,7 +2489,47 @@ var _ = Describe("Application", func() {
 										"artifact.spinnaker.io/name":        "test-deployment1",
 										"artifact.spinnaker.io/type":        "kubernetes/deployment",
 										"artifact.spinnaker.io/location":    "test-namespace1",
-										"moniker.spinnaker.io/application":  "test-deployment1",
+										"moniker.spinnaker.io/application":  "wrong-application",
+										"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+										"deployment.kubernetes.io/revision": "19",
+									},
+									"uid": "test-uid2",
+								},
+								"spec": map[string]interface{}{
+									"replicas": 1,
+									"template": map[string]interface{}{
+										"spec": map[string]interface{}{
+											"containers": []map[string]interface{}{
+												{
+													"image": "test-image1",
+												},
+												{
+													"image": "test-image2",
+												},
+											},
+										},
+									},
+								},
+								"status": map[string]interface{}{
+									"desiredNumberScheduled": 2,
+									"currentNumberScheduled": 1,
+									"numberReady":            1,
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "DaemonSet",
+								"apiVersion": "v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-ds1",
+									"namespace":         "test-namespace2",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"artifact.spinnaker.io/name":        "test-deployment1",
+										"artifact.spinnaker.io/type":        "kubernetes/deployment",
+										"artifact.spinnaker.io/location":    "test-namespace1",
+										"moniker.spinnaker.io/application":  "test-application",
 										"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 										"deployment.kubernetes.io/revision": "19",
 									},
@@ -1677,7 +2569,7 @@ var _ = Describe("Application", func() {
 										"artifact.spinnaker.io/name":        "test-deployment1",
 										"artifact.spinnaker.io/type":        "kubernetes/deployment",
 										"artifact.spinnaker.io/location":    "test-namespace1",
-										"moniker.spinnaker.io/application":  "test-deployment1",
+										"moniker.spinnaker.io/application":  "test-application",
 										"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 										"deployment.kubernetes.io/revision": "19",
 									},
@@ -1721,7 +2613,46 @@ var _ = Describe("Application", func() {
 										"artifact.spinnaker.io/name":        "test-deployment1",
 										"artifact.spinnaker.io/type":        "kubernetes/deployment",
 										"artifact.spinnaker.io/location":    "test-namespace1",
-										"moniker.spinnaker.io/application":  "test-deployment1",
+										"moniker.spinnaker.io/application":  "wrong-application",
+										"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
+										"deployment.kubernetes.io/revision": "19",
+									},
+									"uid": "test-uid3",
+								},
+								"spec": map[string]interface{}{
+									"replicas": 1,
+									"template": map[string]interface{}{
+										"spec": map[string]interface{}{
+											"containers": []map[string]interface{}{
+												{
+													"image": "test-image1",
+												},
+												{
+													"image": "test-image2",
+												},
+											},
+										},
+									},
+								},
+								"status": map[string]interface{}{
+									"replicas":      1,
+									"readyReplicas": 0,
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "StatefulSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-rs1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"artifact.spinnaker.io/name":        "test-deployment1",
+										"artifact.spinnaker.io/type":        "kubernetes/deployment",
+										"artifact.spinnaker.io/location":    "test-namespace1",
+										"moniker.spinnaker.io/application":  "test-application",
 										"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 										"deployment.kubernetes.io/revision": "19",
 									},
@@ -1760,7 +2691,7 @@ var _ = Describe("Application", func() {
 										"artifact.spinnaker.io/name":        "test-deployment1",
 										"artifact.spinnaker.io/type":        "kubernetes/deployment",
 										"artifact.spinnaker.io/location":    "test-namespace1",
-										"moniker.spinnaker.io/application":  "test-deployment1",
+										"moniker.spinnaker.io/application":  "test-application",
 										"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 										"deployment.kubernetes.io/revision": "19",
 									},
@@ -1820,6 +2751,32 @@ var _ = Describe("Application", func() {
 								"name":              "test-pod1",
 								"namespace":         "test-namespace1",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "wrong-application",
+								},
+								"labels": map[string]interface{}{
+									"label1": "test-label1",
+								},
+								"ownerReferences": []map[string]interface{}{
+									{
+										"name": "test-rs1",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -1840,6 +2797,9 @@ var _ = Describe("Application", func() {
 								"name":              "test-pod2",
 								"namespace":         "test-namespace2",
 								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
 								"labels": map[string]interface{}{
 									"label1": "test-label1",
 								},
@@ -1866,7 +2826,7 @@ var _ = Describe("Application", func() {
 							"artifact.spinnaker.io/name":        "test-deployment2",
 							"artifact.spinnaker.io/type":        "kubernetes/deployment",
 							"artifact.spinnaker.io/location":    "test-namespace2",
-							"moniker.spinnaker.io/application":  "test-deployment2",
+							"moniker.spinnaker.io/application":  "test-application",
 							"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 							"deployment.kubernetes.io/revision": "19",
 						},
@@ -1970,7 +2930,7 @@ var _ = Describe("Application", func() {
 							"artifact.spinnaker.io/name":        "test-deployment2",
 							"artifact.spinnaker.io/type":        "kubernetes/deployment",
 							"artifact.spinnaker.io/location":    "test-namespace2",
-							"moniker.spinnaker.io/application":  "test-deployment2",
+							"moniker.spinnaker.io/application":  "test-application",
 							"moniker.spinnaker.io/cluster":      "deployment test-deployment1",
 							"deployment.kubernetes.io/revision": "19",
 						},
