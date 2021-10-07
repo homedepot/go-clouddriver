@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -181,7 +182,8 @@ func (cc *Controller) listNamespaces(provider kubernetes.Provider,
 		TimeoutSeconds: &listNamespacesTimeout,
 	})
 	if err != nil {
-		clouddriver.Log(err)
+		clouddriver.Log(fmt.Errorf("error listing namespaces (provider name: %s, provider host: %s, token provider: %s): %v",
+			provider.Name, provider.Host, provider.TokenProvider, err))
 		return
 	}
 
