@@ -143,7 +143,6 @@ func (cc *Controller) CreateOrReplaceKubernetesProvider(c *gin.Context) {
 // - the TokenProvider is known/supported by arcade
 // - every Permissions.Write entry exists in Permissions.Read
 func (cc *Controller) validate(p kubernetes.Provider) error {
-
 	_, err := base64.StdEncoding.DecodeString(p.CAData)
 	if err != nil {
 		return fmt.Errorf("error decoding base64 CA data: %s", err.Error())
