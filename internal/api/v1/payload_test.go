@@ -47,6 +47,20 @@ const payloadRequestKubernetesProvidersBadCAData = `{
 						}
           }`
 
+const payloadRequestKubernetesProvidersMissingReadGroup = `{
+					"name": "test-name",
+					"host": "test-host",
+					"caData": "dGVzdC1jYS1kYXRhCg==",
+					"permissions": {
+						"read": [
+							"gg_test"
+						],
+						"write": [
+							"gg_test2"
+						]
+					}
+				}`
+
 const payloadConflictRequest = `{
             "error": "provider already exists"
           }`
@@ -66,6 +80,14 @@ const payloadErrorCreatingWritePermission = `{
 const payloadErrorDecodingBase64 = `{
             "error": "error decoding base64 CA data: illegal base64 data at input byte 4"
           }`
+
+const payloadErrorGettingToken = `{
+					"error": "error getting token: unsupported token provider"
+				}`
+
+const payloadErrorMissingReadGroup = `{
+					"error": "error in permissions: write group 'gg_test2' must be included as a read group"
+				}`
 
 const payloadKubernetesProviderCreated = `{
             "name": "test-name",

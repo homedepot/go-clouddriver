@@ -27,9 +27,9 @@ func (cc *Controller) CreateKubernetesProvider(c *gin.Context) {
 		return
 	}
 
-	_, err = base64.StdEncoding.DecodeString(p.CAData)
+	err = cc.validate(p)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error decoding base64 CA data: %s", err.Error())})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -113,9 +113,9 @@ func (cc *Controller) CreateOrReplaceKubernetesProvider(c *gin.Context) {
 		return
 	}
 
-	_, err = base64.StdEncoding.DecodeString(p.CAData)
+	err = cc.validate(p)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error decoding base64 CA data: %s", err.Error())})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -136,4 +136,39 @@ func (cc *Controller) CreateOrReplaceKubernetesProvider(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, p)
+}
+
+// validates verifies the providers data.  Validations performed:
+// - the CAData is base64 encoded
+// - the TokenProvider is known/supported by arcade
+// - every Permissions.Write entry exists in Permissions.Read
+func (cc *Controller) validate(p kubernetes.Provider) error {
+
+	_, err := base64.StdEncoding.DecodeString(p.CAData)
+	if err != nil {
+		return fmt.Errorf("error decoding base64 CA data: %s", err.Error())
+	}
+
+	_, err = cc.ArcadeClient.Token(p.TokenProvider)
+	if err != nil {
+		return fmt.Errorf("error getting token: %s", err.Error())
+	}
+
+	// Verify that each write group is included as a read group
+	for _, wg := range p.Permissions.Write {
+		found := false
+
+		for _, rg := range p.Permissions.Read {
+			if strings.EqualFold(wg, rg) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return fmt.Errorf("error in permissions: write group '%s' must be included as a read group", wg)
+		}
+	}
+
+	return nil
 }

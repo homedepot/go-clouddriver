@@ -18,6 +18,7 @@ var _ = Describe("Provider", func() {
 		BeforeEach(func() {
 			setup()
 			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("provider not found"))
+			fakeArcadeClient.TokenReturns("fake-token", nil)
 			uri = svr.URL + "/v1/kubernetes/providers"
 			body.Write([]byte(payloadRequestKubernetesProviders))
 			createRequest(http.MethodPost)
@@ -54,6 +55,30 @@ var _ = Describe("Provider", func() {
 			It("returns status bad request", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				validateResponse(payloadErrorDecodingBase64)
+			})
+		})
+
+		When("the token provider is invalid", func() {
+			BeforeEach(func() {
+				fakeArcadeClient.TokenReturns("", errors.New("unsupported token provider"))
+			})
+
+			It("returns status bad request", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				validateResponse(payloadErrorGettingToken)
+			})
+		})
+
+		When("the a write permission group is not a read permission group", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesProvidersMissingReadGroup))
+				createRequest(http.MethodPost)
+			})
+
+			It("returns status bad request", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				validateResponse(payloadErrorMissingReadGroup)
 			})
 		})
 
@@ -139,6 +164,30 @@ var _ = Describe("Provider", func() {
 			It("returns status bad request", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 				validateResponse(payloadErrorDecodingBase64)
+			})
+		})
+
+		When("the token provider is invalid", func() {
+			BeforeEach(func() {
+				fakeArcadeClient.TokenReturns("", errors.New("unsupported token provider"))
+			})
+
+			It("returns status bad request", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				validateResponse(payloadErrorGettingToken)
+			})
+		})
+
+		When("the a write permission group is not a read permission group", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesProvidersMissingReadGroup))
+				createRequest(http.MethodPut)
+			})
+
+			It("returns status bad request", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				validateResponse(payloadErrorMissingReadGroup)
 			})
 		})
 
