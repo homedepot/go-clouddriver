@@ -10,24 +10,27 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/internal"
 	"github.com/homedepot/go-clouddriver/internal/api"
+	"github.com/homedepot/go-clouddriver/internal/arcade/arcadefakes"
 	"github.com/homedepot/go-clouddriver/internal/sql/sqlfakes"
 
 	. "github.com/onsi/gomega"
 )
 
 var (
-	err           error
-	svr           *httptest.Server
-	uri           string
-	req           *http.Request
-	body          *bytes.Buffer
-	res           *http.Response
-	fakeSQLClient *sqlfakes.FakeClient
+	err              error
+	svr              *httptest.Server
+	uri              string
+	req              *http.Request
+	body             *bytes.Buffer
+	res              *http.Response
+	fakeSQLClient    *sqlfakes.FakeClient
+	fakeArcadeClient *arcadefakes.FakeClient
 )
 
 func setup() {
-	// Setup fake SQL client.
+	// Setup fake clients.
 	fakeSQLClient = &sqlfakes.FakeClient{}
+	fakeArcadeClient = &arcadefakes.FakeClient{}
 
 	// Disable debug logging.
 	gin.SetMode(gin.ReleaseMode)
@@ -38,7 +41,8 @@ func setup() {
 	r.Use(gin.Recovery())
 
 	c := &internal.Controller{
-		SQLClient: fakeSQLClient,
+		SQLClient:    fakeSQLClient,
+		ArcadeClient: fakeArcadeClient,
 	}
 	// Create server.
 	server := api.NewServer(r)
