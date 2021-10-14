@@ -314,6 +314,272 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
+	Context("when the manifest uses load balancer annotations", func() {
+		BeforeEach(func() {
+			deployManifestRequest = DeployManifestRequest{
+				Manifests: []map[string]interface{}{
+					{
+						"kind":       "ReplicaSet",
+						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"annotations": map[string]interface{}{
+								"traffic.spinnaker.io/load-balancers": "[\"service test-service\"]",
+							},
+							"name":      "test-name",
+							"namespace": "test-namespace",
+						},
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"labels": map[string]interface{}{
+										"labelKey1": "labelValue1",
+										"labelKey2": "labelValue2",
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			fakeService := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Service",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name":      "test-service",
+						"namespace": "test-namespace",
+					},
+					"spec": map[string]interface{}{
+						"selector": map[string]interface{}{
+							"selectorKey1": "selectorValue1",
+							"selectorKey2": "selectorValue2",
+						},
+					},
+				},
+			}
+			fakeKubeClient.GetReturns(&fakeService, nil)
+		})
+
+		When("the load balancer is annotation is incorrectly formatted", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"traffic.spinnaker.io/load-balancers": "[\"test-ingress\", \"service test-service2\"]",
+								},
+								"name":      "test-name",
+								"namespace": "test-namespace",
+							},
+						},
+					},
+				}
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("Failed to attach load balancer 'test-ingress'. " +
+					"Load balancers must be specified in the form '{kind} {name}', e.g. 'service my-service'."))
+			})
+		})
+
+		When("the load balancer kind is not supported", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"traffic.spinnaker.io/load-balancers": "[\"ingress test-ingress\", \"service test-service2\"]",
+								},
+								"name":      "test-name",
+								"namespace": "test-namespace",
+							},
+						},
+					},
+				}
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("No support for load balancing via ingress exists in Spinnaker."))
+			})
+		})
+
+		When("the load balancer is part of the current request's manifests", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"traffic.spinnaker.io/load-balancers": "[\"service test-service\"]",
+								},
+								"name":      "test-name",
+								"namespace": "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"labelKey1": "labelValue1",
+											"labelKey2": "labelValue2",
+										},
+									},
+								},
+							},
+						},
+						{
+							"kind":       "Service",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-service",
+								"namespace": "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]interface{}{
+									"selectorKey1": "selectorValue1",
+									"selectorKey2": "selectorValue2",
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("succeeds and does not call the cluster to get the load balancer", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetCallCount()).To(BeZero())
+			})
+		})
+
+		When("getting the load balancer from the cluster returns a not found error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.GetReturns(nil, k8serrors.NewNotFound(schema.GroupResource{Group: "", Resource: "fake resource"}, "fake resource not found"))
+			})
+
+			It("errors", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("Load balancer service test-service does not exist"))
+			})
+		})
+
+		When("getting the load balancer from the cluster returns a generic error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.GetReturns(nil, errors.New("generic error"))
+			})
+
+			It("errors", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("error getting service test-service: generic error"))
+			})
+		})
+
+		When("the service has no selectors", func() {
+			BeforeEach(func() {
+				fakeService := unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Service",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"name":      "test-service",
+							"namespace": "test-namespace",
+						},
+						"spec": map[string]interface{}{
+							"selector": map[string]interface{}{},
+						},
+					},
+				}
+				fakeKubeClient.GetReturns(&fakeService, nil)
+			})
+
+			It("errors", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("Service must have a non-empty selector in order to be attached to a workload"))
+			})
+		})
+
+		When("the service selector and target labels are not disjoint", func() {
+			BeforeEach(func() {
+				fakeService := unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Service",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"name":      "test-service",
+							"namespace": "test-namespace",
+						},
+						"spec": map[string]interface{}{
+							"selector": map[string]interface{}{
+								"selectorKey1": "selectorValue1",
+								"labelKey1":    "labelValue1",
+							},
+						},
+					},
+				}
+				fakeKubeClient.GetReturns(&fakeService, nil)
+			})
+
+			It("errors", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("Service selector must have no label keys in common with target workload"))
+			})
+		})
+
+		When("the kind is a pod", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "Pod",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"traffic.spinnaker.io/load-balancers": "[\"service test-service\"]",
+								},
+								"name":      "test-name",
+								"namespace": "test-namespace",
+								"labels": map[string]interface{}{
+									"labelKey1": "labelValue1",
+									"labelKey2": "labelValue2",
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("attaches the load balancer", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				labels := u.GetLabels()
+				Expect(labels["labelKey1"]).To(Equal("labelValue1"))
+				Expect(labels["labelKey2"]).To(Equal("labelValue2"))
+				Expect(labels["selectorKey1"]).To(Equal("selectorValue1"))
+				Expect(labels["selectorKey2"]).To(Equal("selectorValue2"))
+			})
+		})
+
+		When("it succeeds", func() {
+			It("attaches the load balancer", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				labels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
+				Expect(labels["labelKey1"]).To(Equal("labelValue1"))
+				Expect(labels["labelKey2"]).To(Equal("labelValue2"))
+				Expect(labels["selectorKey1"]).To(Equal("selectorValue1"))
+				Expect(labels["selectorKey2"]).To(Equal("selectorValue2"))
+			})
+		})
+	})
+
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
 			fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
