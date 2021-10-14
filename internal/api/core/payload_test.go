@@ -2535,6 +2535,19 @@ const payloadManifestCoordinates = `{
             "namespace": "test-namespace"
           }`
 
+const payloadManifestCoordinatesList = `[
+            {
+              "kind": "ReplicaSet",
+              "name": "rs2-v000",
+              "namespace": "test-namespace"
+            },
+            {
+              "kind": "ReplicaSet",
+              "name": "rs2-v001",
+              "namespace": "test-namespace"
+            }
+          ]`
+
 const payloadGetInstance = `{
             "account": "test-account",
             "apiVersion": "v1",

@@ -181,3 +181,76 @@ func (cc *Controller) GetManifestByTarget(c *gin.Context) {
 
 	c.JSON(http.StatusOK, mcr)
 }
+
+// ListManifestsByCluster returns a list of manifest coordinates
+// for a given account, namespace, location, kind, and cluster.
+func (cc *Controller) ListManifestsByCluster(c *gin.Context) {
+	account := c.Param("account")
+	application := c.Param("application")
+	namespace := c.Param("location")
+	kind := c.Param("kind")
+	cluster := c.Param("cluster")
+	manifests := []ops.ManifestCoordinatesResponse{}
+
+	// Sometimes a full kind such as MutatingWebhookConfiguration.admissionregistration.k8s.io
+	// is passed in - this is the current fix for that...
+	if strings.Contains(kind, ".") {
+		a := strings.Split(kind, ".")
+		kind = a[0]
+	}
+
+	provider, err := cc.KubernetesProvider(account)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	gvr, err := provider.Client.GVRForKind(kind)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	lo := metav1.ListOptions{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kind,
+			APIVersion: gvr.Group + "/" + gvr.Version,
+		},
+		LabelSelector:  kubernetes.DefaultLabelSelector(),
+		FieldSelector:  "metadata.namespace=" + namespace,
+		TimeoutSeconds: &manifestListTimeout,
+	}
+
+	list, err := provider.Client.ListByGVR(gvr, lo)
+	if err != nil {
+		// Do not error here, just log and return an empty list.
+		// This is the expected response from OSS Clouddriver.
+		clouddriver.Log(err)
+		c.JSON(http.StatusOK, manifests)
+
+		return
+	}
+
+	// Filter out all unassociated objects based on the moniker.spinnaker.io/cluster annotation.
+	items := kubernetes.FilterOnAnnotation(list.Items,
+		kubernetes.AnnotationSpinnakerMonikerCluster, cluster)
+	// Filter out all unassociated objects based on the moniker.spinnaker.io/application annotation.
+	items = kubernetes.FilterOnAnnotation(items,
+		kubernetes.AnnotationSpinnakerMonikerApplication, application)
+
+	// Sort by name ascending.
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].GetName() < items[j].GetName()
+	})
+
+	for _, item := range items {
+		m := ops.ManifestCoordinatesResponse{
+			Kind:      item.GetKind(),
+			Name:      item.GetName(),
+			Namespace: item.GetNamespace(),
+		}
+		manifests = append(manifests, m)
+	}
+
+	c.JSON(http.StatusOK, manifests)
+}
