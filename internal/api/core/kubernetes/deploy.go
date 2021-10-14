@@ -118,6 +118,12 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			}
 		}
 
+		err = handleAttachingLoadBalancers(provider.Client, &manifest, manifests)
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+
 		meta, err := provider.Client.ApplyWithNamespaceOverride(&manifest, namespace)
 		if err != nil {
 			e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
@@ -327,4 +333,145 @@ func handleRecreate(kubeClient kubernetes.Client, u *unstructured.Unstructured, 
 	}
 
 	return nil
+}
+
+// handleAttachingLoadBalancers grabs load balancers from a target manifests
+// `traffic.spinnaker.io/load-balancers` annotation and attaches that load
+// balancers selectors to the pod template labels of the target.
+//
+// See https://github.com/spinnaker/clouddriver/blob/62325f922533d9e96b35d88698959def4ad517b5/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/op/manifest/KubernetesDeployManifestOperation.java#L281
+func handleAttachingLoadBalancers(client kubernetes.Client, target *unstructured.Unstructured,
+	manifests []unstructured.Unstructured) error {
+	lbs, err := kubernetes.LoadBalancers(*target)
+	if err != nil {
+		return err
+	}
+
+	for _, lb := range lbs {
+		err = attachLoadBalancer(client, lb, target, manifests)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// attachLoadBalancer modifies the labels of the target manifest to include the selectors of the load balancer.
+func attachLoadBalancer(client kubernetes.Client, loadBalancer string,
+	target *unstructured.Unstructured, manifests []unstructured.Unstructured) error {
+	a := strings.Split(loadBalancer, " ")
+	if len(a) != 2 {
+		return fmt.Errorf("Failed to attach load balancer '%s'. "+
+			"Load balancers must be specified in the form '{kind} {name}', e.g. 'service my-service'.", loadBalancer)
+	}
+
+	kind := a[0]
+	name := a[1]
+	// For now, limit the kind of load balancer available to attach to Services.
+	if !strings.EqualFold(kind, "service") {
+		// https://github.com/spinnaker/clouddriver/blob/8c377ef6be07278cd8a54448980f2b2065069a34/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/op/handler/CanLoadBalance.java#L39
+		return fmt.Errorf("No support for load balancing via %s exists in Spinnaker.", kind)
+	}
+
+	var (
+		lb    unstructured.Unstructured
+		found bool
+	)
+
+	// First, see if the load balancer exists in the current request's manifets.
+	for _, manifest := range manifests {
+		if strings.EqualFold(manifest.GetKind(), "service") &&
+			strings.EqualFold(manifest.GetName(), name) &&
+			strings.EqualFold(target.GetNamespace(), manifest.GetNamespace()) {
+			lb = manifest
+			found = true
+		}
+
+		if found {
+			break
+		}
+	}
+	// If the manifest does not exist in the current request, get it from the
+	// cluster.
+	if !found {
+		result, err := client.Get(kind, name, target.GetNamespace())
+		if err != nil {
+			if errors.IsNotFound(err) {
+				// https://github.com/spinnaker/clouddriver/blob/62325f922533d9e96b35d88698959def4ad517b5/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/op/manifest/KubernetesDeployManifestOperation.java#L329
+				return fmt.Errorf("Load balancer %s %s does not exist", kind, name)
+			}
+
+			return fmt.Errorf("error getting service %s: %v", name, err)
+		}
+
+		lb = *result
+	}
+
+	if err := attach(lb, target); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// attach grabs the labels from the target manifest and appends the selectors
+// from the passed in load balancer.
+func attach(lb unstructured.Unstructured, target *unstructured.Unstructured) error {
+	labelsPath := "spec.template.metadata.labels"
+
+	labels, found, err := unstructured.NestedStringMap(target.Object, strings.Split(labelsPath, ".")...)
+	if err != nil {
+		return err
+	}
+
+	if !found {
+		labelsPath = "metadata.labels"
+
+		labels, _, err = unstructured.NestedStringMap(target.Object, strings.Split(labelsPath, ".")...)
+		if err != nil {
+			return err
+		}
+	}
+
+	selector, found, _ := unstructured.NestedStringMap(lb.Object, "spec", "selector")
+	if !found || len(selector) == 0 {
+		return fmt.Errorf("Service must have a non-empty selector in order to be attached to a workload")
+	}
+
+	if !disjoint(labels, selector) {
+		return fmt.Errorf("Service selector must have no label keys in common with target workload")
+	}
+
+	for k, v := range selector {
+		labels[k] = v
+	}
+
+	err = unstructured.SetNestedStringMap(target.Object, labels, strings.Split(labelsPath, ".")...)
+	if err != nil {
+		return fmt.Errorf("error attaching load balancer labels for manifest (kind: %s, name: %s, namespace: %s): %v",
+			target.GetKind(),
+			target.GetName(),
+			target.GetNamespace(),
+			err)
+	}
+
+	return nil
+}
+
+// disjoint returns true if the two specified maps have no keys in common.
+func disjoint(m1, m2 map[string]string) bool {
+	disjoint := true
+
+	for k := range m1 {
+		if _, ok := m2[k]; ok {
+			disjoint = false
+		}
+
+		if !disjoint {
+			break
+		}
+	}
+
+	return disjoint
 }

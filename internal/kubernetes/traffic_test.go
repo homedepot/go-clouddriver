@@ -56,50 +56,6 @@ var _ = Describe("Traffic", func() {
 			})
 		})
 
-		When("the annotation is formatted incorrectly", func() {
-			BeforeEach(func() {
-				fakeResource = unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"kind": "ReplicaSet",
-						"metadata": map[string]interface{}{
-							"name":      "test-name",
-							"namespace": "test-namespace",
-							"annotations": map[string]interface{}{
-								"traffic.spinnaker.io/load-balancers": "[\"test-lb-service\"]",
-							},
-						},
-					},
-				}
-			})
-
-			It("errors", func() {
-				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(Equal("Failed to attach load balancer 'test-lb-service'. Load balancers must be specified in the form '{kind} {name}', e.g. 'service my-service'."))
-			})
-		})
-
-		When("the load balancer kind is not supported by spinnaker", func() {
-			BeforeEach(func() {
-				fakeResource = unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"kind": "ReplicaSet",
-						"metadata": map[string]interface{}{
-							"name":      "test-name",
-							"namespace": "test-namespace",
-							"annotations": map[string]interface{}{
-								"traffic.spinnaker.io/load-balancers": "[\"service test-lb-service\",\"ingress test-lb-service\"]",
-							},
-						},
-					},
-				}
-			})
-
-			It("errors", func() {
-				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(Equal("No support for load balancing via ingress exists in Spinnaker."))
-			})
-		})
-
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				fakeResource = unstructured.Unstructured{
