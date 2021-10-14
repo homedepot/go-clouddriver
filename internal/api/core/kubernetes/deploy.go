@@ -231,7 +231,7 @@ func getListOptions(app string) (metav1.ListOptions, error) {
 	return lo, err
 }
 
-// mergeManifests merges manifests of kind List into the parent list of manifets.
+// mergeManifests merges manifests of kind List into the parent list of manifests.
 func mergeManifests(manifests []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
 	mergedManifests := []unstructured.Unstructured{}
 
