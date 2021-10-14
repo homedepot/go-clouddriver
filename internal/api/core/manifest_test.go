@@ -259,4 +259,120 @@ var _ = Describe("Manifest", func() {
 			})
 		})
 	})
+
+	Describe("#ListManifestsByCluster", func() {
+		BeforeEach(func() {
+			setup()
+			fakeKubeClient.ListByGVRReturns(&unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]interface{}{
+							"kind": "ReplicaSet",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerMonikerCluster:     "replicaSet test-cluster",
+									kubernetes.AnnotationSpinnakerMonikerApplication: "wrong-application",
+								},
+								"name":      "rs1-v000",
+								"namespace": "test-namespace",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind": "ReplicaSet",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerMonikerCluster:     "replicaSet test-cluster",
+									kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+								},
+								"name":      "rs2-v000",
+								"namespace": "test-namespace",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind": "ReplicaSet",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerMonikerCluster:     "replicaSet test-cluster",
+									kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+								},
+								"name":      "rs2-v001",
+								"namespace": "test-namespace",
+							},
+						},
+					},
+				},
+			}, nil)
+		})
+
+		AfterEach(func() {
+			teardown()
+		})
+
+		JustBeforeEach(func() {
+			uri = svr.URL + "/manifests/test-account/test-namespace/test-kind/cluster/test-application/replicaSet test-cluster"
+			createRequest(http.MethodGet)
+			doRequest()
+		})
+
+		When("getting the provider returns an error", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
+			})
+
+			It("returns status internal server error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider test-account: error getting provider"))
+				Expect(ce.Status).To(Equal(http.StatusBadRequest))
+			})
+		})
+
+		When("getting the gvr returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.GVRForKindReturns(schema.GroupVersionResource{}, errors.New("error getting gvr"))
+			})
+
+			It("returns status internal server error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error getting gvr"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("listing resources returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ListByGVRReturns(nil, errors.New("error listing resources"))
+			})
+
+			It("returns an empty list", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(`[]`)
+			})
+		})
+
+		When("there are no resources found", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ListByGVRReturns(&unstructured.UnstructuredList{}, nil)
+			})
+
+			It("returns an empty list", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(`[]`)
+			})
+		})
+
+		When("it succeeds", func() {
+			It("succeeds", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadManifestCoordinatesList)
+			})
+		})
+	})
 })

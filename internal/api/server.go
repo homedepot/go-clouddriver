@@ -106,6 +106,7 @@ func (s *Server) Setup() {
 
 		// Manifests API controller.
 		api.GET("/manifests/:account/:location/:kind", c.GetManifest)
+		api.GET("/manifests/:account/:location/:kind/cluster/:application/:cluster", c.ListManifestsByCluster)
 		api.GET("/manifests/:account/:location/:kind/cluster/:application/:cluster/dynamic/:target", c.GetManifestByTarget)
 
 		// Instances API controller.
