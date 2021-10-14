@@ -466,9 +466,6 @@ func disjoint(m1, m2 map[string]string) bool {
 	for k := range m1 {
 		if _, ok := m2[k]; ok {
 			disjoint = false
-		}
-
-		if !disjoint {
 			break
 		}
 	}
