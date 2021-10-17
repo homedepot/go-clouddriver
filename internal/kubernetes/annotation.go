@@ -125,3 +125,17 @@ func AnnotateTemplate(u *unstructured.Unstructured, key, value string) error {
 
 	return nil
 }
+
+// SpinnakerMonikerApplication returns the value the annotation
+// `moniker.spinnaker.io/application` of the given Kubernetes
+// unstructured resource, or an empty string if not present.
+func SpinnakerMonikerApplication(u unstructured.Unstructured) string {
+	annotations := u.GetAnnotations()
+	if annotations != nil {
+		if value, ok := annotations[AnnotationSpinnakerMonikerApplication]; ok {
+			return value
+		}
+	}
+
+	return ""
+}
