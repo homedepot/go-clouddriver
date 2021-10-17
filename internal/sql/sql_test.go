@@ -220,6 +220,32 @@ var _ = Describe("Sql", func() {
 		})
 	})
 
+	Describe("#DeleteKubernetesResourcesByAccountName", func() {
+		var name string
+
+		BeforeEach(func() {
+			name = "test-name"
+		})
+
+		JustBeforeEach(func() {
+			err = c.DeleteKubernetesResourcesByAccountName(name)
+		})
+
+		When("it succeeds", func() {
+			BeforeEach(func() {
+				mock.ExpectBegin()
+				mock.ExpectExec(`(?i)^DELETE FROM "kubernetes_resources" WHERE
+				\(account_name = \?\)$`).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
 	Describe("#GetKubernetesProvider", func() {
 		var provider kubernetes.Provider
 

@@ -10,7 +10,7 @@ type Resource struct {
 	TaskType     string    `json:"-"`
 	APIGroup     string    `json:"apiGroup"`
 	Name         string    `json:"name"`
-	ArtifactName string    `json:"_"`
+	ArtifactName string    `json:"-"`
 	Namespace    string    `json:"namespace"`
 	Resource     string    `json:"resource"`
 	Version      string    `json:"version"`

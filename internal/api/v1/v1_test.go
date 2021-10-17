@@ -11,26 +11,48 @@ import (
 	"github.com/homedepot/go-clouddriver/internal"
 	"github.com/homedepot/go-clouddriver/internal/api"
 	"github.com/homedepot/go-clouddriver/internal/arcade/arcadefakes"
+	"github.com/homedepot/go-clouddriver/internal/kubernetes"
+	"github.com/homedepot/go-clouddriver/internal/kubernetes/kubernetesfakes"
 	"github.com/homedepot/go-clouddriver/internal/sql/sqlfakes"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	. "github.com/onsi/gomega"
 )
 
 var (
-	err              error
-	svr              *httptest.Server
-	uri              string
-	req              *http.Request
-	body             *bytes.Buffer
-	res              *http.Response
-	fakeSQLClient    *sqlfakes.FakeClient
-	fakeArcadeClient *arcadefakes.FakeClient
+	err                error
+	svr                *httptest.Server
+	uri                string
+	req                *http.Request
+	body               *bytes.Buffer
+	res                *http.Response
+	fakeSQLClient      *sqlfakes.FakeClient
+	fakeArcadeClient   *arcadefakes.FakeClient
+	fakeKubeClient     *kubernetesfakes.FakeClient
+	fakeKubeController *kubernetesfakes.FakeController
+	fakeDaemonSets     *unstructured.UnstructuredList
+	fakeDeployments    *unstructured.UnstructuredList
+	fakeIngresses      *unstructured.UnstructuredList
+	fakePods           *unstructured.UnstructuredList
+	fakeReplicaSets    *unstructured.UnstructuredList
+	fakeServices       *unstructured.UnstructuredList
+	fakeStatefulSets   *unstructured.UnstructuredList
 )
 
 func setup() {
 	// Setup fake clients.
 	fakeSQLClient = &sqlfakes.FakeClient{}
 	fakeArcadeClient = &arcadefakes.FakeClient{}
+	fakeKubeClient = &kubernetesfakes.FakeClient{}
+
+	fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
+		Name:   "test-account",
+		Host:   "http://localhost",
+		CAData: "",
+	}, nil)
+
+	fakeKubeController = &kubernetesfakes.FakeController{}
+	fakeKubeController.NewClientReturns(fakeKubeClient, nil)
 
 	// Disable debug logging.
 	gin.SetMode(gin.ReleaseMode)
@@ -41,8 +63,9 @@ func setup() {
 	r.Use(gin.Recovery())
 
 	c := &internal.Controller{
-		SQLClient:    fakeSQLClient,
-		ArcadeClient: fakeArcadeClient,
+		SQLClient:            fakeSQLClient,
+		ArcadeClient:         fakeArcadeClient,
+		KubernetesController: fakeKubeController,
 	}
 	// Create server.
 	server := api.NewServer(r)
@@ -51,6 +74,139 @@ func setup() {
 
 	svr = httptest.NewServer(r)
 	body = &bytes.Buffer{}
+
+	fakeDaemonSets = &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"kind":       "DaemonSet",
+					"apiVersion": "apps/v1",
+					"metadata": map[string]interface{}{
+						"name":      "test-daemonset",
+						"namespace": "test-namespace",
+						"annotations": map[string]interface{}{
+							"moniker.spinnaker.io/application": "test-application",
+						},
+					},
+				},
+			},
+		},
+	}
+	fakeDeployments = &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"kind":       "Deployment",
+					"apiVersion": "apps/v1",
+					"metadata": map[string]interface{}{
+						"name":      "test-deployment1",
+						"namespace": "test-namespace1",
+						"annotations": map[string]interface{}{
+							"moniker.spinnaker.io/application": "test-application1",
+						},
+					},
+				},
+			},
+			{
+				Object: map[string]interface{}{
+					"kind":       "Deployment",
+					"apiVersion": "apps/v1",
+					"metadata": map[string]interface{}{
+						"name":      "test-deployment2",
+						"namespace": "test-namespace2",
+						"annotations": map[string]interface{}{
+							"moniker.spinnaker.io/application": "test-application2",
+						},
+					},
+				},
+			},
+		},
+	}
+	fakeIngresses = &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"kind":       "Ingress",
+					"apiVersion": "apps/v1",
+					"metadata": map[string]interface{}{
+						"name":      "test-ingress",
+						"namespace": "test-namespace",
+						"annotations": map[string]interface{}{
+							"moniker.spinnaker.io/application": "test-application",
+						},
+					},
+				},
+			},
+		},
+	}
+	fakePods = &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"kind":       "Pod",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name":      "test-pod",
+						"namespace": "test-namespace",
+						"annotations": map[string]interface{}{
+							"moniker.spinnaker.io/application": "test-application",
+						},
+					},
+				},
+			},
+		},
+	}
+	fakeReplicaSets = &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"kind":       "ReplicaSet",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name":      "test-replicaset-v001",
+						"namespace": "test-namespace",
+						"annotations": map[string]interface{}{
+							"moniker.spinnaker.io/application": "test-application",
+						},
+					},
+				},
+			},
+		},
+	}
+	fakeStatefulSets = &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"kind":       "StatefulSet",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name":      "test-statefulset",
+						"namespace": "test-namespace",
+						"annotations": map[string]interface{}{
+							"moniker.spinnaker.io/application": "test-application",
+						},
+					},
+				},
+			},
+		},
+	}
+	fakeServices = &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"kind":       "Service",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name":      "test-service",
+						"namespace": "test-namespace",
+						"annotations": map[string]interface{}{
+							"moniker.spinnaker.io/application": "test-application",
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func teardown() {
