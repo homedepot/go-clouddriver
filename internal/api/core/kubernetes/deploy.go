@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"unicode"
 
 	"github.com/homedepot/go-clouddriver/internal"
 	"github.com/homedepot/go-clouddriver/internal/artifact"
@@ -146,7 +145,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			Version:      meta.Version,
 			Kind:         meta.Kind,
 			SpinnakerApp: dm.Moniker.App,
-			Cluster:      cluster(meta.Kind, nameWithoutVersion),
+			Cluster:      kubernetes.Cluster(meta.Kind, nameWithoutVersion),
 		}
 
 		annotations := manifest.GetAnnotations()
@@ -166,24 +165,6 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 	}
 }
 
-// Generate the cluster that a kind is a part of.
-// A Kubernetes cluster is of kind deployment, statefulSet, replicaSet, ingress, service, and daemonSet
-// so only generate a cluster for these kinds.
-func cluster(kind, name string) string {
-	cluster := ""
-
-	if strings.EqualFold(kind, "deployment") ||
-		strings.EqualFold(kind, "statefulSet") ||
-		strings.EqualFold(kind, "replicaSet") ||
-		strings.EqualFold(kind, "ingress") ||
-		strings.EqualFold(kind, "service") ||
-		strings.EqualFold(kind, "daemonSet") {
-		cluster = fmt.Sprintf("%s %s", lowercaseFirst(kind), name)
-	}
-
-	return cluster
-}
-
 // toUnstructured converts a slice of map[string]interface{} to unstructured.Unstructured.
 func toUnstructured(manifests []map[string]interface{}) ([]unstructured.Unstructured, error) {
 	m := []unstructured.Unstructured{}
@@ -198,14 +179,6 @@ func toUnstructured(manifests []map[string]interface{}) ([]unstructured.Unstruct
 	}
 
 	return m, nil
-}
-
-func lowercaseFirst(str string) string {
-	for i, v := range str {
-		return string(unicode.ToLower(v)) + str[i+1:]
-	}
-
-	return ""
 }
 
 func getListOptions(app string) (metav1.ListOptions, error) {

@@ -93,7 +93,7 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 			Version:      gvr.Version,
 			Kind:         kind,
 			SpinnakerApp: dm.App,
-			Cluster:      cluster(kind, name),
+			Cluster:      kubernetes.Cluster(kind, name),
 		}
 
 		err = cc.SQLClient.CreateKubernetesResource(kr)
@@ -184,7 +184,7 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 					Version:      gvr.Version,
 					Kind:         kind,
 					SpinnakerApp: dm.App,
-					Cluster:      cluster(kind, item.GetName()),
+					Cluster:      kubernetes.Cluster(kind, item.GetName()),
 				}
 
 				err = cc.SQLClient.CreateKubernetesResource(kr)
