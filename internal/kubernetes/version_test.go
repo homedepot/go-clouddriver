@@ -279,4 +279,28 @@ var _ = Describe("Version", func() {
 			})
 		})
 	})
+
+	Context("#NameWithoutVersion", func() {
+		When("name is not versioned", func() {
+			It("returns the name", func() {
+				Expect(NameWithoutVersion("")).To(Equal(""))
+				Expect(NameWithoutVersion("test-name")).To(Equal("test-name"))
+				Expect(NameWithoutVersion("test-v001-name")).To(Equal("test-v001-name"))
+				// Must be 3 or more digits
+				Expect(NameWithoutVersion("test-name-v1")).To(Equal("test-name-v1"))
+				Expect(NameWithoutVersion("test-name-v99")).To(Equal("test-name-v99"))
+				// Must be lowercase 'v'
+				Expect(NameWithoutVersion("test-name-V001")).To(Equal("test-name-V001"))
+			})
+		})
+
+		When("name is versioned", func() {
+			It("returns the name with the version removed", func() {
+				Expect(NameWithoutVersion("test-name-v000")).To(Equal("test-name"))
+				Expect(NameWithoutVersion("test-name-v999")).To(Equal("test-name"))
+				Expect(NameWithoutVersion("test-name-v1000")).To(Equal("test-name"))
+			})
+		})
+	})
+
 })

@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,8 +14,13 @@ const (
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	AnnotationSpinnakerArtifactVersion = `artifact.spinnaker.io/version`
 	AnnotationSpinnakerMonikerSequence = `moniker.spinnaker.io/sequence`
-	// Maximum latest version before cycling back to V000.
+	// Maximum latest version before cycling back to v000.
 	maxLatestVersion = 999
+)
+
+var (
+	// Regular expresion to match trailing '-v###'
+	matchSpinnakerVersionRegexp = regexp.MustCompile("-v[0-9]{3}[0-9]*$")
 )
 
 type SpinnakerVersion struct {
@@ -94,4 +100,10 @@ func IncrementVersion(currentVersion string) SpinnakerVersion {
 		Short: latestVersionShortFormat,
 		Long:  latestVersionLongFormat,
 	}
+}
+
+// NameWithVersion removes the Spinnaker version (trailing '-v###)
+// from the name.
+func NameWithoutVersion(name string) string {
+	return matchSpinnakerVersionRegexp.ReplaceAllString(name, "")
 }
