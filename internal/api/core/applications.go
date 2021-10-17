@@ -16,17 +16,16 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/gin-gonic/gin"
+	"github.com/homedepot/go-clouddriver/internal"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
 
 const (
-	defaultChanSize           = 100000
-	defaultListTimeoutSeconds = 10
-	stateUp                   = "Up"
-	stateDown                 = "Down"
-	statusRunning             = "Running"
-	typeKubernetes            = "kubernetes"
+	stateUp        = "Up"
+	stateDown      = "Down"
+	statusRunning  = "Running"
+	typeKubernetes = "kubernetes"
 )
 
 var (
@@ -1122,7 +1121,7 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 	kind := nameArray[0]
 	name := nameArray[1]
 
-	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*defaultListTimeoutSeconds)
+	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*internal.DefaultListTimeoutSeconds)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
@@ -1135,7 +1134,7 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 	}
 
 	// Declare a context with timeout.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*defaultListTimeoutSeconds)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
 	defer cancel()
 	// Declare a label selector.
 	lo := metav1.ListOptions{
@@ -1316,7 +1315,7 @@ func (cc *Controller) GetJob(c *gin.Context) {
 	kind := nameArray[0]
 	name := nameArray[1]
 
-	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*defaultListTimeoutSeconds)
+	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*internal.DefaultListTimeoutSeconds)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
@@ -1361,7 +1360,7 @@ func DeleteJob(c *gin.Context) {
 func (cc *Controller) listApplicationResources(c *gin.Context, rs []string, application string) ([]resource, error) {
 	wg := &sync.WaitGroup{}
 	// Create channel of resouces to send to.
-	rc := make(chan resource, defaultChanSize)
+	rc := make(chan resource, internal.DefaultChanSize)
 	// List all accounts associated with the given Spinnaker app.
 	accounts, err := cc.SQLClient.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
@@ -1393,7 +1392,7 @@ func (cc *Controller) listResources(wg *sync.WaitGroup, rs []string, rc chan res
 	// Increment the wait group counter when we're done here.
 	defer wg.Done()
 	// Grab the kube provider for the given account.
-	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*defaultListTimeoutSeconds)
+	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*internal.DefaultListTimeoutSeconds)
 	if err != nil {
 		clouddriver.Log(err)
 		return
@@ -1433,7 +1432,7 @@ func list(wg *sync.WaitGroup, rc chan resource,
 		LabelSelector: kubernetes.DefaultLabelSelector(),
 	}
 	// Declare a context with timeout.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*defaultListTimeoutSeconds)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
 	defer cancel()
 	// List resources with the context.
 	ul, err := client.ListResourceWithContext(ctx, r, lo)
