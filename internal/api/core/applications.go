@@ -1415,7 +1415,7 @@ func (cc *Controller) listResources(wg *sync.WaitGroup, rs []string, rc chan res
 	_wg.Add(len(rs))
 	// List all required resources concurrently.
 	for _, r := range rs {
-		go list(_wg, rc, provider.Client, r, account, application)
+		go list(_wg, rc, provider, r, account, application)
 	}
 	// Wait for the calls to finish.
 	_wg.Wait()
@@ -1424,18 +1424,22 @@ func (cc *Controller) listResources(wg *sync.WaitGroup, rs []string, rc chan res
 // list lists a given resource and send to a channel of unstructured.Unstructured.
 // It uses a context with a timeout of 10 seconds.
 func list(wg *sync.WaitGroup, rc chan resource,
-	client kubernetes.Client, r, account, application string) {
+	provider *kubernetes.Provider, r, account, application string) {
 	// Finish the wait group when we're done here.
 	defer wg.Done()
 	// Declare server side filtering options.
 	lo := metav1.ListOptions{
 		LabelSelector: kubernetes.DefaultLabelSelector(),
 	}
+	// If namespace-scoped account, then only get resources in the namespace.
+	if provider.Namespace != nil {
+		lo.FieldSelector = "metadata.namespace=" + *provider.Namespace
+	}
 	// Declare a context with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
 	defer cancel()
 	// List resources with the context.
-	ul, err := client.ListResourceWithContext(ctx, r, lo)
+	ul, err := provider.Client.ListResourceWithContext(ctx, r, lo)
 	if err != nil {
 		// If there was an error, log and return.
 		clouddriver.Log(err)
