@@ -64,6 +64,9 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 	artifacts = append(artifacts, dm.OptionalArtifacts...)
 
 	for _, manifest := range manifests {
+		// Create a copy of the unstructured object since we access by reference.
+		manifest := manifest
+
 		err = provider.ValidateKindStatus(manifest.GetKind())
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)

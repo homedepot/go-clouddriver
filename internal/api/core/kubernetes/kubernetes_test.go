@@ -25,6 +25,7 @@ var (
 	fakeKubeController            *kubernetesfakes.FakeController
 	kubernetesController          *Controller
 	deployManifestRequest         DeployManifestRequest
+	disableManifestRequest        DisableManifestRequest
 	scaleManifestRequest          ScaleManifestRequest
 	cleanupArtifactsRequest       CleanupArtifactsRequest
 	deleteManifestRequest         DeleteManifestRequest
@@ -110,6 +111,7 @@ func setup() {
 	c.Request = req
 
 	deployManifestRequest = newDeployManifestRequest()
+	disableManifestRequest = newDisableManifestRequest()
 	scaleManifestRequest = newScaleManifestRequest()
 	cleanupArtifactsRequest = newCleanupArtifactsRequest()
 	deleteManifestRequest = newDeleteManifestRequest()
@@ -153,6 +155,16 @@ func newDeployManifestRequest() DeployManifestRequest {
 				Type:      artifact.TypeKubernetesConfigMap,
 			},
 		},
+	}
+}
+
+func newDisableManifestRequest() DisableManifestRequest {
+	return DisableManifestRequest{
+		App:           "test-app",
+		CloudProvider: "kubernetes",
+		ManifestName:  "ReplicaSet test-rs-v001",
+		Location:      "test-namespace",
+		Account:       "test-account",
 	}
 }
 

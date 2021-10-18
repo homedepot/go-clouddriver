@@ -1,8 +1,8 @@
 package kubernetes
 
 import (
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/manifest"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
 
 type OperationsResponse struct {
@@ -13,14 +13,15 @@ type OperationsResponse struct {
 type Operations []Operation
 
 type Operation struct {
-	DeployManifest         *DeployManifestRequest         `json:"deployManifest"`
-	ScaleManifest          *ScaleManifestRequest          `json:"scaleManifest"`
 	CleanupArtifacts       *CleanupArtifactsRequest       `json:"cleanupArtifacts"`
 	DeleteManifest         *DeleteManifestRequest         `json:"deleteManifest"`
-	UndoRolloutManifest    *UndoRolloutManifestRequest    `json:"undoRolloutManifest"`
-	RollingRestartManifest *RollingRestartManifestRequest `json:"rollingRestartManifest"`
+	DeployManifest         *DeployManifestRequest         `json:"deployManifest"`
+	DisableManifest        *DisableManifestRequest        `json:"disableManifest"`
 	PatchManifest          *PatchManifestRequest          `json:"patchManifest"`
+	RollingRestartManifest *RollingRestartManifestRequest `json:"rollingRestartManifest"`
 	RunJob                 *RunJobRequest                 `json:"runJob"`
+	ScaleManifest          *ScaleManifestRequest          `json:"scaleManifest"`
+	UndoRolloutManifest    *UndoRolloutManifestRequest    `json:"undoRolloutManifest"`
 }
 
 type DeployManifestRequest struct {
@@ -42,6 +43,14 @@ type DeployManifestRequest struct {
 	SkipExpressionEvaluation bool                   `json:"skipExpressionEvaluation"`
 	RequiredArtifacts        []clouddriver.Artifact `json:"requiredArtifacts"`
 	OptionalArtifacts        []clouddriver.Artifact `json:"optionalArtifacts"`
+}
+
+type DisableManifestRequest struct {
+	App           string `json:"app"`
+	CloudProvider string `json:"cloudProvider"`
+	ManifestName  string `json:"manifestName"`
+	Location      string `json:"location"`
+	Account       string `json:"account"`
 }
 
 type PatchManifestRequest struct {
