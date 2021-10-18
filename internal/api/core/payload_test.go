@@ -144,6 +144,14 @@ const payloadRequestKubernetesOpsDeleteManifest = `[
   }
 ]`
 
+const payloadRequestKubernetesOpsDisableManifest = `[
+  {
+    "disableManifest": {
+      "account": "spin-cluster-account"
+		}
+  }
+]`
+
 const payloadRequestKubernetesOpsCleanupArtifacts = `[
   {
     "cleanupArtifacts": {
