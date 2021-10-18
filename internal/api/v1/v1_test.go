@@ -139,23 +139,6 @@ func setup() {
 			},
 		},
 	}
-	fakePods = &unstructured.UnstructuredList{
-		Items: []unstructured.Unstructured{
-			{
-				Object: map[string]interface{}{
-					"kind":       "Pod",
-					"apiVersion": "v1",
-					"metadata": map[string]interface{}{
-						"name":      "test-pod",
-						"namespace": "test-namespace",
-						"annotations": map[string]interface{}{
-							"moniker.spinnaker.io/application": "test-application",
-						},
-					},
-				},
-			},
-		},
-	}
 	fakeReplicaSets = &unstructured.UnstructuredList{
 		Items: []unstructured.Unstructured{
 			{

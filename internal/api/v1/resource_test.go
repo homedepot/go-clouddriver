@@ -131,7 +131,7 @@ var _ = Describe("Resource", func() {
 
 			It("returns status OK", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(7))
+				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(6))
 				Expect(fakeSQLClient.DeleteKubernetesResourcesByAccountNameCallCount()).To(Equal(1))
 				Expect(fakeSQLClient.CreateKubernetesResourceCallCount()).To(Equal(1))
 
@@ -166,7 +166,7 @@ var _ = Describe("Resource", func() {
 
 			It("returns status OK", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(7))
+				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(6))
 				Expect(fakeSQLClient.DeleteKubernetesResourcesByAccountNameCallCount()).To(Equal(1))
 				Expect(fakeSQLClient.CreateKubernetesResourceCallCount()).To(Equal(2))
 
@@ -217,7 +217,7 @@ var _ = Describe("Resource", func() {
 
 			It("returns status OK", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(7))
+				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(6))
 				Expect(fakeSQLClient.DeleteKubernetesResourcesByAccountNameCallCount()).To(Equal(1))
 				Expect(fakeSQLClient.CreateKubernetesResourceCallCount()).To(Equal(1))
 
@@ -239,44 +239,9 @@ var _ = Describe("Resource", func() {
 			})
 		})
 
-		When("list resources returns a pod", func() {
-			BeforeEach(func() {
-				fakeKubeClient.ListResourceWithContextReturnsOnCall(3, fakePods, nil)
-				fakeKubeClient.ListResourceWithContextReturns(&unstructured.UnstructuredList{}, nil)
-				fakeKubeClient.GVRForKindReturns(schema.GroupVersionResource{
-					Group:    "",
-					Version:  "v1",
-					Resource: "pods",
-				}, nil)
-			})
-
-			It("returns status OK", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(7))
-				Expect(fakeSQLClient.DeleteKubernetesResourcesByAccountNameCallCount()).To(Equal(1))
-				Expect(fakeSQLClient.CreateKubernetesResourceCallCount()).To(Equal(1))
-
-				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
-				Expect(kr.AccountName).To(Equal("test-account"))
-				Expect(kr.APIGroup).To(BeEmpty())
-				Expect(kr.ArtifactName).To(Equal("test-pod"))
-				Expect(kr.Cluster).To(BeEmpty())
-				Expect(kr.ID).ToNot(BeEmpty())
-				Expect(kr.Kind).To(Equal("Pod"))
-				Expect(kr.Name).To(Equal("test-pod"))
-				Expect(kr.Namespace).To(Equal("test-namespace"))
-				Expect(kr.Resource).To(Equal("pods"))
-				Expect(kr.SpinnakerApp).To(Equal("test-application"))
-				Expect(kr.TaskID).ToNot(BeEmpty())
-				Expect(kr.TaskType).To(BeEmpty())
-				Expect(kr.Timestamp).ToNot(BeNil())
-				Expect(kr.Version).To(Equal("v1"))
-			})
-		})
-
 		When("list resources returns a versioned replicaset", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceWithContextReturnsOnCall(4, fakeReplicaSets, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(3, fakeReplicaSets, nil)
 				fakeKubeClient.ListResourceWithContextReturns(&unstructured.UnstructuredList{}, nil)
 				fakeKubeClient.GVRForKindReturns(schema.GroupVersionResource{
 					Group:    "",
@@ -287,7 +252,7 @@ var _ = Describe("Resource", func() {
 
 			It("returns status OK and NameWithoutVersion is called", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(7))
+				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(6))
 				Expect(fakeSQLClient.DeleteKubernetesResourcesByAccountNameCallCount()).To(Equal(1))
 				Expect(fakeSQLClient.CreateKubernetesResourceCallCount()).To(Equal(1))
 
@@ -311,7 +276,7 @@ var _ = Describe("Resource", func() {
 
 		When("list resources returns a service", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceWithContextReturnsOnCall(5, fakeServices, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(4, fakeServices, nil)
 				fakeKubeClient.ListResourceWithContextReturns(&unstructured.UnstructuredList{}, nil)
 				fakeKubeClient.GVRForKindReturns(schema.GroupVersionResource{
 					Group:    "",
@@ -322,7 +287,7 @@ var _ = Describe("Resource", func() {
 
 			It("returns status OK", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(7))
+				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(6))
 				Expect(fakeSQLClient.DeleteKubernetesResourcesByAccountNameCallCount()).To(Equal(1))
 				Expect(fakeSQLClient.CreateKubernetesResourceCallCount()).To(Equal(1))
 
@@ -346,7 +311,7 @@ var _ = Describe("Resource", func() {
 
 		When("list resources returns a statefulset", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceWithContextReturnsOnCall(6, fakeStatefulSets, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(5, fakeStatefulSets, nil)
 				fakeKubeClient.ListResourceWithContextReturns(&unstructured.UnstructuredList{}, nil)
 				fakeKubeClient.GVRForKindReturns(schema.GroupVersionResource{
 					Group:    "",
@@ -357,7 +322,7 @@ var _ = Describe("Resource", func() {
 
 			It("returns status OK", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(7))
+				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(6))
 				Expect(fakeSQLClient.DeleteKubernetesResourcesByAccountNameCallCount()).To(Equal(1))
 				Expect(fakeSQLClient.CreateKubernetesResourceCallCount()).To(Equal(1))
 
@@ -384,10 +349,9 @@ var _ = Describe("Resource", func() {
 				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, fakeDaemonSets, nil)
 				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, fakeDeployments, nil)
 				fakeKubeClient.ListResourceWithContextReturnsOnCall(2, fakeIngresses, nil)
-				fakeKubeClient.ListResourceWithContextReturnsOnCall(3, fakePods, nil)
-				fakeKubeClient.ListResourceWithContextReturnsOnCall(4, fakeReplicaSets, nil)
-				fakeKubeClient.ListResourceWithContextReturnsOnCall(5, fakeServices, nil)
-				fakeKubeClient.ListResourceWithContextReturnsOnCall(6, fakeStatefulSets, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(3, fakeReplicaSets, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(4, fakeServices, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(5, fakeStatefulSets, nil)
 				fakeKubeClient.GVRForKindReturns(schema.GroupVersionResource{
 					Group:    "",
 					Version:  "v1",
@@ -397,9 +361,9 @@ var _ = Describe("Resource", func() {
 
 			It("returns status OK and creates all resource rows", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(7))
+				Expect(fakeKubeClient.ListResourceWithContextCallCount()).To(Equal(6))
 				Expect(fakeSQLClient.DeleteKubernetesResourcesByAccountNameCallCount()).To(Equal(1))
-				Expect(fakeSQLClient.CreateKubernetesResourceCallCount()).To(Equal(8))
+				Expect(fakeSQLClient.CreateKubernetesResourceCallCount()).To(Equal(7))
 			})
 		})
 	})

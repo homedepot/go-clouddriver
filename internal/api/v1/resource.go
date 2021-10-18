@@ -22,7 +22,6 @@ var (
 		"daemonSets",
 		"deployments",
 		"ingresses",
-		"pods",
 		"replicaSets",
 		"services",
 		"statefulSets",
@@ -37,7 +36,6 @@ var (
 //   - daemonSets
 //   - deployments
 //   - ingresses
-//   - pods
 //   - replicaSets
 //   - statefulSets
 //   - services
