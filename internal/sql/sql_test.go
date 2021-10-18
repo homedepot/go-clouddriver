@@ -212,6 +212,12 @@ var _ = Describe("Sql", func() {
 				\(account_name = \?\)$`).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
+
+				mock.ExpectBegin()
+				mock.ExpectExec(`(?i)^DELETE FROM "kubernetes_resources" WHERE
+				\(account_name = \?\)$`).
+					WillReturnResult(sqlmock.NewResult(1, 10))
+				mock.ExpectCommit()
 			})
 
 			It("succeeds", func() {

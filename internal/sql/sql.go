@@ -156,6 +156,11 @@ func (c *client) DeleteKubernetesProvider(name string) error {
 		return err
 	}
 
+	err = c.DeleteKubernetesResourcesByAccountName(name)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
