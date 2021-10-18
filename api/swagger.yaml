@@ -421,6 +421,45 @@ paths:
           description: "Not Found"
         "500":
           description: "Internal Server Error"
+  /v1/kubernetes/providers/{name}/resources:
+    put:
+      tags:
+      - "kubernetes"
+      parameters:
+      - name: "name"
+        in: "path"
+        required: true
+        type: "string"
+      summary: "Updates resources, read from the cluster, for the Kubernetes account (provider)"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "OK"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/KubernetesResource"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Internal Server Error"
+    delete:
+      tags:
+      - "kubernetes"
+      parameters:
+      - name: "name"
+        in: "path"
+        required: true
+        type: "string"
+      summary: "Deletes the database entries for all resources for the Kubernetes account (provider)"
+      responses:
+        "204":
+          description: "No Content"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Internal Server Error"
 definitions:
   KubernetesProvider:
     type: "object"
@@ -443,7 +482,6 @@ definitions:
       tokenProvider:
         type: "string"
         description: "The provider of the kubernetes auth token, defaults to google"
-        enum: ["google", "rancher"]
         example: "google"
       namespace:
         type: "string"
@@ -451,6 +489,56 @@ definitions:
         example: "example-namespace"
       permissions:
         $ref: "#/definitions/Permissions"
+  KubernetesResource:
+    type: "object"
+    required:
+    - accountName
+    - id
+    properties:
+      acccountName:
+        type: "string"
+        description: "The Spinnaker account that deployed this resource"
+        example: "gke_gcp-project-id_us-east1_cluster-name"
+      id:
+        type: "string"
+        description: "The unique ID for identifying this row in the database"
+        example: "f0500ae7-5db3-4c09-be11-c6c4d8016402"
+      timestamp:
+        type: "string"
+        description: "The time this resource row was added to the database"
+        example: "2021-10-16T19:48:47.923Z"
+      taskId:
+        type: "string"
+        description: "An identifier of the task responsible for creating this resource row in the database"
+        example: "f0500ae7-5db3-4c09-be11-c6c4d8016402"
+      apiGroup:
+        type: "string"
+        description: "The kubernetes API group for this resource"
+        example: "apps"
+      name:
+        type: "string"
+        description: "The name of this resource"
+        example: "example-name"
+      namespace:
+        type: "string"
+        description: "The kubernetes namespace of this resource"
+        example: "example-namespace"
+      resource:
+        type: "string"
+        description: "The Kubernetes API resource name for this resource"
+        example: "deployments"
+      version:
+        type: "string"
+        description: "The kubernetes API version for this resource"
+        example: "v1"
+      kind:
+        type: "string"
+        description: "The kubernetes kind of this resource"
+        example: "Deployment"
+      spinnakerApp:
+        type: "string"
+        description: "The name of the Spinnaker application which deployed this resource"
+        example: "example-application"
   Permissions:
     type: "object"
     required:

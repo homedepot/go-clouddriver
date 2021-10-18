@@ -597,4 +597,48 @@ var _ = Describe("Annotation", func() {
 			})
 		})
 	})
+
+	Context("#SpinnakerMonikerApplication", func() {
+		var (
+			fakeResource unstructured.Unstructured
+			value        string
+		)
+
+		JustBeforeEach(func() {
+			value = SpinnakerMonikerApplication(fakeResource)
+		})
+
+		When("annotation is missing", func() {
+			BeforeEach(func() {
+				fakeResource = unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind": "Deployment",
+					},
+				}
+			})
+
+			It("returns empty string", func() {
+				Expect(value).To(BeEmpty())
+			})
+		})
+
+		When("annotation is set", func() {
+			BeforeEach(func() {
+				fakeResource = unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind": "Deployment",
+						"metadata": map[string]interface{}{
+							"annotations": map[string]interface{}{
+								"moniker.spinnaker.io/application": "test-application",
+							},
+						},
+					},
+				}
+			})
+
+			It("returns annotation value", func() {
+				Expect(value).To(Equal("test-application"))
+			})
+		})
+	})
 })

@@ -150,5 +150,9 @@ func (s *Server) Setup() {
 		api.POST("/kubernetes/providers", c.CreateKubernetesProvider)
 		api.PUT("/kubernetes/providers", c.CreateOrReplaceKubernetesProvider)
 		api.DELETE("/kubernetes/providers/:name", c.DeleteKubernetesProvider)
+		// Resources endpoint for kubernetes.
+		api.PUT("/kubernetes/providers/:name/resources", c.LoadKubernetesResources)
+		api.DELETE("/kubernetes/providers/:name/resources", c.DeleteKubernetesResources)
+
 	}
 }

@@ -13,6 +13,11 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+const (
+	DefaultChanSize           = 100000
+	DefaultListTimeoutSeconds = 10
+)
+
 // Controller holds all non request-scoped objects.
 type Controller struct {
 	ArcadeClient                  arcade.Client

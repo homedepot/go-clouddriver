@@ -144,3 +144,7 @@ const payloadKubernetesProviderGetGenericError = `{
 const payloadKubernetesProviderDeleteGenericError = `{
             "error": "error deleting provider"
           }`
+
+const payloadKubernetesResourcesDeleteGenericError = `{
+            "error": "error deleting resources"
+          }`

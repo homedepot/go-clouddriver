@@ -30,6 +30,7 @@ type Client interface {
 	CreateKubernetesProvider(kubernetes.Provider) error
 	CreateKubernetesResource(kubernetes.Resource) error
 	DeleteKubernetesProvider(string) error
+	DeleteKubernetesResourcesByAccountName(string) error
 	GetKubernetesProvider(string) (kubernetes.Provider, error)
 	GetKubernetesProviderAndPermissions(string) (kubernetes.Provider, error)
 	ListKubernetesAccountsBySpinnakerApp(string) ([]string, error)
@@ -151,6 +152,21 @@ func (c *client) DeleteKubernetesProvider(name string) error {
 	}
 
 	err = c.db.Where("account_name = ?", name).Delete(&clouddriver.WritePermission{}).Error
+	if err != nil {
+		return err
+	}
+
+	err = c.DeleteKubernetesResourcesByAccountName(name)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteKubernetesResources deletes all resources for the given provider from the DB.
+func (c *client) DeleteKubernetesResourcesByAccountName(account string) error {
+	err := c.db.Where("account_name = ?", account).Delete(&kubernetes.Resource{}).Error
 	if err != nil {
 		return err
 	}
