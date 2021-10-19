@@ -1400,6 +1400,217 @@ const payloadListServerGroups = `[
             }
           ]`
 
+const payloadListServerGroupsUniquePodInstances = `[
+            {
+              "account": "account1",
+              "accountName": "",
+              "buildInfo": {
+                "images": [
+                  "test-image1",
+                  "test-image2"
+                ]
+              },
+              "capacity": {
+                "desired": 2,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "cluster": "deployment test-deployment1",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "displayName": "test-ds1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 2,
+                "unknown": 0,
+                "up": 1
+              },
+              "instances": [],
+              "isDisabled": false,
+              "key": {
+                "account": "",
+                "group": "",
+                "kubernetesKind": "",
+                "name": "",
+                "namespace": "",
+                "provider": ""
+              },
+              "kind": "daemonSet",
+              "labels": null,
+              "loadBalancers": null,
+              "manifest": null,
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "daemonSet test-ds1",
+              "namespace": "test-namespace1",
+              "providerType": "",
+              "region": "test-namespace1",
+              "securityGroups": null,
+              "serverGroupManagers": [],
+              "type": "kubernetes",
+              "uid": "",
+              "zone": "",
+              "zones": null,
+              "insightActions": null
+            },
+            {
+              "account": "account1",
+              "accountName": "",
+              "buildInfo": {
+                "images": [
+                  "test-image1",
+                  "test-image2"
+                ]
+              },
+              "capacity": {
+                "desired": 1,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "cluster": "deployment test-deployment1",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "displayName": "test-rs1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 1,
+                "unknown": 0,
+                "up": 0
+              },
+              "instances": [
+                {
+                  "availabilityZone": "test-namespace1",
+                  "health": [
+                    {
+                      "state": "Down",
+                      "type": "kubernetes/pod"
+                    },
+                    {
+                      "state": "Down",
+                      "type": "kubernetes/container"
+                    }
+                  ],
+                  "healthState": "Down",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100000",
+                  "key": {
+                    "account": "",
+                    "group": "",
+                    "kubernetesKind": "",
+                    "name": "",
+                    "namespace": "",
+                    "provider": ""
+                  },
+                  "moniker": {
+                    "app": "",
+                    "cluster": ""
+                  },
+                  "name": "pod test-pod3"
+                }
+              ],
+              "isDisabled": false,
+              "key": {
+                "account": "",
+                "group": "",
+                "kubernetesKind": "",
+                "name": "",
+                "namespace": "",
+                "provider": ""
+              },
+              "kind": "replicaSet",
+              "labels": null,
+              "loadBalancers": null,
+              "manifest": null,
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "replicaSet test-rs1",
+              "namespace": "test-namespace1",
+              "providerType": "",
+              "region": "test-namespace1",
+              "securityGroups": null,
+              "serverGroupManagers": [
+                {
+                  "account": "account1",
+                  "location": "test-namespace1",
+                  "name": "test-deployment1"
+                }
+              ],
+              "type": "kubernetes",
+              "uid": "",
+              "zone": "",
+              "zones": null,
+              "insightActions": null
+            },
+            {
+              "account": "account1",
+              "accountName": "",
+              "buildInfo": {
+                "images": [
+                  "test-image1",
+                  "test-image2"
+                ]
+              },
+              "capacity": {
+                "desired": 1,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "cluster": "deployment test-deployment1",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "displayName": "test-sts1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 1,
+                "unknown": 0,
+                "up": 0
+              },
+              "instances": [],
+              "isDisabled": false,
+              "key": {
+                "account": "",
+                "group": "",
+                "kubernetesKind": "",
+                "name": "",
+                "namespace": "",
+                "provider": ""
+              },
+              "kind": "statefulSet",
+              "labels": null,
+              "loadBalancers": [
+                "service test-svc2"
+              ],
+              "manifest": null,
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "statefulSet test-sts1",
+              "namespace": "test-namespace1",
+              "providerType": "",
+              "region": "test-namespace1",
+              "securityGroups": null,
+              "serverGroupManagers": [],
+              "type": "kubernetes",
+              "uid": "",
+              "zone": "",
+              "zones": null,
+              "insightActions": null
+            }
+          ]`
+
 const payloadListServerGroupsSorted = `[
             {
               "account": "account1",
@@ -1441,7 +1652,7 @@ const payloadListServerGroupsSorted = `[
                     }
                   ],
                   "healthState": "Down",
-                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100004",
                   "key": {
                     "account": "",
                     "group": "",
@@ -1469,7 +1680,7 @@ const payloadListServerGroupsSorted = `[
                     }
                   ],
                   "healthState": "Down",
-                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100003",
                   "key": {
                     "account": "",
                     "group": "",
@@ -1497,7 +1708,7 @@ const payloadListServerGroupsSorted = `[
                     }
                   ],
                   "healthState": "Down",
-                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100002",
                   "key": {
                     "account": "",
                     "group": "",
@@ -1583,7 +1794,7 @@ const payloadListServerGroupsSorted = `[
                     }
                   ],
                   "healthState": "Down",
-                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100001",
                   "key": {
                     "account": "",
                     "group": "",
@@ -1675,7 +1886,7 @@ const payloadListServerGroupsSorted = `[
                     }
                   ],
                   "healthState": "Down",
-                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100005",
                   "key": {
                     "account": "",
                     "group": "",
@@ -1761,7 +1972,7 @@ const payloadListServerGroupsSorted = `[
                     }
                   ],
                   "healthState": "Down",
-                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100004",
                   "key": {
                     "account": "",
                     "group": "",
@@ -1789,7 +2000,7 @@ const payloadListServerGroupsSorted = `[
                     }
                   ],
                   "healthState": "Down",
-                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100003",
                   "key": {
                     "account": "",
                     "group": "",
@@ -1817,7 +2028,7 @@ const payloadListServerGroupsSorted = `[
                     }
                   ],
                   "healthState": "Down",
-                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100002",
                   "key": {
                     "account": "",
                     "group": "",
@@ -1903,7 +2114,7 @@ const payloadListServerGroupsSorted = `[
                     }
                   ],
                   "healthState": "Down",
-                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100005",
                   "key": {
                     "account": "",
                     "group": "",
