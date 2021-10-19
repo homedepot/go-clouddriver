@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -117,7 +118,7 @@ func (cc *Controller) Disable(c *gin.Context, dm DisableManifestRequest) {
 			return
 		}
 
-		err = detachPatch(provider.Client, lb, target)
+		err = patch(provider.Client, lb, target, "remove")
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -125,7 +126,7 @@ func (cc *Controller) Disable(c *gin.Context, dm DisableManifestRequest) {
 
 		// Patch all pods.
 		for _, pod := range pods {
-			err = detachPatch(provider.Client, lb, pod)
+			err = patch(provider.Client, lb, pod, "remove")
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -180,9 +181,25 @@ func getLoadBalancer(client kubernetes.Client, loadBalancer, namespace string) (
 	return lb, nil
 }
 
-// detachPatch detaches a given load balancer from a target and then
-// patches the target's labels.
-func detachPatch(client kubernetes.Client, lb, target *unstructured.Unstructured) error {
+type jsonPatch struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value string `json:"value,omitempty"`
+}
+
+// patch attaches or detaches a given load balancer based on the op passed in ("add" or "remove")
+// from a target and then patches the target's labels. It uses the JSON patch strategy to do so.
+//
+// For a pod, this looks like:
+// [
+//   {"op": "add", "path": "/metadata/labels/key1", "value": "value1"
+// ]
+//
+// For other kinds, this looks like:
+// [
+//   {"op": "remove", "path": "/spec/template/metadata/labels/key1"}
+// ]
+func patch(client kubernetes.Client, lb, target *unstructured.Unstructured, op string) error {
 	labelsPath := "spec.template.metadata.labels"
 
 	labels, found, err := unstructured.NestedStringMap(target.Object, strings.Split(labelsPath, ".")...)
@@ -205,24 +222,48 @@ func detachPatch(client kubernetes.Client, lb, target *unstructured.Unstructured
 		return nil
 	}
 
-	for k := range selector {
-		delete(labels, k)
+	if op == "add" && !disjoint(labels, selector) {
+		return fmt.Errorf("Service selector must have no label keys in common with target workload")
 	}
 
-	err = unstructured.SetNestedStringMap(target.Object, labels, strings.Split(labelsPath, ".")...)
-	if err != nil {
-		return fmt.Errorf("error detaching load balancer labels for manifest (kind: %s, name: %s, namespace: %s): %v",
-			target.GetKind(),
-			target.GetName(),
-			target.GetNamespace(),
-			err)
+	patches := []jsonPatch{}
+
+	for k, v := range selector {
+		// If the op is "remove" and the label does not exist, skip!
+		if op == "remove" {
+			if _, ok := labels[k]; !ok {
+				continue
+			}
+		}
+
+		// See https://datatracker.ietf.org/doc/html/rfc6901#section-3.
+		k = strings.ReplaceAll(k, "~", "~0")
+		k = strings.ReplaceAll(k, "/", "~1")
+
+		patch := jsonPatch{
+			Op:   op,
+			Path: fmt.Sprintf("/%s/%s", strings.ReplaceAll(labelsPath, ".", "/"), k),
+		}
+		// If the op is "add" we set the value to be what we're adding.
+		if op == "add" {
+			patch.Value = v
+		}
+
+		patches = append(patches, patch)
 	}
 
-	// Grab the patch body.
-	b, err := jsonPatchBodyLabels(target)
+	// If there's nothing to patch, just return.
+	if len(patches) == 0 {
+		return nil
+	}
+
+	sort.Slice(patches, func(i, j int) bool { return patches[i].Path < patches[j].Path })
+
+	b, err := json.Marshal(patches)
 	if err != nil {
 		return err
 	}
+
 	// Source code for Clouddriver always uses the JSON patch type for enable/disable manifest operations.
 	// See https://github.com/spinnaker/clouddriver/blob/c52df8fb055de77ac800b41fd843761f506e7e08/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/op/manifest/AbstractKubernetesEnableDisableManifestOperation.java#L112.
 	_, _, err = client.PatchUsingStrategy(target.GetKind(), target.GetName(),
@@ -232,82 +273,6 @@ func detachPatch(client kubernetes.Client, lb, target *unstructured.Unstructured
 	}
 
 	return nil
-}
-
-// jsonPatchBodyLabels returns the JSON patch body for a target manifest's
-// pod template labels.
-//
-// For a pod, this looks like:
-// {
-//   "metadata": {
-//     "labels": [
-//        "key1": "value1",
-//        "key2": "value2",
-//     ]
-//   }
-// }
-//
-// For other kinds, this looks like:
-// {
-//   "spec": {
-//     "template": {
-//       "metadata": {
-//         "labels": [
-//            "key1": "value1",
-//            "key2": "value2",
-//         ]
-//       }
-//     }
-//   }
-// }
-func jsonPatchBodyLabels(target *unstructured.Unstructured) ([]byte, error) {
-	labelsPath := "spec.template.metadata.labels"
-
-	labels, found, err := unstructured.NestedStringMap(target.Object, strings.Split(labelsPath, ".")...)
-	if err != nil {
-		return nil, err
-	}
-
-	if !found {
-		labelsPath = "metadata.labels"
-
-		labels, _, err = unstructured.NestedStringMap(target.Object, strings.Split(labelsPath, ".")...)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var pb map[string]interface{}
-	// If this is a pod, generate the patch body for a pod.
-	if labelsPath == "metadata.labels" {
-		pb = map[string]interface{}{
-			"metadata": map[string]interface{}{
-				"labels": map[string]string{},
-			},
-		}
-	} else {
-		pb = map[string]interface{}{
-			"spec": map[string]interface{}{
-				"template": map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"labels": map[string]string{},
-					},
-				},
-			},
-		}
-	}
-
-	err = unstructured.SetNestedStringMap(pb, labels, strings.Split(labelsPath, ".")...)
-	if err != nil {
-		return nil, err
-	}
-
-	patchBody, err := json.Marshal(pb)
-	if err != nil {
-		return nil, err
-	}
-
-	return patchBody, nil
 }
 
 // hasPods returns true if the kind of a Kubernetes object is

@@ -1,6 +1,8 @@
 package kubernetes
 
 import (
+	"encoding/json"
+
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/manifest"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
@@ -61,7 +63,7 @@ type PatchManifestRequest struct {
 	ManifestName  string                         `json:"manifestName"`
 	Source        string                         `json:"source"`
 	Mode          string                         `json:"mode"`
-	PatchBody     map[string]interface{}         `json:"patchBody"`
+	PatchBody     json.RawMessage                `json:"patchBody"`
 	CloudProvider string                         `json:"cloudProvider"`
 	AllArtifacts  []PatchManifestRequestArtifact `json:"allArtifacts"`
 	Options       PatchManifestRequestOptions    `json:"options"`

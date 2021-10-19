@@ -430,6 +430,145 @@ var _ = Describe("Disable", func() {
 		})
 	})
 
+	When("there are no labels in common with the selectors on the targets", func() {
+		BeforeEach(func() {
+			fakeKubeClient.GetReturnsOnCall(0, &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "ReplicaSet",
+					"apiVersion": "apps/v1",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							"traffic.spinnaker.io/load-balancers": "[\"service my-service\"]",
+						},
+						"name":      "test-name",
+						"namespace": "test-namespace",
+						"uid":       "test-uid",
+					},
+					"spec": map[string]interface{}{
+						"template": map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"labels": map[string]interface{}{},
+							},
+						},
+					},
+				},
+			}, nil)
+			fakeKubeClient.ListResourceWithContextReturns(&unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod1",
+								"namespace":         "test-namespace",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "wrong-application",
+								},
+								"labels": map[string]interface{}{
+									"labelKey1": "labelValue1",
+									"labelKey2": "labelValue2",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs1",
+										"kind": "replicaSet",
+										"uid":  "test-uid",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod2",
+								"namespace":         "test-namespace",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
+								"labels": map[string]interface{}{
+									"labelKey1": "labelValue1",
+									"labelKey2": "labelValue2",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs2",
+										"kind": "replicaSet",
+										"uid":  "test-uid1",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod3",
+								"namespace":         "test-namespace",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
+								"labels": map[string]interface{}{
+									"labelKey1": "labelValue1",
+									"labelKey2": "labelValue2",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs1",
+										"kind": "replicaSet",
+										"uid":  "test-uid",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "Pod",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-pod4",
+								"namespace":         "test-namespace",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/application": "test-application",
+								},
+								"labels": map[string]interface{}{
+									"labelKey1": "labelValue1",
+									"labelKey2": "labelValue2",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-rs1",
+										"kind": "replicaSet",
+										"uid":  "test-uid",
+									},
+								},
+								"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+							},
+						},
+					},
+				},
+			}, nil)
+		})
+
+		It("does not call patch", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			Expect(fakeKubeClient.PatchUsingStrategyCallCount()).To(Equal(0))
+		})
+	})
+
 	When("patching the target returns an error", func() {
 		BeforeEach(func() {
 			fakeKubeClient.PatchUsingStrategyReturnsOnCall(0, kubernetes.Metadata{}, nil, errors.New("error patching"))
@@ -477,121 +616,121 @@ var _ = Describe("Disable", func() {
 		Expect(kind1).To(Equal("ReplicaSet"))
 		Expect(name1).To(Equal("test-rs1"))
 		Expect(namespace1).To(Equal("test-namespace"))
-		Expect(string(patchBody1)).To(MatchJSON(`{
-        "spec": {
-          "template": {
-            "metadata": {
-              "labels": {
-                "labelKey1": "labelValue1",
-                "labelKey2": "labelValue2",
-                "selectorKey3": "selectorValue3",
-                "selectorKey4": "selectorValue4"
-              }
-            }
-          }
+		Expect(string(patchBody1)).To(MatchJSON(`[
+        {
+          "op": "remove",
+          "path": "/spec/template/metadata/labels/selectorKey1"
+        },
+        {
+          "op": "remove",
+          "path": "/spec/template/metadata/labels/selectorKey2"
         }
-      }`))
+      ]`))
 		Expect(patchType1).To(Equal(types.JSONPatchType))
 
 		Expect(kind2).To(Equal("Pod"))
 		Expect(name2).To(Equal("test-pod1"))
 		Expect(namespace2).To(Equal("test-namespace"))
-		Expect(string(patchBody2)).To(MatchJSON(`{
-        "metadata": {
-          "labels": {
-            "labelKey1": "labelValue1",
-            "labelKey2": "labelValue2",
-            "selectorKey3": "selectorValue3",
-            "selectorKey4": "selectorValue4"
-          }
+		Expect(string(patchBody2)).To(MatchJSON(`[
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey1"
+        },
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey2"
         }
-      }`))
+      ]`))
 		Expect(patchType2).To(Equal(types.JSONPatchType))
 
 		Expect(kind3).To(Equal("Pod"))
 		Expect(name3).To(Equal("test-pod3"))
 		Expect(namespace3).To(Equal("test-namespace"))
-		Expect(string(patchBody3)).To(MatchJSON(`{
-        "metadata": {
-          "labels": {
-            "labelKey1": "labelValue1",
-            "labelKey2": "labelValue2",
-            "selectorKey3": "selectorValue3",
-            "selectorKey4": "selectorValue4"
-          }
+		Expect(string(patchBody3)).To(MatchJSON(`[
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey1"
+        },
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey2"
         }
-      }`))
+      ]`))
 		Expect(patchType3).To(Equal(types.JSONPatchType))
 
 		Expect(kind4).To(Equal("Pod"))
 		Expect(name4).To(Equal("test-pod4"))
 		Expect(namespace4).To(Equal("test-namespace"))
-		Expect(string(patchBody4)).To(MatchJSON(`{
-        "metadata": {
-          "labels": {
-            "labelKey1": "labelValue1",
-            "labelKey2": "labelValue2",
-            "selectorKey3": "selectorValue3",
-            "selectorKey4": "selectorValue4"
-          }
+		Expect(string(patchBody4)).To(MatchJSON(`[
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey1"
+        },
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey2"
         }
-      }`))
+      ]`))
 		Expect(patchType4).To(Equal(types.JSONPatchType))
 
 		Expect(kind5).To(Equal("ReplicaSet"))
 		Expect(name5).To(Equal("test-rs1"))
 		Expect(namespace5).To(Equal("test-namespace"))
-		Expect(string(patchBody5)).To(MatchJSON(`{
-        "spec": {
-          "template": {
-            "metadata": {
-              "labels": {
-                "labelKey1": "labelValue1",
-                "labelKey2": "labelValue2"
-              }
-            }
-          }
+		Expect(string(patchBody5)).To(MatchJSON(`[
+        {
+          "op": "remove",
+          "path": "/spec/template/metadata/labels/selectorKey3"
+        },
+        {
+          "op": "remove",
+          "path": "/spec/template/metadata/labels/selectorKey4"
         }
-      }`))
+      ]`))
 		Expect(patchType5).To(Equal(types.JSONPatchType))
 
 		Expect(kind6).To(Equal("Pod"))
 		Expect(name6).To(Equal("test-pod1"))
 		Expect(namespace6).To(Equal("test-namespace"))
-		Expect(string(patchBody6)).To(MatchJSON(`{
-				"metadata": {
-					"labels": {
-						"labelKey1": "labelValue1",
-						"labelKey2": "labelValue2"
-					}
-				}
-      }`))
+		Expect(string(patchBody6)).To(MatchJSON(`[
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey3"
+        },
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey4"
+        }
+      ]`))
 		Expect(patchType6).To(Equal(types.JSONPatchType))
 
 		Expect(kind7).To(Equal("Pod"))
 		Expect(name7).To(Equal("test-pod3"))
 		Expect(namespace7).To(Equal("test-namespace"))
-		Expect(string(patchBody7)).To(MatchJSON(`{
-				"metadata": {
-					"labels": {
-						"labelKey1": "labelValue1",
-						"labelKey2": "labelValue2"
-					}
-				}
-      }`))
+		Expect(string(patchBody7)).To(MatchJSON(`[
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey3"
+        },
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey4"
+        }
+      ]`))
 		Expect(patchType7).To(Equal(types.JSONPatchType))
 
 		Expect(kind8).To(Equal("Pod"))
 		Expect(name8).To(Equal("test-pod4"))
 		Expect(namespace8).To(Equal("test-namespace"))
-		Expect(string(patchBody8)).To(MatchJSON(`{
-				"metadata": {
-					"labels": {
-						"labelKey1": "labelValue1",
-						"labelKey2": "labelValue2"
-					}
-				}
-      }`))
+		Expect(string(patchBody8)).To(MatchJSON(`[
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey3"
+        },
+        {
+          "op": "remove",
+          "path": "/metadata/labels/selectorKey4"
+        }
+      ]`))
 		Expect(patchType8).To(Equal(types.JSONPatchType))
 	})
 })
