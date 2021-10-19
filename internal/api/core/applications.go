@@ -872,12 +872,26 @@ func makeServerGroupMap(pods []resource) map[string][]Instance {
 			if uid == "" {
 				continue
 			}
-
-			serverGroupMap[uid] = append(serverGroupMap[uid], newInstance(pod.u))
+			// Add pod to the server group, if it doesn't already contain it.
+			if !containsPod(serverGroupMap[uid], pod) {
+				serverGroupMap[uid] = append(serverGroupMap[uid], newInstance(pod.u))
+			}
 		}
 	}
 
 	return serverGroupMap
+}
+
+// containsPod returns true if the given slice of pod instances
+// contains an element with the same UID as the given pod.
+func containsPod(instances []Instance, pod resource) bool {
+	for _, instance := range instances {
+		if instance.ID == string(pod.u.GetUID()) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // newInstance returns an "Instance" object from a given

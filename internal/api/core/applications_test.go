@@ -2259,6 +2259,120 @@ var _ = Describe("Application", func() {
 			})
 		})
 
+		When("the same pod instance is returned more than once", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{
+						{
+							Object: map[string]interface{}{
+								"kind":       "Pod",
+								"apiVersion": "v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-pod3",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
+									"labels": map[string]interface{}{
+										"label1": "test-label1",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs1",
+											"kind": "replicaSet",
+											"uid":  "test-uid1",
+										},
+									},
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100000",
+								},
+							},
+						},
+						{
+							Object: map[string]interface{}{
+								"kind":       "Pod",
+								"apiVersion": "v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-pod3",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"moniker.spinnaker.io/application": "test-application",
+									},
+									"labels": map[string]interface{}{
+										"label1": "test-label1",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-rs1",
+											"kind": "replicaSet",
+											"uid":  "test-uid1",
+										},
+									},
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100000",
+								},
+							},
+						},
+					},
+				}, nil)
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{
+						{
+							Object: map[string]interface{}{
+								"kind":       "ReplicaSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-rs1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"artifact.spinnaker.io/name":       "test-deployment1",
+										"artifact.spinnaker.io/type":       "kubernetes/deployment",
+										"artifact.spinnaker.io/location":   "test-namespace1",
+										"moniker.spinnaker.io/application": "test-application",
+										"moniker.spinnaker.io/cluster":     "deployment test-deployment1",
+										"moniker.spinnaker.io/sequence":    "19",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-deployment1",
+											"kind": "Deployment",
+											"uid":  "test-uid3",
+										},
+									},
+									"uid": "test-uid1",
+								},
+								"spec": map[string]interface{}{
+									"replicas": 1,
+									"template": map[string]interface{}{
+										"spec": map[string]interface{}{
+											"containers": []map[string]interface{}{
+												{
+													"image": "test-image1",
+												},
+												{
+													"image": "test-image2",
+												},
+											},
+										},
+									},
+								},
+								"status": map[string]interface{}{
+									"replicas":      1,
+									"readyReplicas": 0,
+								},
+							},
+						},
+					},
+				}, nil)
+			})
+
+			It("returns list of resources, removing the duplicate pod instances", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadListServerGroupsUniquePodInstances)
+			})
+		})
+
 		When("the resources are not sorted", func() {
 			BeforeEach(func() {
 				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, &unstructured.UnstructuredList{
@@ -2284,7 +2398,7 @@ var _ = Describe("Application", func() {
 											"uid":  "test-uid1",
 										},
 									},
-									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100000",
 								},
 							},
 						},
@@ -2309,7 +2423,7 @@ var _ = Describe("Application", func() {
 											"uid":  "test-uid1",
 										},
 									},
-									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100001",
 								},
 							},
 						},
@@ -2334,7 +2448,7 @@ var _ = Describe("Application", func() {
 											"uid":  "test-uid2",
 										},
 									},
-									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100002",
 								},
 							},
 						},
@@ -2359,7 +2473,7 @@ var _ = Describe("Application", func() {
 											"uid":  "test-uid2",
 										},
 									},
-									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100003",
 								},
 							},
 						},
@@ -2384,7 +2498,7 @@ var _ = Describe("Application", func() {
 											"uid":  "test-uid2",
 										},
 									},
-									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100004",
 								},
 							},
 						},
@@ -2409,7 +2523,7 @@ var _ = Describe("Application", func() {
 											"uid":  "test-uid3",
 										},
 									},
-									"uid": "cec15437-4e6a-11ea-9788-4201ac100006",
+									"uid": "cec15437-4e6a-11ea-9788-4201ac100005",
 								},
 							},
 						},
