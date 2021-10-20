@@ -93,15 +93,15 @@ type PatchManifestRequestOptions struct {
 
 // why are artifacts commented out here? possibly causing the problem of artifacts not getting bound correctly
 type ManifestResponse struct {
-	Account string `json:"account"`
-	// Artifacts []struct {
-	// 	CustomKind bool `json:"customKind"`
-	// 	Metadata   struct {
-	// 	} `json:"metadata"`
-	// 	Name      string `json:"name"`
-	// 	Reference string `json:"reference"`
-	// 	Type      string `json:"type"`
-	// } `json:"artifacts"`
+	Account   string `json:"account"`
+	Artifacts []struct {
+		CustomKind bool `json:"customKind"`
+		Metadata   struct {
+		} `json:"metadata"`
+		Name      string `json:"name"`
+		Reference string `json:"reference"`
+		Type      string `json:"type"`
+	} `json:"artifacts"`
 	Events   []interface{}           `json:"events"`
 	Location string                  `json:"location"`
 	Manifest map[string]interface{}  `json:"manifest"`
@@ -161,7 +161,7 @@ type DeleteManifestRequestLabelSelector struct {
 }
 
 type DeleteManifestRequestOptions struct {
-	Cascading          bool   `json:"cascading"`
+	Cascading          *bool  `json:"cascading"`
 	OrphanDependants   *bool  `json:"orphanDependants"`
 	GracePeriodSeconds *int64 `json:"gracePeriodSeconds"`
 }

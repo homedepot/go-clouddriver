@@ -2756,12 +2756,12 @@ const payloadManifestCoordinates = `{
 
 const payloadManifestCoordinatesList = `[
             {
-              "kind": "ReplicaSet",
+              "kind": "replicaSet",
               "name": "rs2-v000",
               "namespace": "test-namespace"
             },
             {
-              "kind": "ReplicaSet",
+              "kind": "replicaSet",
               "name": "rs2-v001",
               "namespace": "test-namespace"
             }

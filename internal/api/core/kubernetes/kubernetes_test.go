@@ -190,6 +190,7 @@ func newCleanupArtifactsRequest() CleanupArtifactsRequest {
 
 func newDeleteManifestRequest() DeleteManifestRequest {
 	gps := int64(10)
+	f := false
 
 	return DeleteManifestRequest{
 		Account:      "spin-cluster-account",
@@ -197,7 +198,7 @@ func newDeleteManifestRequest() DeleteManifestRequest {
 		Mode:         "static",
 		ManifestName: "deployment test-deployment",
 		Options: DeleteManifestRequestOptions{
-			Cascading:          false,
+			Cascading:          &f,
 			GracePeriodSeconds: &gps,
 		},
 		Kinds: []string{
