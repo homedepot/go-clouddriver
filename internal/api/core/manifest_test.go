@@ -55,6 +55,43 @@ var _ = Describe("Manifest", func() {
 			})
 		})
 
+		When("getting the manifest returns null values", func() {
+			BeforeEach(func() {
+				uri = svr.URL + "/manifests/test-account/test-namespace/clusterRole test-cluster-role"
+				createRequest(http.MethodGet)
+				fakeKubeClient.GetReturns(&unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"apiVersion": "rbac.authorization.k8s.io/v1",
+						"kind":       "ClusterRole",
+						"metadata": map[string]interface{}{
+							"annotations": map[string]interface{}{
+								"artifact.spinnaker.io/location":   "",
+								"artifact.spinnaker.io/name":       "test-cluster-role",
+								"artifact.spinnaker.io/type":       "kubernetes/clusterRole",
+								"artifact.spinnaker.io/version":    "",
+								"moniker.spinnaker.io/application": "test-application",
+								"moniker.spinnaker.io/cluster":     "clusterRole test-cluster-role",
+							},
+							"creationTimestamp": "2021-10-20T15:29:26Z",
+							"labels": map[string]interface{}{
+								"app.kubernetes.io/managed-by": "spinnaker",
+								"app.kubernetes.io/name":       "test-application",
+							},
+							"name":            "test-cluster-role",
+							"resourceVersion": "53990465",
+							"uid":             "d1f1ab80-1320-4e2d-8d12-893c326af416",
+						},
+						"rules": nil,
+					},
+				}, nil)
+			})
+
+			It("succeeds", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadManifestClusterRoleNoRules)
+			})
+		})
+
 		When("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))

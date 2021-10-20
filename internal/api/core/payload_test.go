@@ -2759,6 +2759,59 @@ const payloadManifestCoordinatesList = `[
             }
           ]`
 
+const payloadManifestClusterRoleNoRules = `{
+            "account": "test-account",
+            "events": [],
+            "location": "test-namespace",
+            "manifest": {
+              "apiVersion": "rbac.authorization.k8s.io/v1",
+              "kind": "ClusterRole",
+              "metadata": {
+                "annotations": {
+                  "artifact.spinnaker.io/location": "",
+                  "artifact.spinnaker.io/name": "test-cluster-role",
+                  "artifact.spinnaker.io/type": "kubernetes/clusterRole",
+                  "artifact.spinnaker.io/version": "",
+                  "moniker.spinnaker.io/application": "test-application",
+                  "moniker.spinnaker.io/cluster": "clusterRole test-cluster-role"
+                },
+                "creationTimestamp": "2021-10-20T15:29:26Z",
+                "labels": {
+                  "app.kubernetes.io/managed-by": "spinnaker",
+                  "app.kubernetes.io/name": "test-application"
+                },
+                "name": "test-cluster-role",
+                "resourceVersion": "53990465",
+                "uid": "d1f1ab80-1320-4e2d-8d12-893c326af416"
+              }
+            },
+            "metrics": [],
+            "moniker": {
+              "app": "test-application",
+              "cluster": "clusterRole test-cluster-role"
+            },
+            "name": "clusterRole test-cluster-role",
+            "status": {
+              "available": {
+                "state": true,
+                "message": ""
+              },
+              "failed": {
+                "state": false,
+                "message": ""
+              },
+              "paused": {
+                "state": false,
+                "message": ""
+              },
+              "stable": {
+                "state": true,
+                "message": ""
+              }
+            },
+            "warnings": []
+          }`
+
 const payloadGetInstance = `{
             "account": "test-account",
             "apiVersion": "v1",

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/homedepot/go-clouddriver/internal"
 	ops "github.com/homedepot/go-clouddriver/internal/api/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
@@ -69,7 +70,7 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 		Account:  account,
 		Events:   []interface{}{},
 		Location: namespace,
-		Manifest: result.Object,
+		Manifest: internal.DeleteNilValues(result.Object),
 		Metrics:  []interface{}{},
 		Moniker: ops.ManifestResponseMoniker{
 			App:     app,
