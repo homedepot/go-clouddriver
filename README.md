@@ -28,7 +28,7 @@ make build
 ```bash
 make run
 ```
-You should see a log like `SQL config missing field - defaulting to local sqlite DB.` - this is expected when running locally. For production, you should set the env variables `DB_HOST`, `DB_NAME`, `DB_PASS`, and `DB_USER`.
+You should see a log like `[CLOUDDRIVER] DB_HOST, DB_NAME, DB_PASS, or DB_USER not defined; defaulting to local SQLite DB` - this is expected when running locally. For production, you should set the env variables `DB_HOST`, `DB_NAME`, `DB_PASS`, and `DB_USER`.
 
 3) Create your first Kubernetes provider! go-clouddriver runs on port 7002, so you'll make a POST to `localhost:7002/v1/kubernetes/providers`.
 ```bash

@@ -97,15 +97,16 @@ func (fake *FakeCredentialsController) GCSClientForAccountName(arg1 string) (*st
 	fake.gCSClientForAccountNameArgsForCall = append(fake.gCSClientForAccountNameArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GCSClientForAccountNameStub
+	fakeReturns := fake.gCSClientForAccountNameReturns
 	fake.recordInvocation("GCSClientForAccountName", []interface{}{arg1})
 	fake.gCSClientForAccountNameMutex.Unlock()
-	if fake.GCSClientForAccountNameStub != nil {
-		return fake.GCSClientForAccountNameStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.gCSClientForAccountNameReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -160,15 +161,16 @@ func (fake *FakeCredentialsController) GitClientForAccountName(arg1 string) (*gi
 	fake.gitClientForAccountNameArgsForCall = append(fake.gitClientForAccountNameArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GitClientForAccountNameStub
+	fakeReturns := fake.gitClientForAccountNameReturns
 	fake.recordInvocation("GitClientForAccountName", []interface{}{arg1})
 	fake.gitClientForAccountNameMutex.Unlock()
-	if fake.GitClientForAccountNameStub != nil {
-		return fake.GitClientForAccountNameStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.gitClientForAccountNameReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -223,15 +225,16 @@ func (fake *FakeCredentialsController) GitRepoClientForAccountName(arg1 string) 
 	fake.gitRepoClientForAccountNameArgsForCall = append(fake.gitRepoClientForAccountNameArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GitRepoClientForAccountNameStub
+	fakeReturns := fake.gitRepoClientForAccountNameReturns
 	fake.recordInvocation("GitRepoClientForAccountName", []interface{}{arg1})
 	fake.gitRepoClientForAccountNameMutex.Unlock()
-	if fake.GitRepoClientForAccountNameStub != nil {
-		return fake.GitRepoClientForAccountNameStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.gitRepoClientForAccountNameReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -286,15 +289,16 @@ func (fake *FakeCredentialsController) HTTPClientForAccountName(arg1 string) (*h
 	fake.hTTPClientForAccountNameArgsForCall = append(fake.hTTPClientForAccountNameArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.HTTPClientForAccountNameStub
+	fakeReturns := fake.hTTPClientForAccountNameReturns
 	fake.recordInvocation("HTTPClientForAccountName", []interface{}{arg1})
 	fake.hTTPClientForAccountNameMutex.Unlock()
-	if fake.HTTPClientForAccountNameStub != nil {
-		return fake.HTTPClientForAccountNameStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.hTTPClientForAccountNameReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -349,15 +353,16 @@ func (fake *FakeCredentialsController) HelmClientForAccountName(arg1 string) (he
 	fake.helmClientForAccountNameArgsForCall = append(fake.helmClientForAccountNameArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.HelmClientForAccountNameStub
+	fakeReturns := fake.helmClientForAccountNameReturns
 	fake.recordInvocation("HelmClientForAccountName", []interface{}{arg1})
 	fake.helmClientForAccountNameMutex.Unlock()
-	if fake.HelmClientForAccountNameStub != nil {
-		return fake.HelmClientForAccountNameStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.helmClientForAccountNameReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -411,15 +416,16 @@ func (fake *FakeCredentialsController) ListArtifactCredentialsNamesAndTypes() []
 	ret, specificReturn := fake.listArtifactCredentialsNamesAndTypesReturnsOnCall[len(fake.listArtifactCredentialsNamesAndTypesArgsForCall)]
 	fake.listArtifactCredentialsNamesAndTypesArgsForCall = append(fake.listArtifactCredentialsNamesAndTypesArgsForCall, struct {
 	}{})
+	stub := fake.ListArtifactCredentialsNamesAndTypesStub
+	fakeReturns := fake.listArtifactCredentialsNamesAndTypesReturns
 	fake.recordInvocation("ListArtifactCredentialsNamesAndTypes", []interface{}{})
 	fake.listArtifactCredentialsNamesAndTypesMutex.Unlock()
-	if fake.ListArtifactCredentialsNamesAndTypesStub != nil {
-		return fake.ListArtifactCredentialsNamesAndTypesStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.listArtifactCredentialsNamesAndTypesReturns
 	return fakeReturns.result1
 }
 

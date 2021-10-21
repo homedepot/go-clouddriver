@@ -8,7 +8,7 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/fsouza/fake-gcs-server v1.30.1
 	github.com/gin-gonic/gin v1.6.3
-	github.com/go-sql-driver/mysql v1.5.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/uuid v1.1.2
 	github.com/googleapis/gnostic v0.5.1
@@ -18,7 +18,7 @@ require (
 	github.com/jonboulle/clockwork v0.1.0
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.2.0 // indirect
-	github.com/mattn/go-sqlite3 v1.14.0
+	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/ginkgo v1.16.2
 	github.com/onsi/gomega v1.12.0
@@ -29,6 +29,9 @@ require (
 	google.golang.org/api v0.57.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v2 v2.4.0
+	gorm.io/driver/mysql v1.1.2 // indirect
+	gorm.io/driver/sqlite v1.1.6 // indirect
+	gorm.io/gorm v1.21.16 // indirect
 	k8s.io/api v0.19.2
 	k8s.io/apimachinery v0.19.2
 	k8s.io/cli-runtime v0.19.2
