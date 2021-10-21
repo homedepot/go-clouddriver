@@ -42,6 +42,10 @@ func (cc *Controller) CreateKubernetesOperation(c *gin.Context) {
 			kc.Delete(c, *req.DeleteManifest)
 		}
 
+		if req.DisableManifest != nil {
+			kc.Disable(c, *req.DisableManifest)
+		}
+
 		if req.ScaleManifest != nil {
 			kc.Scale(c, *req.ScaleManifest)
 		}

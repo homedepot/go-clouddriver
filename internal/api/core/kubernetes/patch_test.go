@@ -1,9 +1,11 @@
 package kubernetes_test
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
+	ops "github.com/homedepot/go-clouddriver/internal/api/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -49,10 +51,55 @@ var _ = Describe("Patch", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
 			Expect(c.Errors.Last().Error()).To(Equal("error creating resource"))
 		})
+
 	})
 
 	Context("merge strategies", func() {
 		Context("strategic patch type", func() {
+			Context("validate request body can unmarshal", func() {
+				var body string
+				BeforeEach(func() {
+					body = `{
+										"app": "test-app",
+										"cluster": "deployment patch-test",
+										"criteria": "newest",
+										"kind": "deployment",
+										"manifestName": "deployment patch-test",
+										"source": "text",
+										"mode": "dynamic",
+										"patchBody": {
+											"spec": {
+												"template": {
+													"spec": {
+														"containers": [
+															{
+																"image": "test/docker-hub/redis:6.0.9",
+																"imagePullPolicy": "IfNotPresent",
+																"name": "patch-demo-ctr-2"
+															}
+														]
+													}
+												}
+											}
+										},
+										"cloudProvider": "kubernetes",
+										"options": {
+											"mergeStrategy": "strategic",
+											"record": true
+										},
+										"location": "test-location",
+										"account": "test-account",
+										"requiredArtifacts": []
+								}`
+				})
+
+				It("unmarshals", func() {
+					pb := ops.PatchManifestRequest{}
+					err := json.Unmarshal([]byte(body), &pb)
+					Expect(err).To(BeNil())
+				})
+			})
+
 			BeforeEach(func() {
 				patchManifestRequest.Options.MergeStrategy = "strategic"
 			})
@@ -63,16 +110,112 @@ var _ = Describe("Patch", func() {
 		})
 
 		Context("json patch type", func() {
-			BeforeEach(func() {
-				patchManifestRequest.Options.MergeStrategy = "json"
+			Context("validate request body can unmarshal", func() {
+				var body string
+				BeforeEach(func() {
+					body = `{
+										"app": "test-app",
+										"cluster": "deployment patch-test",
+										"criteria": "newest",
+										"kind": "deployment",
+										"manifestName": "deployment patch-test",
+										"source": "text",
+										"mode": "dynamic",
+										"patchBody": [
+											{
+												"op": "replace",
+												"path": "/spec/template/spec/containers/0/image",
+												"value": "test/docker/redis@1.0.0"
+											}
+										],
+										"cloudProvider": "kubernetes",
+										"options": {
+											"mergeStrategy": "json",
+											"record": true
+										},
+										"manifests": [
+											{
+												"op": "replace",
+												"path": "/spec/template/spec/containers/0/image",
+												"value": "test/docker-hub/redis@latest"
+											}
+										],
+										"location": "test-location",
+										"account": "test-account",
+										"requiredArtifacts": []
+									}`
+				})
+
+				It("unmarshals", func() {
+					pb := ops.PatchManifestRequest{}
+					err := json.Unmarshal([]byte(body), &pb)
+					Expect(err).To(BeNil())
+				})
 			})
 
-			It("succeeds", func() {
-				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			When("it succeeds", func() {
+				BeforeEach(func() {
+					patchManifestRequest.Options.MergeStrategy = "json"
+				})
+
+				It("succeeds", func() {
+					Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				})
 			})
 		})
 
 		Context("merge patch type", func() {
+			Context("validate request body can unmarshal", func() {
+				var body string
+				BeforeEach(func() {
+					body = `{
+										"app": "test-app",
+										"cluster": "deployment patch-test",
+										"criteria": "newest",
+										"kind": "deployment",
+										"manifestName": "deployment patch-test",
+										"source": "text",
+										"mode": "dynamic",
+										"patchBody": {
+											"spec": {
+												"template": {
+													"spec": {
+														"containers": [
+															{
+																"image": "test/docker-hub/redis:6.0.9",
+																"imagePullPolicy": "IfNotPresent",
+																"name": "patch-demo-ctr-2"
+															}
+														]
+													}
+												}
+											}
+										},
+										"cloudProvider": "kubernetes",
+										"options": {
+											"mergeStrategy": "json",
+											"record": true
+										},
+										"manifests": [
+											{
+												"op": "replace",
+												"path": "/spec/template/spec/containers/0/image",
+												"value": "test/docker-hub/redis@latest"
+											}
+										],
+										"location": "test-location",
+										"account": "test-account",
+										"requiredArtifacts": []
+									}`
+				})
+
+				It("unmarshals", func() {
+					pb := ops.PatchManifestRequest{}
+					err := json.Unmarshal([]byte(body), &pb)
+					Expect(err).To(BeNil())
+				})
+			})
+
 			BeforeEach(func() {
 				patchManifestRequest.Options.MergeStrategy = "merge"
 			})

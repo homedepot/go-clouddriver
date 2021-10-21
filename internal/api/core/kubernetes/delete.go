@@ -31,20 +31,21 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 	}
 
 	do := metav1.DeleteOptions{}
-
 	if dm.Options.GracePeriodSeconds != nil {
 		do.GracePeriodSeconds = dm.Options.GracePeriodSeconds
 	}
-	// There are two options that will set the deletion to cascade. Originally this was set when
-	// `options.cascading = true`, however in later APIs they have this set in
-	// `options.orphanDependants = false`.
+	// There are two options that will set the deletion to orphan dependants:
+	// `options.cascading = false` and `options.orphanDependants = true`. The first
+	// happens when running a Delete (Manifest) stage and the second
+	// is an operation that can be performed from the Clusters page.
 	//
-	// Using a pointer should prevent the older API versions from falsly cascading
-	// when they don't intend to.
-	propagationPolicy := v1.DeletePropagationOrphan
-	if dm.Options.Cascading ||
-		(dm.Options.OrphanDependants != nil && !*dm.Options.OrphanDependants) {
-		propagationPolicy = v1.DeletePropagationForeground
+	// Default to use the Delete Propagation Foreground as our propagation
+	// policy, in case neither are passed in, then check if either are
+	// passed and send the propagation policy accordingly.
+	propagationPolicy := v1.DeletePropagationForeground
+	if (dm.Options.Cascading != nil && !*dm.Options.Cascading) ||
+		(dm.Options.OrphanDependants != nil && *dm.Options.OrphanDependants) {
+		propagationPolicy = v1.DeletePropagationOrphan
 	}
 
 	do.PropagationPolicy = &propagationPolicy

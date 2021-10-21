@@ -77,6 +77,23 @@ var _ = Describe("Kubernetes", func() {
 			})
 		})
 
+		When("disable manifest returns an error", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesOpsDisableManifest))
+				createRequest(http.MethodPost)
+				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting kubernetes provider"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider spin-cluster-account: error getting kubernetes provider"))
+				Expect(ce.Status).To(Equal(http.StatusBadRequest))
+			})
+		})
+
 		When("scaling the manifest returns an error", func() {
 			BeforeEach(func() {
 				body = &bytes.Buffer{}

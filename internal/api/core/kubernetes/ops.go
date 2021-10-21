@@ -1,8 +1,10 @@
 package kubernetes
 
 import (
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	"encoding/json"
+
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/manifest"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
 
 type OperationsResponse struct {
@@ -13,14 +15,15 @@ type OperationsResponse struct {
 type Operations []Operation
 
 type Operation struct {
-	DeployManifest         *DeployManifestRequest         `json:"deployManifest"`
-	ScaleManifest          *ScaleManifestRequest          `json:"scaleManifest"`
 	CleanupArtifacts       *CleanupArtifactsRequest       `json:"cleanupArtifacts"`
 	DeleteManifest         *DeleteManifestRequest         `json:"deleteManifest"`
-	UndoRolloutManifest    *UndoRolloutManifestRequest    `json:"undoRolloutManifest"`
-	RollingRestartManifest *RollingRestartManifestRequest `json:"rollingRestartManifest"`
+	DeployManifest         *DeployManifestRequest         `json:"deployManifest"`
+	DisableManifest        *DisableManifestRequest        `json:"disableManifest"`
 	PatchManifest          *PatchManifestRequest          `json:"patchManifest"`
+	RollingRestartManifest *RollingRestartManifestRequest `json:"rollingRestartManifest"`
 	RunJob                 *RunJobRequest                 `json:"runJob"`
+	ScaleManifest          *ScaleManifestRequest          `json:"scaleManifest"`
+	UndoRolloutManifest    *UndoRolloutManifestRequest    `json:"undoRolloutManifest"`
 }
 
 type DeployManifestRequest struct {
@@ -44,6 +47,14 @@ type DeployManifestRequest struct {
 	OptionalArtifacts        []clouddriver.Artifact `json:"optionalArtifacts"`
 }
 
+type DisableManifestRequest struct {
+	App           string `json:"app"`
+	CloudProvider string `json:"cloudProvider"`
+	ManifestName  string `json:"manifestName"`
+	Location      string `json:"location"`
+	Account       string `json:"account"`
+}
+
 type PatchManifestRequest struct {
 	App      string `json:"app"`
 	Cluster  string `json:"cluster"`
@@ -52,7 +63,7 @@ type PatchManifestRequest struct {
 	ManifestName  string                         `json:"manifestName"`
 	Source        string                         `json:"source"`
 	Mode          string                         `json:"mode"`
-	PatchBody     map[string]interface{}         `json:"patchBody"`
+	PatchBody     json.RawMessage                `json:"patchBody"`
 	CloudProvider string                         `json:"cloudProvider"`
 	AllArtifacts  []PatchManifestRequestArtifact `json:"allArtifacts"`
 	Options       PatchManifestRequestOptions    `json:"options"`
@@ -80,17 +91,16 @@ type PatchManifestRequestOptions struct {
 	Record        bool   `json:"record"`
 }
 
-// why are artifacts commented out here? possibly causing the problem of artifacts not getting bound correctly
 type ManifestResponse struct {
-	Account string `json:"account"`
-	// Artifacts []struct {
-	// 	CustomKind bool `json:"customKind"`
-	// 	Metadata   struct {
-	// 	} `json:"metadata"`
-	// 	Name      string `json:"name"`
-	// 	Reference string `json:"reference"`
-	// 	Type      string `json:"type"`
-	// } `json:"artifacts"`
+	Account   string `json:"account"`
+	Artifacts []struct {
+		CustomKind bool `json:"customKind"`
+		Metadata   struct {
+		} `json:"metadata"`
+		Name      string `json:"name"`
+		Reference string `json:"reference"`
+		Type      string `json:"type"`
+	} `json:"artifacts"`
 	Events   []interface{}           `json:"events"`
 	Location string                  `json:"location"`
 	Manifest map[string]interface{}  `json:"manifest"`
@@ -150,7 +160,7 @@ type DeleteManifestRequestLabelSelector struct {
 }
 
 type DeleteManifestRequestOptions struct {
-	Cascading          bool   `json:"cascading"`
+	Cascading          *bool  `json:"cascading"`
 	OrphanDependants   *bool  `json:"orphanDependants"`
 	GracePeriodSeconds *int64 `json:"gracePeriodSeconds"`
 }
