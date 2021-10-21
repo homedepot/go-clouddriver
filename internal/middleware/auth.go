@@ -31,6 +31,7 @@ func (cc *Controller) AuthApplication(permissions ...string) gin.HandlerFunc {
 		if err != nil {
 			clouddriver.Error(c, http.StatusUnauthorized, err)
 			c.Abort()
+
 			return
 		}
 
@@ -42,6 +43,7 @@ func (cc *Controller) AuthApplication(permissions ...string) gin.HandlerFunc {
 					if !found {
 						clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to application %s - required authorization: %s", app, p))
 						c.Abort()
+
 						return
 					}
 				}
@@ -66,6 +68,7 @@ func (cc *Controller) AuthAccount(permissions ...string) gin.HandlerFunc {
 		if err != nil {
 			clouddriver.Error(c, http.StatusUnauthorized, err)
 			c.Abort()
+
 			return
 		}
 
@@ -78,6 +81,7 @@ func (cc *Controller) AuthAccount(permissions ...string) gin.HandlerFunc {
 					if !found {
 						clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
 						c.Abort()
+
 						return
 					}
 				}
@@ -102,6 +106,7 @@ func (cc *Controller) AuthOps(permissions ...string) gin.HandlerFunc {
 		if err := c.ShouldBindBodyWith(&ko, binding.JSON); err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
 			c.Abort()
+
 			return
 		}
 
@@ -152,6 +157,7 @@ func (cc *Controller) AuthOps(permissions ...string) gin.HandlerFunc {
 		if err != nil {
 			clouddriver.Error(c, http.StatusUnauthorized, err)
 			c.Abort()
+
 			return
 		}
 
@@ -164,6 +170,7 @@ func (cc *Controller) AuthOps(permissions ...string) gin.HandlerFunc {
 						if !found {
 							clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
 							c.Abort()
+
 							return
 						}
 					}
@@ -240,5 +247,6 @@ func appendAccount(accounts []string, account string) []string {
 	if account != "" && !find(accounts, account) {
 		accounts = append(accounts, account)
 	}
+
 	return accounts
 }
