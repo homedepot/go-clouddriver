@@ -100,7 +100,7 @@ type ManifestResponse struct {
 		Name      string `json:"name"`
 		Reference string `json:"reference"`
 		Type      string `json:"type"`
-	} `json:"artifacts,omitempty"`
+	} `json:"artifacts"`
 	Events   []interface{}           `json:"events"`
 	Location string                  `json:"location"`
 	Manifest map[string]interface{}  `json:"manifest"`
