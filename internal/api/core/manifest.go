@@ -246,7 +246,7 @@ func (cc *Controller) ListManifestsByCluster(c *gin.Context) {
 
 	for _, item := range items {
 		m := ops.ManifestCoordinatesResponse{
-			Kind:      item.GetKind(),
+			Kind:      lowercaseFirst(item.GetKind()),
 			Name:      item.GetName(),
 			Namespace: item.GetNamespace(),
 		}

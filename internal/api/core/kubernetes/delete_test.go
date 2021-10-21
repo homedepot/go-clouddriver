@@ -69,12 +69,13 @@ var _ = Describe("Delete", func() {
 			})
 		})
 
-		When("the cascading option is set", func() {
+		When("the cascading option is true", func() {
 			BeforeEach(func() {
-				deleteManifestRequest.Options.Cascading = true
+				t := true
+				deleteManifestRequest.Options.Cascading = &t
 			})
 
-			It("sets the delete propagation to forground", func() {
+			It("leaves the delete propagation to foreground", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				kind, name, namespace, deleteOptions := fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceArgsForCall(0)
 				Expect(kind).To(Equal("deployment"))
@@ -93,9 +94,75 @@ var _ = Describe("Delete", func() {
 			BeforeEach(func() {
 				f := false
 				deleteManifestRequest.Options.OrphanDependants = &f
+				deleteManifestRequest.Options.Cascading = nil
 			})
 
-			It("sets the delete propagation to forground", func() {
+			It("leaves the delete propagation to foreground", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				kind, name, namespace, deleteOptions := fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceArgsForCall(0)
+				Expect(kind).To(Equal("deployment"))
+				Expect(name).To(Equal("test-deployment"))
+				Expect(namespace).To(Equal("test-namespace"))
+				Expect(deleteOptions.GracePeriodSeconds).ToNot(BeNil())
+				Expect(*deleteOptions.GracePeriodSeconds).To(Equal(int64(10)))
+				Expect(deleteOptions.PropagationPolicy).ToNot(BeNil())
+				Expect(*deleteOptions.PropagationPolicy).To(Equal(v1.DeletePropagationForeground))
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeDelete))
+			})
+		})
+
+		When("orphan dependents is true", func() {
+			BeforeEach(func() {
+				t := true
+				deleteManifestRequest.Options.OrphanDependants = &t
+				deleteManifestRequest.Options.Cascading = nil
+			})
+
+			It("sets the delete propagation to orphan", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				kind, name, namespace, deleteOptions := fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceArgsForCall(0)
+				Expect(kind).To(Equal("deployment"))
+				Expect(name).To(Equal("test-deployment"))
+				Expect(namespace).To(Equal("test-namespace"))
+				Expect(deleteOptions.GracePeriodSeconds).ToNot(BeNil())
+				Expect(*deleteOptions.GracePeriodSeconds).To(Equal(int64(10)))
+				Expect(deleteOptions.PropagationPolicy).ToNot(BeNil())
+				Expect(*deleteOptions.PropagationPolicy).To(Equal(v1.DeletePropagationOrphan))
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeDelete))
+			})
+		})
+
+		When("cascading is false", func() {
+			BeforeEach(func() {
+				f := false
+				deleteManifestRequest.Options.OrphanDependants = nil
+				deleteManifestRequest.Options.Cascading = &f
+			})
+
+			It("sets the delete propagation to orphan", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				kind, name, namespace, deleteOptions := fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceArgsForCall(0)
+				Expect(kind).To(Equal("deployment"))
+				Expect(name).To(Equal("test-deployment"))
+				Expect(namespace).To(Equal("test-namespace"))
+				Expect(deleteOptions.GracePeriodSeconds).ToNot(BeNil())
+				Expect(*deleteOptions.GracePeriodSeconds).To(Equal(int64(10)))
+				Expect(deleteOptions.PropagationPolicy).ToNot(BeNil())
+				Expect(*deleteOptions.PropagationPolicy).To(Equal(v1.DeletePropagationOrphan))
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeDelete))
+			})
+		})
+
+		When("no propagation policy is set", func() {
+			BeforeEach(func() {
+				deleteManifestRequest.Options.OrphanDependants = nil
+				deleteManifestRequest.Options.Cascading = nil
+			})
+
+			It("leaves the delete propagation to foreground", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				kind, name, namespace, deleteOptions := fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceArgsForCall(0)
 				Expect(kind).To(Equal("deployment"))

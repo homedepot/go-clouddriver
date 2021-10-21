@@ -144,6 +144,14 @@ const payloadRequestKubernetesOpsDeleteManifest = `[
   }
 ]`
 
+const payloadRequestKubernetesOpsDisableManifest = `[
+  {
+    "disableManifest": {
+      "account": "spin-cluster-account"
+		}
+  }
+]`
+
 const payloadRequestKubernetesOpsCleanupArtifacts = `[
   {
     "cleanupArtifacts": {
@@ -2748,12 +2756,12 @@ const payloadManifestCoordinates = `{
 
 const payloadManifestCoordinatesList = `[
             {
-              "kind": "ReplicaSet",
+              "kind": "replicaSet",
               "name": "rs2-v000",
               "namespace": "test-namespace"
             },
             {
-              "kind": "ReplicaSet",
+              "kind": "replicaSet",
               "name": "rs2-v001",
               "namespace": "test-namespace"
             }
@@ -2761,6 +2769,7 @@ const payloadManifestCoordinatesList = `[
 
 const payloadManifestClusterRoleNoRules = `{
             "account": "test-account",
+						"artifacts": null,
             "events": [],
             "location": "test-namespace",
             "manifest": {
