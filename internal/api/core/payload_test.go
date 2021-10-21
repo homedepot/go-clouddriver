@@ -2769,6 +2769,7 @@ const payloadManifestCoordinatesList = `[
 
 const payloadManifestClusterRoleNoRules = `{
             "account": "test-account",
+						"artifacts": null,
             "events": [],
             "location": "test-namespace",
             "manifest": {
