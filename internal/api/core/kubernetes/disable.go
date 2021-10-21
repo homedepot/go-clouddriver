@@ -192,7 +192,7 @@ type jsonPatch struct {
 //
 // For a pod, this looks like:
 // [
-//   {"op": "add", "path": "/metadata/labels/key1", "value": "value1"
+//   {"op": "add", "path": "/metadata/labels/key1", "value": "value1"}
 // ]
 //
 // For other kinds, this looks like:

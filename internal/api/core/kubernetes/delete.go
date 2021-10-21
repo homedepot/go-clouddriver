@@ -41,7 +41,7 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 	//
 	// Default to use the Delete Propagation Foreground as our propagation
 	// policy, in case neither are passed in, then check if either are
-	// passed and sent the propagation policy accordingly.
+	// passed and send the propagation policy accordingly.
 	propagationPolicy := v1.DeletePropagationForeground
 	if (dm.Options.Cascading != nil && !*dm.Options.Cascading) ||
 		(dm.Options.OrphanDependants != nil && *dm.Options.OrphanDependants) {

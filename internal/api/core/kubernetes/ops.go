@@ -91,7 +91,6 @@ type PatchManifestRequestOptions struct {
 	Record        bool   `json:"record"`
 }
 
-// why are artifacts commented out here? possibly causing the problem of artifacts not getting bound correctly
 type ManifestResponse struct {
 	Account   string `json:"account"`
 	Artifacts []struct {
@@ -101,7 +100,7 @@ type ManifestResponse struct {
 		Name      string `json:"name"`
 		Reference string `json:"reference"`
 		Type      string `json:"type"`
-	} `json:"artifacts"`
+	} `json:"artifacts,omitempty"`
 	Events   []interface{}           `json:"events"`
 	Location string                  `json:"location"`
 	Manifest map[string]interface{}  `json:"manifest"`
