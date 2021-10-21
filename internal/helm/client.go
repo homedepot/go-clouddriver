@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"sync"
 
 	"gopkg.in/yaml.v2"
@@ -137,8 +136,8 @@ func (c *client) GetChart(name, version string) ([]byte, error) {
 
 			continue
 		}
-		// Set credentials when chart is hosted in authenticated repository
-		if strings.HasPrefix(url, c.url) && c.username != "" && c.password != "" {
+		// Set credentials to pull the chant.
+		if c.username != "" && c.password != "" {
 			req.SetBasicAuth(c.username, c.password)
 		}
 
