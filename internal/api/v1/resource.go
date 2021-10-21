@@ -11,7 +11,7 @@ import (
 	"github.com/homedepot/go-clouddriver/internal"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )

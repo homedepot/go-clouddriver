@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 // CreateKubernetesProvider creates the kubernetes account (provider).

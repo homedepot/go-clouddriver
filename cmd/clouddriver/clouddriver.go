@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -14,6 +15,13 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/sql"
 	ginprometheus "github.com/zsais/go-gin-prometheus"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
+
+const (
+	mysqlDefaultStringSize = 256
 )
 
 var (
@@ -41,20 +49,12 @@ func init() {
 	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{SkipPaths: []string{"/health"}}))
 	r.Use(gin.Recovery())
 
-	sqlConfig := sql.Config{
-		User:     os.Getenv("DB_USER"),
-		Password: os.Getenv("DB_PASS"),
-		Host:     os.Getenv("DB_HOST"),
-		Name:     os.Getenv("DB_NAME"),
-	}
-
-	db, err := sql.Connect(sql.Connection(sqlConfig))
-	if err != nil {
-		log.Fatal(err.Error())
+	sqlClient := sql.NewClient(dialector())
+	if err := sqlClient.Connect(); err != nil {
+		log.Fatal(err)
 	}
 
 	artifactCredentialsController := getArtifactsCredentialsController()
-	sqlClient := sql.NewClient(db)
 	fiatClient := fiat.NewDefaultClient()
 	kubeController := kubernetes.NewController()
 	arcadeClient := arcade.NewDefaultClient()
@@ -142,4 +142,35 @@ func getArtifactsCredentialsController() artifact.CredentialsController {
 	}
 
 	return artifactCredentialsController
+}
+
+// dialector defines the SQL dialector.
+//
+// Defaults to sqlite if env vars DB_HOST, DB_NAME, DB_PASS, and DB_USER
+// are not all defined. Otherwise it creates a MySQL dialctor with a DSN in the format
+// `<USER>:<PASS>@tcp(<HOST>)/<NAME>?timeout=30s&charset=utf8&parseTime=True&loc=UTC`.
+//
+// See https://gorm.io/docs/connecting_to_the_database.html for more info.
+func dialector() gorm.Dialector {
+	var dialector gorm.Dialector
+
+	host := os.Getenv("DB_HOST")
+	name := os.Getenv("DB_NAME")
+	pass := os.Getenv("DB_PASS")
+	user := os.Getenv("DB_USER")
+
+	// Default to SQLite, else define a MySQL connection.
+	if host == "" || name == "" || pass == "" || user == "" {
+		log.Println("[CLOUDDRIVER] DB_HOST, DB_NAME, DB_PASS, or DB_USER not defined; defaulting to local SQLite DB")
+
+		dialector = sqlite.Open("clouddriver.db")
+	} else {
+		dialector = mysql.New(mysql.Config{
+			DSN: fmt.Sprintf("%s:%s@tcp(%s)/%s?timeout=30s&charset=utf8&parseTime=True&loc=UTC",
+				user, pass, host, name),
+			DefaultStringSize: mysqlDefaultStringSize,
+		})
+	}
+
+	return dialector
 }
