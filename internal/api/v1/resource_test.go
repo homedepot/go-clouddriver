@@ -6,12 +6,10 @@ import (
 	"log"
 	"net/http"
 
-	// . "github.com/homedepot/go-clouddriver/internal/api/v1"
-
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"gorm.io/gorm"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )

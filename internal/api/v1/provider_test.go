@@ -7,7 +7,7 @@ import (
 
 	// . "github.com/homedepot/go-clouddriver/internal/api/v1"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

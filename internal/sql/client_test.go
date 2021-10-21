@@ -2,21 +2,20 @@ package sql_test
 
 import (
 	"database/sql"
-	"io/ioutil"
-	"log"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/homedepot/go-clouddriver/internal/sql"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Sql", func() {
 	var (
-		db   *gorm.DB
 		mock sqlmock.Sqlmock
 		d    *sql.DB
 		c    Client
@@ -26,27 +25,91 @@ var _ = Describe("Sql", func() {
 	BeforeEach(func() {
 		// Mock DB.
 		d, mock, _ = sqlmock.New()
-		db, err = Connect("sqlite3", d)
-		// Enable DB logging.
-		// db.LogMode(true)
-		c = NewClient(db)
+		// Define a new MySQL dialector that uses our mocked DB.
+		dialector := mysql.New(mysql.Config{
+			Conn:                      d,
+			DefaultStringSize:         256,
+			SkipInitializeWithVersion: true,
+		})
+		c = NewClient(dialector)
 
-		log.SetOutput(ioutil.Discard)
+		// Create a new logger that disables logging.
+		newLogger := logger.New(nil, logger.Config{})
+		config := &gorm.Config{
+			Logger: newLogger,
+		}
+		c.WithConfig(config)
+
+		mock.ExpectExec("(?i)^CREATE TABLE `kubernetes_providers` " +
+			"\\(`name`\\ varchar\\(256\\)," +
+			"`host` varchar\\(256\\)," +
+			"`ca_data` varchar\\(8192\\)," +
+			"`bearer_token` varchar\\(2048\\)," +
+			"`token_provider` varchar\\(32\\) NOT NULL DEFAULT 'google'," +
+			"`namespace` varchar\\(253\\)," +
+			"PRIMARY KEY \\(`name`\\)" +
+			"\\)$").
+			WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("(?i)^CREATE TABLE `kubernetes_resources` " +
+			"\\(`account_name`\\ varchar\\(256\\)," +
+			"`id` varchar\\(256\\)," +
+			"`timestamp` timestamp DEFAULT current_timestamp," +
+			"`task_id` varchar\\(256\\)," +
+			"`task_type` varchar\\(256\\)," +
+			"`api_group` varchar\\(256\\)," +
+			"`name` varchar\\(256\\)," +
+			"`artifact_name` varchar\\(256\\)," +
+			"`namespace` varchar\\(256\\)," +
+			"`resource` varchar\\(256\\)," +
+			"`version` varchar\\(256\\)," +
+			"`kind` varchar\\(256\\)," +
+			"`spinnaker_app` varchar\\(256\\)," +
+			"`cluster` varchar\\(256\\)," +
+			"PRIMARY KEY \\(`id`\\)" +
+			"\\)$").
+			WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("(?i)^CREATE TABLE `provider_read_permissions` " +
+			"\\(`id`\\ varchar\\(256\\)," +
+			"`account_name` varchar\\(256\\)," +
+			"`read_group` varchar\\(256\\)," +
+			"PRIMARY KEY \\(`id`\\)" +
+			"\\)$").
+			WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("(?i)^CREATE TABLE `provider_write_permissions` " +
+			"\\(`id`\\ varchar\\(256\\)," +
+			"`account_name` varchar\\(256\\)," +
+			"`write_group` varchar\\(256\\)," +
+			"PRIMARY KEY \\(`id`\\)" +
+			"\\)$").
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		err = c.Connect()
+		Expect(err).To(BeNil())
 	})
 
 	AfterEach(func() {
-		db.Close()
+		d.Close()
 	})
 
 	Describe("#Connect", func() {
 		When("it fails to connect", func() {
 			BeforeEach(func() {
-				_, err = Connect("mysql", "mysql")
+				dialector := mysql.New(mysql.Config{
+					DSN: "mysql",
+				})
+				c = NewClient(dialector)
+				newLogger := logger.New(nil, logger.Config{})
+				config := &gorm.Config{
+					Logger: newLogger,
+				}
+				c.WithConfig(config)
+				err = c.Connect()
 			})
 
 			It("returns an error", func() {
 				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(Equal("invalid DSN: missing the slash separating the database name"))
+				Expect(err.Error()).To(Equal("error opening connection to DB: " +
+					"invalid DSN: missing the slash separating the database name"))
 			})
 		})
 	})
@@ -79,14 +142,14 @@ var _ = Describe("Sql", func() {
 					TokenProvider: "test-token",
 				}
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^INSERT INTO "kubernetes_providers" \(` +
-					`"name"` +
-					`,"host"` +
-					`,"ca_data"` +
-					`,"bearer_token"` +
-					`,"token_provider"` +
-					`,"namespace"` +
-					`\) VALUES \(\?,\?,\?,\?,\?,\?\)$`).
+				mock.ExpectExec("(?i)^INSERT INTO `kubernetes_providers` \\(" +
+					"`name`" +
+					",`host`" +
+					",`ca_data`" +
+					",`bearer_token`" +
+					",`token_provider`" +
+					",`namespace`" +
+					"\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?\\)$").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			})
@@ -99,31 +162,32 @@ var _ = Describe("Sql", func() {
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^INSERT INTO "kubernetes_providers" \(` +
-					`"name"` +
-					`,"host"` +
-					`,"ca_data"` +
-					`,"bearer_token"` +
-					`,"namespace"` +
-					`\) VALUES \(\?,\?,\?,\?,\?\)$`).
+				mock.ExpectExec("(?i)^INSERT INTO `kubernetes_providers` \\(" +
+					"`name`" +
+					",`host`" +
+					",`ca_data`" +
+					",`bearer_token`" +
+					",`token_provider`" +
+					",`namespace`" +
+					"\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?\\)$").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^INSERT INTO "provider_read_permissions" \(` +
-					`"id",` +
-					`"account_name",` +
-					`"read_group"` +
-					`\) VALUES \(\?,\?,\?\)$`).
+				mock.ExpectExec("(?i)^INSERT INTO `provider_read_permissions` \\(" +
+					"`id`," +
+					"`account_name`," +
+					"`read_group`" +
+					"\\) VALUES \\(\\?,\\?,\\?\\)$").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^INSERT INTO "provider_write_permissions" \(` +
-					`"id",` +
-					`"account_name",` +
-					`"write_group"` +
-					`\) VALUES \(\?,\?,\?\)$`).
+				mock.ExpectExec("(?i)^INSERT INTO `provider_write_permissions` \\(" +
+					"`id`," +
+					"`account_name`," +
+					"`write_group`" +
+					"\\) VALUES \\(\\?,\\?,\\?\\)$").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			})
@@ -157,21 +221,21 @@ var _ = Describe("Sql", func() {
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^INSERT INTO "kubernetes_resources" \(` +
-					`"account_name",` +
-					`"id",` +
-					`"task_id",` +
-					`"task_type",` +
-					`"api_group",` +
-					`"name",` +
-					`"artifact_name",` +
-					`"namespace",` +
-					`"resource",` +
-					`"version",` +
-					`"kind",` +
-					`"spinnaker_app",` +
-					`"cluster"` +
-					`\) VALUES \(\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?,\?\,\?\)$`).
+				mock.ExpectExec("(?i)^INSERT INTO `kubernetes_resources` \\(" +
+					"`account_name`," +
+					"`id`," +
+					"`task_id`," +
+					"`task_type`," +
+					"`api_group`," +
+					"`name`," +
+					"`artifact_name`," +
+					"`namespace`," +
+					"`resource`," +
+					"`version`," +
+					"`kind`," +
+					"`spinnaker_app`," +
+					"`cluster`" +
+					"\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?,\\?,\\?,\\?,\\?,\\?,\\?,\\?\\)$").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			})
@@ -196,26 +260,26 @@ var _ = Describe("Sql", func() {
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^DELETE FROM "kubernetes_providers" WHERE
-				"kubernetes_providers"."name" = \?$`).
+				mock.ExpectExec("(?i)^DELETE FROM `kubernetes_providers` WHERE " +
+					"`kubernetes_providers`.`name` = \\?$").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^DELETE FROM "provider_read_permissions" WHERE
-				\(account_name = \?\)$`).
+				mock.ExpectExec("(?i)^DELETE FROM `provider_read_permissions` WHERE " +
+					"account_name = \\?$").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^DELETE FROM "provider_write_permissions" WHERE
-				\(account_name = \?\)$`).
+				mock.ExpectExec("(?i)^DELETE FROM `provider_write_permissions` WHERE " +
+					"account_name = \\?$").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^DELETE FROM "kubernetes_resources" WHERE
-				\(account_name = \?\)$`).
+				mock.ExpectExec("(?i)^DELETE FROM `kubernetes_resources` WHERE " +
+					"account_name = \\?$").
 					WillReturnResult(sqlmock.NewResult(1, 10))
 				mock.ExpectCommit()
 			})
@@ -240,8 +304,8 @@ var _ = Describe("Sql", func() {
 		When("it succeeds", func() {
 			BeforeEach(func() {
 				mock.ExpectBegin()
-				mock.ExpectExec(`(?i)^DELETE FROM "kubernetes_resources" WHERE
-				\(account_name = \?\)$`).
+				mock.ExpectExec("(?i)^DELETE FROM `kubernetes_resources` WHERE " +
+					"account_name = \\?$").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			})
@@ -267,8 +331,8 @@ var _ = Describe("Sql", func() {
 			BeforeEach(func() {
 				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data"}).
 					AddRow("test-name", "test-host", "test-ca-data")
-				mock.ExpectQuery(`(?i)^SELECT host, ca_data, bearer_token, token_provider, namespace FROM "kubernetes_providers" ` +
-					` WHERE \(name = \?\) ORDER BY "kubernetes_providers"."name" ASC LIMIT 1$`).
+				mock.ExpectQuery("(?i)^SELECT host, ca_data, bearer_token, token_provider, namespace FROM `kubernetes_providers` " +
+					"WHERE name = \\? ORDER BY `kubernetes_providers`.`name` LIMIT 1$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -297,17 +361,17 @@ var _ = Describe("Sql", func() {
 			BeforeEach(func() {
 				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "token_provider", "namespace", "read_group", "write_group"}).
 					AddRow("test-name", "test-host", "test-ca-data", "test-token-provider", nil, "test-read-group", "test-write-group")
-				mock.ExpectQuery(`(?i)^SELECT a.name,` +
-					` a.host,` +
-					` a.ca_data,` +
-					` a.token_provider,` +
-					` a.namespace,` +
-					` b.read_group,` +
-					` c.write_group` +
-					` FROM kubernetes_providers a` +
-					` LEFT JOIN provider_read_permissions b ON a.name = b.account_name ` +
-					` LEFT JOIN provider_write_permissions c ON a.name = c.account_name` +
-					` WHERE \(a.name = \?\)`).
+				mock.ExpectQuery("(?i)^SELECT a.name," +
+					" a.host," +
+					" a.ca_data," +
+					" a.token_provider," +
+					" a.namespace," +
+					" b.read_group," +
+					" c.write_group" +
+					" FROM kubernetes_providers a" +
+					" LEFT JOIN provider_read_permissions b ON a.name = b.account_name " +
+					" LEFT JOIN provider_write_permissions c ON a.name = c.account_name" +
+					" WHERE a.name = \\?").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -337,17 +401,17 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"account_name", "cluster"}).
 					AddRow("account1", "cluster 1").
 					AddRow("account2", "cluster 2")
-				mock.ExpectQuery(`(?i)^SELECT ` +
-					`account_name, ` +
-					`cluster ` +
-					`FROM "kubernetes_resources" ` +
-					` WHERE \(spinnaker_app = \? AND kind in \('deployment',
-						'statefulSet',
-						'replicaSet',
-						'ingress',
-						'service',
-						'daemonSet'\)\) GROUP BY
-						account_name, cluster$`).
+				mock.ExpectQuery("(?i)^SELECT " +
+					"account_name, " +
+					"cluster " +
+					"FROM `kubernetes_resources` " +
+					"WHERE spinnaker_app = \\? AND kind in \\('deployment', " +
+					"'statefulSet', " +
+					"'replicaSet', " +
+					"'ingress', " +
+					"'service', " +
+					"'daemonSet'\\) GROUP BY " +
+					"account_name, cluster$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -387,12 +451,12 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"group", "name"}).
 					AddRow("group1", "name1").
 					AddRow("group2", "name2")
-				mock.ExpectQuery(`(?i)^SELECT ` +
-					`field1, ` +
-					`field2 ` +
-					`FROM "kubernetes_resources" ` +
-					` WHERE \(kind in \('deployment', 'statefulSet', 'replicaSet', 'ingress', 'service', 'daemonSet'\)\)` +
-					` GROUP BY field1, field2$`).
+				mock.ExpectQuery("(?i)^SELECT " +
+					"field1, " +
+					"field2 " +
+					"FROM `kubernetes_resources` " +
+					"WHERE kind in \\('deployment', 'statefulSet', 'replicaSet', 'ingress', 'service', 'daemonSet'\\)" +
+					" GROUP BY field1, field2$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -417,12 +481,12 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"name"}).
 					AddRow("name1").
 					AddRow("name2")
-				mock.ExpectQuery(`(?i)^SELECT ` +
-					`name ` +
-					`FROM "kubernetes_resources" ` +
-					` WHERE \(account_name = \? AND ` +
-					`kind = \? AND ` +
-					`namespace = \?\) GROUP BY name$`).
+				mock.ExpectQuery("(?i)^SELECT " +
+					"`name` " +
+					"FROM `kubernetes_resources` " +
+					"WHERE account_name = \\? AND " +
+					"kind = \\? AND " +
+					"namespace = \\? GROUP BY `name`$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -446,18 +510,18 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"group", "name"}).
 					AddRow("group1", "name1").
 					AddRow("group2", "name2")
-				mock.ExpectQuery(`(?i)^SELECT ` +
-					`account_name, ` +
-					`api_group, ` +
-					`kind, ` +
-					`name, ` +
-					`artifact_name, ` +
-					`namespace, ` +
-					`resource, ` +
-					`task_type, ` +
-					`version ` +
-					`FROM "kubernetes_resources" ` +
-					` WHERE \(task_id = \?\)$`).
+				mock.ExpectQuery("(?i)^SELECT " +
+					"account_name, " +
+					"api_group, " +
+					"kind, " +
+					"name, " +
+					"artifact_name, " +
+					"namespace, " +
+					"resource, " +
+					"task_type, " +
+					"version " +
+					"FROM `kubernetes_resources` " +
+					" WHERE task_id = \\?$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -481,13 +545,13 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "token_provider", "namespace"}).
 					AddRow("name1", "host1", "ca_data1", "google", nil).
 					AddRow("name2", "host2", "ca_data2", "rancher", nil)
-				mock.ExpectQuery(`(?i)^SELECT ` +
-					`name, ` +
-					`host, ` +
-					`ca_data, ` +
-					`token_provider, ` +
-					`namespace ` +
-					`FROM "kubernetes_providers"$`).
+				mock.ExpectQuery("(?i)^SELECT " +
+					"name, " +
+					"host, " +
+					"ca_data, " +
+					"token_provider, " +
+					"namespace " +
+					"FROM `kubernetes_providers`$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -508,7 +572,7 @@ var _ = Describe("Sql", func() {
 
 		When("getting the rows returns an error", func() {
 			BeforeEach(func() {
-				db.Close()
+				d.Close()
 			})
 
 			It("returns an error", func() {
@@ -521,17 +585,17 @@ var _ = Describe("Sql", func() {
 			BeforeEach(func() {
 				sqlRows := sqlmock.NewRows([]string{"name", "host", "read_group", "write_group"}).
 					AddRow("name1", "host1", "read_group1", "write_group1")
-				mock.ExpectQuery(`(?i)^SELECT ` +
-					`a.name, ` +
-					`a.host, ` +
-					`a.ca_data, ` +
-					`a.token_provider, ` +
-					`a.namespace, ` +
-					`b.read_group, ` +
-					`c.write_group ` +
-					`FROM kubernetes_providers a ` +
-					`left join provider_read_permissions b on a.name = b.account_name ` +
-					`left join provider_write_permissions c on a.name = c.account_name$`).
+				mock.ExpectQuery("(?i)^SELECT " +
+					"a.name, " +
+					"a.host, " +
+					"a.ca_data, " +
+					"a.token_provider, " +
+					"a.namespace, " +
+					"b.read_group, " +
+					"c.write_group " +
+					"FROM kubernetes_providers a " +
+					"left join provider_read_permissions b on a.name = b.account_name " +
+					"left join provider_write_permissions c on a.name = c.account_name$").
 					WillReturnRows(sqlRows)
 			})
 
@@ -548,23 +612,23 @@ var _ = Describe("Sql", func() {
 					AddRow("name1", "host1", "ca_data1", "google", "namespace1", "read_group2", "write_group1").
 					AddRow("name2", "host2", "ca_data2", "rancher", nil, "read_group2", "write_group2").
 					AddRow("name2", "host2", "ca_data2", "rancher", nil, "read_group2", "write_group3")
-				mock.ExpectQuery(`(?i)^SELECT ` +
-					`a.name, ` +
-					`a.host, ` +
-					`a.ca_data, ` +
-					`a.token_provider, ` +
-					`a.namespace, ` +
-					`b.read_group, ` +
-					`c.write_group ` +
-					`FROM kubernetes_providers a ` +
-					`left join provider_read_permissions b on a.name = b.account_name ` +
-					`left join provider_write_permissions c on a.name = c.account_name$`).
+				mock.ExpectQuery("(?i)^SELECT " +
+					"a.name, " +
+					"a.host, " +
+					"a.ca_data, " +
+					"a.token_provider, " +
+					"a.namespace, " +
+					"b.read_group, " +
+					"c.write_group " +
+					"FROM kubernetes_providers a " +
+					"left join provider_read_permissions b on a.name = b.account_name " +
+					"left join provider_write_permissions c on a.name = c.account_name$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
 
 			It("succeeds", func() {
-				var ns = "namespace1"
+				ns := "namespace1"
 				Expect(err).To(BeNil())
 				Expect(providers).To(HaveLen(2))
 				Expect(providers[0].Namespace).To(Equal(&ns))
@@ -605,11 +669,11 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"group", "name"}).
 					AddRow("group1", "name1").
 					AddRow("group2", "name2")
-				mock.ExpectQuery(`(?i)^SELECT ` +
-					`field1, ` +
-					`field2 ` +
-					`FROM "kubernetes_resources" ` +
-					` GROUP BY field1, field2$`).
+				mock.ExpectQuery("(?i)^SELECT " +
+					"field1, " +
+					"field2 " +
+					"FROM `kubernetes_resources` " +
+					" GROUP BY field1, field2$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -633,11 +697,11 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"account_name"}).
 					AddRow("account1").
 					AddRow("account2")
-				mock.ExpectQuery(`(?i)^SELECT ` +
-					`account_name ` +
-					`FROM "kubernetes_resources" ` +
-					` WHERE \(spinnaker_app = \?\) ` +
-					`GROUP BY account_name$`).
+				mock.ExpectQuery("(?i)^SELECT " +
+					"`account_name` " +
+					"FROM `kubernetes_resources` " +
+					" WHERE spinnaker_app = \\? " +
+					"GROUP BY `account_name`$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -661,11 +725,11 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"read_group"}).
 					AddRow("group1").
 					AddRow("group2")
-				mock.ExpectQuery(`(?i)^SELECT ` +
-					`read_group ` +
-					`FROM "provider_read_permissions" ` +
-					` WHERE \(account_name = \?\) ` +
-					`GROUP BY read_group`).
+				mock.ExpectQuery("(?i)^SELECT " +
+					"`read_group` " +
+					"FROM `provider_read_permissions` " +
+					" WHERE account_name = \\? " +
+					"GROUP BY `read_group`").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -689,11 +753,11 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"write_group"}).
 					AddRow("group1").
 					AddRow("group2")
-				mock.ExpectQuery(`(?i)^SELECT ` +
-					`write_group ` +
-					`FROM "provider_write_permissions" ` +
-					` WHERE \(account_name = \?\) ` +
-					`GROUP BY write_group`).
+				mock.ExpectQuery("(?i)^SELECT " +
+					"`write_group` " +
+					"FROM `provider_write_permissions` " +
+					" WHERE account_name = \\? " +
+					"GROUP BY `write_group`").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -701,39 +765,6 @@ var _ = Describe("Sql", func() {
 			It("succeeds", func() {
 				Expect(err).To(BeNil())
 				Expect(groups).To(HaveLen(2))
-			})
-		})
-	})
-
-	Describe("#Connection", func() {
-		var driver, connection string
-		var c Config
-
-		When("the config is not set", func() {
-			BeforeEach(func() {
-				driver, connection = Connection(c)
-			})
-
-			It("returns a disk db", func() {
-				Expect(driver).To(Equal("sqlite3"))
-				Expect(connection).To(Equal("clouddriver.db"))
-			})
-		})
-
-		When("the config is set", func() {
-			BeforeEach(func() {
-				c = Config{
-					User:     "user",
-					Password: "password",
-					Host:     "10.1.1.1",
-					Name:     "go-clouddriver",
-				}
-				driver, connection = Connection(c)
-			})
-
-			It("returns a mysql connection string", func() {
-				Expect(driver).To(Equal("mysql"))
-				Expect(connection).To(Equal("user:password@tcp(10.1.1.1)/go-clouddriver?charset=utf8&parseTime=True&loc=UTC"))
 			})
 		})
 	})

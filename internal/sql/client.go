@@ -3,20 +3,13 @@ package sql
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	"github.com/jinzhu/gorm"
-
-	// Needed for connection.
-	_ "github.com/go-sql-driver/mysql"
-
-	// Needed for connection.
-	_ "github.com/mattn/go-sqlite3"
+	"gorm.io/gorm"
 )
 
 const (
@@ -27,6 +20,7 @@ const (
 //go:generate counterfeiter . Client
 
 type Client interface {
+	Connect() error
 	CreateKubernetesProvider(kubernetes.Provider) error
 	CreateKubernetesResource(kubernetes.Resource) error
 	DeleteKubernetesProvider(string) error
@@ -43,58 +37,51 @@ type Client interface {
 	ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(string, string, string) ([]string, error)
 	ListReadGroupsByAccountName(string) ([]string, error)
 	ListWriteGroupsByAccountName(string) ([]string, error)
+	WithConfig(*gorm.Config)
 }
 
-func NewClient(db *gorm.DB) Client {
-	return &client{db: db}
+func NewClient(dialector gorm.Dialector) Client {
+	return &client{
+		config:    &gorm.Config{},
+		dialector: dialector,
+	}
 }
 
 type client struct {
-	db *gorm.DB
+	config    *gorm.Config
+	dialector gorm.Dialector
+	db        *gorm.DB
 }
 
 // Connect sets up the database connection and creates tables.
-//
-// Connection is of type interface{} - this allows for tests to
-// pass in a sqlmock connection and for main to connect given a
-// connection string.
-func Connect(driver string, connection interface{}) (*gorm.DB, error) {
-	db, err := gorm.Open(driver, connection)
+func (c *client) Connect() error {
+	db, err := gorm.Open(c.dialector, c.config)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error opening connection to DB: %w", err)
 	}
 
-	db.LogMode(false)
-	db.AutoMigrate(
+	err = db.AutoMigrate(
 		&kubernetes.Provider{},
 		&kubernetes.Resource{},
 		&clouddriver.ReadPermission{},
 		&clouddriver.WritePermission{},
 	)
-
-	db.DB().SetMaxOpenConns(maxOpenConns)
-	db.DB().SetMaxIdleConns(1)
-	db.DB().SetConnMaxLifetime(connMaxLifetime)
-
-	return db, nil
-}
-
-type Config struct {
-	User     string
-	Password string
-	Host     string
-	Name     string
-}
-
-// Connection returns the driver and connection string to the DB.
-func Connection(c Config) (string, string) {
-	if c.User == "" || c.Password == "" || c.Host == "" || c.Name == "" {
-		log.Println("[CLOUDDRIVER] SQL config missing field - defaulting to local sqlite DB.")
-		return "sqlite3", "clouddriver.db"
+	if err != nil {
+		return fmt.Errorf("error migrating DB: %w", err)
 	}
 
-	return "mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=UTC",
-		c.User, c.Password, c.Host, c.Name)
+	d, err := db.DB()
+	if err != nil {
+		return fmt.Errorf("error getting sql.DB: %w", err)
+	}
+
+	d.SetMaxOpenConns(maxOpenConns)
+	d.SetMaxIdleConns(1)
+	d.SetConnMaxLifetime(connMaxLifetime)
+
+	c.db = db
+
+	return nil
 }
 
 // CreateKubernetesProvider inserts the provider and permissions into the DB.
@@ -506,4 +493,9 @@ func (c *client) ListWriteGroupsByAccountName(accountName string) ([]string, err
 	}
 
 	return groups, db.Error
+}
+
+// WithConfig sets the gorm config to use.
+func (c *client) WithConfig(config *gorm.Config) {
+	c.config = config
 }
