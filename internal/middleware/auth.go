@@ -123,6 +123,10 @@ func (cc *Controller) AuthOps(permissions ...string) gin.HandlerFunc {
 				accounts = appendAccount(accounts, req.DeleteManifest.Account)
 			}
 
+			if req.DisableManifest != nil {
+				accounts = appendAccount(accounts, req.DisableManifest.Account)
+			}
+
 			if req.ScaleManifest != nil {
 				accounts = appendAccount(accounts, req.ScaleManifest.Account)
 			}
@@ -163,17 +167,26 @@ func (cc *Controller) AuthOps(permissions ...string) gin.HandlerFunc {
 
 		// For each account in the request, verify user have required permissions to it.
 		for _, account := range accounts {
-			for _, auth := range authResp.Accounts {
-				if auth.Name == account {
-					for _, p := range permissions {
-						found := find(auth.Authorizations, p)
-						if !found {
+			for _, p := range permissions {
+				permitted := false
+				for _, auth := range authResp.Accounts {
+					if auth.Name == account {
+						// User doesn't have required permission to account.
+						permitted = find(auth.Authorizations, p)
+						if !permitted {
 							clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
 							c.Abort()
 
 							return
 						}
 					}
+				}
+				// User doesn't have any permission to account.
+				if !permitted {
+					clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
+					c.Abort()
+
+					return
 				}
 			}
 		}
