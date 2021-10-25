@@ -231,15 +231,15 @@ var _ = Describe("Auth", func() {
 	Describe("#AuthOps", func() {
 		BeforeEach(func() {
 			c.Request, _ = http.NewRequest(http.MethodPost, "", ioutil.NopCloser(bytes.NewReader([]byte(`[
-				{
-					"rollingRestartManifest": {
-						"cloudProvider": "kubernetes",
-						"manifestName": "deployment test-deployment",
-						"location": "test-namespace",
-						"user": "test-user",
-						"account": "test-account"
-					}
-				}
+				{ "cleanupArtifacts": { "account": "test-cleanup-account" } },
+				{ "deleteManifest": { "account": "test-delete-account" } },
+				{ "deployManifest": { "account": "test-deploy-account" } },
+				{ "disableManifest": { "account": "test-disable-account" } },
+				{ "patchManifest": { "metadata": { "account": "test-patch-account" } } },
+				{ "rollingRestartManifest": { "account": "test-rolling-restart-account" } },
+				{ "runJob": { "account": "test-runjob-account" } },
+				{ "scaleManifest": { "account": "test-scale-account" } },
+				{ "undoRolloutManifest": { "account": "test-undo-rollout-account" } }
 			]`))))
 			c.Request.Header.Add("X-Spinnaker-User", testUser)
 			hf = middlewareController.AuthOps("READ")
@@ -265,12 +265,7 @@ var _ = Describe("Auth", func() {
 			BeforeEach(func() {
 				c.Request, _ = http.NewRequest(http.MethodPost, "", ioutil.NopCloser(bytes.NewReader([]byte(`[
 					{
-						"rollingRestartManifest": {
-							"cloudProvider": "kubernetes",
-							"manifestName": "deployment test-deployment",
-							"location": "test-namespace",
-							"user": "test-user"
-						}
+						"rollingRestartManifest": {}
 					}
 				]`))))
 				c.Request.Header.Add("X-Spinnaker-User", testUser)
@@ -308,7 +303,7 @@ var _ = Describe("Auth", func() {
 
 			It("returns status Forbidden", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusForbidden))
-				Expect(c.Errors[0].Error()).To(Equal("Access denied to account test-account - required authorization: READ"))
+				Expect(c.Errors[0].Error()).To(Equal("Access denied to account test-cleanup-account - required authorization: READ"))
 				Expect(c.IsAborted()).To(BeTrue())
 			})
 		})
@@ -317,11 +312,44 @@ var _ = Describe("Auth", func() {
 			BeforeEach(func() {
 				fakeResp := fiat.Response{}
 				fakeResp.Name = testUser
-				fakeAccount := fiat.Account{
-					Name:           testAccount,
-					Authorizations: []string{"READ"},
+				fakeResp.Accounts = []fiat.Account{
+					{
+						Name:           "test-cleanup-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-delete-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-deploy-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-disable-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-patch-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-rolling-restart-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-runjob-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-scale-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-undo-rollout-account",
+						Authorizations: []string{"READ"},
+					},
 				}
-				fakeResp.Accounts = []fiat.Account{fakeAccount}
 				fakeFiatClient.AuthorizeReturns(fakeResp, nil)
 			})
 
