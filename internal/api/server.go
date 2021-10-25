@@ -102,7 +102,7 @@ func (s *Server) Setup() {
 		api.DELETE("/applications/:application/jobs/:account/:location/:name", core.DeleteJob)
 
 		// Create a kubernetes operation - deploy/delete/scale manifest.
-		api.POST("/kubernetes/ops", middleware.TaskID(), c.CreateKubernetesOperation)
+		api.POST("/kubernetes/ops", mc.AuthOps(), middleware.TaskID(), c.CreateKubernetesOperation)
 
 		// Manifests API controller.
 		api.GET("/manifests/:account/:location/:kind", c.GetManifest)

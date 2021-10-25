@@ -5,7 +5,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/homedepot/go-clouddriver/internal/api/core"
+	"github.com/homedepot/go-clouddriver/internal/api/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/fiat"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
@@ -28,6 +30,8 @@ func (cc *Controller) AuthApplication(permissions ...string) gin.HandlerFunc {
 		authResp, err := cc.FiatClient.Authorize(user)
 		if err != nil {
 			clouddriver.Error(c, http.StatusUnauthorized, err)
+			c.Abort()
+
 			return
 		}
 
@@ -38,6 +42,8 @@ func (cc *Controller) AuthApplication(permissions ...string) gin.HandlerFunc {
 					found := find(auth.Authorizations, p)
 					if !found {
 						clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to application %s - required authorization: %s", app, p))
+						c.Abort()
+
 						return
 					}
 				}
@@ -61,6 +67,8 @@ func (cc *Controller) AuthAccount(permissions ...string) gin.HandlerFunc {
 		authResp, err := cc.FiatClient.Authorize(user)
 		if err != nil {
 			clouddriver.Error(c, http.StatusUnauthorized, err)
+			c.Abort()
+
 			return
 		}
 
@@ -72,8 +80,114 @@ func (cc *Controller) AuthAccount(permissions ...string) gin.HandlerFunc {
 					found := find(auth.Authorizations, p)
 					if !found {
 						clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
+						c.Abort()
+
 						return
 					}
+				}
+			}
+		}
+
+		c.Next()
+	}
+}
+
+func (cc *Controller) AuthOps(permissions ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user := c.GetHeader(headerSpinnakerUser)
+		if user == "" {
+			c.Next()
+			return
+		}
+
+		// Get account(s) from payload
+		ko := kubernetes.Operations{}
+
+		if err := c.ShouldBindBodyWith(&ko, binding.JSON); err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			c.Abort()
+
+			return
+		}
+
+		accounts := []string{}
+
+		// Loop through each request in the kubernetes operations and perform
+		// each requested action.
+		for _, req := range ko {
+			if req.DeployManifest != nil {
+				accounts = appendAccount(accounts, req.DeployManifest.Account)
+			}
+
+			if req.DeleteManifest != nil {
+				accounts = appendAccount(accounts, req.DeleteManifest.Account)
+			}
+
+			if req.DisableManifest != nil {
+				accounts = appendAccount(accounts, req.DisableManifest.Account)
+			}
+
+			if req.ScaleManifest != nil {
+				accounts = appendAccount(accounts, req.ScaleManifest.Account)
+			}
+
+			if req.CleanupArtifacts != nil {
+				accounts = appendAccount(accounts, req.CleanupArtifacts.Account)
+			}
+
+			if req.RollingRestartManifest != nil {
+				accounts = appendAccount(accounts, req.RollingRestartManifest.Account)
+			}
+
+			if req.RunJob != nil {
+				accounts = appendAccount(accounts, req.RunJob.Account)
+			}
+
+			if req.UndoRolloutManifest != nil {
+				accounts = appendAccount(accounts, req.UndoRolloutManifest.Account)
+			}
+
+			if req.PatchManifest != nil {
+				accounts = appendAccount(accounts, req.PatchManifest.Account)
+			}
+		}
+
+		if len(accounts) == 0 {
+			c.Next()
+			return
+		}
+
+		authResp, err := cc.FiatClient.Authorize(user)
+		if err != nil {
+			clouddriver.Error(c, http.StatusUnauthorized, err)
+			c.Abort()
+
+			return
+		}
+
+		// For each account in the request, verify user have required permissions to it.
+		for _, account := range accounts {
+			for _, p := range permissions {
+				permitted := false
+				// See if the account is in the fiat response.
+				for _, auth := range authResp.Accounts {
+					if auth.Name == account {
+						// Check if user has required permission to account.
+						permitted = find(auth.Authorizations, p)
+						if !permitted {
+							clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
+							c.Abort()
+
+							return
+						}
+					}
+				}
+				// User doesn't have any permission to account.
+				if !permitted {
+					clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
+					c.Abort()
+
+					return
 				}
 			}
 		}
@@ -141,4 +255,12 @@ func FilterAuthorizedApps(authorizedAppsMap map[string]fiat.Application, allApps
 	}
 
 	return filteredApps
+}
+
+func appendAccount(accounts []string, account string) []string {
+	if account != "" && !find(accounts, account) {
+		accounts = append(accounts, account)
+	}
+
+	return accounts
 }

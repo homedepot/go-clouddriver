@@ -1,7 +1,9 @@
 package middleware_test
 
 import (
+	"bytes"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 
@@ -64,6 +66,7 @@ var _ = Describe("Auth", func() {
 			It("calls c.Next", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				Expect(fakeFiatClient.AuthorizeCallCount()).To(BeZero())
+				Expect(c.IsAborted()).To(BeFalse())
 			})
 		})
 
@@ -75,6 +78,7 @@ var _ = Describe("Auth", func() {
 			It("calls c.Next", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				Expect(fakeFiatClient.AuthorizeCallCount()).To(BeZero())
+				Expect(c.IsAborted()).To(BeFalse())
 			})
 		})
 
@@ -86,6 +90,7 @@ var _ = Describe("Auth", func() {
 			It("returns status unauthorized", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusUnauthorized))
 				Expect(c.Errors[0].Error()).To(Equal("fake error"))
+				Expect(c.IsAborted()).To(BeTrue())
 			})
 		})
 
@@ -104,6 +109,7 @@ var _ = Describe("Auth", func() {
 			It("returns status Forbidden", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusForbidden))
 				Expect(c.Errors[0].Error()).To(Equal("Access denied to application test-application - required authorization: READ"))
+				Expect(c.IsAborted()).To(BeTrue())
 			})
 		})
 
@@ -121,6 +127,7 @@ var _ = Describe("Auth", func() {
 
 			It("returns status Forbidden", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(c.IsAborted()).To(BeFalse())
 			})
 		})
 	})
@@ -146,6 +153,7 @@ var _ = Describe("Auth", func() {
 			It("calls c.Next", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				Expect(fakeFiatClient.AuthorizeCallCount()).To(BeZero())
+				Expect(c.IsAborted()).To(BeFalse())
 			})
 		})
 
@@ -166,6 +174,7 @@ var _ = Describe("Auth", func() {
 			It("calls c.Next", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				Expect(fakeFiatClient.AuthorizeCallCount()).To(BeZero())
+				Expect(c.IsAborted()).To(BeFalse())
 			})
 		})
 
@@ -177,6 +186,7 @@ var _ = Describe("Auth", func() {
 			It("returns status unauthorized", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusUnauthorized))
 				Expect(c.Errors[0].Error()).To(Equal("fake error"))
+				Expect(c.IsAborted()).To(BeTrue())
 			})
 		})
 
@@ -195,6 +205,7 @@ var _ = Describe("Auth", func() {
 			It("returns status Forbidden", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusForbidden))
 				Expect(c.Errors[0].Error()).To(Equal("Access denied to account test-account - required authorization: READ"))
+				Expect(c.IsAborted()).To(BeTrue())
 			})
 		})
 
@@ -212,6 +223,139 @@ var _ = Describe("Auth", func() {
 
 			It("returns status OK", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(c.IsAborted()).To(BeFalse())
+			})
+		})
+	})
+
+	Describe("#AuthOps", func() {
+		BeforeEach(func() {
+			c.Request, _ = http.NewRequest(http.MethodPost, "", ioutil.NopCloser(bytes.NewReader([]byte(`[
+				{ "cleanupArtifacts": { "account": "test-cleanup-account" } },
+				{ "deleteManifest": { "account": "test-delete-account" } },
+				{ "deployManifest": { "account": "test-deploy-account" } },
+				{ "disableManifest": { "account": "test-disable-account" } },
+				{ "patchManifest": { "metadata": { "account": "test-patch-account" } } },
+				{ "rollingRestartManifest": { "account": "test-rolling-restart-account" } },
+				{ "runJob": { "account": "test-runjob-account" } },
+				{ "scaleManifest": { "account": "test-scale-account" } },
+				{ "undoRolloutManifest": { "account": "test-undo-rollout-account" } }
+			]`))))
+			c.Request.Header.Add("X-Spinnaker-User", testUser)
+			hf = middlewareController.AuthOps("READ")
+		})
+
+		JustBeforeEach(func() {
+			hf(c)
+		})
+
+		When("user is empty", func() {
+			BeforeEach(func() {
+				c.Request.Header.Del("X-Spinnaker-User")
+			})
+
+			It("calls c.Next", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeFiatClient.AuthorizeCallCount()).To(BeZero())
+				Expect(c.IsAborted()).To(BeFalse())
+			})
+		})
+
+		When("no accounts found in payload", func() {
+			BeforeEach(func() {
+				c.Request, _ = http.NewRequest(http.MethodPost, "", ioutil.NopCloser(bytes.NewReader([]byte(`[
+					{
+						"rollingRestartManifest": {}
+					}
+				]`))))
+				c.Request.Header.Add("X-Spinnaker-User", testUser)
+			})
+
+			It("calls c.Next", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeFiatClient.AuthorizeCallCount()).To(BeZero())
+			})
+		})
+
+		When("fiatClient.Authorize returns an error", func() {
+			BeforeEach(func() {
+				fakeFiatClient.AuthorizeReturns(fiat.Response{}, errors.New("fake error"))
+			})
+
+			It("returns status unauthorized", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusUnauthorized))
+				Expect(c.Errors[0].Error()).To(Equal("fake error"))
+				Expect(c.IsAborted()).To(BeTrue())
+			})
+		})
+
+		When("the user doesn't have the permission", func() {
+			BeforeEach(func() {
+				fakeResp := fiat.Response{}
+				fakeResp.Name = testUser
+				fakeAccount := fiat.Account{
+					Name:           testAccount,
+					Authorizations: []string{"WRITE"},
+				}
+				fakeResp.Accounts = []fiat.Account{fakeAccount}
+				fakeFiatClient.AuthorizeReturns(fakeResp, nil)
+			})
+
+			It("returns status Forbidden", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusForbidden))
+				Expect(c.Errors[0].Error()).To(Equal("Access denied to account test-cleanup-account - required authorization: READ"))
+				Expect(c.IsAborted()).To(BeTrue())
+			})
+		})
+
+		When("the user has the permission", func() {
+			BeforeEach(func() {
+				fakeResp := fiat.Response{}
+				fakeResp.Name = testUser
+				fakeResp.Accounts = []fiat.Account{
+					{
+						Name:           "test-cleanup-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-delete-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-deploy-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-disable-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-patch-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-rolling-restart-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-runjob-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-scale-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-undo-rollout-account",
+						Authorizations: []string{"READ"},
+					},
+				}
+				fakeFiatClient.AuthorizeReturns(fakeResp, nil)
+			})
+
+			It("returns status OK", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(c.IsAborted()).To(BeFalse())
 			})
 		})
 	})

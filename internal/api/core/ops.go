@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/homedepot/go-clouddriver/internal/api/core/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
@@ -22,7 +23,7 @@ func (cc *Controller) CreateKubernetesOperation(c *gin.Context) {
 	ko := kubernetes.Operations{}
 	taskID := clouddriver.TaskIDFromContext(c)
 
-	if err := c.ShouldBindJSON(&ko); err != nil {
+	if err := c.ShouldBindBodyWith(&ko, binding.JSON); err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
