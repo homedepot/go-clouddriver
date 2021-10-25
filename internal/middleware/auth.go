@@ -169,9 +169,10 @@ func (cc *Controller) AuthOps(permissions ...string) gin.HandlerFunc {
 		for _, account := range accounts {
 			for _, p := range permissions {
 				permitted := false
+				// See if the account is in the fiat response.
 				for _, auth := range authResp.Accounts {
 					if auth.Name == account {
-						// User doesn't have required permission to account.
+						// Check if user has required permission to account.
 						permitted = find(auth.Authorizations, p)
 						if !permitted {
 							clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
