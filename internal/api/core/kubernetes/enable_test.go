@@ -410,6 +410,53 @@ var _ = Describe("Enable", func() {
 		})
 	})
 
+	When("the load balancer's selector and the target's labels are not disjoint", func() {
+		BeforeEach(func() {
+			fakeKubeClient.GetReturnsOnCall(0, &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "ReplicaSet",
+					"apiVersion": "apps/v1",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							"traffic.spinnaker.io/load-balancers": "[\"service test-service1\"]",
+						},
+						"name":      "test-rs1",
+						"namespace": "test-namespace",
+						"uid":       "test-uid",
+					},
+					"spec": map[string]interface{}{
+						"template": map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"labels": map[string]interface{}{
+									"labelKey1":    "labelValue1",
+									"labelKey2":    "labelValue2",
+									"selectorKey2": "selectorValue2",
+								},
+							},
+						},
+					},
+				},
+			}, nil)
+			fakeKubeClient.GetReturnsOnCall(1, &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Service",
+					"apiVersion": "v1",
+					"spec": map[string]interface{}{
+						"selector": map[string]interface{}{
+							"selectorKey1": "selectorValue1",
+							"selectorKey2": "selectorValue2",
+						},
+					},
+				},
+			}, nil)
+		})
+
+		It("returns an error", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+			Expect(c.Errors.Last().Error()).To(Equal("service selector must have no label keys in common with target workload"))
+		})
+	})
+
 	When("patching the target returns an error", func() {
 		BeforeEach(func() {
 			fakeKubeClient.PatchUsingStrategyReturnsOnCall(0, kubernetes.Metadata{}, nil, errors.New("error patching"))

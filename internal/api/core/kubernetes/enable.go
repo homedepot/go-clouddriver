@@ -19,7 +19,7 @@ import (
 
 // Enable takes in manifest coordinates and grabs the list of load balancers behind which
 // it needs to be fronted from the annotation `traffic.spinnaker.io/load-balancers`.
-// It loops through these load balancers, adding any selectors from the target manifest's
+// It loops through these load balancers, adding any selectors from the load balancer's
 // labels and patching the target resource using the JSON patch strategy. It then
 // patches the labels of all pods that this manifest owns.
 func (cc *Controller) Enable(c *gin.Context, dm EnableManifestRequest) {
@@ -110,7 +110,7 @@ func (cc *Controller) Enable(c *gin.Context, dm EnableManifestRequest) {
 			return
 		}
 
-		err = patch(provider.Client, lb, target, "add")
+		err = attachDetach(provider.Client, lb, target, "add")
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -118,7 +118,7 @@ func (cc *Controller) Enable(c *gin.Context, dm EnableManifestRequest) {
 
 		// Patch all pods.
 		for _, pod := range pods {
-			err = patch(provider.Client, lb, pod, "add")
+			err = attachDetach(provider.Client, lb, pod, "add")
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
