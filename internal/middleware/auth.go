@@ -127,6 +127,10 @@ func (cc *Controller) AuthOps(permissions ...string) gin.HandlerFunc {
 				accounts = appendAccount(accounts, req.DisableManifest.Account)
 			}
 
+			if req.EnableManifest != nil {
+				accounts = appendAccount(accounts, req.EnableManifest.Account)
+			}
+
 			if req.ScaleManifest != nil {
 				accounts = appendAccount(accounts, req.ScaleManifest.Account)
 			}

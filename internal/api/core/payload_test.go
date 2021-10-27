@@ -152,6 +152,14 @@ const payloadRequestKubernetesOpsDisableManifest = `[
   }
 ]`
 
+const payloadRequestKubernetesOpsEnableManifest = `[
+  {
+    "enableManifest": {
+      "account": "spin-cluster-account"
+		}
+  }
+]`
+
 const payloadRequestKubernetesOpsCleanupArtifacts = `[
   {
     "cleanupArtifacts": {

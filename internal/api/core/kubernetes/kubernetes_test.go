@@ -26,6 +26,7 @@ var (
 	kubernetesController          *Controller
 	deployManifestRequest         DeployManifestRequest
 	disableManifestRequest        DisableManifestRequest
+	enableManifestRequest         EnableManifestRequest
 	scaleManifestRequest          ScaleManifestRequest
 	cleanupArtifactsRequest       CleanupArtifactsRequest
 	deleteManifestRequest         DeleteManifestRequest
@@ -112,6 +113,7 @@ func setup() {
 
 	deployManifestRequest = newDeployManifestRequest()
 	disableManifestRequest = newDisableManifestRequest()
+	enableManifestRequest = newEnableManifestRequest()
 	scaleManifestRequest = newScaleManifestRequest()
 	cleanupArtifactsRequest = newCleanupArtifactsRequest()
 	deleteManifestRequest = newDeleteManifestRequest()
@@ -160,6 +162,16 @@ func newDeployManifestRequest() DeployManifestRequest {
 
 func newDisableManifestRequest() DisableManifestRequest {
 	return DisableManifestRequest{
+		App:           "test-app",
+		CloudProvider: "kubernetes",
+		ManifestName:  "ReplicaSet test-rs-v001",
+		Location:      "test-namespace",
+		Account:       "test-account",
+	}
+}
+
+func newEnableManifestRequest() EnableManifestRequest {
+	return EnableManifestRequest{
 		App:           "test-app",
 		CloudProvider: "kubernetes",
 		ManifestName:  "ReplicaSet test-rs-v001",

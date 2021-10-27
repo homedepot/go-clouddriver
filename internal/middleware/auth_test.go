@@ -235,6 +235,7 @@ var _ = Describe("Auth", func() {
 				{ "deleteManifest": { "account": "test-delete-account" } },
 				{ "deployManifest": { "account": "test-deploy-account" } },
 				{ "disableManifest": { "account": "test-disable-account" } },
+				{ "enableManifest": { "account": "test-enable-account" } },
 				{ "patchManifest": { "metadata": { "account": "test-patch-account" } } },
 				{ "rollingRestartManifest": { "account": "test-rolling-restart-account" } },
 				{ "runJob": { "account": "test-runjob-account" } },
@@ -327,6 +328,10 @@ var _ = Describe("Auth", func() {
 					},
 					{
 						Name:           "test-disable-account",
+						Authorizations: []string{"READ"},
+					},
+					{
+						Name:           "test-enable-account",
 						Authorizations: []string{"READ"},
 					},
 					{

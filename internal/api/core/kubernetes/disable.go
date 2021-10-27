@@ -118,7 +118,7 @@ func (cc *Controller) Disable(c *gin.Context, dm DisableManifestRequest) {
 			return
 		}
 
-		err = patch(provider.Client, lb, target, "remove")
+		err = attachDetach(provider.Client, lb, target, "remove")
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -126,7 +126,7 @@ func (cc *Controller) Disable(c *gin.Context, dm DisableManifestRequest) {
 
 		// Patch all pods.
 		for _, pod := range pods {
-			err = patch(provider.Client, lb, pod, "remove")
+			err = attachDetach(provider.Client, lb, pod, "remove")
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -157,22 +157,22 @@ func (cc *Controller) Disable(c *gin.Context, dm DisableManifestRequest) {
 func getLoadBalancer(client kubernetes.Client, loadBalancer, namespace string) (*unstructured.Unstructured, error) {
 	a := strings.Split(loadBalancer, " ")
 	if len(a) != 2 {
-		return nil, fmt.Errorf("Failed to detach load balancer '%s'. "+
-			"Load balancers must be specified in the form '{kind} {name}', e.g. 'service my-service'.", loadBalancer)
+		return nil, fmt.Errorf("failed to attach/detach to/from load balancer '%s'. "+
+			"load balancers must be specified in the form '{kind} {name}', e.g. 'service my-service'", loadBalancer)
 	}
 
 	kind := a[0]
 	name := a[1]
 	// For now, limit the kind of load balancer available to detach to Services.
 	if !strings.EqualFold(kind, "service") {
-		return nil, fmt.Errorf("No support for load balancing via %s exists in Spinnaker.", kind)
+		return nil, fmt.Errorf("no support for load balancing via %s exists in Spinnaker", kind)
 	}
 
 	// Grab the load balancer from the cluster.
 	lb, err := client.Get(kind, name, namespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, fmt.Errorf("Load balancer %s %s does not exist", kind, name)
+			return nil, fmt.Errorf("load balancer %s %s does not exist", kind, name)
 		}
 
 		return nil, fmt.Errorf("error getting service %s: %v", name, err)
@@ -187,7 +187,7 @@ type jsonPatch struct {
 	Value string `json:"value,omitempty"`
 }
 
-// patch attaches or detaches a given load balancer based on the op passed in ("add" or "remove")
+// attachDetach attaches or detaches a given load balancer based on the op passed in ("add" or "remove")
 // from a target and then patches the target's labels. It uses the JSON patch strategy to do so.
 //
 // For a pod, this looks like:
@@ -199,7 +199,7 @@ type jsonPatch struct {
 // [
 //   {"op": "remove", "path": "/spec/template/metadata/labels/key1"}
 // ]
-func patch(client kubernetes.Client, lb, target *unstructured.Unstructured, op string) error {
+func attachDetach(client kubernetes.Client, lb, target *unstructured.Unstructured, op string) error {
 	labelsPath := "spec.template.metadata.labels"
 
 	labels, found, err := unstructured.NestedStringMap(target.Object, strings.Split(labelsPath, ".")...)
@@ -223,7 +223,7 @@ func patch(client kubernetes.Client, lb, target *unstructured.Unstructured, op s
 	}
 
 	if op == "add" && !disjoint(labels, selector) {
-		return fmt.Errorf("Service selector must have no label keys in common with target workload")
+		return fmt.Errorf("service selector must have no label keys in common with target workload")
 	}
 
 	patches := []jsonPatch{}

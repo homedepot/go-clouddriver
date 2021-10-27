@@ -19,6 +19,7 @@ type Operation struct {
 	DeleteManifest         *DeleteManifestRequest         `json:"deleteManifest"`
 	DeployManifest         *DeployManifestRequest         `json:"deployManifest"`
 	DisableManifest        *DisableManifestRequest        `json:"disableManifest"`
+	EnableManifest         *EnableManifestRequest         `json:"enableManifest"`
 	PatchManifest          *PatchManifestRequest          `json:"patchManifest"`
 	RollingRestartManifest *RollingRestartManifestRequest `json:"rollingRestartManifest"`
 	RunJob                 *RunJobRequest                 `json:"runJob"`
@@ -48,6 +49,14 @@ type DeployManifestRequest struct {
 }
 
 type DisableManifestRequest struct {
+	App           string `json:"app"`
+	CloudProvider string `json:"cloudProvider"`
+	ManifestName  string `json:"manifestName"`
+	Location      string `json:"location"`
+	Account       string `json:"account"`
+}
+
+type EnableManifestRequest struct {
 	App           string `json:"app"`
 	CloudProvider string `json:"cloudProvider"`
 	ManifestName  string `json:"manifestName"`
