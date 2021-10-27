@@ -136,7 +136,7 @@ func (c *client) GetChart(name, version string) ([]byte, error) {
 
 			continue
 		}
-		// Set credentials to pull the chant.
+		// Set credentials to pull the chart.
 		if c.username != "" && c.password != "" {
 			req.SetBasicAuth(c.username, c.password)
 		}
