@@ -34,7 +34,6 @@ type Client interface {
 	ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider, error)
 	ListKubernetesResourcesByFields(...string) ([]kubernetes.Resource, error)
 	ListKubernetesResourcesByTaskID(string) ([]kubernetes.Resource, error)
-	ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(string, string, string) ([]string, error)
 	ListReadGroupsByAccountName(string) ([]string, error)
 	ListWriteGroupsByAccountName(string) ([]string, error)
 	WithConfig(*gorm.Config)
@@ -281,27 +280,6 @@ func (c *client) ListKubernetesClustersByFields(fields ...string) ([]kubernetes.
 	db := c.db.Select(list).Where("kind in ('deployment', 'statefulSet', 'replicaSet', 'ingress', 'service', 'daemonSet')").Group(list).Find(&rs)
 
 	return rs, db.Error
-}
-
-// ListKubernetesResourceNamesByAccountNameAndKindAndNamespace gets the
-// list of kubernetes resource names for a account name, kubernetes kind,
-// and kubernetes namespace from the DB.
-func (c *client) ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(accountName,
-	kind, namespace string) ([]string, error) {
-	rs := []kubernetes.Resource{}
-	names := []string{}
-	db := c.db.Select("name").
-		Where("account_name = ? AND kind = ? AND namespace = ?",
-			accountName, kind, namespace).
-		Group("name").Find(&rs)
-
-	for _, r := range rs {
-		if r.Name != "" {
-			names = append(names, r.Name)
-		}
-	}
-
-	return names, db.Error
 }
 
 // ListKubernetesProviders gets all the kubernetes providers from the DB.

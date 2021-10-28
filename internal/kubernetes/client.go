@@ -47,6 +47,7 @@ type Client interface {
 	Patch(string, string, string, []byte) (Metadata, *unstructured.Unstructured, error)
 	PatchUsingStrategy(string, string, string, []byte, types.PatchType) (Metadata, *unstructured.Unstructured, error)
 	ListResourcesByKindAndNamespace(string, string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
+	ListResourcesByKindAndNamespaceWithContext(context.Context, string, string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 }
 
 type client struct {
@@ -286,6 +287,11 @@ func (c *client) ListResourceWithContext(ctx context.Context,
 }
 
 func (c *client) ListResourcesByKindAndNamespace(kind, namespace string, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+	return c.ListResourcesByKindAndNamespaceWithContext(context.Background(), kind, namespace, lo)
+}
+
+func (c *client) ListResourcesByKindAndNamespaceWithContext(ctx context.Context,
+	kind, namespace string, lo metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	gvk, err := c.mapper.KindFor(schema.GroupVersionResource{Resource: kind})
 	if err != nil {
 		return nil, err
@@ -308,11 +314,11 @@ func (c *client) ListResourcesByKindAndNamespace(kind, namespace string, lo meta
 		ul, err = c.c.
 			Resource(restMapping.Resource).
 			Namespace(namespace).
-			List(context.TODO(), lo)
+			List(ctx, lo)
 	} else {
 		ul, err = c.c.
 			Resource(restMapping.Resource).
-			List(context.TODO(), lo)
+			List(ctx, lo)
 	}
 
 	return ul, err

@@ -468,36 +468,6 @@ var _ = Describe("Sql", func() {
 		})
 	})
 
-	Describe("#ListKubernetesResourceNamesByAccountNameAndKindAndNamespace", func() {
-		var names []string
-
-		JustBeforeEach(func() {
-			names, err = c.ListKubernetesResourceNamesByAccountNameAndKindAndNamespace("test-account-name",
-				"test-kind", "test-namespace")
-		})
-
-		When("it succeeds", func() {
-			BeforeEach(func() {
-				sqlRows := sqlmock.NewRows([]string{"name"}).
-					AddRow("name1").
-					AddRow("name2")
-				mock.ExpectQuery("(?i)^SELECT " +
-					"`name` " +
-					"FROM `kubernetes_resources` " +
-					"WHERE account_name = \\? AND " +
-					"kind = \\? AND " +
-					"namespace = \\? GROUP BY `name`$").
-					WillReturnRows(sqlRows)
-				mock.ExpectCommit()
-			})
-
-			It("succeeds", func() {
-				Expect(err).To(BeNil())
-				Expect(names).To(HaveLen(2))
-			})
-		})
-	})
-
 	Describe("#ListKubernetesResourcesByTaskID", func() {
 		var resources []kubernetes.Resource
 

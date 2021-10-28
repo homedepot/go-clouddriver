@@ -165,6 +165,22 @@ type FakeClient struct {
 		result1 *unstructured.UnstructuredList
 		result2 error
 	}
+	ListResourcesByKindAndNamespaceWithContextStub        func(context.Context, string, string, v1.ListOptions) (*unstructured.UnstructuredList, error)
+	listResourcesByKindAndNamespaceWithContextMutex       sync.RWMutex
+	listResourcesByKindAndNamespaceWithContextArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 v1.ListOptions
+	}
+	listResourcesByKindAndNamespaceWithContextReturns struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}
+	listResourcesByKindAndNamespaceWithContextReturnsOnCall map[int]struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}
 	PatchStub        func(string, string, string, []byte) (kubernetes.Metadata, *unstructured.Unstructured, error)
 	patchMutex       sync.RWMutex
 	patchArgsForCall []struct {
@@ -910,6 +926,73 @@ func (fake *FakeClient) ListResourcesByKindAndNamespaceReturnsOnCall(i int, resu
 	}{result1, result2}
 }
 
+func (fake *FakeClient) ListResourcesByKindAndNamespaceWithContext(arg1 context.Context, arg2 string, arg3 string, arg4 v1.ListOptions) (*unstructured.UnstructuredList, error) {
+	fake.listResourcesByKindAndNamespaceWithContextMutex.Lock()
+	ret, specificReturn := fake.listResourcesByKindAndNamespaceWithContextReturnsOnCall[len(fake.listResourcesByKindAndNamespaceWithContextArgsForCall)]
+	fake.listResourcesByKindAndNamespaceWithContextArgsForCall = append(fake.listResourcesByKindAndNamespaceWithContextArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 v1.ListOptions
+	}{arg1, arg2, arg3, arg4})
+	stub := fake.ListResourcesByKindAndNamespaceWithContextStub
+	fakeReturns := fake.listResourcesByKindAndNamespaceWithContextReturns
+	fake.recordInvocation("ListResourcesByKindAndNamespaceWithContext", []interface{}{arg1, arg2, arg3, arg4})
+	fake.listResourcesByKindAndNamespaceWithContextMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) ListResourcesByKindAndNamespaceWithContextCallCount() int {
+	fake.listResourcesByKindAndNamespaceWithContextMutex.RLock()
+	defer fake.listResourcesByKindAndNamespaceWithContextMutex.RUnlock()
+	return len(fake.listResourcesByKindAndNamespaceWithContextArgsForCall)
+}
+
+func (fake *FakeClient) ListResourcesByKindAndNamespaceWithContextCalls(stub func(context.Context, string, string, v1.ListOptions) (*unstructured.UnstructuredList, error)) {
+	fake.listResourcesByKindAndNamespaceWithContextMutex.Lock()
+	defer fake.listResourcesByKindAndNamespaceWithContextMutex.Unlock()
+	fake.ListResourcesByKindAndNamespaceWithContextStub = stub
+}
+
+func (fake *FakeClient) ListResourcesByKindAndNamespaceWithContextArgsForCall(i int) (context.Context, string, string, v1.ListOptions) {
+	fake.listResourcesByKindAndNamespaceWithContextMutex.RLock()
+	defer fake.listResourcesByKindAndNamespaceWithContextMutex.RUnlock()
+	argsForCall := fake.listResourcesByKindAndNamespaceWithContextArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeClient) ListResourcesByKindAndNamespaceWithContextReturns(result1 *unstructured.UnstructuredList, result2 error) {
+	fake.listResourcesByKindAndNamespaceWithContextMutex.Lock()
+	defer fake.listResourcesByKindAndNamespaceWithContextMutex.Unlock()
+	fake.ListResourcesByKindAndNamespaceWithContextStub = nil
+	fake.listResourcesByKindAndNamespaceWithContextReturns = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ListResourcesByKindAndNamespaceWithContextReturnsOnCall(i int, result1 *unstructured.UnstructuredList, result2 error) {
+	fake.listResourcesByKindAndNamespaceWithContextMutex.Lock()
+	defer fake.listResourcesByKindAndNamespaceWithContextMutex.Unlock()
+	fake.ListResourcesByKindAndNamespaceWithContextStub = nil
+	if fake.listResourcesByKindAndNamespaceWithContextReturnsOnCall == nil {
+		fake.listResourcesByKindAndNamespaceWithContextReturnsOnCall = make(map[int]struct {
+			result1 *unstructured.UnstructuredList
+			result2 error
+		})
+	}
+	fake.listResourcesByKindAndNamespaceWithContextReturnsOnCall[i] = struct {
+		result1 *unstructured.UnstructuredList
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Patch(arg1 string, arg2 string, arg3 string, arg4 []byte) (kubernetes.Metadata, *unstructured.Unstructured, error) {
 	var arg4Copy []byte
 	if arg4 != nil {
@@ -1086,6 +1169,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.listResourceWithContextMutex.RUnlock()
 	fake.listResourcesByKindAndNamespaceMutex.RLock()
 	defer fake.listResourcesByKindAndNamespaceMutex.RUnlock()
+	fake.listResourcesByKindAndNamespaceWithContextMutex.RLock()
+	defer fake.listResourcesByKindAndNamespaceWithContextMutex.RUnlock()
 	fake.patchMutex.RLock()
 	defer fake.patchMutex.RUnlock()
 	fake.patchUsingStrategyMutex.RLock()
