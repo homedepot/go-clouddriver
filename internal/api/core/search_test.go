@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -15,7 +16,7 @@ var _ = Describe("Search", func() {
 		BeforeEach(func() {
 			setup()
 			uri = svr.URL + "/search?pageSize=500&q=default&type=pod"
-			accountsHeader = "account1,account2"
+			accountsHeader = "account1"
 		})
 
 		AfterEach(func() {
@@ -42,60 +43,85 @@ var _ = Describe("Search", func() {
 			})
 		})
 
-		When("an empty account is provided", func() {
+		When("kind is securityGroups", func() {
 			BeforeEach(func() {
-				accountsHeader = "account1,,account2"
+				uri = svr.URL + "/search?pageSize=500&q=default&type=securityGroups"
 			})
 
-			It("continues", func() {
+			It("returns the default response", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				validateResponse(payloadSearchEmptyResponse)
+				validateResponse(payloadSearchDefault)
+				Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(BeZero())
 			})
 		})
 
-		When("pageSize is not provided", func() {
+		When("getting the provider returns an error", func() {
 			BeforeEach(func() {
-				uri = svr.URL + "/search?q=default&type=pod"
+				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
 			})
 
 			It("returns an empty response", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				validateResponse(payloadSearchEmptyResponseWithPageSizeZero)
-			})
-		})
-
-		When("listing resource names returns an error", func() {
-			BeforeEach(func() {
-				fakeSQLClient.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns(nil, errors.New("error listing names"))
-			})
-
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
 				validateResponse(payloadSearchEmptyResponse)
+				Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(BeZero())
 			})
 		})
 
-		When("it reached the pageSize limit while listing names", func() {
+		Context("when the provider is namespace scoped", func() {
+			var provider kubernetes.Provider
+
 			BeforeEach(func() {
-				uri = svr.URL + "/search?pageSize=3&q=default&type=pod"
-				fakeSQLClient.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns([]string{"test-name1", "test-name2"}, nil)
+				d := "default"
+				provider.Namespace = &d
+				fakeSQLClient.GetKubernetesProviderReturns(provider, nil)
 			})
 
-			It("limits the response", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				validateResponse(payloadSearchWithPageSizeThree)
-			})
-		})
+			When("the namespace is incorrect", func() {
+				BeforeEach(func() {
+					d := "different-namespace"
+					provider.Namespace = &d
+					fakeSQLClient.GetKubernetesProviderReturns(provider, nil)
+				})
 
-		When("it succeeds", func() {
-			BeforeEach(func() {
-				fakeSQLClient.ListKubernetesResourceNamesByAccountNameAndKindAndNamespaceReturns([]string{"test-name1", "test-name2"}, nil)
+				It("returns an empty response", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadSearchEmptyResponse)
+					Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(BeZero())
+				})
+			})
+
+			When("the kind is cluster-scoped", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/search?pageSize=500&q=default&type=clusterRole"
+				})
+
+				It("returns an empty response", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadSearchEmptyResponse)
+					Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(BeZero())
+				})
 			})
 
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 				validateResponse(payloadSearch)
 			})
+		})
+
+		When("there is an error listing resources", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ListResourcesByKindAndNamespaceWithContextReturns(nil, errors.New("error listing resources"))
+			})
+
+			It("returns an empty response", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadSearchEmptyResponse)
+			})
+		})
+
+		It("succeeds", func() {
+			Expect(res.StatusCode).To(Equal(http.StatusOK))
+			validateResponse(payloadSearch)
 		})
 	})
 })

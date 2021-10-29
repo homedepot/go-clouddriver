@@ -1,14 +1,19 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/homedepot/go-clouddriver/internal"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type SearchResponse []Page
@@ -19,7 +24,7 @@ type Page struct {
 	Query        string       `json:"query"`
 	Results      []PageResult `json:"results"`
 	TotalMatches int          `json:"totalMatches"`
-	// Platform     string       `json:"platform"`
+	Platform     string       `json:"platform,omitempty"`
 }
 
 type PageResult struct {
@@ -35,9 +40,9 @@ type PageResult struct {
 	Cluster        string `json:"cluster,omitempty"`
 }
 
-// Search is the generic search endpoint. It currently just handles searching previously deployed
-// Kubernetes resources. It queries the clouddriver DB and does NOT reach out to
-// clusters for live data.
+// Search is the generic search endpoint. It ignores the `pageSize` query parameter
+// and lists resources for a kind and namespace across all accounts the user
+// has access to concurrently.
 func (cc *Controller) Search(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.Query("pageSize"))
 	namespace := c.Query("q")
@@ -53,43 +58,72 @@ func (cc *Controller) Search(c *gin.Context) {
 	}
 
 	results := []PageResult{}
+	// Ignore requests for 'securityGroups' as this is a bogus Kubernetes kind and always
+	// returns the following JSON:
+	// [
+	//   {
+	//     "pageNumber": 1,
+	//     "pageSize": 500,
+	//     "platform": "aws",
+	//     "query": "namespace",
+	//     "results": [],
+	//     "totalMatches": 0
+	//   }
+	// ]
+	if strings.EqualFold(kind, "securityGroups") {
+		sr := SearchResponse{}
+		page := Page{
+			PageNumber:   1,
+			PageSize:     pageSize,
+			Platform:     "aws",
+			Query:        namespace,
+			Results:      results,
+			TotalMatches: 0,
+		}
+		sr = append(sr, page)
 
+		c.JSON(http.StatusOK, sr)
+
+		return
+	}
+
+	wg := &sync.WaitGroup{}
+	ac := make(chan accountName, internal.DefaultChanSize)
+
+	wg.Add(len(accounts))
+	// List the requested resource across accounts concurrently.
 	for _, account := range accounts {
-		if account == "" {
-			continue
+		go cc.search(wg, account, kind, namespace, ac)
+	}
+
+	// Wait for all concurrent calls to finish.
+	wg.Wait()
+	// Close the channel.
+	close(ac)
+	// Receive all account/names from the channel.
+	accountNames := []accountName{}
+	for an := range ac {
+		accountNames = append(accountNames, an)
+	}
+
+	t := "unclassified"
+	if _, ok := spinnakerKindMap[kind]; ok {
+		t = spinnakerKindMap[kind]
+	}
+
+	for _, an := range accountNames {
+		result := PageResult{
+			Account:        an.account,
+			Group:          kind,
+			KubernetesKind: kind,
+			Name:           fmt.Sprintf("%s %s", kind, an.name),
+			Namespace:      namespace,
+			Provider:       "kubernetes",
+			Region:         namespace,
+			Type:           t,
 		}
 
-		if len(results) >= pageSize {
-			break
-		}
-
-		names, err := cc.SQLClient.ListKubernetesResourceNamesByAccountNameAndKindAndNamespace(account, kind, namespace)
-		if err != nil {
-			continue
-		}
-
-		for _, name := range names {
-			t := "unclassified"
-			if _, ok := spinnakerKindMap[kind]; ok {
-				t = spinnakerKindMap[kind]
-			}
-
-			result := PageResult{
-				Account:        account,
-				Group:          kind,
-				KubernetesKind: kind,
-				Name:           fmt.Sprintf("%s %s", kind, name),
-				Namespace:      namespace,
-				Provider:       "kubernetes",
-				Region:         namespace,
-				Type:           t,
-			}
-
-			results = append(results, result)
-			if len(results) >= pageSize {
-				break
-			}
-		}
+		results = append(results, result)
 	}
 
 	sr := SearchResponse{}
@@ -103,4 +137,47 @@ func (cc *Controller) Search(c *gin.Context) {
 	sr = append(sr, page)
 
 	c.JSON(http.StatusOK, sr)
+}
+
+// accountName defines a Kubernetes resource's account and name.
+type accountName struct {
+	account string
+	name    string
+}
+
+// search lists a requested resource by account and kind and namespace
+// then writes to a channel of accountName.
+func (cc *Controller) search(wg *sync.WaitGroup, account, kind, namespace string, ac chan accountName) {
+	// Increment the wait group counter when we're done here.
+	defer wg.Done()
+	// Grab the kube provider for the given account.
+	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*internal.DefaultListTimeoutSeconds)
+	if err != nil {
+		return
+	}
+	// If namespace-scoped account and we are attempting to list kinds in a forbidden namespace,
+	// just return.
+	if provider.Namespace != nil && *provider.Namespace != namespace {
+		return
+	}
+	// If the provider is not allowed to list this given kind, just return.
+	if err := provider.ValidateKindStatus(kind); err != nil {
+		return
+	}
+	// Declare a context with timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
+	defer cancel()
+	// List resources with the context.
+	ul, err := provider.Client.ListResourcesByKindAndNamespaceWithContext(ctx, kind, namespace, metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+
+	for _, u := range ul.Items {
+		an := accountName{
+			account: account,
+			name:    u.GetName(),
+		}
+		ac <- an
+	}
 }

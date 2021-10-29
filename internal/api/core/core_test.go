@@ -169,6 +169,22 @@ func setup() {
 			},
 		},
 	}, nil)
+	fakeKubeClient.ListResourcesByKindAndNamespaceWithContextReturns(&unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+							kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+						},
+						"name":      "test-name",
+						"namespace": "test-namespace",
+					},
+				},
+			},
+		},
+	}, nil)
 
 	fakeKubeClientset = &kubernetesfakes.FakeClientset{}
 	fakeKubeClientset.PodLogsReturns("log output", nil)

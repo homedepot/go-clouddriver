@@ -2644,117 +2644,47 @@ const payloadGetJob = `{
             "provider": "kubernetes"
           }`
 
-const payloadSearchEmptyResponseWithPageSizeZero = `[
-            {
-              "pageNumber": 1,
-              "pageSize": 0,
-              "query": "default",
-              "results": [],
-              "totalMatches": 0
-            }
-          ]`
+const payloadSearchDefault = `[
+							 {
+								 "pageNumber": 1,
+								 "pageSize": 500,
+								 "platform": "aws",
+								 "query": "default",
+								 "results": [],
+								 "totalMatches": 0
+							 }
+						 ]`
 
 const payloadSearchEmptyResponse = `[
-            {
-              "pageNumber": 1,
-              "pageSize": 500,
-              "query": "default",
-              "results": [],
-              "totalMatches": 0
-            }
-          ]`
+							 {
+								 "pageNumber": 1,
+								 "pageSize": 500,
+								 "query": "default",
+								 "results": [],
+								 "totalMatches": 0
+							 }
+						 ]`
 
 const payloadSearch = `[
-            {
-              "pageNumber": 1,
-              "pageSize": 500,
-              "query": "default",
-              "results": [
-                {
-                  "account": "account1",
-                  "group": "pod",
-                  "kubernetesKind": "pod",
-                  "name": "pod test-name1",
-                  "namespace": "default",
-                  "provider": "kubernetes",
-                  "region": "default",
-                  "type": "instances"
-                },
-                {
-                  "account": "account1",
-                  "group": "pod",
-                  "kubernetesKind": "pod",
-                  "name": "pod test-name2",
-                  "namespace": "default",
-                  "provider": "kubernetes",
-                  "region": "default",
-                  "type": "instances"
-                },
-                {
-                  "account": "account2",
-                  "group": "pod",
-                  "kubernetesKind": "pod",
-                  "name": "pod test-name1",
-                  "namespace": "default",
-                  "provider": "kubernetes",
-                  "region": "default",
-                  "type": "instances"
-                },
-                {
-                  "account": "account2",
-                  "group": "pod",
-                  "kubernetesKind": "pod",
-                  "name": "pod test-name2",
-                  "namespace": "default",
-                  "provider": "kubernetes",
-                  "region": "default",
-                  "type": "instances"
-                }
-              ],
-              "totalMatches": 4
-            }
-          ]`
-
-const payloadSearchWithPageSizeThree = `[
-            {
-              "pageNumber": 1,
-              "pageSize": 3,
-              "query": "default",
-              "results": [
-                {
-                  "account": "account1",
-                  "group": "pod",
-                  "kubernetesKind": "pod",
-                  "name": "pod test-name1",
-                  "namespace": "default",
-                  "provider": "kubernetes",
-                  "region": "default",
-                  "type": "instances"
-                },
-                {
-                  "account": "account1",
-                  "group": "pod",
-                  "kubernetesKind": "pod",
-                  "name": "pod test-name2",
-                  "namespace": "default",
-                  "provider": "kubernetes",
-                  "region": "default",
-                  "type": "instances"
-                },
-                {
-                  "account": "account2",
-                  "group": "pod",
-                  "kubernetesKind": "pod",
-                  "name": "pod test-name1",
-                  "namespace": "default",
-                  "provider": "kubernetes",
-                  "region": "default",
-                  "type": "instances"
-                }
-              ],
-              "totalMatches": 3
-            }
-          ]`
+          {
+            "pageNumber": 1,
+            "pageSize": 500,
+            "query": "default",
+            "results": [
+              {
+                "account": "account1",
+                "group": "pod",
+                "kubernetesKind": "pod",
+                "name": "pod test-name",
+                "namespace": "default",
+                "provider": "kubernetes",
+                "region": "default",
+                "type": "instances"
+              }
+            ],
+            "totalMatches": 1
+          }
+        ]`
 
 const payloadManifestCoordinates = `{
             "kind": "test-kind",
