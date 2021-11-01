@@ -4,7 +4,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -59,6 +61,26 @@ var _ = Describe("RunJob", func() {
 		It("returns an error", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
 			Expect(c.Errors.Last().Error()).To(Equal("error creating resource"))
+		})
+	})
+
+	When("the manifest contains a docker image artifact", func() {
+		BeforeEach(func() {
+			runJobRequest.RequiredArtifacts = []clouddriver.Artifact{
+				{
+					Reference: "gcr.io/test-project/test-container-image:v1.0.0",
+					Name:      "gcr.io/test-project/test-container-image",
+					Type:      artifact.TypeDockerImage,
+				},
+			}
+		})
+
+		It("replaces the artifact reference", func() {
+			u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			j := kubernetes.NewJob(u.Object)
+			containers := j.Object().Spec.Template.Spec.Containers
+			Expect(containers).To(HaveLen(1))
+			Expect(containers[0].Image).To(Equal("gcr.io/test-project/test-container-image:v1.0.0"))
 		})
 	})
 

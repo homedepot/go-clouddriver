@@ -273,6 +273,18 @@ func newRunJobRequest() RunJobRequest {
 				"namespace":    "default",
 				"generateName": "test-",
 			},
+			"spec": map[string]interface{}{
+				"template": map[string]interface{}{
+					"spec": map[string]interface{}{
+						"containers": []interface{}{
+							map[string]interface{}{
+								"name":  "test-container-name",
+								"image": "gcr.io/test-project/test-container-image",
+							},
+						},
+					},
+				},
+			},
 		},
 		CloudProvider: "kubernetes",
 		Alias:         "alias",

@@ -194,22 +194,13 @@ type RollingRestartManifestRequest struct {
 }
 
 type RunJobRequest struct {
-	Account       string                 `json:"account"`
-	Alias         string                 `json:"alias"`
-	Application   string                 `json:"application"`
-	CloudProvider string                 `json:"cloudProvider"`
-	Manifest      map[string]interface{} `json:"manifest"`
-	// OptionalArtifacts []struct {
-	// 	Type       string `json:"type"`
-	// 	CustomKind bool   `json:"customKind"`
-	// 	Name       string `json:"name"`
-	// 	Version    string `json:"version"`
-	// 	Location   string `json:"location"`
-	// 	Reference  string `json:"reference"`
-	// 	Metadata   struct {
-	// 		Account string `json:"account"`
-	// 	} `json:"metadata"`
-	// } `json:"optionalArtifacts"`
+	Account           string                 `json:"account"`
+	Alias             string                 `json:"alias"`
+	Application       string                 `json:"application"`
+	CloudProvider     string                 `json:"cloudProvider"`
+	Manifest          map[string]interface{} `json:"manifest"`
+	RequiredArtifacts []clouddriver.Artifact `json:"requiredArtifacts"`
+	OptionalArtifacts []clouddriver.Artifact `json:"optionalArtifacts"`
 	// PreconfiguredJobParameters []struct {
 	// 	Mapping     string `json:"mapping"`
 	// 	Name        string `json:"name"`
@@ -220,10 +211,4 @@ type RunJobRequest struct {
 	// } `json:"preconfiguredJobParameters"`
 	// WaitForCompletion bool   `json:"waitForCompletion"`
 	// Source            string `json:"source"`
-	// Parameters        struct {
-	// 	IMAGEPATHS     string `json:"IMAGE_PATHS"`
-	// 	SOURCEREGISTRY string `json:"SOURCE_REGISTRY"`
-	// 	TARGETREGISTRY string `json:"TARGET_REGISTRY"`
-	// } `json:"parameters"`
-	// RequiredArtifacts []interface{} `json:"requiredArtifacts"`
 }
