@@ -228,7 +228,7 @@ var _ = Describe("Manifest", func() {
 				target = "oldest"
 			})
 
-			When("there are less than two resources returned", func() {
+			When("there is one resource returned", func() {
 				BeforeEach(func() {
 					fakeKubeClient.ListByGVRReturns(&unstructured.UnstructuredList{
 						Items: []unstructured.Unstructured{
@@ -239,6 +239,8 @@ var _ = Describe("Manifest", func() {
 											kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
 											kubernetes.AnnotationSpinnakerMonikerApplication: "wrong-application",
 										},
+										"name":      "test-name",
+										"namespace": "test-namespace",
 									},
 								},
 							},
@@ -249,6 +251,8 @@ var _ = Describe("Manifest", func() {
 											kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
 											kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
 										},
+										"name":      "test-name",
+										"namespace": "test-namespace",
 									},
 								},
 							},
@@ -256,12 +260,9 @@ var _ = Describe("Manifest", func() {
 					}, nil)
 				})
 
-				It("returns an error", func() {
-					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
-					ce := getClouddriverError()
-					Expect(ce.Error).To(HavePrefix("Bad Request"))
-					Expect(ce.Message).To(Equal("requested target \"Oldest\" for cluster deployment test-deployment, but only one resource was found"))
-					Expect(ce.Status).To(Equal(http.StatusBadRequest))
+				It("returns this resource", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadManifestCoordinates)
 				})
 			})
 
@@ -270,6 +271,68 @@ var _ = Describe("Manifest", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
 					validateResponse(payloadManifestCoordinates)
 				})
+			})
+		})
+
+		Context("target is smallest", func() {
+			BeforeEach(func() {
+				target = "smallest"
+			})
+
+			When("there is one resource returned", func() {
+				BeforeEach(func() {
+					fakeKubeClient.ListByGVRReturns(&unstructured.UnstructuredList{
+						Items: []unstructured.Unstructured{
+							{
+								Object: map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+											kubernetes.AnnotationSpinnakerMonikerApplication: "wrong-application",
+										},
+										"name":      "test-name",
+										"namespace": "test-namespace",
+									},
+								},
+							},
+							{
+								Object: map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"annotations": map[string]interface{}{
+											kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+											kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+										},
+										"name":      "test-name",
+										"namespace": "test-namespace",
+									},
+								},
+							},
+						},
+					}, nil)
+				})
+
+				It("returns this resource", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadManifestCoordinates)
+				})
+			})
+
+			When("it succeeds", func() {
+				It("succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadManifestCoordinates)
+				})
+			})
+		})
+
+		When("target is newest", func() {
+			BeforeEach(func() {
+				target = "newest"
+			})
+
+			It("succeeds", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadManifestCoordinates)
 			})
 		})
 
