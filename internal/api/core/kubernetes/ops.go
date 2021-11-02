@@ -69,29 +69,18 @@ type PatchManifestRequest struct {
 	Cluster  string `json:"cluster"`
 	Criteria string `json:"criteria"`
 	// Kind          string                         `json:"kind"`
-	ManifestName  string                         `json:"manifestName"`
-	Source        string                         `json:"source"`
-	Mode          string                         `json:"mode"`
-	PatchBody     json.RawMessage                `json:"patchBody"`
-	CloudProvider string                         `json:"cloudProvider"`
-	AllArtifacts  []PatchManifestRequestArtifact `json:"allArtifacts"`
-	Options       PatchManifestRequestOptions    `json:"options"`
+	ManifestName  string                      `json:"manifestName"`
+	Source        string                      `json:"source"`
+	Mode          string                      `json:"mode"`
+	PatchBody     json.RawMessage             `json:"patchBody"`
+	CloudProvider string                      `json:"cloudProvider"`
+	Options       PatchManifestRequestOptions `json:"options"`
 	// Manifests         []map[string]interface{}       `json:"manifests"`
-	Location string `json:"location"`
-	Account  string `json:"account"`
-	// RequiredArtifacts []interface{}                  `json:"requiredArtifacts"`
-}
-
-type PatchManifestRequestArtifact struct {
-	CustomKind bool   `json:"customKind"`
-	Reference  string `json:"reference"`
-	Metadata   struct {
-		Account string `json:"account"`
-	} `json:"metadata"`
-	Name     string `json:"name"`
-	Location string `json:"location"`
-	Type     string `json:"type"`
-	Version  string `json:"version"`
+	Location          string                 `json:"location"`
+	Account           string                 `json:"account"`
+	AllArtifacts      []clouddriver.Artifact `json:"allArtifacts"`
+	RequiredArtifacts []clouddriver.Artifact `json:"requiredArtifacts"`
+	OptionalArtifacts []clouddriver.Artifact `json:"optionalArtifacts"`
 }
 
 // Merge strategy can be "strategic", "json", or "merge".

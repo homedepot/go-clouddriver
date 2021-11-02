@@ -3,8 +3,8 @@ package kubernetes
 import (
 	"strings"
 
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"github.com/homedepot/go-clouddriver/internal/artifact"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 

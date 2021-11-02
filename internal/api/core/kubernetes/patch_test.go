@@ -6,7 +6,9 @@ import (
 	"net/http"
 
 	ops "github.com/homedepot/go-clouddriver/internal/api/core/kubernetes"
+	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -28,6 +30,42 @@ var _ = Describe("Patch", func() {
 		It("returns an error", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
 			Expect(c.Errors.Last().Error()).To(Equal("internal: error getting kubernetes provider spin-cluster-account: error getting provider"))
+		})
+	})
+
+	Context("when the manifest contains a docker image artifact", func() {
+		BeforeEach(func() {
+			patchManifestRequest.AllArtifacts = []clouddriver.Artifact{
+				{
+					Reference: "gcr.io/test-project/test-container-image:v1.0.0",
+					Name:      "gcr.io/test-project/test-container-image",
+					Type:      artifact.TypeDockerImage,
+				},
+			}
+		})
+
+		When("the patch body cannot be unmarshalled into map[string]interface{}", func() {
+			BeforeEach(func() {
+				patchManifestRequest.PatchBody = json.RawMessage(
+					`[
+					{
+						"op": "replace",
+						"path": "/spec/template/spec/containers/0/image",
+						"value": "test/docker/redis@1.0.0"
+					}
+				]`,
+				)
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("json: cannot unmarshal array into Go value of type map[string]interface {}"))
+			})
+		})
+
+		It("replaces the artifact reference", func() {
+			_, _, _, b, _ := fakeKubeClient.PatchUsingStrategyArgsForCall(0)
+			Expect(string(b)).To(Equal("{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"image\":\"gcr.io/test-project/test-container-image:v1.0.0\",\"name\":\"test-container-name\"}]}}}}"))
 		})
 	})
 
