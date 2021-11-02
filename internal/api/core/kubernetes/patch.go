@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -48,6 +49,29 @@ func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
+	}
+
+	// Only bind artifacts for "strategic" or "merge" strategy.
+	//
+	// See https://spinnaker.io/docs/guides/user/kubernetes-v2/patch-manifest/#override-artifacts
+	if pm.Options.MergeStrategy == "strategic" ||
+		pm.Options.MergeStrategy == "merge" {
+		m := map[string]interface{}{}
+		if err := json.Unmarshal(b, &m); err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+
+		u := unstructured.Unstructured{
+			Object: m,
+		}
+		kubernetes.BindArtifacts(&u, pm.AllArtifacts)
+
+		b, err = json.Marshal(&u.Object)
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
 	}
 
 	// Merge strategy can be "strategic", "json", or "merge".

@@ -1,6 +1,7 @@
 package kubernetes_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 
@@ -260,6 +261,22 @@ func newPatchManifestRequest() PatchManifestRequest {
 		Options: PatchManifestRequestOptions{
 			MergeStrategy: "strategic",
 		},
+		PatchBody: json.RawMessage(
+			`{
+        "spec": {
+          "template": {
+            "spec": {
+              "containers": [
+                {
+							    "name":  "test-container-name",
+							    "image": "gcr.io/test-project/test-container-image"
+                }
+              ]
+            }
+          }
+        }
+      }`,
+		),
 	}
 }
 
