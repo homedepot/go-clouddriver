@@ -52,6 +52,8 @@ func (cc *Controller) RunJob(c *gin.Context, rj RunJobRequest) {
 		namespace = *provider.Namespace
 	}
 
+	kubernetes.BindArtifacts(&u, append(rj.RequiredArtifacts, rj.OptionalArtifacts...))
+
 	meta, err := provider.Client.ApplyWithNamespaceOverride(&u, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
