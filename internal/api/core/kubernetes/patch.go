@@ -57,7 +57,6 @@ func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 	if pm.Options.MergeStrategy == "strategic" ||
 		pm.Options.MergeStrategy == "merge" {
 		m := map[string]interface{}{}
-
 		if err := json.Unmarshal(b, &m); err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
