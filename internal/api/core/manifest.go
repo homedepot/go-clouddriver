@@ -148,9 +148,10 @@ func (cc *Controller) GetManifestByTarget(c *gin.Context) {
 	var result = items[0]
 
 	// Target can be newest, second_newest, oldest, largest, smallest.
-	// TODO fill in for largest and smallest targets.
+	//
+	// Java source code here: https://github.com/spinnaker/clouddriver/blob/0fb3e75faa586f213a39c9fd4145f08e519b2e97/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/controllers/ManifestController.java#L132-L148
 	switch strings.ToLower(target) {
-	case "newest":
+	case "newest", "largest":
 		result = items[0]
 	case "second_newest":
 		if len(items) < 2 {
@@ -160,13 +161,7 @@ func (cc *Controller) GetManifestByTarget(c *gin.Context) {
 		}
 
 		result = items[1]
-	case "oldest":
-		if len(items) < 2 {
-			clouddriver.Error(c, http.StatusBadRequest,
-				errors.New("requested target \"Oldest\" for cluster "+cluster+", but only one resource was found"))
-			return
-		}
-
+	case "oldest", "smallest":
 		result = items[len(items)-1]
 	default:
 		clouddriver.Error(c, http.StatusNotImplemented,
