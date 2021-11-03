@@ -13,6 +13,7 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var (
@@ -85,14 +86,14 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 	c.JSON(http.StatusOK, kmr)
 }
 
-func (cc *Controller) GetManifestByTarget(c *gin.Context) {
+func (cc *Controller) GetManifestByCriteria(c *gin.Context) {
 	account := c.Param("account")
 	application := c.Param("application")
 	namespace := c.Param("location")
 	kind := c.Param("kind")
 	cluster := c.Param("cluster")
-	// Target can be newest, second_newest, oldest, largest, smallest.
-	target := c.Param("target")
+	// Criteria can be newest, second_newest, oldest, largest, smallest.
+	criteria := c.Param("criteria")
 
 	// Sometimes a full kind such as MutatingWebhookConfiguration.admissionregistration.k8s.io
 	// is passed in - this is the current fix for that...
@@ -140,19 +141,18 @@ func (cc *Controller) GetManifestByTarget(c *gin.Context) {
 		return
 	}
 
-	// For now, we sort on creation timestamp to grab the manifest.
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].GetCreationTimestamp().String() > items[j].GetCreationTimestamp().String()
-	})
+	sortAscending(items, criteria)
 
-	var result = items[0]
+	var manifest unstructured.Unstructured
 
-	// Target can be newest, second_newest, oldest, largest, smallest.
+	// Criteria can be newest, second_newest, oldest, largest, smallest.
 	//
 	// Java source code here: https://github.com/spinnaker/clouddriver/blob/0fb3e75faa586f213a39c9fd4145f08e519b2e97/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/controllers/ManifestController.java#L132-L148
-	switch strings.ToLower(target) {
+	switch criteria {
+	case "oldest", "smallest":
+		manifest = items[0]
 	case "newest", "largest":
-		result = items[0]
+		manifest = items[len(items)-1]
 	case "second_newest":
 		if len(items) < 2 {
 			clouddriver.Error(c, http.StatusBadRequest,
@@ -160,22 +160,42 @@ func (cc *Controller) GetManifestByTarget(c *gin.Context) {
 			return
 		}
 
-		result = items[1]
-	case "oldest", "smallest":
-		result = items[len(items)-1]
+		manifest = items[len(items)-2]
 	default:
-		clouddriver.Error(c, http.StatusNotImplemented,
-			errors.New("requested target \""+target+"\" for cluster "+cluster+" is not supported"))
+		clouddriver.Error(c, http.StatusBadRequest,
+			fmt.Errorf("unknown criteria: %s", criteria))
 		return
 	}
 
 	mcr := ops.ManifestCoordinatesResponse{
 		Kind:      kind,
-		Name:      result.GetName(),
-		Namespace: result.GetNamespace(),
+		Name:      manifest.GetName(),
+		Namespace: manifest.GetNamespace(),
 	}
 
 	c.JSON(http.StatusOK, mcr)
+}
+
+// sortAscending sorts an unstructured slice ascending based on criteria. For criteria
+// of 'oldest', 'newest', and 'second_newest', it sorts by age: creation timestamp ascending.
+// For criteria of 'largest' and 'smallest' it sorts by number of replicas at the JSON path
+// `.spec.replicas`.
+//
+// Java source code comparators here: https://github.com/spinnaker/clouddriver/blob/0fb3e75faa586f213a39c9fd4145f08e519b2e97/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/op/handler/KubernetesHandler.java#L172
+func sortAscending(ul []unstructured.Unstructured, criteria string) {
+	switch criteria {
+	case "oldest", "newest", "second_newest":
+		sort.Slice(ul, func(i, j int) bool {
+			return ul[i].GetCreationTimestamp().String() < ul[j].GetCreationTimestamp().String()
+		})
+	case "largest", "smallest":
+		sort.Slice(ul, func(i, j int) bool {
+			ir, _, _ := unstructured.NestedInt64(ul[i].Object, "spec", "replicas")
+			jr, _, _ := unstructured.NestedInt64(ul[j].Object, "spec", "replicas")
+
+			return ir < jr
+		})
+	}
 }
 
 // ListManifestsByCluster returns a list of manifest coordinates

@@ -99,12 +99,135 @@ var _ = Describe("Manifest", func() {
 		})
 	})
 
-	Describe("#GetManifestByTarget", func() {
-		var target string
+	Describe("#GetManifestByCriteria", func() {
+		var criteria string
 
 		BeforeEach(func() {
 			setup()
-			target = "newest"
+			fakeKubeClient.ListByGVRReturns(&unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]interface{}{
+							"kind": "ReplicaSet",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+									kubernetes.AnnotationSpinnakerMonikerApplication: "wrong-application",
+								},
+								"creationTimestamp": "2021-01-14T12:28:23Z",
+								"name":              "rs-wrong-application",
+								"namespace":         "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"replicas": int64(1),
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind": "ReplicaSet",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+									kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+								},
+								"creationTimestamp": "2021-03-14T12:28:23Z",
+								"name":              "rs-second-newest",
+								"namespace":         "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"replicas": int64(2),
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind": "ReplicaSet",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+									kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+								},
+								"creationTimestamp": "2021-02-14T12:28:23Z",
+								"name":              "rs-oldest",
+								"namespace":         "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"replicas": int64(2),
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind": "ReplicaSet",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+									kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+								},
+								"creationTimestamp": "2021-04-14T12:28:23Z",
+								"name":              "rs-newest",
+								"namespace":         "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"replicas": int64(2),
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind": "ReplicaSet",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+									kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+								},
+								"creationTimestamp": "2021-02-20T12:28:23Z",
+								"name":              "rs-smallest",
+								"namespace":         "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"replicas": int64(1),
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind": "ReplicaSet",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+									kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+								},
+								"creationTimestamp": "2021-02-20T12:28:23Z",
+								"name":              "rs-largest",
+								"namespace":         "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"replicas": int64(4),
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind": "ReplicaSet",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									kubernetes.AnnotationSpinnakerMonikerCluster:     "deployment test-deployment",
+									kubernetes.AnnotationSpinnakerMonikerApplication: "test-application",
+								},
+								"creationTimestamp": "2021-02-20T12:28:23Z",
+								"name":              "rs-second-largest",
+								"namespace":         "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"replicas": int64(3),
+							},
+						},
+					},
+				},
+			}, nil)
+			criteria = "newest"
 		})
 
 		AfterEach(func() {
@@ -112,7 +235,7 @@ var _ = Describe("Manifest", func() {
 		})
 
 		JustBeforeEach(func() {
-			uri = svr.URL + "/manifests/test-account/test-namespace/test-kind/cluster/test-application/deployment test-deployment/dynamic/" + target
+			uri = svr.URL + "/manifests/test-account/test-namespace/test-kind/cluster/test-application/deployment test-deployment/dynamic/" + criteria
 			createRequest(http.MethodGet)
 			doRequest()
 		})
@@ -173,9 +296,9 @@ var _ = Describe("Manifest", func() {
 			})
 		})
 
-		Context("target is second_newest", func() {
+		Context("criteria is second_newest", func() {
 			BeforeEach(func() {
-				target = "second_newest"
+				criteria = "second_newest"
 			})
 
 			When("there are less than two resources returned", func() {
@@ -218,14 +341,18 @@ var _ = Describe("Manifest", func() {
 			When("it succeeds", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
-					validateResponse(payloadManifestCoordinates)
+					validateResponse(`{
+            "kind": "test-kind",
+            "name": "rs-second-newest",
+            "namespace": "test-namespace"
+          }`)
 				})
 			})
 		})
 
-		Context("target is oldest", func() {
+		Context("criteria is oldest", func() {
 			BeforeEach(func() {
-				target = "oldest"
+				criteria = "oldest"
 			})
 
 			When("there is one resource returned", func() {
@@ -269,14 +396,18 @@ var _ = Describe("Manifest", func() {
 			When("it succeeds", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
-					validateResponse(payloadManifestCoordinates)
+					validateResponse(`{
+            "kind": "test-kind",
+            "name": "rs-oldest",
+            "namespace": "test-namespace"
+          }`)
 				})
 			})
 		})
 
-		Context("target is smallest", func() {
+		Context("criteria is smallest", func() {
 			BeforeEach(func() {
-				target = "smallest"
+				criteria = "smallest"
 			})
 
 			When("there is one resource returned", func() {
@@ -315,47 +446,61 @@ var _ = Describe("Manifest", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
 					validateResponse(payloadManifestCoordinates)
 				})
-			})
-
-			When("it succeeds", func() {
-				It("succeeds", func() {
-					Expect(res.StatusCode).To(Equal(http.StatusOK))
-					validateResponse(payloadManifestCoordinates)
-				})
-			})
-		})
-
-		When("target is newest", func() {
-			BeforeEach(func() {
-				target = "newest"
 			})
 
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				validateResponse(payloadManifestCoordinates)
+				validateResponse(`{
+            "kind": "test-kind",
+            "name": "rs-smallest",
+            "namespace": "test-namespace"
+          }`)
 			})
 		})
 
-		Context("the target is not supported", func() {
+		Context("the criteria is not supported", func() {
 			BeforeEach(func() {
-				target = "not_supported"
+				criteria = "not_supported"
 			})
 
 			When("returns an error", func() {
 				It("succeeds", func() {
-					Expect(res.StatusCode).To(Equal(http.StatusNotImplemented))
+					Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
 					ce := getClouddriverError()
-					Expect(ce.Error).To(HavePrefix("Not Implemented"))
-					Expect(ce.Message).To(Equal("requested target \"not_supported\" for cluster deployment test-deployment is not supported"))
-					Expect(ce.Status).To(Equal(http.StatusNotImplemented))
+					Expect(ce.Error).To(HavePrefix("Bad Request"))
+					Expect(ce.Message).To(Equal("unknown criteria: not_supported"))
+					Expect(ce.Status).To(Equal(http.StatusBadRequest))
 				})
 			})
 		})
 
-		When("it succeeds", func() {
+		When("criteria is newest", func() {
+			BeforeEach(func() {
+				criteria = "newest"
+			})
+
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				validateResponse(payloadManifestCoordinates)
+				validateResponse(`{
+            "kind": "test-kind",
+            "name": "rs-newest",
+            "namespace": "test-namespace"
+          }`)
+			})
+		})
+
+		When("criteria is largest", func() {
+			BeforeEach(func() {
+				criteria = "largest"
+			})
+
+			It("succeeds", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(`{
+            "kind": "test-kind",
+            "name": "rs-largest",
+            "namespace": "test-namespace"
+          }`)
 			})
 		})
 	})
