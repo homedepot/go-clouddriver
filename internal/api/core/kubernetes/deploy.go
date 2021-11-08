@@ -82,7 +82,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			manifest.SetName(generateName + rand.String(randNameNumber))
 		}
 
-		err = kubernetes.AddSpinnakerAnnotations(&manifest, application)
+		err = kubernetes.AddSpinnakerAnnotations(&manifest, application, namespace)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
