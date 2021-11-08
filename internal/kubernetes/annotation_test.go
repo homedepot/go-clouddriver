@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/homedepot/go-clouddriver/internal/kubernetes"
 )
 
@@ -13,13 +14,21 @@ var _ = Describe("Annotation", func() {
 		u           unstructured.Unstructured
 		err         error
 		application string
+		namespace   string
 		version     SpinnakerVersion
 		m           map[string]interface{}
 	)
 
 	Context("#AddSpinnakerAnnotations", func() {
+		BeforeEach(func() {
+			application = "test-application"
+			namespace = ""
+		})
+
 		JustBeforeEach(func() {
-			AddSpinnakerAnnotations(&u, application)
+			u, err = ToUnstructured(m)
+			Expect(err).To(BeNil())
+			AddSpinnakerAnnotations(&u, application, namespace)
 		})
 
 		When("the object is a deployment", func() {
@@ -32,9 +41,6 @@ var _ = Describe("Annotation", func() {
 						"name":      "test-name",
 					},
 				}
-				u, err = ToUnstructured(m)
-				Expect(err).To(BeNil())
-				application = "test-application"
 			})
 
 			It("adds the annotations", func() {
@@ -55,7 +61,7 @@ var _ = Describe("Annotation", func() {
 
 			Context("template annotations already exist", func() {
 				BeforeEach(func() {
-					m := map[string]interface{}{
+					m = map[string]interface{}{
 						"kind":       "Deployment",
 						"apiVersion": "apps/v1",
 						"metadata": map[string]interface{}{
@@ -78,9 +84,6 @@ var _ = Describe("Annotation", func() {
 							},
 						},
 					}
-					u, err = ToUnstructured(m)
-					Expect(err).To(BeNil())
-					application = "test-application"
 				})
 
 				It("keeps the original annotations", func() {
@@ -113,9 +116,6 @@ var _ = Describe("Annotation", func() {
 						"name":      "test-name",
 					},
 				}
-				u, err = ToUnstructured(m)
-				Expect(err).To(BeNil())
-				application = "test-application"
 			})
 
 			It("adds the annotations", func() {
@@ -136,7 +136,7 @@ var _ = Describe("Annotation", func() {
 
 			Context("template annotations already exist", func() {
 				BeforeEach(func() {
-					m := map[string]interface{}{
+					m = map[string]interface{}{
 						"kind":       "ReplicaSet",
 						"apiVersion": "apps/v1",
 						"metadata": map[string]interface{}{
@@ -156,9 +156,6 @@ var _ = Describe("Annotation", func() {
 							},
 						},
 					}
-					u, err = ToUnstructured(m)
-					Expect(err).To(BeNil())
-					application = "test-application"
 				})
 
 				It("keeps the original annotations", func() {
@@ -191,9 +188,6 @@ var _ = Describe("Annotation", func() {
 						"name":      "test-name",
 					},
 				}
-				u, err = ToUnstructured(m)
-				Expect(err).To(BeNil())
-				application = "test-application"
 			})
 
 			It("adds the annotations", func() {
@@ -214,7 +208,7 @@ var _ = Describe("Annotation", func() {
 
 			Context("template annotations already exist", func() {
 				BeforeEach(func() {
-					m := map[string]interface{}{
+					m = map[string]interface{}{
 						"kind":       "DaemonSet",
 						"apiVersion": "apps/v1",
 						"metadata": map[string]interface{}{
@@ -234,9 +228,6 @@ var _ = Describe("Annotation", func() {
 							},
 						},
 					}
-					u, err = ToUnstructured(m)
-					Expect(err).To(BeNil())
-					application = "test-application"
 				})
 
 				It("keeps the original annotations", func() {
@@ -255,6 +246,135 @@ var _ = Describe("Annotation", func() {
 					Expect(templateAnnotations[AnnotationSpinnakerArtifactType]).To(Equal("kubernetes/daemonSet"))
 					Expect(templateAnnotations[AnnotationSpinnakerMonikerApplication]).To(Equal(application))
 					Expect(templateAnnotations[AnnotationSpinnakerMonikerCluster]).To(Equal("daemonSet test-name"))
+				})
+			})
+		})
+
+		Context("annotating 'artifact.spinnaker.io/location'", func() {
+			When("the kind is namespace-scoped and the namespace is not set", func() {
+				BeforeEach(func() {
+					m = map[string]interface{}{
+						"kind":       "DaemonSet",
+						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"name": "test-name",
+						},
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"annotations": map[string]interface{}{
+										"annotation1": "value1",
+										"annotation2": "value2",
+									},
+									"namespace": "default",
+									"name":      "test-name",
+								},
+							},
+						},
+					}
+				})
+
+				It("annotates the object accordingly", func() {
+					annotations := u.GetAnnotations()
+					Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("default"))
+				})
+			})
+
+			When("the kind is namespace-scoped and the namespace is set", func() {
+				BeforeEach(func() {
+					m = map[string]interface{}{
+						"kind":       "DaemonSet",
+						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"name":      "test-name",
+							"namespace": "test-namespace",
+						},
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"annotations": map[string]interface{}{
+										"annotation1": "value1",
+										"annotation2": "value2",
+									},
+									"namespace": "default",
+									"name":      "test-name",
+								},
+							},
+						},
+					}
+				})
+
+				It("annotates the object accordingly", func() {
+					annotations := u.GetAnnotations()
+					Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("test-namespace"))
+				})
+			})
+
+			When("the kind is namespace-scoped and the namespace is overridden", func() {
+				BeforeEach(func() {
+					m = map[string]interface{}{
+						"kind":       "DaemonSet",
+						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"name":      "test-name",
+							"namespace": "test-namespace",
+						},
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"annotations": map[string]interface{}{
+										"annotation1": "value1",
+										"annotation2": "value2",
+									},
+									"namespace": "default",
+									"name":      "test-name",
+								},
+							},
+						},
+					}
+					namespace = "overridden-namespace"
+				})
+
+				It("annotates the object accordingly", func() {
+					annotations := u.GetAnnotations()
+					Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("overridden-namespace"))
+				})
+			})
+
+			When("the kind is not namespace-scoped", func() {
+				BeforeEach(func() {
+					m = map[string]interface{}{
+						"kind":       "ClusterRole",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"name": "test-name",
+						},
+					}
+				})
+
+				It("leaves the 'artifact.spinnaker.io/location' annotation empty", func() {
+					annotations := u.GetAnnotations()
+					Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).ToNot(BeNil())
+					Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(BeEmpty())
+				})
+			})
+
+			When("the kind is not namespace-scoped and a namespace override is passed in", func() {
+				BeforeEach(func() {
+					m = map[string]interface{}{
+						"kind":       "ClusterRole",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"name": "test-name",
+						},
+					}
+					namespace = "overridden-namespace"
+				})
+
+				It("leaves the 'artifact.spinnaker.io/location' annotation empty", func() {
+					annotations := u.GetAnnotations()
+					Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).ToNot(BeNil())
+					Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(BeEmpty())
 				})
 			})
 		})

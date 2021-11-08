@@ -113,4 +113,69 @@ var _ = Describe("RunJob", func() {
 			Expect(name).To(HaveLen(10))
 		})
 	})
+
+	Context("annotating 'artifact.spinnaker.io/location'", func() {
+		When("the namespace is not set", func() {
+			BeforeEach(func() {
+				runJobRequest.Manifest = map[string]interface{}{
+					"kind":       "Job",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"generateName": "test-",
+					},
+					"spec": map[string]interface{}{
+						"template": map[string]interface{}{
+							"spec": map[string]interface{}{
+								"containers": []interface{}{
+									map[string]interface{}{
+										"name":  "test-container-name",
+										"image": "gcr.io/test-project/test-container-image",
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("annotates the object accordingly", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				annotations := u.GetAnnotations()
+				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("default"))
+			})
+		})
+
+		When("the namespace is set", func() {
+			BeforeEach(func() {
+				runJobRequest.Manifest = map[string]interface{}{
+					"kind":       "Job",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"generateName": "test-",
+						"namespace":    "test-namespace",
+					},
+					"spec": map[string]interface{}{
+						"template": map[string]interface{}{
+							"spec": map[string]interface{}{
+								"containers": []interface{}{
+									map[string]interface{}{
+										"name":  "test-container-name",
+										"image": "gcr.io/test-project/test-container-image",
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("annotates the object accordingly", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				annotations := u.GetAnnotations()
+				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("test-namespace"))
+			})
+		})
+	})
 })

@@ -744,4 +744,77 @@ var _ = Describe("Deploy", func() {
 			})
 		})
 	})
+
+	Context("annotating 'artifact.spinnaker.io/location'", func() {
+		When("the kind is namespace-scoped and the namespace is not set", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "Pod",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name": "test-name",
+							},
+						},
+					},
+				}
+			})
+
+			It("annotates the object accordingly", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				annotations := u.GetAnnotations()
+				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("default"))
+			})
+		})
+
+		When("the kind is namespace scoped and the namespace is set", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "Pod",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-name",
+								"namespace": "test-namespace",
+							},
+						},
+					},
+				}
+			})
+
+			It("annotates the object accordingly", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				annotations := u.GetAnnotations()
+				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("test-namespace"))
+			})
+		})
+
+		When("the kind is not namespace-scoped", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "ClusterRole",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name": "test-name",
+							},
+						},
+					},
+				}
+			})
+
+			It("leaves the 'artifact.spinnaker.io/location' annotation empty", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				annotations := u.GetAnnotations()
+				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).ToNot(BeNil())
+				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(BeEmpty())
+			})
+		})
+	})
 })

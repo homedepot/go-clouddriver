@@ -28,7 +28,12 @@ func (cc *Controller) RunJob(c *gin.Context, rj RunJobRequest) {
 		return
 	}
 
-	err = kube.AddSpinnakerAnnotations(&u, rj.Application)
+	namespace := u.GetNamespace()
+	if provider.Namespace != nil {
+		namespace = *provider.Namespace
+	}
+
+	err = kube.AddSpinnakerAnnotations(&u, rj.Application, namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -45,11 +50,6 @@ func (cc *Controller) RunJob(c *gin.Context, rj RunJobRequest) {
 
 	if name == "" && generateName != "" {
 		u.SetName(generateName + rand.String(randNameNumber))
-	}
-
-	namespace := u.GetNamespace()
-	if provider.Namespace != nil {
-		namespace = *provider.Namespace
 	}
 
 	kubernetes.BindArtifacts(&u, append(rj.RequiredArtifacts, rj.OptionalArtifacts...))
