@@ -3031,6 +3031,21 @@ var _ = Describe("Application", func() {
 			doRequest()
 		})
 
+		When("name parameter is malformed", func() {
+			BeforeEach(func() {
+				uri = svr.URL + "/applications/test-application/serverGroups/test-account/test-namespace/invalid"
+				createRequest(http.MethodGet)
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
+				Expect(ce.Message).To(Equal("name parameter must be in the format of 'kind name', got: invalid"))
+				Expect(ce.Status).To(Equal(http.StatusBadRequest))
+			})
+		})
+
 		When("getting the provider returns an error", func() {
 			BeforeEach(func() {
 				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
@@ -3129,6 +3144,21 @@ var _ = Describe("Application", func() {
 
 		JustBeforeEach(func() {
 			doRequest()
+		})
+
+		When("name parameter is malformed", func() {
+			BeforeEach(func() {
+				uri = svr.URL + "/applications/test-application/jobs/test-account/test-namespace/invalid"
+				createRequest(http.MethodGet)
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
+				Expect(ce.Message).To(Equal("name parameter must be in the format of 'kind name', got: invalid"))
+				Expect(ce.Status).To(Equal(http.StatusBadRequest))
+			})
 		})
 
 		When("getting the provider returns an error", func() {

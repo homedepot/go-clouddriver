@@ -1132,6 +1132,12 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 	application := c.Param("application")
 	location := c.Param("location")
 	nameArray := strings.Split(c.Param("name"), " ")
+
+	if len(nameArray) != 2 {
+		clouddriver.Error(c, http.StatusBadRequest, fmt.Errorf("name parameter must be in the format of 'kind name', got: %s", c.Param("name")))
+		return
+	}
+
 	kind := nameArray[0]
 	name := nameArray[1]
 
@@ -1326,6 +1332,12 @@ func (cc *Controller) GetJob(c *gin.Context) {
 	// application := c.Param("application")
 	location := c.Param("location")
 	nameArray := strings.Split(c.Param("name"), " ")
+
+	if len(nameArray) != 2 {
+		clouddriver.Error(c, http.StatusBadRequest, fmt.Errorf("name parameter must be in the format of 'kind name', got: %s", c.Param("name")))
+		return
+	}
+
 	kind := nameArray[0]
 	name := nameArray[1]
 
