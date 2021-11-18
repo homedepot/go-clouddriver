@@ -54,7 +54,7 @@ var _ = Describe("Scale", func() {
 
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
+			fakeKubeClient.ApplyReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
 		})
 
 		It("returns an error", func() {
@@ -108,9 +108,10 @@ var _ = Describe("Scale", func() {
 	When("it succeeds", func() {
 		It("succeeds", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-			u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			_, _, namespace := fakeKubeClient.GetArgsForCall(0)
+			Expect(namespace).To(Equal(""))
+			u := fakeKubeClient.ApplyArgsForCall(0)
 			b, _ := json.Marshal(&u)
-			Expect(string(namespace)).To(Equal(""))
 			Expect(string(b)).To(Equal("{\"spec\":{\"replicas\":16}}"))
 		})
 	})
@@ -134,9 +135,10 @@ var _ = Describe("Scale", func() {
 		When("the kind is supported", func() {
 			It("succeeds", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				_, _, namespace := fakeKubeClient.GetArgsForCall(0)
+				Expect(namespace).To(Equal("provider-namespace"))
+				u := fakeKubeClient.ApplyArgsForCall(0)
 				b, _ := json.Marshal(&u)
-				Expect(string(namespace)).To(Equal("provider-namespace"))
 				Expect(string(b)).To(Equal("{\"spec\":{\"replicas\":16}}"))
 			})
 		})

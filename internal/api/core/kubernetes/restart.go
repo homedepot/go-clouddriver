@@ -58,7 +58,7 @@ func (cc *Controller) RollingRestart(c *gin.Context, rr RollingRestartManifestRe
 			return
 		}
 
-		meta, err = provider.Client.ApplyWithNamespaceOverride(u, namespace)
+		meta, err = provider.Client.Apply(u)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return

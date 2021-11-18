@@ -60,7 +60,7 @@ func (cc *Controller) Scale(c *gin.Context, sm ScaleManifestRequest) {
 			return
 		}
 
-		meta, err = provider.Client.ApplyWithNamespaceOverride(u, namespace)
+		meta, err = provider.Client.Apply(u)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
