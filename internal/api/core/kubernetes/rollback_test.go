@@ -89,7 +89,7 @@ var _ = Describe("Rollback", func() {
 
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
+			fakeKubeClient.ApplyReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
 		})
 
 		It("returns an error", func() {
@@ -283,9 +283,9 @@ var _ = Describe("Rollback", func() {
 	When("it succeeds", func() {
 		It("succeeds", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-			u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			u := fakeKubeClient.ApplyArgsForCall(0)
 			b, _ := json.Marshal(&u)
-			Expect(string(namespace)).To(Equal(""))
+			Expect(u.GetNamespace()).To(Equal(""))
 			Expect(string(b)).To(Equal("{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/name\":\"test-deployment\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\",\"moniker.spinnaker.io/application\":\"test-app\"},\"creationTimestamp\":null},\"spec\":{\"selector\":null,\"strategy\":{},\"template\":{\"metadata\":{\"creationTimestamp\":null},\"spec\":{\"containers\":null}}},\"status\":{}}"))
 		})
 	})
@@ -331,9 +331,10 @@ var _ = Describe("Rollback", func() {
 		When("the kind is supported", func() {
 			It("succeeds", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				_, _, namespace := fakeKubeClient.GetArgsForCall(0)
+				Expect(namespace).To(Equal("provider-namespace"))
+				u := fakeKubeClient.ApplyArgsForCall(0)
 				b, _ := json.Marshal(&u)
-				Expect(string(namespace)).To(Equal("provider-namespace"))
 				Expect(string(b)).To(Equal("{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/name\":\"test-deployment\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\",\"moniker.spinnaker.io/application\":\"test-app\"},\"creationTimestamp\":null},\"spec\":{\"selector\":null,\"strategy\":{},\"template\":{\"metadata\":{\"creationTimestamp\":null},\"spec\":{\"containers\":null}}},\"status\":{}}"))
 			})
 		})

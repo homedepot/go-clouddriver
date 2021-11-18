@@ -44,7 +44,7 @@ var _ = Describe("RunJob", func() {
 
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
+			fakeKubeClient.ApplyReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
 		})
 
 		It("returns an error", func() {
@@ -76,7 +76,7 @@ var _ = Describe("RunJob", func() {
 		})
 
 		It("replaces the artifact reference", func() {
-			u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			u := fakeKubeClient.ApplyArgsForCall(0)
 			j := kubernetes.NewJob(u.Object)
 			containers := j.Object().Spec.Template.Spec.Containers
 			Expect(containers).To(HaveLen(1))
@@ -91,9 +91,8 @@ var _ = Describe("RunJob", func() {
 
 		It("generates the name correctly", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-			u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			u := fakeKubeClient.ApplyArgsForCall(0)
 			name := u.GetName()
-			Expect(string(namespace)).To(Equal("default"))
 			Expect(name).To(HavePrefix("test-"))
 			Expect(name).To(HaveLen(10))
 		})
@@ -106,9 +105,9 @@ var _ = Describe("RunJob", func() {
 
 		It("succeeds, using providers namespace", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-			u, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			u := fakeKubeClient.ApplyArgsForCall(0)
+			Expect(u.GetNamespace()).To(Equal("provider-namespace"))
 			name := u.GetName()
-			Expect(string(namespace)).To(Equal("provider-namespace"))
 			Expect(name).To(HavePrefix("test-"))
 			Expect(name).To(HaveLen(10))
 		})
@@ -140,7 +139,7 @@ var _ = Describe("RunJob", func() {
 
 			It("annotates the object accordingly", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				u := fakeKubeClient.ApplyArgsForCall(0)
 				annotations := u.GetAnnotations()
 				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("default"))
 			})
@@ -172,7 +171,7 @@ var _ = Describe("RunJob", func() {
 
 			It("annotates the object accordingly", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				u := fakeKubeClient.ApplyArgsForCall(0)
 				annotations := u.GetAnnotations()
 				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("test-namespace"))
 			})

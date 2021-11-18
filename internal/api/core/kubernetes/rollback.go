@@ -153,7 +153,7 @@ func (cc *Controller) Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 		return
 	}
 
-	meta, err := provider.Client.ApplyWithNamespaceOverride(&u, namespace)
+	meta, err := provider.Client.Apply(&u)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

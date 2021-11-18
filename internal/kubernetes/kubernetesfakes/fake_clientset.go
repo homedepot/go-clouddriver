@@ -35,16 +35,15 @@ func (fake *FakeClientset) PodLogs(arg1 string, arg2 string, arg3 string) (strin
 		arg2 string
 		arg3 string
 	}{arg1, arg2, arg3})
-	stub := fake.PodLogsStub
-	fakeReturns := fake.podLogsReturns
 	fake.recordInvocation("PodLogs", []interface{}{arg1, arg2, arg3})
 	fake.podLogsMutex.Unlock()
-	if stub != nil {
-		return stub(arg1, arg2, arg3)
+	if fake.PodLogsStub != nil {
+		return fake.PodLogsStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
+	fakeReturns := fake.podLogsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

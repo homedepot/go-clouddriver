@@ -109,7 +109,7 @@ var _ = Describe("Deploy", func() {
 
 			It("merges the list items", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.ApplyWithNamespaceOverrideCallCount()).To(Equal(2))
+				Expect(fakeKubeClient.ApplyCallCount()).To(Equal(2))
 			})
 		})
 	})
@@ -131,7 +131,7 @@ var _ = Describe("Deploy", func() {
 
 		It("generates a unique name for the job", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-			u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			u := fakeKubeClient.ApplyArgsForCall(0)
 			Expect(u.GetKind()).To(Equal("Job"))
 			Expect(u.GetName()).ToNot(BeEmpty())
 			Expect(u.GetName()).To(HavePrefix("test-"))
@@ -174,7 +174,7 @@ var _ = Describe("Deploy", func() {
 		})
 
 		It("replaces the artifact reference", func() {
-			u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+			u := fakeKubeClient.ApplyArgsForCall(0)
 			p := kubernetes.NewPod(u.Object)
 			containers := p.Object().Spec.Containers
 			Expect(containers).To(HaveLen(1))
@@ -220,7 +220,7 @@ var _ = Describe("Deploy", func() {
 
 			It("it does not error", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				u := fakeKubeClient.ApplyArgsForCall(0)
 				actual, _, _ := unstructured.NestedInt64(u.Object, "spec", "replicas")
 				Expect(actual).To(Equal(int64(1)))
 			})
@@ -242,7 +242,7 @@ var _ = Describe("Deploy", func() {
 
 			It("sets replicas", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				u := fakeKubeClient.ApplyArgsForCall(0)
 				actual, _, _ := unstructured.NestedInt64(u.Object, "spec", "replicas")
 				Expect(actual).To(Equal(int64(2)))
 			})
@@ -460,6 +460,56 @@ var _ = Describe("Deploy", func() {
 			})
 		})
 
+		When("the load balancer is part of the current request's manifests and the namespace is overridden", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					NamespaceOverride: "test-namespace",
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"traffic.spinnaker.io/load-balancers": "[\"service test-service\"]",
+								},
+								"name":      "test-name",
+								"namespace": "test-1",
+							},
+							"spec": map[string]interface{}{
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"labelKey1": "labelValue1",
+											"labelKey2": "labelValue2",
+										},
+									},
+								},
+							},
+						},
+						{
+							"kind":       "Service",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-service",
+								"namespace": "test-2",
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]interface{}{
+									"selectorKey1": "selectorValue1",
+									"selectorKey2": "selectorValue2",
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("succeeds and does not call the cluster to get the load balancer", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetCallCount()).To(BeZero())
+			})
+		})
+
 		When("getting the load balancer from the cluster returns a not found error", func() {
 			BeforeEach(func() {
 				fakeKubeClient.GetReturns(nil, k8serrors.NewNotFound(schema.GroupResource{Group: "", Resource: "fake resource"}, "fake resource not found"))
@@ -558,7 +608,7 @@ var _ = Describe("Deploy", func() {
 
 			It("attaches the load balancer", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				u := fakeKubeClient.ApplyArgsForCall(0)
 				labels := u.GetLabels()
 				Expect(labels["labelKey1"]).To(Equal("labelValue1"))
 				Expect(labels["labelKey2"]).To(Equal("labelValue2"))
@@ -570,7 +620,7 @@ var _ = Describe("Deploy", func() {
 		When("it succeeds", func() {
 			It("attaches the load balancer", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				u := fakeKubeClient.ApplyArgsForCall(0)
 				labels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
 				Expect(labels["labelKey1"]).To(Equal("labelValue1"))
 				Expect(labels["labelKey2"]).To(Equal("labelValue2"))
@@ -582,7 +632,7 @@ var _ = Describe("Deploy", func() {
 
 	When("applying the manifest returns an error", func() {
 		BeforeEach(func() {
-			fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
+			fakeKubeClient.ApplyReturns(kubernetes.Metadata{}, errors.New("error applying manifest"))
 		})
 
 		It("returns an error", func() {
@@ -607,7 +657,7 @@ var _ = Describe("Deploy", func() {
 			kind := "deployment"
 
 			BeforeEach(func() {
-				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+				fakeKubeClient.ApplyReturns(kubernetes.Metadata{Kind: kind}, nil)
 			})
 
 			It("sets the cluster", func() {
@@ -621,7 +671,7 @@ var _ = Describe("Deploy", func() {
 			kind := "statefulSet"
 
 			BeforeEach(func() {
-				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+				fakeKubeClient.ApplyReturns(kubernetes.Metadata{Kind: kind}, nil)
 			})
 
 			It("sets the cluster", func() {
@@ -635,7 +685,7 @@ var _ = Describe("Deploy", func() {
 			kind := "replicaSet"
 
 			BeforeEach(func() {
-				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+				fakeKubeClient.ApplyReturns(kubernetes.Metadata{Kind: kind}, nil)
 			})
 
 			It("sets the cluster", func() {
@@ -649,7 +699,7 @@ var _ = Describe("Deploy", func() {
 			kind := "ingress"
 
 			BeforeEach(func() {
-				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+				fakeKubeClient.ApplyReturns(kubernetes.Metadata{Kind: kind}, nil)
 			})
 
 			It("sets the cluster", func() {
@@ -663,7 +713,7 @@ var _ = Describe("Deploy", func() {
 			kind := "service"
 
 			BeforeEach(func() {
-				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+				fakeKubeClient.ApplyReturns(kubernetes.Metadata{Kind: kind}, nil)
 			})
 
 			It("sets the cluster", func() {
@@ -677,7 +727,7 @@ var _ = Describe("Deploy", func() {
 			kind := "daemonSet"
 
 			BeforeEach(func() {
-				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+				fakeKubeClient.ApplyReturns(kubernetes.Metadata{Kind: kind}, nil)
 			})
 
 			It("sets the cluster", func() {
@@ -691,7 +741,7 @@ var _ = Describe("Deploy", func() {
 			kind := "pod"
 
 			BeforeEach(func() {
-				fakeKubeClient.ApplyWithNamespaceOverrideReturns(kubernetes.Metadata{Kind: kind}, nil)
+				fakeKubeClient.ApplyReturns(kubernetes.Metadata{Kind: kind}, nil)
 			})
 
 			It("does not set the cluster", func() {
@@ -705,8 +755,8 @@ var _ = Describe("Deploy", func() {
 	When("it succeeds", func() {
 		It("succeeds", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-			_, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
-			Expect(string(namespace)).To(Equal(""))
+			u := fakeKubeClient.ApplyArgsForCall(0)
+			Expect(string(u.GetNamespace())).To(Equal("default"))
 		})
 	})
 
@@ -739,8 +789,8 @@ var _ = Describe("Deploy", func() {
 		When("the kind is supported", func() {
 			It("succeeds", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				_, namespace := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
-				Expect(string(namespace)).To(Equal("provider-namespace"))
+				u := fakeKubeClient.ApplyArgsForCall(0)
+				Expect(string(u.GetNamespace())).To(Equal("provider-namespace"))
 			})
 		})
 	})
@@ -763,7 +813,7 @@ var _ = Describe("Deploy", func() {
 
 			It("annotates the object accordingly", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				u := fakeKubeClient.ApplyArgsForCall(0)
 				annotations := u.GetAnnotations()
 				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("default"))
 			})
@@ -787,7 +837,7 @@ var _ = Describe("Deploy", func() {
 
 			It("annotates the object accordingly", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				u := fakeKubeClient.ApplyArgsForCall(0)
 				annotations := u.GetAnnotations()
 				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("test-namespace"))
 			})
@@ -810,7 +860,7 @@ var _ = Describe("Deploy", func() {
 
 			It("leaves the 'artifact.spinnaker.io/location' annotation empty", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				u, _ := fakeKubeClient.ApplyWithNamespaceOverrideArgsForCall(0)
+				u := fakeKubeClient.ApplyArgsForCall(0)
 				annotations := u.GetAnnotations()
 				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).ToNot(BeNil())
 				Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(BeEmpty())

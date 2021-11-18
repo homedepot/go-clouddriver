@@ -57,6 +57,12 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 	}
 	// Sort the manifests by their kind's priority.
 	manifests = kubernetes.SortManifests(manifests)
+
+	// Set the namespace on all manifests.
+	for _, manifest := range manifests {
+		kubernetes.SetNamespaceOnManifest(&manifest, namespace)
+	}
+
 	application := dm.Moniker.App
 	// Consolidate all deploy manifest request artifacts.
 	artifacts := []clouddriver.Artifact{}
@@ -82,7 +88,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			manifest.SetName(generateName + rand.String(randNameNumber))
 		}
 
-		err = kubernetes.AddSpinnakerAnnotations(&manifest, application, namespace)
+		err = kubernetes.AddSpinnakerAnnotations(&manifest, application)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -105,7 +111,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		if kubernetes.UseSourceCapacity(manifest) {
-			err = handleUseSourceCapacity(provider.Client, &manifest, namespace)
+			err = handleUseSourceCapacity(provider.Client, &manifest)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -113,7 +119,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		}
 
 		if kubernetes.Recreate(manifest) {
-			err = handleRecreate(provider.Client, &manifest, dm.NamespaceOverride)
+			err = handleRecreate(provider.Client, &manifest)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -126,7 +132,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
-		meta, err := provider.Client.ApplyWithNamespaceOverride(&manifest, namespace)
+		meta, err := provider.Client.Apply(&manifest)
 		if err != nil {
 			e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
 				manifest.GetKind(), manifest.GroupVersionKind().Version, manifest.GetName(), err.Error())
@@ -262,8 +268,8 @@ func handleVersionedManifest(client kubernetes.Client, u *unstructured.Unstructu
 	return nil
 }
 
-func handleUseSourceCapacity(client kubernetes.Client, u *unstructured.Unstructured, namespace string) error {
-	current, err := client.Get(u.GetKind(), u.GetName(), namespace)
+func handleUseSourceCapacity(client kubernetes.Client, u *unstructured.Unstructured) error {
+	current, err := client.Get(u.GetKind(), u.GetName(), u.GetNamespace())
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return nil
@@ -290,8 +296,8 @@ func handleUseSourceCapacity(client kubernetes.Client, u *unstructured.Unstructu
 	return nil
 }
 
-func handleRecreate(kubeClient kubernetes.Client, u *unstructured.Unstructured, namespace string) error {
-	current, err := kubeClient.Get(u.GetKind(), u.GetName(), namespace)
+func handleRecreate(kubeClient kubernetes.Client, u *unstructured.Unstructured) error {
+	current, err := kubeClient.Get(u.GetKind(), u.GetName(), u.GetNamespace())
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return nil
@@ -355,7 +361,7 @@ func attachLoadBalancer(client kubernetes.Client, loadBalancer string,
 		found bool
 	)
 
-	// First, see if the load balancer exists in the current request's manifets.
+	// First, see if the load balancer exists in the current request's manifests.
 	for _, manifest := range manifests {
 		if strings.EqualFold(manifest.GetKind(), "service") &&
 			strings.EqualFold(manifest.GetName(), name) &&

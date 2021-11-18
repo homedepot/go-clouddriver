@@ -19,23 +19,11 @@ const (
 
 // AddSpinnakerAnnotations adds Spinnaker-defined annotations to a given
 // unstructured resource.
-func AddSpinnakerAnnotations(u *unstructured.Unstructured, application, namespace string) error {
+func AddSpinnakerAnnotations(u *unstructured.Unstructured, application string) error {
 	name := u.GetName()
 	t := fmt.Sprintf("kubernetes/%s", strcase.ToLowerCamel(u.GetKind()))
 	cluster := fmt.Sprintf("%s %s", strcase.ToLowerCamel(u.GetKind()), name)
-	// If no namespace was passed in and this is a namespace-scoped
-	// Kubernetes kind, grab the namespace from the passed in object. If
-	// that is not set, set it to be 'default'.
-	if isNamespaceScoped(u.GetKind()) && namespace == "" {
-		namespace = u.GetNamespace()
-		if namespace == "" {
-			namespace = "default"
-		}
-	} else if !isNamespaceScoped(u.GetKind()) && namespace != "" {
-		// If we've passed in a namespace-override for a kind that is
-		// cluster-scoped, make the namespace empty for the annotation.
-		namespace = ""
-	}
+	namespace := u.GetNamespace()
 
 	// Add reserved annotations.
 	// https://spinnaker.io/reference/providers/kubernetes-v2/#reserved-annotations
@@ -148,34 +136,4 @@ func SpinnakerMonikerApplication(u unstructured.Unstructured) string {
 	}
 
 	return ""
-}
-
-// isNamespaceScoped returns true if the kind is namespace-scoped.
-//
-// Cluster-scoped kinds are:
-//   - apiService
-//   - clusterRole
-//   - clusterRoleBinding
-//   - customResourceDefinition
-//   - mutatingWebhookConfiguration
-//   - namespace
-//   - persistentVolume
-//   - podSecurityPolicy
-//   - storageClass
-//   - validatingWebhookConfiguration
-//
-// See https://github.com/spinnaker/clouddriver/blob/58ab154b0ec0d62772201b5b319af349498a4e3f/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/description/manifest/KubernetesKindProperties.java#L31
-// for clouddriver OSS namespace-scoped kinds.
-func isNamespaceScoped(kind string) bool {
-	namespaceScoped := true
-
-	for _, value := range clusterScopedKinds {
-		if strings.EqualFold(value, kind) {
-			namespaceScoped = false
-
-			break
-		}
-	}
-
-	return namespaceScoped
 }
