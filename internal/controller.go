@@ -8,6 +8,7 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/arcade"
 	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/fiat"
+	"github.com/homedepot/go-clouddriver/internal/front50"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/sql"
 	"k8s.io/client-go/rest"
@@ -23,6 +24,7 @@ type Controller struct {
 	ArcadeClient                  arcade.Client
 	ArtifactCredentialsController artifact.CredentialsController
 	FiatClient                    fiat.Client
+	Front50Client                 front50.Client
 	KubernetesController          kubernetes.Controller
 	SQLClient                     sql.Client
 }
