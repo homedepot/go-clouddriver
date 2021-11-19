@@ -53,7 +53,7 @@ type PipelineConfig struct {
 
 type Cluster struct {
 	Account      string   `json:"account"`
-	Strack       string   `json:"stack"`
+	Stack        string   `json:"stack"`
 	Detail       string   `json:"detail"`
 	Applications []string `json:"applications"`
 }
