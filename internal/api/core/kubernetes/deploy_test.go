@@ -385,7 +385,7 @@ var _ = Describe("Deploy", func() {
 			fakeKubeClient.GetReturnsOnCall(1, &fakeService2, nil)
 		})
 
-		When("the load balancer is annotation is already set", func() {
+		When("the load balancer annotation is already set", func() {
 			BeforeEach(func() {
 				deployManifestRequest = DeployManifestRequest{
 					Manifests: []map[string]interface{}{
@@ -551,6 +551,60 @@ var _ = Describe("Deploy", func() {
 			It("annotates the manifest and does not call the cluster to get the load balancer", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				Expect(fakeKubeClient.GetCallCount()).To(BeZero())
+				u := fakeKubeClient.ApplyArgsForCall(0)
+				annotations := u.GetAnnotations()
+				Expect(annotations[kubernetes.AnnotationSpinnakerTrafficLoadBalancers]).To(Equal(`["service test-service"]`))
+			})
+		})
+
+		When("the target manifest does not have any annotations", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"spec": map[string]interface{}{
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"labelKey1": "labelValue1",
+											"labelKey2": "labelValue2",
+										},
+									},
+								},
+							},
+						},
+						{
+							"kind":       "Service",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-service",
+								"namespace": "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]interface{}{
+									"selectorKey1": "selectorValue1",
+									"selectorKey2": "selectorValue2",
+								},
+							},
+						},
+					},
+					TrafficManagement: TrafficManagement{
+						Enabled: true,
+						Options: TrafficManagementOptions{
+							EnableTraffic: true,
+							Namespace:     "test-namespace",
+							Services: []string{
+								"service test-service",
+							},
+						},
+					},
+				}
+			})
+
+			It("sets the annotations", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				u := fakeKubeClient.ApplyArgsForCall(0)
 				annotations := u.GetAnnotations()
 				Expect(annotations[kubernetes.AnnotationSpinnakerTrafficLoadBalancers]).To(Equal(`["service test-service"]`))

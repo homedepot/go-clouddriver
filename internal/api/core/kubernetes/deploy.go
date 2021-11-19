@@ -337,24 +337,26 @@ func handleRecreate(kubeClient kubernetes.Client, u *unstructured.Unstructured) 
 // annotation accordingly if not set and errors if it is set.
 func handleTrafficManagement(target *unstructured.Unstructured, tm TrafficManagement) error {
 	annotations := target.GetAnnotations()
-	if annotations != nil {
-		if value, ok := annotations[kubernetes.AnnotationSpinnakerTrafficLoadBalancers]; ok && value != "" {
-			return fmt.Errorf("manifest already has traffic.spinnaker.io/load-balancers annotation set to %s. "+
-				"Failed attempting to set it to [%s]", value, strings.Join(tm.Options.Services, ", "))
-		}
-
-		loadBalancers := "["
-		for i, service := range tm.Options.Services {
-			loadBalancers += `"` + service + `"`
-			if i < len(tm.Options.Services)-1 {
-				loadBalancers += `, `
-			}
-		}
-
-		loadBalancers += "]"
-		annotations[kubernetes.AnnotationSpinnakerTrafficLoadBalancers] = loadBalancers
-		target.SetAnnotations(annotations)
+	if annotations == nil {
+		annotations = map[string]string{}
 	}
+
+	if value, ok := annotations[kubernetes.AnnotationSpinnakerTrafficLoadBalancers]; ok && value != "" {
+		return fmt.Errorf("manifest already has traffic.spinnaker.io/load-balancers annotation set to %s. "+
+			"Failed attempting to set it to [%s]", value, strings.Join(tm.Options.Services, ", "))
+	}
+
+	loadBalancers := "["
+	for i, service := range tm.Options.Services {
+		loadBalancers += `"` + service + `"`
+		if i < len(tm.Options.Services)-1 {
+			loadBalancers += `, `
+		}
+	}
+
+	loadBalancers += "]"
+	annotations[kubernetes.AnnotationSpinnakerTrafficLoadBalancers] = loadBalancers
+	target.SetAnnotations(annotations)
 
 	return nil
 }
