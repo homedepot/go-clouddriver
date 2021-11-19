@@ -32,13 +32,8 @@ type DeployManifestRequest struct {
 	NamespaceOverride string                   `json:"namespaceOverride"`
 	CloudProvider     string                   `json:"cloudProvider"`
 	Manifests         []map[string]interface{} `json:"manifests"`
-	TrafficManagement struct {
-		Options struct {
-			EnableTraffic bool `json:"enableTraffic"`
-		} `json:"options"`
-		Enabled bool `json:"enabled"`
-	} `json:"trafficManagement"`
-	Moniker struct {
+	TrafficManagement TrafficManagement        `json:"trafficManagement"`
+	Moniker           struct {
 		App string `json:"app"`
 	} `json:"moniker"`
 	Source                   string                 `json:"source"`
@@ -46,6 +41,17 @@ type DeployManifestRequest struct {
 	SkipExpressionEvaluation bool                   `json:"skipExpressionEvaluation"`
 	RequiredArtifacts        []clouddriver.Artifact `json:"requiredArtifacts"`
 	OptionalArtifacts        []clouddriver.Artifact `json:"optionalArtifacts"`
+}
+
+type TrafficManagement struct {
+	Enabled bool                     `json:"enabled"`
+	Options TrafficManagementOptions `json:"options"`
+}
+
+type TrafficManagementOptions struct {
+	EnableTraffic bool     `json:"enableTraffic"`
+	Namespace     string   `json:"namespace"`
+	Services      []string `json:"services"`
 }
 
 type DisableManifestRequest struct {
