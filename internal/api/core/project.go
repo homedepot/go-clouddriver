@@ -74,8 +74,8 @@ func (cc *Controller) ListProjectClusters(c *gin.Context) {
 		return
 	}
 
-	// Get list of unique accounts names.
 	accounts := []string{}
+	// Get list of unique accounts names.
 	for _, cluster := range project.Config.Clusters {
 		if !contains(accounts, cluster.Account) {
 			// Only consider accounts that exist in the database.
@@ -165,6 +165,7 @@ func listProjectClusters(rs []resource, account, application, stack, detail stri
 
 	// Return project clusters as a list.
 	projectClusters := make([]ProjectCluster, 0, len(pcMap))
+
 	for _, value := range pcMap {
 		projectClusters = append(projectClusters, value)
 	}
