@@ -14,6 +14,8 @@ const (
 	AnnotationSpinnakerArtifactType       = `artifact.spinnaker.io/type`
 	AnnotationSpinnakerMonikerApplication = `moniker.spinnaker.io/application`
 	AnnotationSpinnakerMonikerCluster     = `moniker.spinnaker.io/cluster`
+	AnnotationSpinnakerMonikerDetail      = `moniker.spinnaker.io/detail`
+	AnnotationSpinnakerMonikerStack       = `moniker.spinnaker.io/stack`
 	AnnotationSpinnakerStrategyVersioned  = `strategy.spinnaker.io/versioned`
 )
 
@@ -136,4 +138,23 @@ func SpinnakerMonikerApplication(u unstructured.Unstructured) string {
 	}
 
 	return ""
+}
+
+// AnnotationMatches returns true if the value of annotation
+// matches the given value.
+//
+// If value is "", then match when annotation is missing or also "".
+// If value is "*", then always match.
+// If value is "something", then match only when annotation value is "something".
+//
+// See https://github.com/spinnaker/clouddriver/blob/96755fec0c04b6e361efb6d1c19a7afc3926e302/clouddriver-core/src/main/java/com/netflix/spinnaker/clouddriver/core/ProjectClustersService.java#L197
+func AnnotationMatches(u unstructured.Unstructured, annotationKey, value string) bool {
+	annotationValue := ""
+
+	annotations := u.GetAnnotations()
+	if annotations != nil {
+		annotationValue = annotations[annotationKey]
+	}
+
+	return value == "*" || strings.EqualFold(value, annotationValue)
 }
