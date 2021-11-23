@@ -314,6 +314,328 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
+	Context("when the manifest uses Spinnaker managed traffic", func() {
+		BeforeEach(func() {
+			deployManifestRequest = DeployManifestRequest{
+				Manifests: []map[string]interface{}{
+					{
+						"kind":       "ReplicaSet",
+						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"name":      "test-name",
+							"namespace": "test-namespace",
+						},
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"labels": map[string]interface{}{
+										"labelKey1": "labelValue1",
+										"labelKey2": "labelValue2",
+									},
+								},
+							},
+						},
+					},
+				},
+				TrafficManagement: TrafficManagement{
+					Enabled: true,
+					Options: TrafficManagementOptions{
+						EnableTraffic: true,
+						Namespace:     "test-namespace",
+						Services: []string{
+							"service test-service",
+							"service test-service2",
+						},
+					},
+				},
+			}
+			fakeService := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Service",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name":      "test-service",
+						"namespace": "test-namespace",
+					},
+					"spec": map[string]interface{}{
+						"selector": map[string]interface{}{
+							"selectorKey1": "selectorValue1",
+							"selectorKey2": "selectorValue2",
+						},
+					},
+				},
+			}
+			fakeService2 := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Service",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name":      "test-service2",
+						"namespace": "test-namespace",
+					},
+					"spec": map[string]interface{}{
+						"selector": map[string]interface{}{
+							"selectorKey3": "selectorValue3",
+							"selectorKey4": "selectorValue4",
+						},
+					},
+				},
+			}
+			fakeKubeClient.GetReturnsOnCall(0, &fakeService, nil)
+			fakeKubeClient.GetReturnsOnCall(1, &fakeService2, nil)
+		})
+
+		When("the load balancer annotation is already set", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"traffic.spinnaker.io/load-balancers": "[\"service test-service\"]",
+								},
+								"name":      "test-name",
+								"namespace": "test-namespace",
+							},
+						},
+					},
+					TrafficManagement: TrafficManagement{
+						Enabled: true,
+						Options: TrafficManagementOptions{
+							EnableTraffic: true,
+							Namespace:     "test-namespace",
+							Services: []string{
+								"service test-service",
+								"service test-service2",
+							},
+						},
+					},
+				}
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("manifest already has traffic.spinnaker.io/load-balancers annotation set to [\"service test-service\"]. Failed attempting to set it to [service test-service, service test-service2]"))
+			})
+		})
+
+		When("the load balancer is part of the current request's manifests", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-name",
+								"namespace": "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"labelKey1": "labelValue1",
+											"labelKey2": "labelValue2",
+										},
+									},
+								},
+							},
+						},
+						{
+							"kind":       "Service",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-service",
+								"namespace": "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]interface{}{
+									"selectorKey1": "selectorValue1",
+									"selectorKey2": "selectorValue2",
+								},
+							},
+						},
+					},
+					TrafficManagement: TrafficManagement{
+						Enabled: true,
+						Options: TrafficManagementOptions{
+							EnableTraffic: true,
+							Namespace:     "test-namespace",
+							Services: []string{
+								"service test-service",
+							},
+						},
+					},
+				}
+			})
+
+			It("succeeds and does not call the cluster to get the load balancer", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetCallCount()).To(BeZero())
+			})
+		})
+
+		When("the load balancer is part of the current request's manifests and the namespace is overridden", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					NamespaceOverride: "test-namespace",
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-name",
+								"namespace": "test-1",
+							},
+							"spec": map[string]interface{}{
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"labelKey1": "labelValue1",
+											"labelKey2": "labelValue2",
+										},
+									},
+								},
+							},
+						},
+						{
+							"kind":       "Service",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-service",
+								"namespace": "test-2",
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]interface{}{
+									"selectorKey1": "selectorValue1",
+									"selectorKey2": "selectorValue2",
+								},
+							},
+						},
+					},
+					TrafficManagement: TrafficManagement{
+						Enabled: true,
+						Options: TrafficManagementOptions{
+							EnableTraffic: true,
+							Namespace:     "test-namespace",
+							Services: []string{
+								"service test-service",
+							},
+						},
+					},
+				}
+			})
+
+			It("succeeds and does not call the cluster to get the load balancer", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetCallCount()).To(BeZero())
+			})
+		})
+
+		When("the client has requested to not forward requests to pods", func() {
+			BeforeEach(func() {
+				deployManifestRequest.TrafficManagement = TrafficManagement{
+					Enabled: true,
+					Options: TrafficManagementOptions{
+						EnableTraffic: false,
+						Namespace:     "test-namespace",
+						Services: []string{
+							"service test-service",
+						},
+					},
+				}
+			})
+
+			It("annotates the manifest and does not call the cluster to get the load balancer", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetCallCount()).To(BeZero())
+				u := fakeKubeClient.ApplyArgsForCall(0)
+				annotations := u.GetAnnotations()
+				Expect(annotations[kubernetes.AnnotationSpinnakerTrafficLoadBalancers]).To(Equal(`["service test-service"]`))
+			})
+		})
+
+		When("the target manifest does not have any annotations", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"spec": map[string]interface{}{
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"labelKey1": "labelValue1",
+											"labelKey2": "labelValue2",
+										},
+									},
+								},
+							},
+						},
+						{
+							"kind":       "Service",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-service",
+								"namespace": "test-namespace",
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]interface{}{
+									"selectorKey1": "selectorValue1",
+									"selectorKey2": "selectorValue2",
+								},
+							},
+						},
+					},
+					TrafficManagement: TrafficManagement{
+						Enabled: true,
+						Options: TrafficManagementOptions{
+							EnableTraffic: true,
+							Namespace:     "test-namespace",
+							Services: []string{
+								"service test-service",
+							},
+						},
+					},
+				}
+			})
+
+			It("sets the annotations", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u := fakeKubeClient.ApplyArgsForCall(0)
+				annotations := u.GetAnnotations()
+				Expect(annotations[kubernetes.AnnotationSpinnakerTrafficLoadBalancers]).To(Equal(`["service test-service"]`))
+			})
+		})
+
+		When("it succeeds", func() {
+			It("attaches the load balancer", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u := fakeKubeClient.ApplyArgsForCall(0)
+				labels, _, _ := unstructured.NestedStringMap(u.Object, "spec", "template", "metadata", "labels")
+				Expect(labels["labelKey1"]).To(Equal("labelValue1"))
+				Expect(labels["labelKey2"]).To(Equal("labelValue2"))
+				Expect(labels["selectorKey1"]).To(Equal("selectorValue1"))
+				Expect(labels["selectorKey2"]).To(Equal("selectorValue2"))
+				Expect(labels["selectorKey3"]).To(Equal("selectorValue3"))
+				Expect(labels["selectorKey4"]).To(Equal("selectorValue4"))
+				annotations := u.GetAnnotations()
+				Expect(annotations[kubernetes.AnnotationSpinnakerTrafficLoadBalancers]).To(Equal(`["service test-service", "service test-service2"]`))
+				kind, name, namespace := fakeKubeClient.GetArgsForCall(0)
+				Expect(kind).To(Equal("service"))
+				Expect(name).To(Equal("test-service"))
+				Expect(namespace).To(Equal("test-namespace"))
+				kind2, name2, namespace2 := fakeKubeClient.GetArgsForCall(1)
+				Expect(kind2).To(Equal("service"))
+				Expect(name2).To(Equal("test-service2"))
+				Expect(namespace2).To(Equal("test-namespace"))
+			})
+		})
+	})
+
 	Context("when the manifest uses load balancer annotations", func() {
 		BeforeEach(func() {
 			deployManifestRequest = DeployManifestRequest{

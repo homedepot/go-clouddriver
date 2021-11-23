@@ -126,10 +126,26 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			}
 		}
 
-		err = handleAttachingLoadBalancers(provider.Client, &manifest, manifests)
-		if err != nil {
-			clouddriver.Error(c, http.StatusBadRequest, err)
-			return
+		// Set the `traffic.spinnaker.io/load-balancers` annotation if the user
+		// has requested for Spinnaker to manage a resources traffic.
+		if dm.TrafficManagement.Enabled {
+			err = handleTrafficManagement(&manifest, dm.TrafficManagement)
+			if err != nil {
+				clouddriver.Error(c, http.StatusBadRequest, err)
+				return
+			}
+		}
+
+		// Only handle attaching load balancers if not using Spinnaker traffic management
+		// (i.e. user is manually setting the `traffic.spinnaker.io/load-balancers` annotation)
+		// or if using Spinnaker traffic management and the user has requested to route traffic
+		// to pods.
+		if !dm.TrafficManagement.Enabled || (dm.TrafficManagement.Enabled && dm.TrafficManagement.Options.EnableTraffic) {
+			err = handleAttachingLoadBalancers(provider.Client, &manifest, manifests)
+			if err != nil {
+				clouddriver.Error(c, http.StatusBadRequest, err)
+				return
+			}
 		}
 
 		meta, err := provider.Client.Apply(&manifest)
@@ -313,6 +329,34 @@ func handleRecreate(kubeClient kubernetes.Client, u *unstructured.Unstructured) 
 			return err
 		}
 	}
+
+	return nil
+}
+
+// handleTrafficManagement sets the `traffic.spinnaker.io/load-balancers`
+// annotation accordingly if not set and errors if it is set.
+func handleTrafficManagement(target *unstructured.Unstructured, tm TrafficManagement) error {
+	annotations := target.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+
+	if value, ok := annotations[kubernetes.AnnotationSpinnakerTrafficLoadBalancers]; ok && value != "" {
+		return fmt.Errorf("manifest already has traffic.spinnaker.io/load-balancers annotation set to %s. "+
+			"Failed attempting to set it to [%s]", value, strings.Join(tm.Options.Services, ", "))
+	}
+
+	loadBalancers := "["
+	for i, service := range tm.Options.Services {
+		loadBalancers += `"` + service + `"`
+		if i < len(tm.Options.Services)-1 {
+			loadBalancers += `, `
+		}
+	}
+
+	loadBalancers += "]"
+	annotations[kubernetes.AnnotationSpinnakerTrafficLoadBalancers] = loadBalancers
+	target.SetAnnotations(annotations)
 
 	return nil
 }

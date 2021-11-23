@@ -5,6 +5,7 @@ import (
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/manifest"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	v1 "k8s.io/api/core/v1"
 )
 
 type OperationsResponse struct {
@@ -32,13 +33,8 @@ type DeployManifestRequest struct {
 	NamespaceOverride string                   `json:"namespaceOverride"`
 	CloudProvider     string                   `json:"cloudProvider"`
 	Manifests         []map[string]interface{} `json:"manifests"`
-	TrafficManagement struct {
-		Options struct {
-			EnableTraffic bool `json:"enableTraffic"`
-		} `json:"options"`
-		Enabled bool `json:"enabled"`
-	} `json:"trafficManagement"`
-	Moniker struct {
+	TrafficManagement TrafficManagement        `json:"trafficManagement"`
+	Moniker           struct {
 		App string `json:"app"`
 	} `json:"moniker"`
 	Source                   string                 `json:"source"`
@@ -46,6 +42,17 @@ type DeployManifestRequest struct {
 	SkipExpressionEvaluation bool                   `json:"skipExpressionEvaluation"`
 	RequiredArtifacts        []clouddriver.Artifact `json:"requiredArtifacts"`
 	OptionalArtifacts        []clouddriver.Artifact `json:"optionalArtifacts"`
+}
+
+type TrafficManagement struct {
+	Enabled bool                     `json:"enabled"`
+	Options TrafficManagementOptions `json:"options"`
+}
+
+type TrafficManagementOptions struct {
+	EnableTraffic bool     `json:"enableTraffic"`
+	Namespace     string   `json:"namespace"`
+	Services      []string `json:"services"`
 }
 
 type DisableManifestRequest struct {
@@ -99,7 +106,7 @@ type ManifestResponse struct {
 		Reference string `json:"reference"`
 		Type      string `json:"type"`
 	} `json:"artifacts"`
-	Events   []interface{}           `json:"events"`
+	Events   []v1.Event              `json:"events"`
 	Location string                  `json:"location"`
 	Manifest map[string]interface{}  `json:"manifest"`
 	Metrics  []interface{}           `json:"metrics"`

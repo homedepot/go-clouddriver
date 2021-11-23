@@ -7,6 +7,8 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -15,7 +17,7 @@ var _ = Describe("Manifest", func() {
 	Describe("#GetManifest", func() {
 		BeforeEach(func() {
 			setup()
-			uri = svr.URL + "/manifests/test-account/test-namespace/pod test-pod"
+			uri = svr.URL + "/manifests/test-account/test-namespace/pod test-pod?includeEvents=false"
 			createRequest(http.MethodGet)
 		})
 
@@ -57,7 +59,7 @@ var _ = Describe("Manifest", func() {
 
 		When("getting the manifest returns null values", func() {
 			BeforeEach(func() {
-				uri = svr.URL + "/manifests/test-account/test-namespace/clusterRole test-cluster-role"
+				uri = svr.URL + "/manifests/test-account/test-namespace/clusterRole test-cluster-role?includeEvents=false"
 				createRequest(http.MethodGet)
 				fakeKubeClient.GetReturns(&unstructured.Unstructured{
 					Object: map[string]interface{}{
@@ -92,9 +94,77 @@ var _ = Describe("Manifest", func() {
 			})
 		})
 
+		Context("include events", func() {
+			BeforeEach(func() {
+				setup()
+				uri = svr.URL + "/manifests/test-account/test-namespace/pod test-pod"
+				createRequest(http.MethodGet)
+				events := []v1.Event{
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "test-kind",
+							APIVersion: "test-api-version",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:         "test-event-name",
+							GenerateName: "test-event-generate-name",
+							Namespace:    "test-event-namespace",
+						},
+						InvolvedObject: v1.ObjectReference{
+							Kind:      "test-kind",
+							Namespace: "test-namespace",
+							Name:      "test-pod",
+						},
+						Reason:  "test reason",
+						Message: "test message",
+						Count:   1,
+					},
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "test-kind",
+							APIVersion: "test-api-version",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:         "test-event-name2",
+							GenerateName: "test-event-generate-name",
+							Namespace:    "test-event-namespace",
+						},
+						InvolvedObject: v1.ObjectReference{
+							Kind:      "test-kind",
+							Namespace: "test-namespace",
+							Name:      "test-pod",
+						},
+						Reason:  "test reason",
+						Message: "test message",
+						Count:   2,
+					},
+				}
+				fakeKubeClientset.EventsReturns(events, nil)
+			})
+
+			When("getting the events returns an error", func() {
+				BeforeEach(func() {
+					fakeKubeClientset.EventsReturns(nil, errors.New("error getting events"))
+				})
+
+				It("fails silently and returns the manifest", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadManifestNoEvents)
+				})
+			})
+
+			When("getting the events succeeds", func() {
+				It("returns the events", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadManifestIncludeEvents)
+				})
+			})
+		})
+
 		When("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadManifestNoEvents)
 			})
 		})
 	})
