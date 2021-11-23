@@ -2707,7 +2707,7 @@ const payloadManifestCoordinatesList = `[
 
 const payloadManifestClusterRoleNoRules = `{
             "account": "test-account",
-						"artifacts": null,
+						"artifacts": [],
             "events": [],
             "location": "test-namespace",
             "manifest": {
@@ -2759,9 +2759,76 @@ const payloadManifestClusterRoleNoRules = `{
             "warnings": []
           }`
 
+const payloadManifestWithArtifacts = `{
+        "account": "test-account",
+        "artifacts": [
+          {
+            "customKind": false,
+            "metadata": {},
+            "name": "gcr.io/test-project/test-container-image",
+            "reference": "gcr.io/test-project/test-container-image",
+            "type": "docker/image"
+          },
+          {
+            "customKind": false,
+            "metadata": {},
+            "name": "gcr.io/test-project/another-test-container-image",
+            "reference": "gcr.io/test-project/another-test-container-image",
+            "type": "docker/image"
+          }
+        ],
+        "events": [],
+        "location": "test-namespace",
+        "manifest": {
+          "apiVersion": "apps/v1",
+          "kind": "Deployment",
+          "spec": {
+            "template": {
+              "spec": {
+                "containers": [
+                  {
+                    "image": "gcr.io/test-project/test-container-image",
+                    "name": "test-container-name"
+                  },
+                  {
+                    "image": "gcr.io/test-project/another-test-container-image",
+                    "name": "another-test-container-name"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "metrics": [],
+        "moniker": {
+          "app": "unknown",
+          "cluster": "deployment test-deployment"
+        },
+        "name": "deployment test-deployment",
+        "status": {
+          "available": {
+            "state": true,
+            "message": ""
+          },
+          "failed": {
+            "state": false,
+            "message": ""
+          },
+          "paused": {
+            "state": false,
+            "message": ""
+          },
+          "stable": {
+            "state": true,
+            "message": ""
+          }
+        },
+        "warnings": []
+      }`
+
 const payloadManifestNoEvents = `{
             "account": "test-account",
-            "artifacts": null,
+            "artifacts": [],
             "events": [],
             "location": "test-namespace",
             "manifest": {},
@@ -2794,7 +2861,7 @@ const payloadManifestNoEvents = `{
 
 const payloadManifestIncludeEvents = `{
               "account": "test-account",
-              "artifacts": null,
+              "artifacts": [],
               "events": [
                 {
                   "kind": "test-kind",

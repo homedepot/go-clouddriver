@@ -111,12 +111,18 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 		}
 	}
 
+	artifacts := []clouddriver.Artifact{}
+	if strings.EqualFold(manifest.GetKind(), "deployment") {
+		artifacts = kubernetes.FindArtifacts(manifest)
+	}
+
 	kmr := ops.ManifestResponse{
-		Account:  account,
-		Events:   events,
-		Location: namespace,
-		Manifest: internal.DeleteNilValues(manifest.Object),
-		Metrics:  []interface{}{},
+		Account:   account,
+		Artifacts: artifacts,
+		Events:    events,
+		Location:  namespace,
+		Manifest:  internal.DeleteNilValues(manifest.Object),
+		Metrics:   []interface{}{},
 		Moniker: ops.ManifestResponseMoniker{
 			App:     app,
 			Cluster: cluster,

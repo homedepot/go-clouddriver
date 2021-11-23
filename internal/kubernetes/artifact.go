@@ -173,12 +173,99 @@ func bindArtifact(obj map[string]interface{}, a clouddriver.Artifact, paths ...s
 		}
 
 		_ = unstructured.SetNestedField(obj, objs, fields(paths[0])...)
-	} else {
-		name, found, _ := unstructured.NestedString(obj, fields(paths[0])...)
-		if found && a.Name == name {
-			_ = unstructured.SetNestedField(obj, a.Reference, fields(paths[0])...)
+	}
+
+	name, found, _ := unstructured.NestedString(obj, fields(paths[0])...)
+	if found && a.Name == name {
+		_ = unstructured.SetNestedField(obj, a.Reference, fields(paths[0])...)
+	}
+}
+
+// FindArtifacts lists all artifacts found in a given manifest.
+// It is expected to be used only for Kubernetes kind Deployment, so non-Deployment kind
+// paths are omitted.
+func FindArtifacts(u *unstructured.Unstructured) []clouddriver.Artifact {
+	artifacts := &[]clouddriver.Artifact{}
+
+	findArtifact(u.Object, artifact.TypeDockerImage, artifacts, iterables(jsonPathDockerImageContainers)...)
+	findArtifact(u.Object, artifact.TypeDockerImage, artifacts, iterables(jsonPathDockerImageInitContainers)...)
+	findArtifact(u.Object, artifact.TypeKubernetesConfigMap, artifacts, iterables(jsonPathConfigMapVolume)...)
+	findArtifact(u.Object, artifact.TypeKubernetesConfigMap, artifacts, iterables(jsonPathConfigMapProjectedVolume)...)
+	findArtifact(u.Object, artifact.TypeKubernetesConfigMap, artifacts, iterables(jsonPathConfigMapKeyValueContainers)...)
+	findArtifact(u.Object, artifact.TypeKubernetesConfigMap, artifacts, iterables(jsonPathConfigMapKeyValueInitContainers)...)
+	findArtifact(u.Object, artifact.TypeKubernetesConfigMap, artifacts, iterables(jsonPathConfigMapEnvContainers)...)
+	findArtifact(u.Object, artifact.TypeKubernetesConfigMap, artifacts, iterables(jsonPathConfigMapEnvInitContainers)...)
+	findArtifact(u.Object, artifact.TypeKubernetesSecret, artifacts, iterables(jsonPathSecretVolume)...)
+	findArtifact(u.Object, artifact.TypeKubernetesSecret, artifacts, iterables(jsonPathSecretProjectedVolume)...)
+	findArtifact(u.Object, artifact.TypeKubernetesSecret, artifacts, iterables(jsonPathSecretKeyValueContainers)...)
+	findArtifact(u.Object, artifact.TypeKubernetesSecret, artifacts, iterables(jsonPathSecretKeyValueInitContainers)...)
+	findArtifact(u.Object, artifact.TypeKubernetesSecret, artifacts, iterables(jsonPathSecretEnvContainers)...)
+	findArtifact(u.Object, artifact.TypeKubernetesSecret, artifacts, iterables(jsonPathSecretEnvInitContainers)...)
+
+	return *artifacts
+}
+
+// findArtifact is a recursive function that iterates through all slices found in given
+// JSON path, then attempts to find and a nested string field, which is the final
+// path passeed in. This final path is the artifact which is stored in the "artifacts"
+// argument.
+func findArtifact(obj map[string]interface{}, t artifact.Type, artifacts *[]clouddriver.Artifact, paths ...string) {
+	if len(paths) > 1 {
+		objs, found, err := unstructured.NestedSlice(obj, fields(paths[0])...)
+		if !found || err != nil {
+			return
+		}
+
+		for _, obj := range objs {
+			o, ok := obj.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			findArtifact(o, t, artifacts, paths[1:]...)
 		}
 	}
+
+	reference, found, _ := unstructured.NestedString(obj, fields(paths[0])...)
+	if found {
+		name := reference
+		if t == artifact.TypeDockerImage {
+			name = nameFromReference(reference)
+		}
+
+		artifact := clouddriver.Artifact{
+			CustomKind: false,
+			Name:       name,
+			Reference:  reference,
+			Type:       t,
+		}
+		*artifacts = append(*artifacts, artifact)
+	}
+}
+
+// nameFromReference extracts an artifact name from its reference; defaults to
+// returning the reference.
+//
+// See https://github.com/spinnaker/clouddriver/blob/c52df8fb055de77ac800b41fd843761f506e7e08/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/artifact/Replacer.java#L171
+func nameFromReference(ref string) string {
+	// @ can only show up in image references denoting a digest
+	// https://github.com/docker/distribution/blob/95daa793b83a21656fe6c13e6d5cf1c3999108c7/reference/regexp.go#L70
+	atIndex := strings.Index(ref, "@")
+	if atIndex >= 0 {
+		return ref[0:atIndex]
+	}
+
+	// : can be used to denote a port, part of a digest (already matched) or a tag
+	// https://github.com/docker/distribution/blob/95daa793b83a21656fe6c13e6d5cf1c3999108c7/reference/regexp.go#L69
+	lastColonIndex := strings.LastIndex(ref, ":")
+	if lastColonIndex >= 0 {
+		// we don't need to check if this is a tag, or a port. ports will be matched
+		// lazily if they are numeric, and are treated as tags first:
+		// https://github.com/docker/distribution/blob/95daa793b83a21656fe6c13e6d5cf1c3999108c7/reference/regexp.go#L34
+		return ref[0:lastColonIndex]
+	}
+
+	return ref
 }
 
 // iterables splits a string on the character '*' returning the resulting

@@ -161,6 +161,40 @@ var _ = Describe("Manifest", func() {
 			})
 		})
 
+		When("the manifest has artifacts", func() {
+			BeforeEach(func() {
+				uri = svr.URL + "/manifests/test-account/test-namespace/deployment test-deployment?includeEvents=false"
+				createRequest(http.MethodGet)
+				fakeKubeClient.GetReturns(&unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"containers": []interface{}{
+										map[string]interface{}{
+											"name":  "test-container-name",
+											"image": "gcr.io/test-project/test-container-image",
+										},
+										map[string]interface{}{
+											"name":  "another-test-container-name",
+											"image": "gcr.io/test-project/another-test-container-image",
+										},
+									},
+								},
+							},
+						},
+					},
+				}, nil)
+			})
+
+			It("returns the manifest along with its artifacts", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadManifestWithArtifacts)
+			})
+		})
+
 		When("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
