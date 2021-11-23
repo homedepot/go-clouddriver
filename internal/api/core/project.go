@@ -24,7 +24,7 @@ type Project struct {
 	Account        string               `json:"account"`
 	Applications   []ProjectApplication `json:"applications"`
 	Detail         string               `json:"detail"`
-	InstanceCounts *InstanceCounts      `json:"instanceCounts,omitempty"`
+	InstanceCounts InstanceCounts       `json:"instanceCounts"`
 	Stack          string               `json:"stack"`
 }
 
@@ -129,10 +129,6 @@ func (cc *Controller) ListProjectClusters(c *gin.Context) {
 				// Update project application summary info
 				pa.LastPush = max(pa.LastPush, pc.LastPush)
 				// Update project level summary info
-				if p.InstanceCounts == nil {
-					p.InstanceCounts = &InstanceCounts{}
-				}
-
 				p.InstanceCounts.Down = p.InstanceCounts.Down + pc.InstanceCounts.Down
 				p.InstanceCounts.OutOfService = p.InstanceCounts.OutOfService + pc.InstanceCounts.OutOfService
 				p.InstanceCounts.Starting = p.InstanceCounts.Starting + pc.InstanceCounts.Starting

@@ -2970,6 +2970,14 @@ const payloadListProjectClustersNoMatches = `[
 			}
 		],
 		"detail": "*",
+		"instanceCounts": {
+			"down": 0,
+			"outOfService": 0,
+			"starting": 0,
+			"total": 0,
+			"unknown": 0,
+			"up": 0
+		},
 		"stack": "*"
 	}
 ]`
