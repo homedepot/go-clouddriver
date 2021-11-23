@@ -58,7 +58,8 @@ type Cluster struct {
 	Applications []string `json:"applications"`
 }
 
-// Project gets the Spinnaker project from the front50 service
+// Project gets the Spinnaker project from the front50 service.
+//
 // See https://github.com/spinnaker/front50/blob/master/front50-web/src/main/java/com/netflix/spinnaker/front50/controllers/v2/ProjectsController.java
 func (c *client) Project(project string) (Response, error) {
 	req, err := http.NewRequest(http.MethodGet, c.url+"/v2/projects/"+project, nil)
