@@ -136,6 +136,11 @@ func (s *Server) Setup() {
 
 		// Features.
 		api.GET("/features/stages", core.ListStages)
+
+		// Projects API controller.
+		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ProjectController.groovy
+		api.GET("/projects/:project/clusters", c.ListProjectClusters)
+
 	}
 
 	// V1 endpoint.

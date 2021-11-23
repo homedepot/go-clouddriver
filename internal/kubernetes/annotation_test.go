@@ -667,4 +667,157 @@ var _ = Describe("Annotation", func() {
 			})
 		})
 	})
+
+	Context("#AnnotationMatches", func() {
+		var (
+			fakeResource unstructured.Unstructured
+			key          string
+			valueToMatch string
+			matches      bool
+		)
+
+		JustBeforeEach(func() {
+			key = AnnotationSpinnakerMonikerStack
+			matches = AnnotationMatches(fakeResource, key, valueToMatch)
+		})
+
+		Context("Value to match is specified", func() {
+			BeforeEach(func() {
+				valueToMatch = "test-value"
+			})
+
+			When("annotation value does not match", func() {
+				BeforeEach(func() {
+					fakeResource = unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/stack": "wrong-value",
+								},
+							},
+						},
+					}
+				})
+
+				It("returns true", func() {
+					Expect(matches).To(BeFalse())
+				})
+			})
+
+			When("annotation value matches", func() {
+				BeforeEach(func() {
+					fakeResource = unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/stack": "test-value",
+								},
+							},
+						},
+					}
+				})
+
+				It("returns true", func() {
+					Expect(matches).To(BeTrue())
+				})
+			})
+		})
+
+		Context("Value to match is blank", func() {
+			BeforeEach(func() {
+				valueToMatch = ""
+			})
+
+			When("annotation value is specfied", func() {
+				BeforeEach(func() {
+					fakeResource = unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/stack": "test-value",
+								},
+							},
+						},
+					}
+				})
+
+				It("returns false", func() {
+					Expect(matches).To(BeFalse())
+				})
+			})
+
+			When("annotation value is blank", func() {
+				BeforeEach(func() {
+					fakeResource = unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"annotations":                map[string]interface{}{},
+								"moniker.spinnaker.io/stack": "",
+							},
+						},
+					}
+				})
+
+				It("returns true", func() {
+					Expect(matches).To(BeTrue())
+				})
+			})
+
+			When("annotation is missing", func() {
+				BeforeEach(func() {
+					fakeResource = unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{},
+							},
+						},
+					}
+				})
+
+				It("returns true", func() {
+					Expect(matches).To(BeTrue())
+				})
+			})
+		})
+
+		Context("Value to match is the wildcard", func() {
+			BeforeEach(func() {
+				valueToMatch = "*"
+			})
+
+			When("annotation value is specfied", func() {
+				BeforeEach(func() {
+					fakeResource = unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{
+									"moniker.spinnaker.io/stack": "test-value",
+								},
+							},
+						},
+					}
+				})
+
+				It("returns false", func() {
+					Expect(matches).To(BeTrue())
+				})
+			})
+
+			When("annotation is not specified", func() {
+				BeforeEach(func() {
+					fakeResource = unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"annotations": map[string]interface{}{},
+							},
+						},
+					}
+				})
+
+				It("returns true", func() {
+					Expect(matches).To(BeTrue())
+				})
+			})
+		})
+	})
 })

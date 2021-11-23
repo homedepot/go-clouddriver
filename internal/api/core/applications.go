@@ -200,8 +200,15 @@ type ServerGroupManagerServerGroupMoniker struct {
 func (cc *Controller) ListServerGroupManagers(c *gin.Context) {
 	response := ServerGroupManagers{}
 	application := c.Param("application")
+	// List all accounts associated with the given Spinnaker app.
+	accounts, err := cc.SQLClient.ListKubernetesAccountsBySpinnakerApp(application)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+
+		return
+	}
 	// List all request resources for the given application.
-	rs, err := cc.listApplicationResources(c, serverGroupManagerResources, application)
+	rs, err := cc.listApplicationResources(c, serverGroupManagerResources, accounts, []string{application})
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 
@@ -247,8 +254,9 @@ func (cc *Controller) ListServerGroupManagers(c *gin.Context) {
 // resource represents a Kubernetes resource and holds
 // it's unstructured object and associated account.
 type resource struct {
-	account string
-	u       unstructured.Unstructured
+	account     string
+	application string
+	u           unstructured.Unstructured
 }
 
 // filterResourcesByKind filters a resource slice by the given kind and returns the
@@ -381,8 +389,15 @@ type LoadBalancerInstanceHealth struct {
 func (cc *Controller) ListLoadBalancers(c *gin.Context) {
 	response := LoadBalancers{}
 	application := c.Param("application")
+	// List all accounts associated with the given Spinnaker app.
+	accounts, err := cc.SQLClient.ListKubernetesAccountsBySpinnakerApp(application)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+
+		return
+	}
 	// List all request resources for the given application.
-	rs, err := cc.listApplicationResources(c, loadBalancerResources, application)
+	rs, err := cc.listApplicationResources(c, loadBalancerResources, accounts, []string{application})
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 
@@ -727,8 +742,15 @@ type InstanceHealth struct {
 func (cc *Controller) ListServerGroups(c *gin.Context) {
 	response := ServerGroups{}
 	application := c.Param("application")
+	// List all accounts associated with the given Spinnaker app.
+	accounts, err := cc.SQLClient.ListKubernetesAccountsBySpinnakerApp(application)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+
+		return
+	}
 	// List all request resources for the given application.
-	rs, err := cc.listApplicationResources(c, serverGroupResources, application)
+	rs, err := cc.listApplicationResources(c, serverGroupResources, accounts, []string{application})
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 
@@ -1383,20 +1405,15 @@ func DeleteJob(c *gin.Context) {
 
 // listApplicationsResources lists all accounts for a given app, then concurrently lists
 // all requested resources for the given app concurrently.
-func (cc *Controller) listApplicationResources(c *gin.Context, rs []string, application string) ([]resource, error) {
+func (cc *Controller) listApplicationResources(c *gin.Context, rs, accounts, applications []string) ([]resource, error) {
 	wg := &sync.WaitGroup{}
 	// Create channel of resouces to send to.
 	rc := make(chan resource, internal.DefaultChanSize)
-	// List all accounts associated with the given Spinnaker app.
-	accounts, err := cc.SQLClient.ListKubernetesAccountsBySpinnakerApp(application)
-	if err != nil {
-		return nil, err
-	}
 	// Add the number of accounts to the wait group.
 	wg.Add(len(accounts))
 	// List all requested resources across accounts concurrently.
 	for _, account := range accounts {
-		go cc.listResources(wg, rs, rc, account, application)
+		go cc.listResources(wg, rs, rc, account, applications)
 	}
 	// Wait for all concurrent calls to finish.
 	wg.Wait()
@@ -1414,7 +1431,7 @@ func (cc *Controller) listApplicationResources(c *gin.Context, rs []string, appl
 // listResources initializes discovery for a given client then lists
 // the requested resources concurrently.
 func (cc *Controller) listResources(wg *sync.WaitGroup, rs []string, rc chan resource,
-	account, application string) {
+	account string, applications []string) {
 	// Increment the wait group counter when we're done here.
 	defer wg.Done()
 	// Grab the kube provider for the given account.
@@ -1441,7 +1458,7 @@ func (cc *Controller) listResources(wg *sync.WaitGroup, rs []string, rc chan res
 	_wg.Add(len(rs))
 	// List all required resources concurrently.
 	for _, r := range rs {
-		go list(_wg, rc, provider, r, account, application)
+		go list(_wg, rc, provider, r, account, applications)
 	}
 	// Wait for the calls to finish.
 	_wg.Wait()
@@ -1450,7 +1467,7 @@ func (cc *Controller) listResources(wg *sync.WaitGroup, rs []string, rc chan res
 // list lists a given resource and send to a channel of unstructured.Unstructured.
 // It uses a context with a timeout of 10 seconds.
 func list(wg *sync.WaitGroup, rc chan resource,
-	provider *kubernetes.Provider, r, account, application string) {
+	provider *kubernetes.Provider, r, account string, applications []string) {
 	// Finish the wait group when we're done here.
 	defer wg.Done()
 	// Declare server side filtering options.
@@ -1488,14 +1505,17 @@ func list(wg *sync.WaitGroup, rc chan resource,
 		}
 	}
 	// Filter the results to only the application annotation requested.
-	ul.Items = kubernetes.FilterOnAnnotation(ul.Items,
-		kubernetes.AnnotationSpinnakerMonikerApplication, application)
-	// Send all unstructured objects to the channel.
-	for _, u := range ul.Items {
-		res := resource{
-			u:       u,
-			account: account,
+	for _, application := range applications {
+		items := kubernetes.FilterOnAnnotation(ul.Items,
+			kubernetes.AnnotationSpinnakerMonikerApplication, application)
+		// Send all unstructured objects to the channel.
+		for _, u := range items {
+			res := resource{
+				u:           u,
+				account:     account,
+				application: application,
+			}
+			rc <- res
 		}
-		rc <- res
 	}
 }

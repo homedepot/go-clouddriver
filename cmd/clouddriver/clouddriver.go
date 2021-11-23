@@ -12,6 +12,7 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/arcade"
 	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/fiat"
+	"github.com/homedepot/go-clouddriver/internal/front50"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/sql"
 	ginprometheus "github.com/zsais/go-gin-prometheus"
@@ -56,6 +57,7 @@ func init() {
 
 	artifactCredentialsController := getArtifactsCredentialsController()
 	fiatClient := fiat.NewDefaultClient()
+	front50Client := front50.NewDefaultClient()
 	kubeController := kubernetes.NewController()
 	arcadeClient := arcade.NewDefaultClient()
 
@@ -71,6 +73,7 @@ func init() {
 		ArtifactCredentialsController: artifactCredentialsController,
 		SQLClient:                     sqlClient,
 		FiatClient:                    fiatClient,
+		Front50Client:                 front50Client,
 		KubernetesController:          kubeController,
 	}
 

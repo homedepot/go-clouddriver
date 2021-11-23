@@ -19,6 +19,7 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/artifact/artifactfakes"
 	"github.com/homedepot/go-clouddriver/internal/fiat/fiatfakes"
+	"github.com/homedepot/go-clouddriver/internal/front50/front50fakes"
 	"github.com/homedepot/go-clouddriver/internal/helm/helmfakes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/kubernetesfakes"
@@ -41,6 +42,7 @@ var (
 	fakeArcadeClient                  *arcadefakes.FakeClient
 	fakeArtifactCredentialsController *artifactfakes.FakeCredentialsController
 	fakeFiatClient                    *fiatfakes.FakeClient
+	fakeFront50Client                 *front50fakes.FakeClient
 	fakeStorageClient                 *storage.Client
 	fakeGithubClient                  *github.Client
 	fakeHelmClient                    *helmfakes.FakeClient
@@ -195,6 +197,7 @@ func setup() {
 
 	fakeArcadeClient = &arcadefakes.FakeClient{}
 	fakeFiatClient = &fiatfakes.FakeClient{}
+	fakeFront50Client = &front50fakes.FakeClient{}
 
 	fakeHelmClient = &helmfakes.FakeClient{}
 
@@ -253,6 +256,7 @@ func setup() {
 		ArcadeClient:                  fakeArcadeClient,
 		ArtifactCredentialsController: fakeArtifactCredentialsController,
 		FiatClient:                    fakeFiatClient,
+		Front50Client:                 fakeFront50Client,
 		SQLClient:                     fakeSQLClient,
 		KubernetesController:          fakeKubeController,
 	}
