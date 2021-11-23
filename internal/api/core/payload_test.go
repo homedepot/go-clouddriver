@@ -2843,3 +2843,175 @@ const payloadGetInstanceConsole = `{
               }
             ]
           }`
+
+const payloadListProjectClustersNoMatches = `[
+	{
+		"account": "test-account-1",
+		"applications": [
+			{
+				"application": "fake-application",
+				"clusters": [],
+				"lastPush": 0
+			}
+		],
+		"detail": "*",
+		"stack": "*"
+	}
+]`
+
+const payloadListProjectClusters = `[
+	{
+		"account": "test-account-1",
+		"applications": [
+			{
+				"application": "test-application-1",
+				"clusters": [
+					{
+						"builds": [
+							{
+								"buildNumber": "0",
+								"deployed": 1581603123000,
+								"images": [
+									"test-image-1"
+								]
+							}
+						],
+						"instanceCounts": {
+							"down": 0,
+							"outOfService": 0,
+							"starting": 0,
+							"total": 4,
+							"unknown": 0,
+							"up": 2
+						},
+						"lastPush": 1581603123000,
+						"region": "test-namespace-1"
+					}
+				],
+				"lastPush": 1581603123000
+			}
+		],
+		"detail": "test-detail",
+		"instanceCounts": {
+			"down": 0,
+			"outOfService": 0,
+			"starting": 0,
+			"total": 4,
+			"unknown": 0,
+			"up": 2
+		},
+		"stack": "test-stack"
+	},
+	{
+		"account": "test-account-1",
+		"applications": [
+			{
+				"application": "test-application-1",
+				"clusters": [
+					{
+						"builds": [
+							{
+								"buildNumber": "0",
+								"deployed": 1581603123000,
+								"images": [
+									"test-image-1",
+									"test-image-2"
+								]
+							}
+						],
+						"instanceCounts": {
+							"down": 0,
+							"outOfService": 0,
+							"starting": 0,
+							"total": 8,
+							"unknown": 0,
+							"up": 4
+						},
+						"lastPush": 1581603123000,
+						"region": "test-namespace-1"
+					}
+				],
+				"lastPush": 1581603123000
+			}
+		],
+		"detail": "",
+		"instanceCounts": {
+			"down": 0,
+			"outOfService": 0,
+			"starting": 0,
+			"total": 8,
+			"unknown": 0,
+			"up": 4
+		},
+		"stack": ""
+	},
+	{
+		"account": "test-account-1",
+		"applications": [
+			{
+				"application": "test-application-1",
+				"clusters": [
+					{
+						"builds": [
+							{
+								"buildNumber": "0",
+								"deployed": 1581603123000,
+								"images": [
+									"test-image-1",
+									"test-image-2"
+								]
+							}
+						],
+						"instanceCounts": {
+							"down": 0,
+							"outOfService": 0,
+							"starting": 0,
+							"total": 12,
+							"unknown": 0,
+							"up": 6
+						},
+						"lastPush": 1581603123000,
+						"region": "test-namespace-1"
+					},
+					{
+						"builds": [
+							{
+								"buildNumber": "0",
+								"deployed": 1581603123000,
+								"images": [
+									"test-image-3"
+								]
+							}
+						],
+						"instanceCounts": {
+							"down": 0,
+							"outOfService": 0,
+							"starting": 0,
+							"total": 16,
+							"unknown": 0,
+							"up": 8
+						},
+						"lastPush": 1581603123000,
+						"region": "test-namespace-2"
+					}
+				],
+				"lastPush": 1581603123000
+			},
+			{
+				"application": "test-application-2",
+				"clusters": [],
+				"lastPush": 0
+			}
+		],
+		"detail": "*",
+		"instanceCounts": {
+			"down": 0,
+			"outOfService": 0,
+			"starting": 0,
+			"total": 28,
+			"unknown": 0,
+			"up": 14
+		},
+		"stack": "*"
+	}
+]`
