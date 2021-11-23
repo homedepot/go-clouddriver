@@ -214,15 +214,16 @@ func (fake *FakeClient) Apply(arg1 *unstructured.Unstructured) (kubernetes.Metad
 	fake.applyArgsForCall = append(fake.applyArgsForCall, struct {
 		arg1 *unstructured.Unstructured
 	}{arg1})
+	stub := fake.ApplyStub
+	fakeReturns := fake.applyReturns
 	fake.recordInvocation("Apply", []interface{}{arg1})
 	fake.applyMutex.Unlock()
-	if fake.ApplyStub != nil {
-		return fake.ApplyStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.applyReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -280,15 +281,16 @@ func (fake *FakeClient) DeleteResourceByKindAndNameAndNamespace(arg1 string, arg
 		arg3 string
 		arg4 v1.DeleteOptions
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.DeleteResourceByKindAndNameAndNamespaceStub
+	fakeReturns := fake.deleteResourceByKindAndNameAndNamespaceReturns
 	fake.recordInvocation("DeleteResourceByKindAndNameAndNamespace", []interface{}{arg1, arg2, arg3, arg4})
 	fake.deleteResourceByKindAndNameAndNamespaceMutex.Unlock()
-	if fake.DeleteResourceByKindAndNameAndNamespaceStub != nil {
-		return fake.DeleteResourceByKindAndNameAndNamespaceStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteResourceByKindAndNameAndNamespaceReturns
 	return fakeReturns.result1
 }
 
@@ -339,15 +341,16 @@ func (fake *FakeClient) Discover() error {
 	ret, specificReturn := fake.discoverReturnsOnCall[len(fake.discoverArgsForCall)]
 	fake.discoverArgsForCall = append(fake.discoverArgsForCall, struct {
 	}{})
+	stub := fake.DiscoverStub
+	fakeReturns := fake.discoverReturns
 	fake.recordInvocation("Discover", []interface{}{})
 	fake.discoverMutex.Unlock()
-	if fake.DiscoverStub != nil {
-		return fake.DiscoverStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.discoverReturns
 	return fakeReturns.result1
 }
 
@@ -392,15 +395,16 @@ func (fake *FakeClient) GVRForKind(arg1 string) (schema.GroupVersionResource, er
 	fake.gVRForKindArgsForCall = append(fake.gVRForKindArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GVRForKindStub
+	fakeReturns := fake.gVRForKindReturns
 	fake.recordInvocation("GVRForKind", []interface{}{arg1})
 	fake.gVRForKindMutex.Unlock()
-	if fake.GVRForKindStub != nil {
-		return fake.GVRForKindStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.gVRForKindReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -457,15 +461,16 @@ func (fake *FakeClient) Get(arg1 string, arg2 string, arg3 string) (*unstructure
 		arg2 string
 		arg3 string
 	}{arg1, arg2, arg3})
+	stub := fake.GetStub
+	fakeReturns := fake.getReturns
 	fake.recordInvocation("Get", []interface{}{arg1, arg2, arg3})
 	fake.getMutex.Unlock()
-	if fake.GetStub != nil {
-		return fake.GetStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -521,15 +526,16 @@ func (fake *FakeClient) ListByGVR(arg1 schema.GroupVersionResource, arg2 v1.List
 		arg1 schema.GroupVersionResource
 		arg2 v1.ListOptions
 	}{arg1, arg2})
+	stub := fake.ListByGVRStub
+	fakeReturns := fake.listByGVRReturns
 	fake.recordInvocation("ListByGVR", []interface{}{arg1, arg2})
 	fake.listByGVRMutex.Unlock()
-	if fake.ListByGVRStub != nil {
-		return fake.ListByGVRStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listByGVRReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -586,15 +592,16 @@ func (fake *FakeClient) ListByGVRWithContext(arg1 context.Context, arg2 schema.G
 		arg2 schema.GroupVersionResource
 		arg3 v1.ListOptions
 	}{arg1, arg2, arg3})
+	stub := fake.ListByGVRWithContextStub
+	fakeReturns := fake.listByGVRWithContextReturns
 	fake.recordInvocation("ListByGVRWithContext", []interface{}{arg1, arg2, arg3})
 	fake.listByGVRWithContextMutex.Unlock()
-	if fake.ListByGVRWithContextStub != nil {
-		return fake.ListByGVRWithContextStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listByGVRWithContextReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -650,15 +657,16 @@ func (fake *FakeClient) ListResource(arg1 string, arg2 v1.ListOptions) (*unstruc
 		arg1 string
 		arg2 v1.ListOptions
 	}{arg1, arg2})
+	stub := fake.ListResourceStub
+	fakeReturns := fake.listResourceReturns
 	fake.recordInvocation("ListResource", []interface{}{arg1, arg2})
 	fake.listResourceMutex.Unlock()
-	if fake.ListResourceStub != nil {
-		return fake.ListResourceStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listResourceReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -715,15 +723,16 @@ func (fake *FakeClient) ListResourceWithContext(arg1 context.Context, arg2 strin
 		arg2 string
 		arg3 v1.ListOptions
 	}{arg1, arg2, arg3})
+	stub := fake.ListResourceWithContextStub
+	fakeReturns := fake.listResourceWithContextReturns
 	fake.recordInvocation("ListResourceWithContext", []interface{}{arg1, arg2, arg3})
 	fake.listResourceWithContextMutex.Unlock()
-	if fake.ListResourceWithContextStub != nil {
-		return fake.ListResourceWithContextStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listResourceWithContextReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -780,15 +789,16 @@ func (fake *FakeClient) ListResourcesByKindAndNamespace(arg1 string, arg2 string
 		arg2 string
 		arg3 v1.ListOptions
 	}{arg1, arg2, arg3})
+	stub := fake.ListResourcesByKindAndNamespaceStub
+	fakeReturns := fake.listResourcesByKindAndNamespaceReturns
 	fake.recordInvocation("ListResourcesByKindAndNamespace", []interface{}{arg1, arg2, arg3})
 	fake.listResourcesByKindAndNamespaceMutex.Unlock()
-	if fake.ListResourcesByKindAndNamespaceStub != nil {
-		return fake.ListResourcesByKindAndNamespaceStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listResourcesByKindAndNamespaceReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -846,15 +856,16 @@ func (fake *FakeClient) ListResourcesByKindAndNamespaceWithContext(arg1 context.
 		arg3 string
 		arg4 v1.ListOptions
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.ListResourcesByKindAndNamespaceWithContextStub
+	fakeReturns := fake.listResourcesByKindAndNamespaceWithContextReturns
 	fake.recordInvocation("ListResourcesByKindAndNamespaceWithContext", []interface{}{arg1, arg2, arg3, arg4})
 	fake.listResourcesByKindAndNamespaceWithContextMutex.Unlock()
-	if fake.ListResourcesByKindAndNamespaceWithContextStub != nil {
-		return fake.ListResourcesByKindAndNamespaceWithContextStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listResourcesByKindAndNamespaceWithContextReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -917,15 +928,16 @@ func (fake *FakeClient) Patch(arg1 string, arg2 string, arg3 string, arg4 []byte
 		arg3 string
 		arg4 []byte
 	}{arg1, arg2, arg3, arg4Copy})
+	stub := fake.PatchStub
+	fakeReturns := fake.patchReturns
 	fake.recordInvocation("Patch", []interface{}{arg1, arg2, arg3, arg4Copy})
 	fake.patchMutex.Unlock()
-	if fake.PatchStub != nil {
-		return fake.PatchStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.patchReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -992,15 +1004,16 @@ func (fake *FakeClient) PatchUsingStrategy(arg1 string, arg2 string, arg3 string
 		arg4 []byte
 		arg5 types.PatchType
 	}{arg1, arg2, arg3, arg4Copy, arg5})
+	stub := fake.PatchUsingStrategyStub
+	fakeReturns := fake.patchUsingStrategyReturns
 	fake.recordInvocation("PatchUsingStrategy", []interface{}{arg1, arg2, arg3, arg4Copy, arg5})
 	fake.patchUsingStrategyMutex.Unlock()
-	if fake.PatchUsingStrategyStub != nil {
-		return fake.PatchUsingStrategyStub(arg1, arg2, arg3, arg4, arg5)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4, arg5)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.patchUsingStrategyReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 

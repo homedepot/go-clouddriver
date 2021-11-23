@@ -1,28 +1,35 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/internal"
 	ops "github.com/homedepot/go-clouddriver/internal/api/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var (
-	manifestListTimeout = int64(30)
+	defaultErrorChanSize    = 1
+	defaultManifestChanSize = 1
+	manifestListTimeout     = int64(30)
 )
 
 // GetManifest returns a manifest for a given account (cluster),
 // namespace, kind, and name.
 func (cc *Controller) GetManifest(c *gin.Context) {
+	includeEvents := c.Query("includeEvents")
 	account := c.Param("account")
 	namespace := c.Param("location")
 	// The name of this param should really be "id" or "cluster" as it
@@ -47,7 +54,44 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 		return
 	}
 
-	result, err := provider.Client.Get(kind, name, namespace)
+	events := []v1.Event{}
+	errCh := make(chan error, defaultErrorChanSize)
+	eventsCh := make(chan v1.Event, internal.DefaultChanSize)
+	manifestCh := make(chan *unstructured.Unstructured, defaultManifestChanSize)
+
+	wg := &sync.WaitGroup{}
+	// Add 1 to the wait group for getting the manifest or error.
+	wg.Add(1)
+
+	go getManifest(provider, wg, manifestCh, errCh, kind, name, namespace)
+
+	if includeEvents != "false" {
+		wg.Add(1)
+
+		go getEvents(provider, wg, eventsCh, kind, name, namespace)
+	}
+
+	wg.Wait()
+
+	close(eventsCh)
+
+	// Receive all events.
+	for event := range eventsCh {
+		events = append(events, event)
+	}
+
+	var manifest *unstructured.Unstructured
+	// Receive either the manifest or the error getting the manifest.
+	select {
+	case manifest = <-manifestCh:
+		break
+	case err = <-errCh:
+		break
+	}
+
+	close(errCh)
+	close(manifestCh)
+
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return
@@ -56,7 +100,7 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 	cluster := fmt.Sprintf("%s %s", kind, name)
 	app := "unknown"
 
-	annotations := result.GetAnnotations()
+	annotations := manifest.GetAnnotations()
 	if annotations != nil {
 		if _, ok := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]; ok {
 			app = annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
@@ -69,9 +113,9 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 
 	kmr := ops.ManifestResponse{
 		Account:  account,
-		Events:   []interface{}{},
+		Events:   events,
 		Location: namespace,
-		Manifest: internal.DeleteNilValues(result.Object),
+		Manifest: internal.DeleteNilValues(manifest.Object),
 		Metrics:  []interface{}{},
 		Moniker: ops.ManifestResponseMoniker{
 			App:     app,
@@ -79,11 +123,43 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 		},
 		Name: fmt.Sprintf("%s %s", kind, name),
 		// The 'default' status of a kubernetes resource.
-		Status:   kubernetes.GetStatus(kind, result.Object),
+		Status:   kubernetes.GetStatus(kind, manifest.Object),
 		Warnings: []interface{}{},
 	}
 
 	c.JSON(http.StatusOK, kmr)
+}
+
+func getManifest(provider *kubernetes.Provider,
+	wg *sync.WaitGroup, manifestCh chan *unstructured.Unstructured,
+	errCh chan error, kind, name, namespace string) {
+	defer wg.Done()
+
+	manifest, err := provider.Client.Get(kind, name, namespace)
+	if err != nil {
+		errCh <- err
+		return
+	}
+
+	manifestCh <- manifest
+}
+
+func getEvents(provider *kubernetes.Provider,
+	wg *sync.WaitGroup, eventsCh chan v1.Event,
+	kind, name, namespace string) {
+	defer wg.Done()
+	// Declare a context with timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
+	defer cancel()
+
+	events, err := provider.Clientset.Events(ctx, kind, name, namespace)
+	if err != nil {
+		return
+	}
+
+	for _, event := range events {
+		eventsCh <- event
+	}
 }
 
 func (cc *Controller) GetManifestByCriteria(c *gin.Context) {

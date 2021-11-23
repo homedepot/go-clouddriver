@@ -2,12 +2,30 @@
 package kubernetesfakes
 
 import (
+	"context"
 	"sync"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
+	v1 "k8s.io/api/core/v1"
 )
 
 type FakeClientset struct {
+	EventsStub        func(context.Context, string, string, string) ([]v1.Event, error)
+	eventsMutex       sync.RWMutex
+	eventsArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 string
+	}
+	eventsReturns struct {
+		result1 []v1.Event
+		result2 error
+	}
+	eventsReturnsOnCall map[int]struct {
+		result1 []v1.Event
+		result2 error
+	}
 	PodLogsStub        func(string, string, string) (string, error)
 	podLogsMutex       sync.RWMutex
 	podLogsArgsForCall []struct {
@@ -27,6 +45,73 @@ type FakeClientset struct {
 	invocationsMutex sync.RWMutex
 }
 
+func (fake *FakeClientset) Events(arg1 context.Context, arg2 string, arg3 string, arg4 string) ([]v1.Event, error) {
+	fake.eventsMutex.Lock()
+	ret, specificReturn := fake.eventsReturnsOnCall[len(fake.eventsArgsForCall)]
+	fake.eventsArgsForCall = append(fake.eventsArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 string
+	}{arg1, arg2, arg3, arg4})
+	stub := fake.EventsStub
+	fakeReturns := fake.eventsReturns
+	fake.recordInvocation("Events", []interface{}{arg1, arg2, arg3, arg4})
+	fake.eventsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientset) EventsCallCount() int {
+	fake.eventsMutex.RLock()
+	defer fake.eventsMutex.RUnlock()
+	return len(fake.eventsArgsForCall)
+}
+
+func (fake *FakeClientset) EventsCalls(stub func(context.Context, string, string, string) ([]v1.Event, error)) {
+	fake.eventsMutex.Lock()
+	defer fake.eventsMutex.Unlock()
+	fake.EventsStub = stub
+}
+
+func (fake *FakeClientset) EventsArgsForCall(i int) (context.Context, string, string, string) {
+	fake.eventsMutex.RLock()
+	defer fake.eventsMutex.RUnlock()
+	argsForCall := fake.eventsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeClientset) EventsReturns(result1 []v1.Event, result2 error) {
+	fake.eventsMutex.Lock()
+	defer fake.eventsMutex.Unlock()
+	fake.EventsStub = nil
+	fake.eventsReturns = struct {
+		result1 []v1.Event
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientset) EventsReturnsOnCall(i int, result1 []v1.Event, result2 error) {
+	fake.eventsMutex.Lock()
+	defer fake.eventsMutex.Unlock()
+	fake.EventsStub = nil
+	if fake.eventsReturnsOnCall == nil {
+		fake.eventsReturnsOnCall = make(map[int]struct {
+			result1 []v1.Event
+			result2 error
+		})
+	}
+	fake.eventsReturnsOnCall[i] = struct {
+		result1 []v1.Event
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClientset) PodLogs(arg1 string, arg2 string, arg3 string) (string, error) {
 	fake.podLogsMutex.Lock()
 	ret, specificReturn := fake.podLogsReturnsOnCall[len(fake.podLogsArgsForCall)]
@@ -35,15 +120,16 @@ func (fake *FakeClientset) PodLogs(arg1 string, arg2 string, arg3 string) (strin
 		arg2 string
 		arg3 string
 	}{arg1, arg2, arg3})
+	stub := fake.PodLogsStub
+	fakeReturns := fake.podLogsReturns
 	fake.recordInvocation("PodLogs", []interface{}{arg1, arg2, arg3})
 	fake.podLogsMutex.Unlock()
-	if fake.PodLogsStub != nil {
-		return fake.PodLogsStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.podLogsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -95,6 +181,8 @@ func (fake *FakeClientset) PodLogsReturnsOnCall(i int, result1 string, result2 e
 func (fake *FakeClientset) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.eventsMutex.RLock()
+	defer fake.eventsMutex.RUnlock()
 	fake.podLogsMutex.RLock()
 	defer fake.podLogsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

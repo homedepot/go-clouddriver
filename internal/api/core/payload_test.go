@@ -2759,6 +2759,121 @@ const payloadManifestClusterRoleNoRules = `{
             "warnings": []
           }`
 
+const payloadManifestNoEvents = `{
+            "account": "test-account",
+            "artifacts": null,
+            "events": [],
+            "location": "test-namespace",
+            "manifest": {},
+            "metrics": [],
+            "moniker": {
+              "app": "unknown",
+              "cluster": "pod test-pod"
+            },
+            "name": "pod test-pod",
+            "status": {
+              "available": {
+                "state": true,
+                "message": ""
+              },
+              "failed": {
+                "state": false,
+                "message": ""
+              },
+              "paused": {
+                "state": false,
+                "message": ""
+              },
+              "stable": {
+                "state": true,
+                "message": ""
+              }
+            },
+            "warnings": []
+          }`
+
+const payloadManifestIncludeEvents = `{
+              "account": "test-account",
+              "artifacts": null,
+              "events": [
+                {
+                  "kind": "test-kind",
+                  "apiVersion": "test-api-version",
+                  "metadata": {
+                    "name": "test-event-name",
+                    "generateName": "test-event-generate-name",
+                    "namespace": "test-event-namespace",
+                    "creationTimestamp": null
+                  },
+                  "involvedObject": {
+                    "kind": "test-kind",
+                    "namespace": "test-namespace",
+                    "name": "test-pod"
+                  },
+                  "reason": "test reason",
+                  "message": "test message",
+                  "source": {},
+                  "firstTimestamp": null,
+                  "lastTimestamp": null,
+                  "count": 1,
+                  "eventTime": null,
+                  "reportingComponent": "",
+                  "reportingInstance": ""
+                },
+                {
+                  "kind": "test-kind",
+                  "apiVersion": "test-api-version",
+                  "metadata": {
+                    "name": "test-event-name2",
+                    "generateName": "test-event-generate-name",
+                    "namespace": "test-event-namespace",
+                    "creationTimestamp": null
+                  },
+                  "involvedObject": {
+                    "kind": "test-kind",
+                    "namespace": "test-namespace",
+                    "name": "test-pod"
+                  },
+                  "reason": "test reason",
+                  "message": "test message",
+                  "source": {},
+                  "firstTimestamp": null,
+                  "lastTimestamp": null,
+                  "count": 2,
+                  "eventTime": null,
+                  "reportingComponent": "",
+                  "reportingInstance": ""
+                }
+              ],
+              "location": "test-namespace",
+              "manifest": {},
+              "metrics": [],
+              "moniker": {
+                "app": "unknown",
+                "cluster": "pod test-pod"
+              },
+              "name": "pod test-pod",
+              "status": {
+                "available": {
+                  "state": true,
+                  "message": ""
+                },
+                "failed": {
+                  "state": false,
+                  "message": ""
+                },
+                "paused": {
+                  "state": false,
+                  "message": ""
+                },
+                "stable": {
+                  "state": true,
+                  "message": ""
+                }
+              },
+              "warnings": []
+            }`
+
 const payloadGetInstance = `{
             "account": "test-account",
             "apiVersion": "v1",

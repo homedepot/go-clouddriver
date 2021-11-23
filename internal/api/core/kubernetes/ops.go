@@ -5,6 +5,7 @@ import (
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/manifest"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
+	v1 "k8s.io/api/core/v1"
 )
 
 type OperationsResponse struct {
@@ -105,7 +106,7 @@ type ManifestResponse struct {
 		Reference string `json:"reference"`
 		Type      string `json:"type"`
 	} `json:"artifacts"`
-	Events   []interface{}           `json:"events"`
+	Events   []v1.Event              `json:"events"`
 	Location string                  `json:"location"`
 	Manifest map[string]interface{}  `json:"manifest"`
 	Metrics  []interface{}           `json:"metrics"`

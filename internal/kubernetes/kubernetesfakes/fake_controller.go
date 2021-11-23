@@ -45,15 +45,16 @@ func (fake *FakeController) NewClient(arg1 *rest.Config) (kubernetes.Client, err
 	fake.newClientArgsForCall = append(fake.newClientArgsForCall, struct {
 		arg1 *rest.Config
 	}{arg1})
+	stub := fake.NewClientStub
+	fakeReturns := fake.newClientReturns
 	fake.recordInvocation("NewClient", []interface{}{arg1})
 	fake.newClientMutex.Unlock()
-	if fake.NewClientStub != nil {
-		return fake.NewClientStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.newClientReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -108,15 +109,16 @@ func (fake *FakeController) NewClientset(arg1 *rest.Config) (kubernetes.Clientse
 	fake.newClientsetArgsForCall = append(fake.newClientsetArgsForCall, struct {
 		arg1 *rest.Config
 	}{arg1})
+	stub := fake.NewClientsetStub
+	fakeReturns := fake.newClientsetReturns
 	fake.recordInvocation("NewClientset", []interface{}{arg1})
 	fake.newClientsetMutex.Unlock()
-	if fake.NewClientsetStub != nil {
-		return fake.NewClientsetStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.newClientsetReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
