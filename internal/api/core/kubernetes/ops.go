@@ -97,23 +97,16 @@ type PatchManifestRequestOptions struct {
 }
 
 type ManifestResponse struct {
-	Account   string `json:"account"`
-	Artifacts []struct {
-		CustomKind bool `json:"customKind"`
-		Metadata   struct {
-		} `json:"metadata"`
-		Name      string `json:"name"`
-		Reference string `json:"reference"`
-		Type      string `json:"type"`
-	} `json:"artifacts"`
-	Events   []v1.Event              `json:"events"`
-	Location string                  `json:"location"`
-	Manifest map[string]interface{}  `json:"manifest"`
-	Metrics  []interface{}           `json:"metrics"`
-	Moniker  ManifestResponseMoniker `json:"moniker"`
-	Name     string                  `json:"name"`
-	Status   manifest.Status         `json:"status"`
-	Warnings []interface{}           `json:"warnings"`
+	Account   string                  `json:"account"`
+	Artifacts []clouddriver.Artifact  `json:"artifacts"`
+	Events    []v1.Event              `json:"events"`
+	Location  string                  `json:"location"`
+	Manifest  map[string]interface{}  `json:"manifest"`
+	Metrics   []interface{}           `json:"metrics"`
+	Moniker   ManifestResponseMoniker `json:"moniker"`
+	Name      string                  `json:"name"`
+	Status    manifest.Status         `json:"status"`
+	Warnings  []interface{}           `json:"warnings"`
 }
 
 type ManifestCoordinatesResponse struct {
