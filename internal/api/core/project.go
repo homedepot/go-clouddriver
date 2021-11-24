@@ -2,6 +2,7 @@ package core
 
 import (
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -164,13 +165,17 @@ func listProjectClusters(rs []resource, account, application, stack, detail stri
 	}
 
 	// Return project clusters as a list.
-	projectClusters := make([]ProjectCluster, 0, len(pcMap))
+	pcs := make([]ProjectCluster, 0, len(pcMap))
 
-	for _, value := range pcMap {
-		projectClusters = append(projectClusters, value)
+	for _, pc := range pcMap {
+		pcs = append(pcs, pc)
 	}
+	// Sort project clusters by region.
+	sort.Slice(pcs, func(i, j int) bool {
+		return pcs[i].Region < pcs[j].Region
+	})
 
-	return projectClusters
+	return pcs
 }
 
 // addResourceToProjectCluster adds this Kubernetes resource's information
