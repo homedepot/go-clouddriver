@@ -43,7 +43,7 @@ var _ = Describe("Sql", func() {
 		mock.ExpectExec("(?i)^CREATE TABLE `kubernetes_providers` " +
 			"\\(`name`\\ varchar\\(256\\)," +
 			"`host` varchar\\(256\\)," +
-			"`ca_data` varchar\\(8192\\)," +
+			"`ca_data` text," +
 			"`bearer_token` varchar\\(2048\\)," +
 			"`token_provider` varchar\\(32\\) NOT NULL DEFAULT 'google'," +
 			"`namespace` varchar\\(253\\)," +

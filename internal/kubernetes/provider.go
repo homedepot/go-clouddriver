@@ -23,7 +23,7 @@ var (
 type Provider struct {
 	Name          string              `json:"name" gorm:"primary_key"`
 	Host          string              `json:"host"`
-	CAData        string              `json:"caData" gorm:"size:8192"`
+	CAData        string              `json:"caData" gorm:"type:text"`
 	BearerToken   string              `json:"bearerToken,omitempty" gorm:"size:2048"`
 	TokenProvider string              `json:"tokenProvider,omitempty" gorm:"size:32;not null;default:'google'"`
 	Namespace     *string             `json:"namespace,omitempty" gorm:"size:253"`
