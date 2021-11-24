@@ -8,6 +8,11 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/middleware"
 )
 
+const (
+	defaultCacheControlMaxAge = 30
+	headerXSpinnakerAccounts  = "X-Spinnaker-Accounts"
+)
+
 // Server hold the gin engine and any clients we need for the API.
 type Server struct {
 	c *internal.Controller
@@ -69,25 +74,19 @@ func (s *Server) Setup() {
 		api.GET("/applications", mc.PostFilterAuthorizedApplications("READ"), c.ListApplications)
 
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ServerGroupManagerController.java#L39
-		// @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
-		// @PostFilter("hasPermission(filterObject.account, 'ACCOUNT', 'READ')")
-		api.GET("/applications/:application/serverGroupManagers", mc.AuthApplication("READ"), c.ListServerGroupManagers)
+		api.GET("/applications/:application/serverGroupManagers", middleware.CacheControl(defaultCacheControlMaxAge), c.ListServerGroupManagers)
 
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ServerGroupController.groovy#L172
-		// @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
-		// @PostAuthorize("@authorizationSupport.filterForAccounts(returnObject)")
-		api.GET("/applications/:application/serverGroups", mc.AuthApplication("READ"), c.ListServerGroups)
+		api.GET("/applications/:application/serverGroups", middleware.CacheControl(defaultCacheControlMaxAge), c.ListServerGroups)
+
+		// https: //github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/LoadBalancerController.groovy#L42
+		api.GET("/applications/:application/loadBalancers", middleware.CacheControl(defaultCacheControlMaxAge), c.ListLoadBalancers)
 
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ServerGroupController.groovy#L75
 		// @PreAuthorize("hasPermission(#account, 'ACCOUNT', 'READ')")
 		// @PostAuthorize("hasPermission(returnObject?.moniker?.app, 'APPLICATION', 'READ')")
 		// textPayload: "Headers: map[Accept:[application/json] Accept-Encoding:[gzip] Connection:[Keep-Alive] User-Agent:[okhttp/3.14.9] X-Spinnaker-Accounts:[gke_github-replication-sandbox_us-east1_sandbox-us-east1-agent-dev,gke_github-replication-sandbox_us-east1_sandbox-us-east1-dev,gke_github-replication-sandbox_us-central1-c_prom-test] X-Spinnaker-Application:[smoketests] X-Spinnaker-User:[me@me.com]]"
 		api.GET("/applications/:application/serverGroups/:account/:location/:name", mc.AuthAccount("READ"), c.GetServerGroup)
-
-		// https: //github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/LoadBalancerController.groovy#L42
-		// @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
-		// @PostAuthorize("@authorizationSupport.filterForAccounts(returnObject)")
-		api.GET("/applications/:application/loadBalancers", mc.AuthApplication("READ"), c.ListLoadBalancers)
 
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ClusterController.groovy#L44
 		// @PreAuthorize("@fiatPermissionEvaluator.storeWholePermission() and hasPermission(#application, 'APPLICATION', 'READ')")
@@ -117,10 +116,8 @@ func (s *Server) Setup() {
 		api.GET("/task/:id", c.GetTask)
 
 		// Generic search endpoint.
-		//
 		// https://github.com/spinnaker/clouddriver/blob/0524d08f6bcf775c469a0576a79b2679b5653325/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/SearchController.groovy#L55
-		// @PreAuthorize("@fiatPermissionEvaluator.storeWholePermission()")
-		api.GET("/search", c.Search)
+		api.GET("/search", middleware.CacheControl(defaultCacheControlMaxAge), middleware.Vary(headerXSpinnakerAccounts), c.Search)
 
 		// Not implemented.
 		//
@@ -139,8 +136,7 @@ func (s *Server) Setup() {
 
 		// Projects API controller.
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ProjectController.groovy
-		api.GET("/projects/:project/clusters", c.ListProjectClusters)
-
+		api.GET("/projects/:project/clusters", middleware.CacheControl(defaultCacheControlMaxAge), c.ListProjectClusters)
 	}
 
 	// V1 endpoint.
@@ -158,6 +154,5 @@ func (s *Server) Setup() {
 		// Resources endpoint for kubernetes.
 		api.PUT("/kubernetes/providers/:name/resources", c.LoadKubernetesResources)
 		api.DELETE("/kubernetes/providers/:name/resources", c.DeleteKubernetesResources)
-
 	}
 }
