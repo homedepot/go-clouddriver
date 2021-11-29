@@ -2896,6 +2896,338 @@ var _ = Describe("Application", func() {
 			})
 		})
 
+		Context("managed load balancers", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{
+						{
+							Object: map[string]interface{}{
+								"kind":       "ReplicaSet",
+								"apiVersion": "apps/v1",
+								"metadata": map[string]interface{}{
+									"name":              "test-rs1",
+									"namespace":         "test-namespace1",
+									"creationTimestamp": "2020-02-13T14:12:03Z",
+									"annotations": map[string]interface{}{
+										"traffic.spinnaker.io/load-balancers": "[\"service my-managed-service1\", \"service my-managed-service2\"]",
+										"artifact.spinnaker.io/name":          "test-deployment1",
+										"artifact.spinnaker.io/type":          "kubernetes/deployment",
+										"artifact.spinnaker.io/location":      "test-namespace1",
+										"moniker.spinnaker.io/application":    "test-application",
+										"moniker.spinnaker.io/cluster":        "deployment test-deployment1",
+										"moniker.spinnaker.io/sequence":       "19",
+									},
+									"ownerReferences": []interface{}{
+										map[string]interface{}{
+											"name": "test-deployment1",
+											"kind": "Deployment",
+											"uid":  "test-uid3",
+										},
+									},
+									"uid": "test-uid1",
+								},
+								"spec": map[string]interface{}{
+									"replicas": 1,
+									"template": map[string]interface{}{
+										"metadata": map[string]interface{}{
+											"labels": map[string]interface{}{
+												"test": "label",
+											},
+										},
+										"spec": map[string]interface{}{
+											"containers": []map[string]interface{}{
+												{
+													"image": "test-image1",
+												},
+												{
+													"image": "test-image2",
+												},
+											},
+										},
+									},
+								},
+								"status": map[string]interface{}{
+									"replicas":      1,
+									"readyReplicas": 0,
+								},
+							},
+						},
+					},
+				}, nil)
+			})
+
+			When("the annotation is malformed", func() {
+				BeforeEach(func() {
+					fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+						Items: []unstructured.Unstructured{
+							{
+								Object: map[string]interface{}{
+									"kind":       "ReplicaSet",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-rs1",
+										"namespace":         "test-namespace1",
+										"creationTimestamp": "2020-02-13T14:12:03Z",
+										"annotations": map[string]interface{}{
+											"traffic.spinnaker.io/load-balancers": "[malformed]",
+											"artifact.spinnaker.io/name":          "test-deployment1",
+											"artifact.spinnaker.io/type":          "kubernetes/deployment",
+											"artifact.spinnaker.io/location":      "test-namespace1",
+											"moniker.spinnaker.io/application":    "test-application",
+											"moniker.spinnaker.io/cluster":        "deployment test-deployment1",
+											"moniker.spinnaker.io/sequence":       "19",
+										},
+										"ownerReferences": []interface{}{
+											map[string]interface{}{
+												"name": "test-deployment1",
+												"kind": "Deployment",
+												"uid":  "test-uid3",
+											},
+										},
+										"uid": "test-uid1",
+									},
+									"spec": map[string]interface{}{
+										"replicas": 1,
+										"template": map[string]interface{}{
+											"metadata": map[string]interface{}{
+												"labels": map[string]interface{}{
+													"test": "label",
+												},
+											},
+											"spec": map[string]interface{}{
+												"containers": []map[string]interface{}{
+													{
+														"image": "test-image1",
+													},
+													{
+														"image": "test-image2",
+													},
+												},
+											},
+										},
+									},
+									"status": map[string]interface{}{
+										"replicas":      1,
+										"readyReplicas": 0,
+									},
+								},
+							},
+						},
+					}, nil)
+				})
+
+				It("ignores the error and succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadListServerGroups)
+				})
+			})
+
+			When("the annotation does not specify the kind", func() {
+				BeforeEach(func() {
+					fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+						Items: []unstructured.Unstructured{
+							{
+								Object: map[string]interface{}{
+									"kind":       "ReplicaSet",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-rs1",
+										"namespace":         "test-namespace1",
+										"creationTimestamp": "2020-02-13T14:12:03Z",
+										"annotations": map[string]interface{}{
+											"traffic.spinnaker.io/load-balancers": "[\"my-managed-service-no-kind\"]",
+											"artifact.spinnaker.io/name":          "test-deployment1",
+											"artifact.spinnaker.io/type":          "kubernetes/deployment",
+											"artifact.spinnaker.io/location":      "test-namespace1",
+											"moniker.spinnaker.io/application":    "test-application",
+											"moniker.spinnaker.io/cluster":        "deployment test-deployment1",
+											"moniker.spinnaker.io/sequence":       "19",
+										},
+										"ownerReferences": []interface{}{
+											map[string]interface{}{
+												"name": "test-deployment1",
+												"kind": "Deployment",
+												"uid":  "test-uid3",
+											},
+										},
+										"uid": "test-uid1",
+									},
+									"spec": map[string]interface{}{
+										"replicas": 1,
+										"template": map[string]interface{}{
+											"metadata": map[string]interface{}{
+												"labels": map[string]interface{}{
+													"test": "label",
+												},
+											},
+											"spec": map[string]interface{}{
+												"containers": []map[string]interface{}{
+													{
+														"image": "test-image1",
+													},
+													{
+														"image": "test-image2",
+													},
+												},
+											},
+										},
+									},
+									"status": map[string]interface{}{
+										"replicas":      1,
+										"readyReplicas": 0,
+									},
+								},
+							},
+						},
+					}, nil)
+				})
+
+				It("continues and succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadListServerGroups)
+				})
+			})
+
+			When("the kind is not service", func() {
+				BeforeEach(func() {
+					fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+						Items: []unstructured.Unstructured{
+							{
+								Object: map[string]interface{}{
+									"kind":       "ReplicaSet",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-rs1",
+										"namespace":         "test-namespace1",
+										"creationTimestamp": "2020-02-13T14:12:03Z",
+										"annotations": map[string]interface{}{
+											"traffic.spinnaker.io/load-balancers": "[\"ingress my-managed-ingress\"]",
+											"artifact.spinnaker.io/name":          "test-deployment1",
+											"artifact.spinnaker.io/type":          "kubernetes/deployment",
+											"artifact.spinnaker.io/location":      "test-namespace1",
+											"moniker.spinnaker.io/application":    "test-application",
+											"moniker.spinnaker.io/cluster":        "deployment test-deployment1",
+											"moniker.spinnaker.io/sequence":       "19",
+										},
+										"ownerReferences": []interface{}{
+											map[string]interface{}{
+												"name": "test-deployment1",
+												"kind": "Deployment",
+												"uid":  "test-uid3",
+											},
+										},
+										"uid": "test-uid1",
+									},
+									"spec": map[string]interface{}{
+										"replicas": 1,
+										"template": map[string]interface{}{
+											"metadata": map[string]interface{}{
+												"labels": map[string]interface{}{
+													"test": "label",
+												},
+											},
+											"spec": map[string]interface{}{
+												"containers": []map[string]interface{}{
+													{
+														"image": "test-image1",
+													},
+													{
+														"image": "test-image2",
+													},
+												},
+											},
+										},
+									},
+									"status": map[string]interface{}{
+										"replicas":      1,
+										"readyReplicas": 0,
+									},
+								},
+							},
+						},
+					}, nil)
+				})
+
+				It("continues and succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadListServerGroups)
+				})
+			})
+
+			When("the replicaSet is already fronted by the service", func() {
+				BeforeEach(func() {
+					fakeKubeClient.ListResourceWithContextReturnsOnCall(1, &unstructured.UnstructuredList{
+						Items: []unstructured.Unstructured{
+							{
+								Object: map[string]interface{}{
+									"kind":       "ReplicaSet",
+									"apiVersion": "apps/v1",
+									"metadata": map[string]interface{}{
+										"name":              "test-rs1",
+										"namespace":         "test-namespace1",
+										"creationTimestamp": "2020-02-13T14:12:03Z",
+										"annotations": map[string]interface{}{
+											"traffic.spinnaker.io/load-balancers": "[\"service test-svc1\"]",
+											"artifact.spinnaker.io/name":          "test-deployment1",
+											"artifact.spinnaker.io/type":          "kubernetes/deployment",
+											"artifact.spinnaker.io/location":      "test-namespace1",
+											"moniker.spinnaker.io/application":    "test-application",
+											"moniker.spinnaker.io/cluster":        "deployment test-deployment1",
+											"moniker.spinnaker.io/sequence":       "19",
+										},
+										"ownerReferences": []interface{}{
+											map[string]interface{}{
+												"name": "test-deployment1",
+												"kind": "Deployment",
+												"uid":  "test-uid3",
+											},
+										},
+										"uid": "test-uid1",
+									},
+									"spec": map[string]interface{}{
+										"replicas": 1,
+										"template": map[string]interface{}{
+											"metadata": map[string]interface{}{
+												"labels": map[string]interface{}{
+													"test": "label",
+												},
+											},
+											"spec": map[string]interface{}{
+												"containers": []map[string]interface{}{
+													{
+														"image": "test-image1",
+													},
+													{
+														"image": "test-image2",
+													},
+												},
+											},
+										},
+									},
+									"status": map[string]interface{}{
+										"replicas":      1,
+										"readyReplicas": 0,
+									},
+								},
+							},
+						},
+					}, nil)
+				})
+
+				It("continues and succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadListServerGroups)
+				})
+			})
+
+			When("the replicaSet is not fronted by any of the managed services", func() {
+				It("appends the managed load balancers and disables the server group", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadListServerGroupsDisabled)
+				})
+			})
+		})
+
 		When("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
@@ -3002,6 +3334,11 @@ var _ = Describe("Application", func() {
 					"spec": map[string]interface{}{
 						"replicas": 1,
 						"template": map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"labels": map[string]interface{}{
+									"selectorKey1": "selectorValue1",
+								},
+							},
 							"spec": map[string]interface{}{
 								"containers": []map[string]interface{}{
 									{
@@ -3085,6 +3422,329 @@ var _ = Describe("Application", func() {
 				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
 				Expect(ce.Message).To(Equal("error listing pods"))
 				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		Context("spinnaker managed load balancers", func() {
+			BeforeEach(func() {
+				fakeKubeClient.GetReturnsOnCall(0, &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "ReplicaSet",
+						"apiVersion": "apps/v1",
+						"metadata": map[string]interface{}{
+							"name":              "test-rs1",
+							"namespace":         "test-namespace1",
+							"creationTimestamp": "2020-02-13T14:12:03Z",
+							"annotations": map[string]interface{}{
+								"traffic.spinnaker.io/load-balancers": "[\"service my-managed-service\"]",
+								"artifact.spinnaker.io/name":          "test-deployment1",
+								"artifact.spinnaker.io/type":          "kubernetes/deployment",
+								"artifact.spinnaker.io/location":      "test-namespace1",
+								"moniker.spinnaker.io/application":    "test-application",
+								"moniker.spinnaker.io/cluster":        "deployment test-deployment1",
+								"moniker.spinnaker.io/sequence":       "19",
+							},
+							"ownerReferences": []interface{}{
+								map[string]interface{}{
+									"name": "test-deployment1",
+									"kind": "Deployment",
+									"uid":  "test-uid3",
+								},
+							},
+							"uid": "test-uid1",
+						},
+						"spec": map[string]interface{}{
+							"replicas": 1,
+							"template": map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"labels": map[string]interface{}{
+										"test": "label",
+									},
+								},
+								"spec": map[string]interface{}{
+									"containers": []map[string]interface{}{
+										{
+											"image": "test-image3",
+										},
+										{
+											"image": "test-image4",
+										},
+									},
+								},
+							},
+						},
+						"status": map[string]interface{}{
+							"replicas":      1,
+							"readyReplicas": 0,
+						},
+					},
+				},
+					nil,
+				)
+				fakeKubeClient.GetReturnsOnCall(1, &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Service",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"name":              "my-managed-service",
+							"namespace":         "test-namespace1",
+							"creationTimestamp": "2020-02-13T14:12:03Z",
+						},
+						"spec": map[string]interface{}{
+							"selector": map[string]interface{}{
+								"test": "label",
+							},
+						},
+						"status": map[string]interface{}{
+							"replicas":      1,
+							"readyReplicas": 0,
+						},
+					},
+				},
+					nil,
+				)
+			})
+
+			When("the load balancer annotation is malformed", func() {
+				BeforeEach(func() {
+					fakeKubeClient.GetReturnsOnCall(0, &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"traffic.spinnaker.io/load-balancers": "[malformed]",
+									"artifact.spinnaker.io/name":          "test-deployment1",
+									"artifact.spinnaker.io/type":          "kubernetes/deployment",
+									"artifact.spinnaker.io/location":      "test-namespace1",
+									"moniker.spinnaker.io/application":    "test-application",
+									"moniker.spinnaker.io/cluster":        "deployment test-deployment1",
+									"moniker.spinnaker.io/sequence":       "19",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-deployment1",
+										"kind": "Deployment",
+										"uid":  "test-uid3",
+									},
+								},
+								"uid": "test-uid1",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label",
+										},
+									},
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image3",
+											},
+											{
+												"image": "test-image4",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+						nil,
+					)
+				})
+
+				It("ignores the error", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadGetServerGroupManagedLoadBalancersMalformed)
+				})
+			})
+
+			When("the load balancer annotation does not have a kind", func() {
+				BeforeEach(func() {
+					fakeKubeClient.GetReturnsOnCall(0, &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"traffic.spinnaker.io/load-balancers": "[\"my-managed-service-no-kind\"]",
+									"artifact.spinnaker.io/name":          "test-deployment1",
+									"artifact.spinnaker.io/type":          "kubernetes/deployment",
+									"artifact.spinnaker.io/location":      "test-namespace1",
+									"moniker.spinnaker.io/application":    "test-application",
+									"moniker.spinnaker.io/cluster":        "deployment test-deployment1",
+									"moniker.spinnaker.io/sequence":       "19",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-deployment1",
+										"kind": "Deployment",
+										"uid":  "test-uid3",
+									},
+								},
+								"uid": "test-uid1",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label",
+										},
+									},
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image3",
+											},
+											{
+												"image": "test-image4",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+						nil,
+					)
+				})
+
+				It("continues and ignores the load balancer", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadGetServerGroupManagedLoadBalancersNoKind)
+				})
+			})
+
+			When("the load balancer annotation is not of kind service", func() {
+				BeforeEach(func() {
+					fakeKubeClient.GetReturnsOnCall(0, &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"traffic.spinnaker.io/load-balancers": "[\"ingress my-managed-ingress\"]",
+									"artifact.spinnaker.io/name":          "test-deployment1",
+									"artifact.spinnaker.io/type":          "kubernetes/deployment",
+									"artifact.spinnaker.io/location":      "test-namespace1",
+									"moniker.spinnaker.io/application":    "test-application",
+									"moniker.spinnaker.io/cluster":        "deployment test-deployment1",
+									"moniker.spinnaker.io/sequence":       "19",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-deployment1",
+										"kind": "Deployment",
+										"uid":  "test-uid3",
+									},
+								},
+								"uid": "test-uid1",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label",
+										},
+									},
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image3",
+											},
+											{
+												"image": "test-image4",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+						nil,
+					)
+				})
+
+				It("continues and ignores the load balancer", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadGetServerGroupManagedLoadBalancersWrongKind)
+				})
+			})
+
+			When("there is an error getting the service from the cluster", func() {
+				BeforeEach(func() {
+					fakeKubeClient.GetReturnsOnCall(1, nil, errors.New("error getting service"))
+				})
+
+				It("continues and ignores the load balancer", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadGetServerGroupManagedLoadBalancersErrorGettingService)
+				})
+			})
+
+			When("the server group is not fronted by the load balancer", func() {
+				BeforeEach(func() {
+					fakeKubeClient.GetReturnsOnCall(1, &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"kind":       "Service",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name":              "my-managed-service",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+							},
+							"spec": map[string]interface{}{
+								"selector": map[string]interface{}{
+									"wrong": "label",
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+						nil,
+					)
+				})
+
+				It("returns the server group as disabled", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadGetServerGroupManagedLoadBalancersDisabled)
+				})
+			})
+
+			When("the server group is fronted by the load balancer", func() {
+				It("returns the server group as enabled", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadGetServerGroupManagedLoadBalancers)
+				})
 			})
 		})
 
