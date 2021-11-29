@@ -1137,6 +1137,279 @@ const payloadServerGroupManagersSorted = `[
             }
           ]`
 
+const payloadListServerGroupsDisabled = `[
+            {
+              "account": "account1",
+              "accountName": "",
+              "buildInfo": {
+                "images": [
+                  "test-image1",
+                  "test-image2"
+                ]
+              },
+              "capacity": {
+                "desired": 2,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "cluster": "deployment test-deployment1",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "displayName": "test-ds1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 2,
+                "unknown": 0,
+                "up": 1
+              },
+              "instances": [
+                {
+                  "availabilityZone": "test-namespace1",
+                  "health": [
+                    {
+                      "state": "Down",
+                      "type": "kubernetes/pod"
+                    },
+                    {
+                      "state": "Down",
+                      "type": "kubernetes/container"
+                    }
+                  ],
+                  "healthState": "Down",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "key": {
+                    "account": "",
+                    "group": "",
+                    "kubernetesKind": "",
+                    "name": "",
+                    "namespace": "",
+                    "provider": ""
+                  },
+                  "moniker": {
+                    "app": "",
+                    "cluster": ""
+                  },
+                  "name": "pod test-pod1"
+                }
+              ],
+              "isDisabled": false,
+              "key": {
+                "account": "",
+                "group": "",
+                "kubernetesKind": "",
+                "name": "",
+                "namespace": "",
+                "provider": ""
+              },
+              "kind": "daemonSet",
+              "labels": null,
+              "loadBalancers": null,
+              "manifest": null,
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "daemonSet test-ds1",
+              "namespace": "test-namespace1",
+              "providerType": "",
+              "region": "test-namespace1",
+              "securityGroups": null,
+              "serverGroupManagers": [],
+              "type": "kubernetes",
+              "uid": "",
+              "zone": "",
+              "zones": null,
+              "insightActions": null
+            },
+            {
+              "account": "account1",
+              "accountName": "",
+              "buildInfo": {
+                "images": [
+                  "test-image1",
+                  "test-image2"
+                ]
+              },
+              "capacity": {
+                "desired": 1,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "cluster": "deployment test-deployment1",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "displayName": "test-rs1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 1,
+                "unknown": 0,
+                "up": 0
+              },
+              "instances": [
+                {
+                  "availabilityZone": "test-namespace1",
+                  "health": [
+                    {
+                      "state": "Down",
+                      "type": "kubernetes/pod"
+                    },
+                    {
+                      "state": "Down",
+                      "type": "kubernetes/container"
+                    }
+                  ],
+                  "healthState": "Down",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "key": {
+                    "account": "",
+                    "group": "",
+                    "kubernetesKind": "",
+                    "name": "",
+                    "namespace": "",
+                    "provider": ""
+                  },
+                  "moniker": {
+                    "app": "",
+                    "cluster": ""
+                  },
+                  "name": "pod test-pod1"
+                }
+              ],
+              "isDisabled": true,
+              "key": {
+                "account": "",
+                "group": "",
+                "kubernetesKind": "",
+                "name": "",
+                "namespace": "",
+                "provider": ""
+              },
+              "kind": "replicaSet",
+              "labels": null,
+              "loadBalancers": [
+							  "service test-svc1",
+							  "service my-managed-service1",
+							  "service my-managed-service2"
+							],
+              "manifest": null,
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "replicaSet test-rs1",
+              "namespace": "test-namespace1",
+              "providerType": "",
+              "region": "test-namespace1",
+              "securityGroups": null,
+              "serverGroupManagers": [
+                {
+                  "account": "account1",
+                  "location": "test-namespace1",
+                  "name": "test-deployment1"
+                }
+              ],
+              "type": "kubernetes",
+              "uid": "",
+              "zone": "",
+              "zones": null,
+              "insightActions": null
+            },
+            {
+              "account": "account1",
+              "accountName": "",
+              "buildInfo": {
+                "images": [
+                  "test-image1",
+                  "test-image2"
+                ]
+              },
+              "capacity": {
+                "desired": 1,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "cluster": "deployment test-deployment1",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "displayName": "test-sts1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 1,
+                "unknown": 0,
+                "up": 0
+              },
+              "instances": [
+                {
+                  "availabilityZone": "test-namespace1",
+                  "health": [
+                    {
+                      "state": "Down",
+                      "type": "kubernetes/pod"
+                    },
+                    {
+                      "state": "Down",
+                      "type": "kubernetes/container"
+                    }
+                  ],
+                  "healthState": "Down",
+                  "id": "cec15437-4e6a-11ea-9788-4201ac100006",
+                  "key": {
+                    "account": "",
+                    "group": "",
+                    "kubernetesKind": "",
+                    "name": "",
+                    "namespace": "",
+                    "provider": ""
+                  },
+                  "moniker": {
+                    "app": "",
+                    "cluster": ""
+                  },
+                  "name": "pod test-pod1"
+                }
+              ],
+              "isDisabled": false,
+              "key": {
+                "account": "",
+                "group": "",
+                "kubernetesKind": "",
+                "name": "",
+                "namespace": "",
+                "provider": ""
+              },
+              "kind": "statefulSet",
+              "labels": null,
+              "loadBalancers": [
+							  "service test-svc2"
+							],
+              "manifest": null,
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "statefulSet test-sts1",
+              "namespace": "test-namespace1",
+              "providerType": "",
+              "region": "test-namespace1",
+              "securityGroups": null,
+              "serverGroupManagers": [],
+              "type": "kubernetes",
+              "uid": "",
+              "zone": "",
+              "zones": null,
+              "insightActions": null
+            }
+          ]`
+
 const payloadListServerGroups = `[
             {
               "account": "account1",
@@ -2409,6 +2682,646 @@ const payloadListClusters2 = `{
             ]
           }`
 
+const payloadGetServerGroupManagedLoadBalancersMalformed = `{
+              "account": "test-account",
+              "accountName": "test-account",
+              "buildInfo": {
+                "images": [
+                  "test-image3",
+                  "test-image4"
+                ]
+              },
+              "capacity": {
+                "desired": 1,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "displayName": "test-rs1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 1,
+                "unknown": 0,
+                "up": 0
+              },
+              "instances": [],
+              "isDisabled": false,
+              "key": {
+                "account": "test-account",
+                "group": "replicaSet",
+                "kubernetesKind": "replicaSet",
+                "name": "test-rs1",
+                "namespace": "test-namespace1",
+                "provider": "kubernetes"
+              },
+              "kind": "replicaSet",
+              "labels": null,
+              "loadBalancers": [],
+              "manifest": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "metadata": {
+                  "annotations": {
+                    "artifact.spinnaker.io/location": "test-namespace1",
+                    "artifact.spinnaker.io/name": "test-deployment1",
+                    "artifact.spinnaker.io/type": "kubernetes/deployment",
+                    "moniker.spinnaker.io/application": "test-application",
+                    "moniker.spinnaker.io/cluster": "deployment test-deployment1",
+                    "moniker.spinnaker.io/sequence": "19",
+                    "traffic.spinnaker.io/load-balancers": "[malformed]"
+                  },
+                  "creationTimestamp": "2020-02-13T14:12:03Z",
+                  "name": "test-rs1",
+                  "namespace": "test-namespace1",
+                  "ownerReferences": [
+                    {
+                      "kind": "Deployment",
+                      "name": "test-deployment1",
+                      "uid": "test-uid3"
+                    }
+                  ],
+                  "uid": "test-uid1"
+                },
+                "spec": {
+                  "replicas": 1,
+                  "template": {
+                    "metadata": {
+                      "labels": {
+                        "test": "label"
+                      }
+                    },
+                    "spec": {
+                      "containers": [
+                        {
+                          "image": "test-image3"
+                        },
+                        {
+                          "image": "test-image4"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "status": {
+                  "readyReplicas": 0,
+                  "replicas": 1
+                }
+              },
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "replicaSet test-rs1",
+              "namespace": "test-namespace1",
+              "providerType": "kubernetes",
+              "region": "test-namespace1",
+              "securityGroups": [],
+              "serverGroupManagers": [],
+              "type": "kubernetes",
+              "uid": "test-uid1",
+              "zone": "test-namespace1",
+              "zones": [],
+              "insightActions": []
+            }`
+
+const payloadGetServerGroupManagedLoadBalancersNoKind = `{
+              "account": "test-account",
+              "accountName": "test-account",
+              "buildInfo": {
+                "images": [
+                  "test-image3",
+                  "test-image4"
+                ]
+              },
+              "capacity": {
+                "desired": 1,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "displayName": "test-rs1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 1,
+                "unknown": 0,
+                "up": 0
+              },
+              "instances": [],
+              "isDisabled": false,
+              "key": {
+                "account": "test-account",
+                "group": "replicaSet",
+                "kubernetesKind": "replicaSet",
+                "name": "test-rs1",
+                "namespace": "test-namespace1",
+                "provider": "kubernetes"
+              },
+              "kind": "replicaSet",
+              "labels": null,
+              "loadBalancers": [],
+              "manifest": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "metadata": {
+                  "annotations": {
+                    "artifact.spinnaker.io/location": "test-namespace1",
+                    "artifact.spinnaker.io/name": "test-deployment1",
+                    "artifact.spinnaker.io/type": "kubernetes/deployment",
+                    "moniker.spinnaker.io/application": "test-application",
+                    "moniker.spinnaker.io/cluster": "deployment test-deployment1",
+                    "moniker.spinnaker.io/sequence": "19",
+                    "traffic.spinnaker.io/load-balancers": "[\"my-managed-service-no-kind\"]"
+                  },
+                  "creationTimestamp": "2020-02-13T14:12:03Z",
+                  "name": "test-rs1",
+                  "namespace": "test-namespace1",
+                  "ownerReferences": [
+                    {
+                      "kind": "Deployment",
+                      "name": "test-deployment1",
+                      "uid": "test-uid3"
+                    }
+                  ],
+                  "uid": "test-uid1"
+                },
+                "spec": {
+                  "replicas": 1,
+                  "template": {
+                    "metadata": {
+                      "labels": {
+                        "test": "label"
+                      }
+                    },
+                    "spec": {
+                      "containers": [
+                        {
+                          "image": "test-image3"
+                        },
+                        {
+                          "image": "test-image4"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "status": {
+                  "readyReplicas": 0,
+                  "replicas": 1
+                }
+              },
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "replicaSet test-rs1",
+              "namespace": "test-namespace1",
+              "providerType": "kubernetes",
+              "region": "test-namespace1",
+              "securityGroups": [],
+              "serverGroupManagers": [],
+              "type": "kubernetes",
+              "uid": "test-uid1",
+              "zone": "test-namespace1",
+              "zones": [],
+              "insightActions": []
+            }`
+
+const payloadGetServerGroupManagedLoadBalancersWrongKind = `{
+              "account": "test-account",
+              "accountName": "test-account",
+              "buildInfo": {
+                "images": [
+                  "test-image3",
+                  "test-image4"
+                ]
+              },
+              "capacity": {
+                "desired": 1,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "displayName": "test-rs1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 1,
+                "unknown": 0,
+                "up": 0
+              },
+              "instances": [],
+              "isDisabled": false,
+              "key": {
+                "account": "test-account",
+                "group": "replicaSet",
+                "kubernetesKind": "replicaSet",
+                "name": "test-rs1",
+                "namespace": "test-namespace1",
+                "provider": "kubernetes"
+              },
+              "kind": "replicaSet",
+              "labels": null,
+              "loadBalancers": [],
+              "manifest": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "metadata": {
+                  "annotations": {
+                    "artifact.spinnaker.io/location": "test-namespace1",
+                    "artifact.spinnaker.io/name": "test-deployment1",
+                    "artifact.spinnaker.io/type": "kubernetes/deployment",
+                    "moniker.spinnaker.io/application": "test-application",
+                    "moniker.spinnaker.io/cluster": "deployment test-deployment1",
+                    "moniker.spinnaker.io/sequence": "19",
+                    "traffic.spinnaker.io/load-balancers": "[\"ingress my-managed-ingress\"]"
+                  },
+                  "creationTimestamp": "2020-02-13T14:12:03Z",
+                  "name": "test-rs1",
+                  "namespace": "test-namespace1",
+                  "ownerReferences": [
+                    {
+                      "kind": "Deployment",
+                      "name": "test-deployment1",
+                      "uid": "test-uid3"
+                    }
+                  ],
+                  "uid": "test-uid1"
+                },
+                "spec": {
+                  "replicas": 1,
+                  "template": {
+                    "metadata": {
+                      "labels": {
+                        "test": "label"
+                      }
+                    },
+                    "spec": {
+                      "containers": [
+                        {
+                          "image": "test-image3"
+                        },
+                        {
+                          "image": "test-image4"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "status": {
+                  "readyReplicas": 0,
+                  "replicas": 1
+                }
+              },
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "replicaSet test-rs1",
+              "namespace": "test-namespace1",
+              "providerType": "kubernetes",
+              "region": "test-namespace1",
+              "securityGroups": [],
+              "serverGroupManagers": [],
+              "type": "kubernetes",
+              "uid": "test-uid1",
+              "zone": "test-namespace1",
+              "zones": [],
+              "insightActions": []
+            }`
+
+const payloadGetServerGroupManagedLoadBalancersErrorGettingService = `{
+              "account": "test-account",
+              "accountName": "test-account",
+              "buildInfo": {
+                "images": [
+                  "test-image3",
+                  "test-image4"
+                ]
+              },
+              "capacity": {
+                "desired": 1,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "displayName": "test-rs1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 1,
+                "unknown": 0,
+                "up": 0
+              },
+              "instances": [],
+              "isDisabled": false,
+              "key": {
+                "account": "test-account",
+                "group": "replicaSet",
+                "kubernetesKind": "replicaSet",
+                "name": "test-rs1",
+                "namespace": "test-namespace1",
+                "provider": "kubernetes"
+              },
+              "kind": "replicaSet",
+              "labels": null,
+              "loadBalancers": [],
+              "manifest": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "metadata": {
+                  "annotations": {
+                    "artifact.spinnaker.io/location": "test-namespace1",
+                    "artifact.spinnaker.io/name": "test-deployment1",
+                    "artifact.spinnaker.io/type": "kubernetes/deployment",
+                    "moniker.spinnaker.io/application": "test-application",
+                    "moniker.spinnaker.io/cluster": "deployment test-deployment1",
+                    "moniker.spinnaker.io/sequence": "19",
+                    "traffic.spinnaker.io/load-balancers": "[\"service my-managed-service\"]"
+                  },
+                  "creationTimestamp": "2020-02-13T14:12:03Z",
+                  "name": "test-rs1",
+                  "namespace": "test-namespace1",
+                  "ownerReferences": [
+                    {
+                      "kind": "Deployment",
+                      "name": "test-deployment1",
+                      "uid": "test-uid3"
+                    }
+                  ],
+                  "uid": "test-uid1"
+                },
+                "spec": {
+                  "replicas": 1,
+                  "template": {
+                    "metadata": {
+                      "labels": {
+                        "test": "label"
+                      }
+                    },
+                    "spec": {
+                      "containers": [
+                        {
+                          "image": "test-image3"
+                        },
+                        {
+                          "image": "test-image4"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "status": {
+                  "readyReplicas": 0,
+                  "replicas": 1
+                }
+              },
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "replicaSet test-rs1",
+              "namespace": "test-namespace1",
+              "providerType": "kubernetes",
+              "region": "test-namespace1",
+              "securityGroups": [],
+              "serverGroupManagers": [],
+              "type": "kubernetes",
+              "uid": "test-uid1",
+              "zone": "test-namespace1",
+              "zones": [],
+              "insightActions": []
+            }`
+
+const payloadGetServerGroupManagedLoadBalancersDisabled = `{
+              "account": "test-account",
+              "accountName": "test-account",
+              "buildInfo": {
+                "images": [
+                  "test-image3",
+                  "test-image4"
+                ]
+              },
+              "capacity": {
+                "desired": 1,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "createdTime": 1581603123000,
+              "disabled": true,
+              "displayName": "test-rs1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 1,
+                "unknown": 0,
+                "up": 0
+              },
+              "instances": [],
+              "isDisabled": false,
+              "key": {
+                "account": "test-account",
+                "group": "replicaSet",
+                "kubernetesKind": "replicaSet",
+                "name": "test-rs1",
+                "namespace": "test-namespace1",
+                "provider": "kubernetes"
+              },
+              "kind": "replicaSet",
+              "labels": null,
+              "loadBalancers": [
+                "service my-managed-service"
+							],
+              "manifest": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "metadata": {
+                  "annotations": {
+                    "artifact.spinnaker.io/location": "test-namespace1",
+                    "artifact.spinnaker.io/name": "test-deployment1",
+                    "artifact.spinnaker.io/type": "kubernetes/deployment",
+                    "moniker.spinnaker.io/application": "test-application",
+                    "moniker.spinnaker.io/cluster": "deployment test-deployment1",
+                    "moniker.spinnaker.io/sequence": "19",
+                    "traffic.spinnaker.io/load-balancers": "[\"service my-managed-service\"]"
+                  },
+                  "creationTimestamp": "2020-02-13T14:12:03Z",
+                  "name": "test-rs1",
+                  "namespace": "test-namespace1",
+                  "ownerReferences": [
+                    {
+                      "kind": "Deployment",
+                      "name": "test-deployment1",
+                      "uid": "test-uid3"
+                    }
+                  ],
+                  "uid": "test-uid1"
+                },
+                "spec": {
+                  "replicas": 1,
+                  "template": {
+                    "metadata": {
+                      "labels": {
+                        "test": "label"
+                      }
+                    },
+                    "spec": {
+                      "containers": [
+                        {
+                          "image": "test-image3"
+                        },
+                        {
+                          "image": "test-image4"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "status": {
+                  "readyReplicas": 0,
+                  "replicas": 1
+                }
+              },
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "replicaSet test-rs1",
+              "namespace": "test-namespace1",
+              "providerType": "kubernetes",
+              "region": "test-namespace1",
+              "securityGroups": [],
+              "serverGroupManagers": [],
+              "type": "kubernetes",
+              "uid": "test-uid1",
+              "zone": "test-namespace1",
+              "zones": [],
+              "insightActions": []
+            }`
+
+const payloadGetServerGroupManagedLoadBalancers = `{
+              "account": "test-account",
+              "accountName": "test-account",
+              "buildInfo": {
+                "images": [
+                  "test-image3",
+                  "test-image4"
+                ]
+              },
+              "capacity": {
+                "desired": 1,
+                "pinned": false
+              },
+              "cloudProvider": "kubernetes",
+              "createdTime": 1581603123000,
+              "disabled": false,
+              "displayName": "test-rs1",
+              "instanceCounts": {
+                "down": 0,
+                "outOfService": 0,
+                "starting": 0,
+                "total": 1,
+                "unknown": 0,
+                "up": 0
+              },
+              "instances": [],
+              "isDisabled": false,
+              "key": {
+                "account": "test-account",
+                "group": "replicaSet",
+                "kubernetesKind": "replicaSet",
+                "name": "test-rs1",
+                "namespace": "test-namespace1",
+                "provider": "kubernetes"
+              },
+              "kind": "replicaSet",
+              "labels": null,
+              "loadBalancers": [
+                "service my-managed-service"
+							],
+              "manifest": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "metadata": {
+                  "annotations": {
+                    "artifact.spinnaker.io/location": "test-namespace1",
+                    "artifact.spinnaker.io/name": "test-deployment1",
+                    "artifact.spinnaker.io/type": "kubernetes/deployment",
+                    "moniker.spinnaker.io/application": "test-application",
+                    "moniker.spinnaker.io/cluster": "deployment test-deployment1",
+                    "moniker.spinnaker.io/sequence": "19",
+                    "traffic.spinnaker.io/load-balancers": "[\"service my-managed-service\"]"
+                  },
+                  "creationTimestamp": "2020-02-13T14:12:03Z",
+                  "name": "test-rs1",
+                  "namespace": "test-namespace1",
+                  "ownerReferences": [
+                    {
+                      "kind": "Deployment",
+                      "name": "test-deployment1",
+                      "uid": "test-uid3"
+                    }
+                  ],
+                  "uid": "test-uid1"
+                },
+                "spec": {
+                  "replicas": 1,
+                  "template": {
+                    "metadata": {
+                      "labels": {
+                        "test": "label"
+                      }
+                    },
+                    "spec": {
+                      "containers": [
+                        {
+                          "image": "test-image3"
+                        },
+                        {
+                          "image": "test-image4"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "status": {
+                  "readyReplicas": 0,
+                  "replicas": 1
+                }
+              },
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment1",
+                "sequence": 19
+              },
+              "name": "replicaSet test-rs1",
+              "namespace": "test-namespace1",
+              "providerType": "kubernetes",
+              "region": "test-namespace1",
+              "securityGroups": [],
+              "serverGroupManagers": [],
+              "type": "kubernetes",
+              "uid": "test-uid1",
+              "zone": "test-namespace1",
+              "zones": [],
+              "insightActions": []
+            }`
+
 const payloadGetServerGroup = `{
             "account": "test-account",
             "accountName": "test-account",
@@ -2590,9 +3503,14 @@ const payloadGetServerGroup = `{
                 "name": "test-rs1",
                 "namespace": "test-namespace1"
               },
-              "spec": {
+							"spec": {
                 "replicas": 1,
                 "template": {
+                  "metadata": {
+                    "labels": {
+                      "selectorKey1": "selectorValue1"
+                    }
+                  },
                   "spec": {
                     "containers": [
                       {

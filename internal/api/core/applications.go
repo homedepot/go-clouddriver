@@ -128,6 +128,17 @@ func contains(s []string, e string) bool {
 	return false
 }
 
+// containsIgnoreCase returns true if slice s contains element e, ignoring case.
+func containsIgnoreCase(s []string, e string) bool {
+	for _, a := range s {
+		if strings.EqualFold(a, e) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // clusterNamesForSpinnakerApp returns a map of Kubernetes provider account names
 // to a list of Kubernetes resources in the format `<KIND> <NAME>`.
 func clusterNamesForSpinnakerApp(application string, rs []kubernetes.Resource) map[string][]string {
@@ -783,6 +794,27 @@ func (cc *Controller) ListServerGroups(c *gin.Context) {
 			_sg.LoadBalancers = serverGroupLoadBalancers[string(sg.u.GetUID())]
 		}
 
+		managedLoadBalancers, err := kubernetes.LoadBalancers(sg.u)
+		if err == nil {
+			for _, managedLoadBalancer := range managedLoadBalancers {
+				a := strings.Split(managedLoadBalancer, " ")
+				if len(a) != 2 {
+					continue
+				}
+
+				// For now, limit the kind of load balancer available to attach to Services.
+				kind := a[0]
+				if !strings.EqualFold(kind, "service") {
+					continue
+				}
+
+				if !containsIgnoreCase(_sg.LoadBalancers, managedLoadBalancer) {
+					_sg.LoadBalancers = append(_sg.LoadBalancers, managedLoadBalancer)
+					_sg.IsDisabled = true
+				}
+			}
+		}
+
 		response = append(response, _sg)
 	}
 	// Sort by account (cluster), then namespace, then kind, then name.
@@ -1213,12 +1245,14 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 
 	annotations := result.GetAnnotations()
 	cluster := annotations[kubernetes.AnnotationSpinnakerMonikerCluster]
-	app := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
 	sequence := sequence(annotations)
 
+	app := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]
 	if app == "" {
 		app = application
 	}
+
+	loadBalancers, disabled := isDisabled(provider, *result)
 
 	response := ServerGroup{
 		Account:     account,
@@ -1232,7 +1266,7 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 		},
 		CloudProvider:  typeKubernetes,
 		CreatedTime:    result.GetCreationTimestamp().Unix() * 1000,
-		Disabled:       false,
+		Disabled:       disabled,
 		DisplayName:    result.GetName(),
 		InstanceCounts: instanceCounts,
 		Instances:      instances,
@@ -1246,7 +1280,7 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 		},
 		Kind:          lowercaseFirst(result.GetKind()),
 		Labels:        result.GetLabels(),
-		LoadBalancers: []string{},
+		LoadBalancers: loadBalancers,
 		Manifest:      result.Object,
 		Moniker: ServerGroupMoniker{
 			App:      app,
@@ -1267,6 +1301,69 @@ func (cc *Controller) GetServerGroup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// isDisabled returns the list of load balancers in its annotation
+// `traffic.spinnaker.io/load-balancers` and if the server group is fronted by
+// all of these load balancers - false (not disabled) if it is, true (disabled)
+// if it is not.
+func isDisabled(provider *kubernetes.Provider, serverGroup unstructured.Unstructured) ([]string, bool) {
+	loadBalancers := []string{}
+
+	managedLoadBalancers, err := kubernetes.LoadBalancers(serverGroup)
+	if err != nil || managedLoadBalancers == nil {
+		return loadBalancers, false
+	}
+
+	labels, found, err := unstructured.NestedStringMap(serverGroup.Object,
+		"spec", "template", "metadata", "labels")
+	if err != nil || !found {
+		return loadBalancers, false
+	}
+
+	disabled := false
+
+	for _, managedLoadBalancer := range managedLoadBalancers {
+		a := strings.Split(managedLoadBalancer, " ")
+		if len(a) != 2 {
+			continue
+		}
+
+		kind := a[0]
+		name := a[1]
+
+		if !strings.EqualFold(kind, "service") {
+			continue
+		}
+
+		service, err := provider.Client.Get(kind, name, serverGroup.GetNamespace())
+		if err != nil {
+			continue
+		}
+
+		// Only append to the server groups load balancers if we're able to grab
+		// it from the cluster.
+		loadBalancers = append(loadBalancers, managedLoadBalancer)
+
+		matching := 0
+		// Define the Service and get the selector.
+		selector, _, _ := unstructured.NestedStringMap(service.Object, "spec", "selector")
+		for k, v := range selector {
+			// If the selector key is not a label key then this Pod Template
+			// is not fronted by the service.
+			if _, ok := labels[k]; !ok {
+				break
+			} else if labels[k] == v {
+				matching++
+			}
+		}
+
+		if len(selector) != matching {
+			disabled = true
+		}
+	}
+
+	return loadBalancers, disabled
 }
 
 // newPodInstance returns a new instance that represents a kind Kubernetes
