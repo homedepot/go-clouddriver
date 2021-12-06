@@ -93,6 +93,9 @@ func (s *Server) Setup() {
 		// @PostAuthorize("@authorizationSupport.filterForAccounts(returnObject)")
 		api.GET("/applications/:application/clusters", mc.AuthApplication("READ"), c.ListClusters)
 
+		// https://github.com/spinnaker/clouddriver/blob/ed236a6fe946007a4136f6206b311525ea460e65/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ClusterController.groovy#L140
+		api.GET("/applications/:application/clusters/:account/:clusterName/kubernetes", mc.AuthApplication("READ"), c.ListClustersByName)
+
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/JobController.groovy#L35
 		// @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ') and hasPermission(#account, 'ACCOUNT', 'READ')")
 		// @ApiOperation(value = "Collect a JobStatus", notes = "Collects the output of the job.")

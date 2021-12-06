@@ -2682,6 +2682,76 @@ const payloadListClusters2 = `{
             ]
           }`
 
+const payloadListClustersByName = `{
+          "accountName": "test-account",
+          "application": "test-application",
+          "loadBalancers": [],
+          "moniker": {
+            "app": "test-application",
+            "cluster": "deployment test-deployment"
+          },
+          "name": "deployment test-deployment",
+          "serverGroups": [
+            {
+              "account": "test-account",
+              "apiVersion": "apps/v1",
+              "cloudProvider": "kubernetes",
+              "displayName": "test-rs1",
+              "kind": "ReplicaSet",
+              "labels": {
+                "labelKey1": "labelValue1",
+                "labelKey2": "labelValue2"
+              },
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment",
+                "sequence": 19
+              },
+              "name": "replicaSet test-rs1",
+              "namespace": "test-namespace1",
+              "region": "test-namespace1",
+              "serverGroupManagers": [
+                {
+                  "account": "test-account",
+                  "location": "test-namespace1",
+                  "name": "test-deployment"
+                }
+              ],
+              "type": "kubernetes",
+              "zones": []
+            },
+            {
+              "account": "test-account",
+              "apiVersion": "apps/v1",
+              "cloudProvider": "kubernetes",
+              "displayName": "test-rs4",
+              "kind": "ReplicaSet",
+              "labels": {
+                "labelKey1": "labelValue1",
+                "labelKey2": "labelValue2"
+              },
+              "moniker": {
+                "app": "test-application",
+                "cluster": "deployment test-deployment",
+                "sequence": 19
+              },
+              "name": "replicaSet test-rs4",
+              "namespace": "test-namespace1",
+              "region": "test-namespace1",
+              "serverGroupManagers": [
+                {
+                  "account": "test-account",
+                  "location": "test-namespace1",
+                  "name": "test-deployment"
+                }
+              ],
+              "type": "kubernetes",
+              "zones": []
+            }
+          ],
+          "type": "kubernetes"
+        }`
+
 const payloadGetServerGroupManagedLoadBalancersMalformed = `{
               "account": "test-account",
               "accountName": "test-account",

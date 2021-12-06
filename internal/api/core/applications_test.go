@@ -1737,6 +1737,315 @@ var _ = Describe("Application", func() {
 		})
 	})
 
+	Describe("#ListClustersByName", func() {
+		BeforeEach(func() {
+			setup()
+			uri = svr.URL + "/applications/test-application/clusters/test-account/deployment test-deployment/kubernetes"
+			createRequest(http.MethodGet)
+			fakeKubeClient.ListResourceWithContextReturns(&unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]interface{}{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs1",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":       "test-deployment1",
+									"artifact.spinnaker.io/type":       "kubernetes/deployment",
+									"artifact.spinnaker.io/location":   "test-namespace1",
+									"moniker.spinnaker.io/application": "test-application",
+									"moniker.spinnaker.io/cluster":     "deployment test-deployment",
+									"moniker.spinnaker.io/sequence":    "19",
+								},
+								"labels": map[string]interface{}{
+									"labelKey1": "labelValue1",
+									"labelKey2": "labelValue2",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-deployment",
+										"kind": "Deployment",
+										"uid":  "test-uid3",
+									},
+								},
+								"uid": "test-uid1",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label",
+										},
+									},
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs2",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":       "test-deployment1",
+									"artifact.spinnaker.io/type":       "kubernetes/deployment",
+									"artifact.spinnaker.io/location":   "test-namespace1",
+									"moniker.spinnaker.io/application": "wrong-application",
+									"moniker.spinnaker.io/cluster":     "deployment test-deployment",
+									"moniker.spinnaker.io/sequence":    "19",
+								},
+								"labels": map[string]interface{}{
+									"labelKey1": "labelValue1",
+									"labelKey2": "labelValue2",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-deployment",
+										"kind": "Deployment",
+										"uid":  "test-uid3",
+									},
+								},
+								"uid": "test-uid1",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label",
+										},
+									},
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs3",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":       "test-deployment1",
+									"artifact.spinnaker.io/type":       "kubernetes/deployment",
+									"artifact.spinnaker.io/location":   "test-namespace1",
+									"moniker.spinnaker.io/application": "test-application",
+									"moniker.spinnaker.io/cluster":     "deployment wrong-cluster",
+									"moniker.spinnaker.io/sequence":    "19",
+								},
+								"labels": map[string]interface{}{
+									"labelKey1": "labelValue1",
+									"labelKey2": "labelValue2",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-deployment1",
+										"kind": "Deployment",
+										"uid":  "test-uid3",
+									},
+								},
+								"uid": "test-uid1",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label",
+										},
+									},
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+					{
+						Object: map[string]interface{}{
+							"kind":       "ReplicaSet",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":              "test-rs4",
+								"namespace":         "test-namespace1",
+								"creationTimestamp": "2020-02-13T14:12:03Z",
+								"annotations": map[string]interface{}{
+									"artifact.spinnaker.io/name":       "test-deployment1",
+									"artifact.spinnaker.io/type":       "kubernetes/deployment",
+									"artifact.spinnaker.io/location":   "test-namespace1",
+									"moniker.spinnaker.io/application": "test-application",
+									"moniker.spinnaker.io/cluster":     "deployment test-deployment",
+									"moniker.spinnaker.io/sequence":    "19",
+								},
+								"labels": map[string]interface{}{
+									"labelKey1": "labelValue1",
+									"labelKey2": "labelValue2",
+								},
+								"ownerReferences": []interface{}{
+									map[string]interface{}{
+										"name": "test-deployment",
+										"kind": "Deployment",
+										"uid":  "test-uid3",
+									},
+								},
+								"uid": "test-uid1",
+							},
+							"spec": map[string]interface{}{
+								"replicas": 1,
+								"template": map[string]interface{}{
+									"metadata": map[string]interface{}{
+										"labels": map[string]interface{}{
+											"test": "label",
+										},
+									},
+									"spec": map[string]interface{}{
+										"containers": []map[string]interface{}{
+											{
+												"image": "test-image1",
+											},
+											{
+												"image": "test-image2",
+											},
+										},
+									},
+								},
+							},
+							"status": map[string]interface{}{
+								"replicas":      1,
+								"readyReplicas": 0,
+							},
+						},
+					},
+				},
+			}, nil)
+		})
+
+		AfterEach(func() {
+			teardown()
+		})
+
+		JustBeforeEach(func() {
+			doRequest()
+		})
+
+		When("the cluster name is not formatted correctly", func() {
+			BeforeEach(func() {
+				setup()
+				uri = svr.URL + "/applications/test-application/clusters/test-account/bad-cluster/kubernetes"
+				createRequest(http.MethodGet)
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
+				Expect(ce.Message).To(Equal("clusterName parameter must be in the format of 'kind name', got: bad-cluster"))
+				Expect(ce.Status).To(Equal(http.StatusBadRequest))
+			})
+		})
+
+		When("getting the provider returns an error", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Bad Request"))
+				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider test-account: error getting provider"))
+				Expect(ce.Status).To(Equal(http.StatusBadRequest))
+			})
+		})
+
+		When("listing resources returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ListResourceWithContextReturns(nil, errors.New("error listing resources"))
+			})
+
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error listing resources"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("the provider is namespace-scoped", func() {
+			BeforeEach(func() {
+				namespace := "test-namespace1"
+				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
+					Name:      "test-account",
+					Host:      "http://localhost",
+					CAData:    "",
+					Namespace: &namespace,
+				}, nil)
+			})
+
+			It("limits the list request to the provider's namespace", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				_, _, lo := fakeKubeClient.ListResourceWithContextArgsForCall(0)
+				Expect(lo.FieldSelector).To(Equal("metadata.namespace=test-namespace1"))
+			})
+		})
+
+		It("succeeds", func() {
+			Expect(res.StatusCode).To(Equal(http.StatusOK))
+			validateResponse(payloadListClustersByName)
+			_, kind, _ := fakeKubeClient.ListResourceWithContextArgsForCall(0)
+			Expect(kind).To(Equal("replicaSet"))
+		})
+	})
+
 	Describe("#ListServerGroups", func() {
 		BeforeEach(func() {
 			setup()
