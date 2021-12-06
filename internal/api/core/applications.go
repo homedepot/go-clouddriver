@@ -652,6 +652,195 @@ func (cc *Controller) ListClusters(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+type ClusterServerGroups struct {
+	AccountName   string                           `json:"accountName"`
+	Application   string                           `json:"application"`
+	LoadBalancers []string                         `json:"loadBalancers"`
+	Moniker       Moniker                          `json:"moniker"`
+	Name          string                           `json:"name"`
+	ServerGroups  []ClusterServerGroupsServerGroup `json:"serverGroups"`
+	Type          string                           `json:"type"`
+}
+
+type ClusterServerGroupsServerGroup struct {
+	Account    string `json:"account"`
+	APIVersion string `json:"apiVersion"`
+	// Buildinfo  struct {
+	// 	Images []string `json:"images"`
+	// } `json:"buildInfo"`
+	// Capacity struct {
+	// 	Desired int  `json:"desired"`
+	// 	Pinned  bool `json:"pinned"`
+	// } `json:"capacity"`
+	CloudProvider string `json:"cloudProvider"`
+	// CreatedTime    int64  `json:"createdTime"`
+	// Disabled       bool   `json:"disabled"`
+	DisplayName string `json:"displayName"`
+	// Instancecounts struct {
+	// 	Down         int `json:"down"`
+	// 	Outofservice int `json:"outOfService"`
+	// 	Starting     int `json:"starting"`
+	// 	Total        int `json:"total"`
+	// 	Unknown      int `json:"unknown"`
+	// 	Up           int `json:"up"`
+	// } `json:"instanceCounts"`
+	// Instances []struct {
+	// 	Account       string `json:"account"`
+	// 	Apiversion    string `json:"apiVersion"`
+	// 	Cloudprovider string `json:"cloudProvider"`
+	// 	Createdtime   int64  `json:"createdTime"`
+	// 	Displayname   string `json:"displayName"`
+	// 	Health        []struct {
+	// 		Platform string `json:"platform"`
+	// 		Source   string `json:"source"`
+	// 		State    string `json:"state"`
+	// 		Type     string `json:"type"`
+	// 	} `json:"health"`
+	// 	Healthstate       string `json:"healthState"`
+	// 	Humanreadablename string `json:"humanReadableName"`
+	// 	Kind              string `json:"kind"`
+	// 	Labels            struct {
+	// 		AppKubernetesIoManagedBy   string `json:"app.kubernetes.io/managed-by"`
+	// 		AppKubernetesIoName        string `json:"app.kubernetes.io/name"`
+	// 		MonikerSpinnakerIoSequence string `json:"moniker.spinnaker.io/sequence"`
+	// 		PodTemplateHash            string `json:"pod-template-hash"`
+	// 		Run                        string `json:"run"`
+	// 	} `json:"labels"`
+	// 	Moniker struct {
+	// 		App      string `json:"app"`
+	// 		Cluster  string `json:"cluster"`
+	// 		Sequence int    `json:"sequence"`
+	// 	} `json:"moniker"`
+	// 	Name         string `json:"name"`
+	// 	Namespace    string `json:"namespace"`
+	// 	Providertype string `json:"providerType"`
+	// 	Zone         string `json:"zone"`
+	// } `json:"instances"`
+	Kind   string            `json:"kind"`
+	Labels map[string]string `json:"labels"`
+	// Launchconfig struct {
+	// } `json:"launchConfig"`
+	// Loadbalancers []string{} `json:"loadBalancers"`
+	Moniker   ServerGroupMoniker `json:"moniker"`
+	Name      string             `json:"name"`
+	Namespace string             `json:"namespace"`
+	Region    string             `json:"region"`
+	// Securitygroups      []interface{} `json:"securityGroups"`
+	ServerGroupManagers []ClusterServerGroupsServerGroupManager `json:"serverGroupManagers"`
+	Type                string                                  `json:"type"`
+	Zones               []interface{}                           `json:"zones"`
+}
+
+type ClusterServerGroupsServerGroupManager struct {
+	Account  string `json:"account"`
+	Location string `json:"location"`
+	Name     string `json:"name"`
+}
+
+// ListClustersByName returns a list of clusters for a given application,
+// account, and name, where name is something like "deployment my-deployment".
+func (cc *Controller) ListClustersByName(c *gin.Context) {
+	application := c.Param("application")
+	account := c.Param("account")
+	clusterName := c.Param("clusterName")
+
+	a := strings.Split(clusterName, " ")
+	if len(a) != 2 {
+		clouddriver.Error(c, http.StatusBadRequest,
+			fmt.Errorf("clusterName parameter must be in the format of 'kind name', got: %s", clusterName))
+		return
+	}
+
+	// The Kubernetes kind to list is defined by the cluster kind. If
+	// the cluster kind is "deployment" we still want to list ReplicaSets.
+	kind := a[0]
+	if strings.EqualFold(kind, "deployment") {
+		kind = "replicaSet"
+	}
+
+	provider, err := cc.KubernetesProvider(account)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
+	defer cancel()
+
+	lo := metav1.ListOptions{
+		LabelSelector: kubernetes.DefaultLabelSelector(),
+	}
+	// If namespace-scoped account, then only get resources in the namespace.
+	if provider.Namespace != nil {
+		lo.FieldSelector = "metadata.namespace=" + *provider.Namespace
+	}
+
+	ul, err := provider.Client.ListResourceWithContext(ctx, kind, lo)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	// Filter out all unassociated objects based on the 'moniker.spinnaker.io/cluster' annotation.
+	items := kubernetes.FilterOnAnnotation(ul.Items,
+		kubernetes.AnnotationSpinnakerMonikerCluster, clusterName)
+	// Filter out all unassociated objects based on the 'moniker.spinnaker.io/application' annotation.
+	items = kubernetes.FilterOnAnnotation(items,
+		kubernetes.AnnotationSpinnakerMonikerApplication, application)
+
+	serverGroups := []ClusterServerGroupsServerGroup{}
+
+	for _, item := range items {
+		serverGroup := ClusterServerGroupsServerGroup{
+			Account:       account,
+			APIVersion:    item.GetAPIVersion(),
+			CloudProvider: typeKubernetes,
+			DisplayName:   item.GetName(),
+			Kind:          item.GetKind(),
+			Labels:        item.GetLabels(),
+			Moniker: ServerGroupMoniker{
+				App:      application,
+				Cluster:  clusterName,
+				Sequence: sequence(item.GetAnnotations()),
+			},
+			Name:      fmt.Sprintf("%s %s", lowercaseFirst(item.GetKind()), item.GetName()),
+			Namespace: item.GetNamespace(),
+			Region:    item.GetNamespace(),
+			Type:      typeKubernetes,
+			Zones:     []interface{}{},
+		}
+		serverGroupManagers := []ClusterServerGroupsServerGroupManager{}
+
+		ownerReferences := item.GetOwnerReferences()
+		for _, ownerReference := range ownerReferences {
+			serverGroupManager := ClusterServerGroupsServerGroupManager{
+				Account:  account,
+				Location: item.GetNamespace(),
+				Name:     ownerReference.Name,
+			}
+			serverGroupManagers = append(serverGroupManagers, serverGroupManager)
+		}
+
+		serverGroup.ServerGroupManagers = serverGroupManagers
+		serverGroups = append(serverGroups, serverGroup)
+	}
+
+	cg := ClusterServerGroups{
+		AccountName:   account,
+		Application:   application,
+		LoadBalancers: []string{},
+		Moniker: Moniker{
+			App:     application,
+			Cluster: clusterName,
+		},
+		Name:         clusterName,
+		ServerGroups: serverGroups,
+		Type:         typeKubernetes,
+	}
+
+	c.JSON(http.StatusOK, cg)
+}
+
 type ServerGroups []ServerGroup
 
 type ServerGroup struct {
