@@ -199,11 +199,9 @@ var _ = Describe("Delete", func() {
 				deleteManifestRequest.Kinds = []string{}
 			})
 
-			It("gracefully succeeds w/o deleting", func() {
-				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceCallCount()).To(Equal(0))
-				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
-				Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeNoOp))
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("requested to delete manifests by label, but no kinds were selected"))
 			})
 		})
 
