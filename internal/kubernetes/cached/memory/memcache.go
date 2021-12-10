@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sync"
 	"syscall"
+	"time"
 
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
 
@@ -45,10 +46,20 @@ type cacheEntry struct {
 type memCacheClient struct {
 	delegate discovery.DiscoveryInterface
 
-	lock                   sync.RWMutex
-	groupToServerResources map[string]*cacheEntry
-	groupList              *metav1.APIGroupList
-	cacheValid             bool
+	// ttl is how long the cache should be considered valid
+	ttl time.Duration
+
+	// lock                   sync.RWMutex
+	mutex sync.Mutex
+	// groupToServerResources map[string]*cacheEntry
+	ourEntries map[string]*cacheEntry
+	ourTTLs    map[string]time.Duration
+	// groupList              *metav1.APIGroupList
+	// cacheValid             bool
+	// invalidated is true if all cache files should be ignored that are not ours (e.g. after Invalidate() was called)
+	invalidated bool
+	// fresh is true if all used cache files were ours
+	fresh bool
 }
 
 // Error Constants
@@ -130,8 +141,9 @@ func (d *memCacheClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []*meta
 }
 
 func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
-	d.lock.Lock()
-	defer d.lock.Unlock()
+	cachedEntry, err := d.getCachedEntry("servergroups")
+	// d.lock.Lock()
+	// defer d.lock.Unlock()
 
 	// if !d.cacheValid {
 	// 	if err := d.refreshLocked(); err != nil {
@@ -139,20 +151,20 @@ func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 	// 	}
 	// }
 
-	if d.groupList != nil {
-		return d.groupList, nil
-	}
-
-	liveGroups, err := d.delegate.ServerGroups()
-	if err != nil {
-		return liveGroups, err
-	}
-
-	if liveGroups == nil || len(liveGroups.Groups) == 0 {
-		return liveGroups, err
-	}
-
-	d.groupList = liveGroups
+	// if d.groupList != nil {
+	// 	return d.groupList, nil
+	// }
+	//
+	// liveGroups, err := d.delegate.ServerGroups()
+	// if err != nil {
+	// 	return liveGroups, err
+	// }
+	//
+	// if liveGroups == nil || len(liveGroups.Groups) == 0 {
+	// 	return liveGroups, err
+	// }
+	//
+	// d.groupList = liveGroups
 
 	// cachedVal, ok := d.groupToServerResources[groupVersion]
 	// if ok {
@@ -177,7 +189,34 @@ func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 	//
 	// return cachedVal.resourceList, cachedVal.err
 
-	return d.groupList, nil
+	// return d.groupList, nil
+}
+
+func (d *memCacheClient) getCachedEntry(key string) (*cacheEntry, error) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	cachedEntry, ok := d.ourEntries[key]
+	if d.invalidated && !ok {
+		return nil, errors.New("cache invalidated")
+	}
+
+	t, ok := d.ourTTLs[key]
+	if ok && time.Now().After(t.Add(d.ttl)) {
+		return nil, errors.New("cache expired")
+	}
+
+	d.fresh = d.fresh && ok
+
+	return cachedEntry, nil
+}
+
+func (d *memCacheClient) createCachedEntry(key string, entry *cacheEntry) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	d.ourEntries[key] = entry
+	d.ourTTLs[key] = time.Now().UTC().Add(d.ttl)
 }
 
 func (d *memCacheClient) RESTClient() restclient.Interface {
@@ -201,82 +240,34 @@ func (d *memCacheClient) OpenAPISchema() (*openapi_v2.Document, error) {
 }
 
 func (d *memCacheClient) Fresh() bool {
-	d.lock.RLock()
-	defer d.lock.RUnlock()
-	// Return whether the cache is populated at all. It is still possible that
-	// a single entry is missing due to transient errors and the attempt to read
-	// that entry will trigger retry.
-	return d.cacheValid
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	return d.fresh
 }
 
 // Invalidate enforces that no cached data that is older than the current time
 // is used.
 func (d *memCacheClient) Invalidate() {
-	d.lock.Lock()
-	defer d.lock.Unlock()
-	d.cacheValid = false
-	d.groupToServerResources = nil
-	d.groupList = nil
-}
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
-// refreshLocked refreshes the state of cache. The caller must hold d.lock for
-// writing.
-func (d *memCacheClient) refreshLocked() error {
-	// TODO: Could this multiplicative set of calls be replaced by a single call
-	// to ServerResources? If it's possible for more than one resulting
-	// APIResourceList to have the same GroupVersion, the lists would need merged.
-	gl, err := d.delegate.ServerGroups()
-	if err != nil || len(gl.Groups) == 0 {
-		utilruntime.HandleError(fmt.Errorf("couldn't get current server API group list: %v", err))
-		return err
-	}
-
-	wg := &sync.WaitGroup{}
-	resultLock := &sync.Mutex{}
-	rl := map[string]*cacheEntry{}
-	for _, g := range gl.Groups {
-		for _, v := range g.Versions {
-			gv := v.GroupVersion
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				defer utilruntime.HandleCrash()
-
-				r, err := d.serverResourcesForGroupVersion(gv)
-				if err != nil {
-					utilruntime.HandleError(fmt.Errorf("couldn't get resource list for %v: %v", gv, err))
-				}
-
-				resultLock.Lock()
-				defer resultLock.Unlock()
-				rl[gv] = &cacheEntry{r, err}
-			}()
-		}
-	}
-	wg.Wait()
-
-	d.groupToServerResources, d.groupList = rl, gl
-	d.cacheValid = true
-	return nil
-}
-
-func (d *memCacheClient) serverResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
-	r, err := d.delegate.ServerResourcesForGroupVersion(groupVersion)
-	if err != nil {
-		return r, err
-	}
-	if len(r.APIResources) == 0 {
-		return r, fmt.Errorf("Got empty response for: %v", groupVersion)
-	}
-	return r, nil
+	d.ourEntries = map[string]*cacheEntry{}
+	d.ourTTLs = map[string]time.Duration{}
+	d.fresh = true
+	d.invalidated = true
 }
 
 // NewMemCacheClient creates a new CachedDiscoveryInterface which caches
 // discovery information in memory and will stay up-to-date if Invalidate is
 // called with regularity.
-func NewMemCacheClient(delegate discovery.DiscoveryInterface) discovery.CachedDiscoveryInterface {
+func NewMemCacheClient(delegate discovery.DiscoveryInterface, ttl time.Duration) discovery.CachedDiscoveryInterface {
 	return &memCacheClient{
-		delegate:               delegate,
-		groupToServerResources: map[string]*cacheEntry{},
+		delegate: delegate,
+		ttl:      ttl,
+		// groupToServerResources: map[string]*cacheEntry{},
+		ourEntries: map[string]*cacheEntry{},
+		ourTTLs:    map[string]time.Duration{},
+		fresh:      true,
 	}
 }
