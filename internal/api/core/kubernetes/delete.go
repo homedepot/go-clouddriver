@@ -108,6 +108,11 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 			return
 		}
 
+		if len(dm.Kinds) == 0 {
+			clouddriver.Error(c, http.StatusBadRequest, fmt.Errorf("requested to delete manifests by label, but no kinds were selected"))
+			return
+		}
+
 		ls := labels.NewSelector()
 		// The set of label selectors will be used across all Kinds.
 		for _, selector := range dm.LabelSelectors.Selectors {
