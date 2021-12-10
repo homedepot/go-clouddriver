@@ -108,6 +108,26 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 			return
 		}
 
+		// Spinnaker OSS does not fail when no kinds are selected,
+		// so create a 'no op' resource and return.
+		if len(dm.Kinds) == 0 {
+			kr := kubernetes.Resource{
+				AccountName: dm.Account,
+				ID:          uuid.New().String(),
+				TaskID:      taskID,
+				TaskType:    clouddriver.TaskTypeNoOp,
+				Timestamp:   internal.CurrentTimeUTC(),
+			}
+
+			err = cc.SQLClient.CreateKubernetesResource(kr)
+			if err != nil {
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
+			}
+
+			return
+		}
+
 		ls := labels.NewSelector()
 		// The set of label selectors will be used across all Kinds.
 		for _, selector := range dm.LabelSelectors.Selectors {

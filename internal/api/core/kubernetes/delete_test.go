@@ -194,6 +194,19 @@ var _ = Describe("Delete", func() {
 			})
 		})
 
+		When("there are no kinds selected", func() {
+			BeforeEach(func() {
+				deleteManifestRequest.Kinds = []string{}
+			})
+
+			It("gracefully succeeds w/o deleting", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceCallCount()).To(Equal(0))
+				kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+				Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeNoOp))
+			})
+		})
+
 		When("getting the gvr returns an error", func() {
 			BeforeEach(func() {
 				fakeKubeClient.GVRForKindReturns(schema.GroupVersionResource{}, errors.New("error getting gvr"))
