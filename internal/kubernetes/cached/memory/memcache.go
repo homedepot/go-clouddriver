@@ -40,22 +40,15 @@ type cacheEntry struct {
 
 // memCacheClient can Invalidate() to stay up-to-date with discovery
 // information.
-//
-// TODO: Switch to a watch interface. Right now it will poll after each
-// Invalidate() call.
 type memCacheClient struct {
 	delegate discovery.DiscoveryInterface
 
 	// ttl is how long the cache should be considered valid
 	ttl time.Duration
 
-	// lock                   sync.RWMutex
-	mutex sync.Mutex
-	// groupToServerResources map[string]*cacheEntry
+	mutex      sync.Mutex
 	ourEntries map[string]*cacheEntry
 	ourTTLs    map[string]time.Duration
-	// groupList              *metav1.APIGroupList
-	// cacheValid             bool
 	// invalidated is true if all cache files should be ignored that are not ours (e.g. after Invalidate() was called)
 	invalidated bool
 	// fresh is true if all used cache files were ours
@@ -142,6 +135,11 @@ func (d *memCacheClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []*meta
 
 func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 	cachedEntry, err := d.getCachedEntry("servergroups")
+	// don't fail on errors, we either don't have an entry or won't be able to run the cached check. Either way we can fallback.
+	if err == nil {
+
+	}
+
 	// d.lock.Lock()
 	// defer d.lock.Unlock()
 
