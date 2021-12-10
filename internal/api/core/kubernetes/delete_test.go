@@ -194,6 +194,17 @@ var _ = Describe("Delete", func() {
 			})
 		})
 
+		When("there are no kinds selected", func() {
+			BeforeEach(func() {
+				deleteManifestRequest.Kinds = []string{}
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("requested to delete manifests by label, but no kinds were selected"))
+			})
+		})
+
 		When("getting the gvr returns an error", func() {
 			BeforeEach(func() {
 				fakeKubeClient.GVRForKindReturns(schema.GroupVersionResource{}, errors.New("error getting gvr"))
