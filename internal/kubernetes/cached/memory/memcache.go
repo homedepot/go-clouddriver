@@ -18,24 +18,30 @@ package memory
 
 import (
 	"errors"
-	"fmt"
+	"net/http"
 	"sync"
-	"syscall"
 	"time"
 
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
 
-	errorsutil "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
 	restclient "k8s.io/client-go/rest"
 )
 
-type cacheEntry struct {
-	resourceList *metav1.APIResourceList
-	err          error
+type MemCachedDiscoveryClient interface {
+	ServerResourcesForGroupVersion(string) (*metav1.APIResourceList, error)
+	ServerResources() ([]*metav1.APIResourceList, error)
+	ServerGroupsAndResources() ([]*metav1.APIGroup, []*metav1.APIResourceList, error)
+	ServerGroups() (*metav1.APIGroupList, error)
+	RESTClient() restclient.Interface
+	ServerPreferredResources() ([]*metav1.APIResourceList, error)
+	ServerPreferredNamespacedResources() ([]*metav1.APIResourceList, error)
+	ServerVersion() (*version.Info, error)
+	OpenAPISchema() (*openapi_v2.Document, error)
+	Fresh() bool
+	Invalidate()
 }
 
 // memCacheClient can Invalidate() to stay up-to-date with discovery
@@ -46,69 +52,23 @@ type memCacheClient struct {
 	// ttl is how long the cache should be considered valid
 	ttl time.Duration
 
-	mutex      sync.Mutex
-	ourEntries map[string]*cacheEntry
-	ourTTLs    map[string]time.Duration
+	mutex           sync.Mutex
+	ourEntries      map[string]*metav1.APIResourceList
+	ourServerGroups *metav1.APIGroupList
+	ourTTLs         map[string]time.Time
 	// invalidated is true if all cache files should be ignored that are not ours (e.g. after Invalidate() was called)
 	invalidated bool
 	// fresh is true if all used cache files were ours
 	fresh bool
 }
 
-// Error Constants
-var (
-	ErrCacheNotFound = errors.New("not found")
-)
-
 var _ discovery.CachedDiscoveryInterface = &memCacheClient{}
-
-// isTransientConnectionError checks whether given error is "Connection refused" or
-// "Connection reset" error which usually means that apiserver is temporarily
-// unavailable.
-func isTransientConnectionError(err error) bool {
-	var errno syscall.Errno
-	if errors.As(err, &errno) {
-		return errno == syscall.ECONNREFUSED || errno == syscall.ECONNRESET
-	}
-	return false
-}
-
-func isTransientError(err error) bool {
-	if isTransientConnectionError(err) {
-		return true
-	}
-
-	if t, ok := err.(errorsutil.APIStatus); ok && t.Status().Code >= 500 {
-		return true
-	}
-
-	return errorsutil.IsTooManyRequests(err)
-}
 
 // ServerResourcesForGroupVersion returns the supported resources for a group and version.
 func (d *memCacheClient) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
-	d.lock.Lock()
-	defer d.lock.Unlock()
-
-	// if !d.cacheValid {
-	// 	if err := d.refreshLocked(); err != nil {
-	// 		return nil, err
-	// 	}
-	// }
-
-	cachedVal, ok := d.groupToServerResources[groupVersion]
-	if ok {
-		if cachedVal.err != nil && isTransientError(cachedVal.err) {
-			r, err := d.serverResourcesForGroupVersion(groupVersion)
-			if err != nil {
-				utilruntime.HandleError(fmt.Errorf("couldn't get resource list for %v: %v", groupVersion, err))
-			}
-
-			cachedVal = &cacheEntry{r, err}
-			d.groupToServerResources[groupVersion] = cachedVal
-		}
-
-		return cachedVal.resourceList, cachedVal.err
+	cachedEntry, err := d.getCachedEntry(groupVersion)
+	if err == nil && cachedEntry != nil {
+		return cachedEntry, nil
 	}
 
 	liveResources, err := d.delegate.ServerResourcesForGroupVersion(groupVersion)
@@ -116,16 +76,16 @@ func (d *memCacheClient) ServerResourcesForGroupVersion(groupVersion string) (*m
 		return liveResources, err
 	}
 
-	cachedVal = &cacheEntry{liveResources, err}
-	d.groupToServerResources[groupVersion] = cachedVal
+	d.createCachedEntry(groupVersion, liveResources)
 
-	return cachedVal.resourceList, cachedVal.err
+	return liveResources, nil
 }
 
 // ServerResources returns the supported resources for all groups and versions.
 // Deprecated: use ServerGroupsAndResources instead.
 func (d *memCacheClient) ServerResources() ([]*metav1.APIResourceList, error) {
-	return discovery.ServerResources(d)
+	_, rs, err := discovery.ServerGroupsAndResources(d)
+	return rs, err
 }
 
 // ServerGroupsAndResources returns the groups and supported resources for all groups and versions.
@@ -134,87 +94,90 @@ func (d *memCacheClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []*meta
 }
 
 func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
-	cachedEntry, err := d.getCachedEntry("servergroups")
-	// don't fail on errors, we either don't have an entry or won't be able to run the cached check. Either way we can fallback.
-	if err == nil {
-
+	cachedServerGroups, err := d.getCachedServerGroups()
+	// Don't fail on errors, we either don't have an entry or won't be able to run the cached check.
+	// Either way we can fallback.
+	if err == nil && cachedServerGroups != nil {
+		return cachedServerGroups, nil
 	}
 
-	// d.lock.Lock()
-	// defer d.lock.Unlock()
+	liveGroups, err := d.delegate.ServerGroups()
+	if err != nil {
+		return nil, err
+	}
 
-	// if !d.cacheValid {
-	// 	if err := d.refreshLocked(); err != nil {
-	// 		return nil, err
-	// 	}
-	// }
+	if liveGroups == nil || len(liveGroups.Groups) == 0 {
+		return liveGroups, err
+	}
 
-	// if d.groupList != nil {
-	// 	return d.groupList, nil
-	// }
-	//
-	// liveGroups, err := d.delegate.ServerGroups()
-	// if err != nil {
-	// 	return liveGroups, err
-	// }
-	//
-	// if liveGroups == nil || len(liveGroups.Groups) == 0 {
-	// 	return liveGroups, err
-	// }
-	//
-	// d.groupList = liveGroups
+	d.createCachedServerGroups(liveGroups)
 
-	// cachedVal, ok := d.groupToServerResources[groupVersion]
-	// if ok {
-	// 	if cachedVal.err != nil && isTransientError(cachedVal.err) {
-	// 		r, err := d.serverResourcesForGroupVersion(groupVersion)
-	// 		if err != nil {
-	// 			utilruntime.HandleError(fmt.Errorf("couldn't get resource list for %v: %v", groupVersion, err))
-	// 		}
-	// 		cachedVal = &cacheEntry{r, err}
-	// 		d.groupToServerResources[groupVersion] = cachedVal
-	// 	}
-	//
-	// 	return cachedVal.resourceList, cachedVal.err
-	// }
-	//
-	// r, err := d.serverResourcesForGroupVersion(groupVersion)
-	// if err != nil {
-	// 	utilruntime.HandleError(fmt.Errorf("couldn't get resource list for %v: %v", groupVersion, err))
-	// }
-	// cachedVal = &cacheEntry{r, err}
-	// d.groupToServerResources[groupVersion] = cachedVal
-	//
-	// return cachedVal.resourceList, cachedVal.err
-
-	// return d.groupList, nil
+	return liveGroups, nil
 }
 
-func (d *memCacheClient) getCachedEntry(key string) (*cacheEntry, error) {
+func (d *memCacheClient) getCachedServerGroups() (*metav1.APIGroupList, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	cachedEntry, ok := d.ourEntries[key]
-	if d.invalidated && !ok {
+	if d.invalidated {
 		return nil, errors.New("cache invalidated")
 	}
 
-	t, ok := d.ourTTLs[key]
-	if ok && time.Now().After(t.Add(d.ttl)) {
+	if d.ourServerGroups == nil {
+		return nil, errors.New("server groups not defined")
+	}
+
+	t, ok := d.ourTTLs["servergroups"]
+	if ok && time.Now().After(t) {
 		return nil, errors.New("cache expired")
 	}
 
-	d.fresh = d.fresh && ok
+	// d.fresh = d.fresh && d.ourServerGroups != nil
+
+	return d.ourServerGroups, nil
+}
+
+func (d *memCacheClient) createCachedServerGroups(serverGroups *metav1.APIGroupList) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	d.ourServerGroups = serverGroups
+	d.ourTTLs["servergroups"] = time.Now().Add(d.ttl)
+}
+
+func (d *memCacheClient) getCachedEntry(key string) (*metav1.APIResourceList, error) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	cachedEntry, ourEntry := d.ourEntries[key]
+	if d.invalidated && !ourEntry {
+		return nil, errors.New("cache invalidated")
+	}
+
+	if !ourEntry {
+		return nil, errors.New("entry not found")
+	}
+
+	t, ok := d.ourTTLs[key]
+	// if !ok {
+	// 	return nil, errors.New("no ttl defined")
+	// }
+
+	if ok && time.Now().After(t) {
+		return nil, errors.New("cache expired")
+	}
+
+	d.fresh = d.fresh && ourEntry
 
 	return cachedEntry, nil
 }
 
-func (d *memCacheClient) createCachedEntry(key string, entry *cacheEntry) {
+func (d *memCacheClient) createCachedEntry(key string, entry *metav1.APIResourceList) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
 	d.ourEntries[key] = entry
-	d.ourTTLs[key] = time.Now().UTC().Add(d.ttl)
+	d.ourTTLs[key] = time.Now().Add(d.ttl)
 }
 
 func (d *memCacheClient) RESTClient() restclient.Interface {
@@ -238,8 +201,8 @@ func (d *memCacheClient) OpenAPISchema() (*openapi_v2.Document, error) {
 }
 
 func (d *memCacheClient) Fresh() bool {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	return d.fresh
 }
@@ -250,22 +213,42 @@ func (d *memCacheClient) Invalidate() {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	d.ourEntries = map[string]*cacheEntry{}
-	d.ourTTLs = map[string]time.Duration{}
+	d.ourEntries = map[string]*metav1.APIResourceList{}
+	d.ourTTLs = map[string]time.Time{}
+	d.ourServerGroups = nil
 	d.fresh = true
 	d.invalidated = true
+}
+
+func NewMemCachedDiscoveryClientForConfig(config *restclient.Config, ttl time.Duration) (MemCachedDiscoveryClient, error) {
+	// update the given restconfig with a custom roundtripper that
+	// understands how to handle cache responses.
+	config = restclient.CopyConfig(config)
+	config.Wrap(func(rt http.RoundTripper) http.RoundTripper {
+		return newMemCacheRoundTripper(rt)
+	})
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return newMemCachedDiscoveryClient(discoveryClient, ttl), nil
+}
+
+func NewMemCachedDiscoveryClient(delegate discovery.DiscoveryInterface, ttl time.Duration) MemCachedDiscoveryClient {
+	return newMemCachedDiscoveryClient(delegate, ttl)
 }
 
 // NewMemCacheClient creates a new CachedDiscoveryInterface which caches
 // discovery information in memory and will stay up-to-date if Invalidate is
 // called with regularity.
-func NewMemCacheClient(delegate discovery.DiscoveryInterface, ttl time.Duration) discovery.CachedDiscoveryInterface {
+func newMemCachedDiscoveryClient(delegate discovery.DiscoveryInterface, ttl time.Duration) MemCachedDiscoveryClient {
 	return &memCacheClient{
-		delegate: delegate,
-		ttl:      ttl,
-		// groupToServerResources: map[string]*cacheEntry{},
-		ourEntries: map[string]*cacheEntry{},
-		ourTTLs:    map[string]time.Duration{},
+		delegate:   delegate,
+		ttl:        ttl,
+		ourEntries: map[string]*metav1.APIResourceList{},
+		ourTTLs:    map[string]time.Time{},
 		fresh:      true,
 	}
 }

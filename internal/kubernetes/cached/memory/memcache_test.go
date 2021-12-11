@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,376 +14,208 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package memory
+package memory_test
 
 import (
-	"errors"
-	"net/http"
-	"reflect"
-	"sync"
-	"testing"
+	"time"
 
-	errorsutil "k8s.io/apimachinery/pkg/api/errors"
+	. "github.com/homedepot/go-clouddriver/internal/kubernetes/cached/memory"
+	. "github.com/onsi/ginkgo"
+
+	. "github.com/onsi/gomega"
+
+	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
+
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/discovery/fake"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/client-go/discovery"
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/rest/fake"
 )
 
-type resourceMapEntry struct {
-	list *metav1.APIResourceList
-	err  error
+var _ = Describe("MemCachedDiscovery", func() {
+	var (
+		err error
+		c   *fakeDiscoveryClient
+		mc  MemCachedDiscoveryClient
+	)
+
+	Describe("#Fresh", func() {
+		BeforeEach(func() {
+			c = &fakeDiscoveryClient{}
+			mc = NewMemCachedDiscoveryClient(c, 60*time.Second)
+		})
+
+		JustBeforeEach(func() {
+		})
+
+		When("the client is created", func() {
+			It("should be fresh", func() {
+				Expect(mc.Fresh()).To(BeTrue())
+			})
+		})
+
+		When("server groups is called", func() {
+			BeforeEach(func() {
+				_, err = mc.ServerGroups()
+				Expect(err).To(BeNil())
+			})
+
+			It("should be fresh", func() {
+				Expect(mc.Fresh()).To(BeTrue())
+				Expect(c.groupCalls).To(Equal(1))
+			})
+		})
+
+		When("server groups is called twice", func() {
+			BeforeEach(func() {
+				_, _ = mc.ServerGroups()
+				_, _ = mc.ServerGroups()
+			})
+
+			It("should be fresh", func() {
+				Expect(mc.Fresh()).To(BeTrue())
+				Expect(c.groupCalls).To(Equal(1))
+			})
+		})
+
+		When("resources is called", func() {
+			BeforeEach(func() {
+				_, _ = mc.ServerResources()
+			})
+
+			It("should be fresh", func() {
+				Expect(mc.Fresh()).To(BeTrue())
+				Expect(c.resourceCalls).To(Equal(1))
+			})
+		})
+
+		When("resources is called twice", func() {
+			BeforeEach(func() {
+				_, _ = mc.ServerResources()
+				_, _ = mc.ServerResources()
+			})
+
+			It("should be fresh", func() {
+				Expect(mc.Fresh()).To(BeTrue())
+				Expect(c.resourceCalls).To(Equal(1))
+			})
+		})
+	})
+
+	Describe("#TTL", func() {
+		BeforeEach(func() {
+			c = &fakeDiscoveryClient{}
+			mc = NewMemCachedDiscoveryClient(c, 1*time.Second)
+		})
+
+		JustBeforeEach(func() {
+		})
+
+		It("respects the ttl", func() {
+			_, err = mc.ServerGroups()
+			Expect(err).To(BeNil())
+			Expect(c.groupCalls).To(Equal(1))
+			time.Sleep(1 * time.Second)
+			_, err = mc.ServerGroups()
+			Expect(err).To(BeNil())
+			Expect(c.groupCalls).To(Equal(2))
+		})
+	})
+})
+
+type fakeDiscoveryClient struct {
+	groupCalls    int
+	resourceCalls int
+	versionCalls  int
+	openAPICalls  int
+
+	serverResourcesHandler func() ([]*metav1.APIResourceList, error)
 }
 
-type fakeDiscovery struct {
-	*fake.FakeDiscovery
+var _ discovery.DiscoveryInterface = &fakeDiscoveryClient{}
 
-	lock         sync.Mutex
-	groupList    *metav1.APIGroupList
-	groupListErr error
-	resourceMap  map[string]*resourceMapEntry
+func (c *fakeDiscoveryClient) RESTClient() restclient.Interface {
+	return &fake.RESTClient{}
 }
 
-func (c *fakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if rl, ok := c.resourceMap[groupVersion]; ok {
-		return rl.list, rl.err
-	}
-	return nil, errors.New("doesn't exist")
+func (c *fakeDiscoveryClient) ServerGroups() (*metav1.APIGroupList, error) {
+	c.groupCalls = c.groupCalls + 1
+	return c.serverGroups()
 }
 
-func (c *fakeDiscovery) ServerGroups() (*metav1.APIGroupList, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if c.groupList == nil {
-		return nil, errors.New("doesn't exist")
-	}
-	return c.groupList, c.groupListErr
-}
-
-func TestClient(t *testing.T) {
-	fake := &fakeDiscovery{
-		groupList: &metav1.APIGroupList{
-			Groups: []metav1.APIGroup{{
-				Name: "astronomy",
-				Versions: []metav1.GroupVersionForDiscovery{{
-					GroupVersion: "astronomy/v8beta1",
-					Version:      "v8beta1",
-				}},
-			}},
-		},
-		resourceMap: map[string]*resourceMapEntry{
-			"astronomy/v8beta1": {
-				list: &metav1.APIResourceList{
-					GroupVersion: "astronomy/v8beta1",
-					APIResources: []metav1.APIResource{{
-						Name:         "dwarfplanets",
-						SingularName: "dwarfplanet",
-						Namespaced:   true,
-						Kind:         "DwarfPlanet",
-						ShortNames:   []string{"dp"},
-					}},
-				},
-			},
-		},
-	}
-
-	c := NewMemCacheClient(fake)
-	if c.Fresh() {
-		t.Errorf("Expected not fresh.")
-	}
-	g, err := c.ServerGroups()
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if !c.Fresh() {
-		t.Errorf("Expected fresh.")
-	}
-	c.Invalidate()
-	if c.Fresh() {
-		t.Errorf("Expected not fresh.")
-	}
-
-	g, err = c.ServerGroups()
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if e, a := fake.groupList, g; !reflect.DeepEqual(e, a) {
-		t.Errorf("Expected %#v, got %#v", e, a)
-	}
-	if !c.Fresh() {
-		t.Errorf("Expected fresh.")
-	}
-	r, err := c.ServerResourcesForGroupVersion("astronomy/v8beta1")
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if e, a := fake.resourceMap["astronomy/v8beta1"].list, r; !reflect.DeepEqual(e, a) {
-		t.Errorf("Expected %#v, got %#v", e, a)
-	}
-
-	fake.lock.Lock()
-	fake.resourceMap = map[string]*resourceMapEntry{
-		"astronomy/v8beta1": {
-			list: &metav1.APIResourceList{
-				GroupVersion: "astronomy/v8beta1",
-				APIResources: []metav1.APIResource{{
-					Name:         "stars",
-					SingularName: "star",
-					Namespaced:   true,
-					Kind:         "Star",
-					ShortNames:   []string{"s"},
-				}},
-			},
-		},
-	}
-	fake.lock.Unlock()
-
-	c.Invalidate()
-	r, err = c.ServerResourcesForGroupVersion("astronomy/v8beta1")
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if e, a := fake.resourceMap["astronomy/v8beta1"].list, r; !reflect.DeepEqual(e, a) {
-		t.Errorf("Expected %#v, got %#v", e, a)
-	}
-}
-
-func TestServerGroupsFails(t *testing.T) {
-	fake := &fakeDiscovery{
-		groupList: &metav1.APIGroupList{
-			Groups: []metav1.APIGroup{{
-				Name: "astronomy",
-				Versions: []metav1.GroupVersionForDiscovery{{
-					GroupVersion: "astronomy/v8beta1",
-					Version:      "v8beta1",
-				}},
-			}},
-		},
-		groupListErr: errors.New("some error"),
-		resourceMap: map[string]*resourceMapEntry{
-			"astronomy/v8beta1": {
-				list: &metav1.APIResourceList{
-					GroupVersion: "astronomy/v8beta1",
-					APIResources: []metav1.APIResource{{
-						Name:         "dwarfplanets",
-						SingularName: "dwarfplanet",
-						Namespaced:   true,
-						Kind:         "DwarfPlanet",
-						ShortNames:   []string{"dp"},
-					}},
-				},
-			},
-		},
-	}
-
-	c := NewMemCacheClient(fake)
-	if c.Fresh() {
-		t.Errorf("Expected not fresh.")
-	}
-	_, err := c.ServerGroups()
-	if err == nil {
-		t.Errorf("Expected error")
-	}
-	if c.Fresh() {
-		t.Errorf("Expected not fresh.")
-	}
-	fake.lock.Lock()
-	fake.groupListErr = nil
-	fake.lock.Unlock()
-	r, err := c.ServerResourcesForGroupVersion("astronomy/v8beta1")
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if e, a := fake.resourceMap["astronomy/v8beta1"].list, r; !reflect.DeepEqual(e, a) {
-		t.Errorf("Expected %#v, got %#v", e, a)
-	}
-	if !c.Fresh() {
-		t.Errorf("Expected not fresh.")
-	}
-}
-
-func TestPartialPermanentFailure(t *testing.T) {
-	fake := &fakeDiscovery{
-		groupList: &metav1.APIGroupList{
-			Groups: []metav1.APIGroup{
-				{
-					Name: "astronomy",
-					Versions: []metav1.GroupVersionForDiscovery{{
-						GroupVersion: "astronomy/v8beta1",
-						Version:      "v8beta1",
-					}},
-				},
-				{
-					Name: "astronomy2",
-					Versions: []metav1.GroupVersionForDiscovery{{
-						GroupVersion: "astronomy2/v8beta1",
-						Version:      "v8beta1",
-					}},
-				},
-			},
-		},
-		resourceMap: map[string]*resourceMapEntry{
-			"astronomy/v8beta1": {
-				err: errors.New("some permanent error"),
-			},
-			"astronomy2/v8beta1": {
-				list: &metav1.APIResourceList{
-					GroupVersion: "astronomy2/v8beta1",
-					APIResources: []metav1.APIResource{{
-						Name:         "dwarfplanets",
-						SingularName: "dwarfplanet",
-						Namespaced:   true,
-						Kind:         "DwarfPlanet",
-						ShortNames:   []string{"dp"},
-					}},
-				},
-			},
-		},
-	}
-
-	c := NewMemCacheClient(fake)
-	if c.Fresh() {
-		t.Errorf("Expected not fresh.")
-	}
-	r, err := c.ServerResourcesForGroupVersion("astronomy2/v8beta1")
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if e, a := fake.resourceMap["astronomy2/v8beta1"].list, r; !reflect.DeepEqual(e, a) {
-		t.Errorf("Expected %#v, got %#v", e, a)
-	}
-	_, err = c.ServerResourcesForGroupVersion("astronomy/v8beta1")
-	if err == nil {
-		t.Errorf("Expected error, got nil")
-	}
-
-	fake.lock.Lock()
-	fake.resourceMap["astronomy/v8beta1"] = &resourceMapEntry{
-		list: &metav1.APIResourceList{
-			GroupVersion: "astronomy/v8beta1",
-			APIResources: []metav1.APIResource{{
-				Name:         "dwarfplanets",
-				SingularName: "dwarfplanet",
-				Namespaced:   true,
-				Kind:         "DwarfPlanet",
-				ShortNames:   []string{"dp"},
-			}},
-		},
-		err: nil,
-	}
-	fake.lock.Unlock()
-	// We don't retry permanent errors, so it should fail.
-	_, err = c.ServerResourcesForGroupVersion("astronomy/v8beta1")
-	if err == nil {
-		t.Errorf("Expected error, got nil")
-	}
-	c.Invalidate()
-
-	// After Invalidate, we should retry.
-	r, err = c.ServerResourcesForGroupVersion("astronomy/v8beta1")
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if e, a := fake.resourceMap["astronomy/v8beta1"].list, r; !reflect.DeepEqual(e, a) {
-		t.Errorf("Expected %#v, got %#v", e, a)
-	}
-}
-
-func TestPartialRetryableFailure(t *testing.T) {
-	fake := &fakeDiscovery{
-		groupList: &metav1.APIGroupList{
-			Groups: []metav1.APIGroup{
-				{
-					Name: "astronomy",
-					Versions: []metav1.GroupVersionForDiscovery{{
-						GroupVersion: "astronomy/v8beta1",
-						Version:      "v8beta1",
-					}},
-				},
-				{
-					Name: "astronomy2",
-					Versions: []metav1.GroupVersionForDiscovery{{
-						GroupVersion: "astronomy2/v8beta1",
-						Version:      "v8beta1",
-					}},
-				},
-			},
-		},
-		resourceMap: map[string]*resourceMapEntry{
-			"astronomy/v8beta1": {
-				err: &errorsutil.StatusError{
-					ErrStatus: metav1.Status{
-						Message: "Some retryable error",
-						Code:    int32(http.StatusServiceUnavailable),
-						Reason:  metav1.StatusReasonServiceUnavailable,
+func (c *fakeDiscoveryClient) serverGroups() (*metav1.APIGroupList, error) {
+	return &metav1.APIGroupList{
+		Groups: []metav1.APIGroup{
+			{
+				Name: "a",
+				Versions: []metav1.GroupVersionForDiscovery{
+					{
+						GroupVersion: "a/v1",
+						Version:      "v1",
 					},
 				},
-			},
-			"astronomy2/v8beta1": {
-				list: &metav1.APIResourceList{
-					GroupVersion: "astronomy2/v8beta1",
-					APIResources: []metav1.APIResource{{
-						Name:         "dwarfplanets",
-						SingularName: "dwarfplanet",
-						Namespaced:   true,
-						Kind:         "DwarfPlanet",
-						ShortNames:   []string{"dp"},
-					}},
+				PreferredVersion: metav1.GroupVersionForDiscovery{
+					GroupVersion: "a/v1",
+					Version:      "v1",
 				},
 			},
 		},
+	}, nil
+}
+
+func (c *fakeDiscoveryClient) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
+	c.resourceCalls = c.resourceCalls + 1
+
+	if groupVersion == "a/v1" {
+		return &metav1.APIResourceList{APIResources: []metav1.APIResource{{Name: "widgets", Kind: "Widget"}}}, nil
 	}
 
-	c := NewMemCacheClient(fake)
-	if c.Fresh() {
-		t.Errorf("Expected not fresh.")
-	}
-	r, err := c.ServerResourcesForGroupVersion("astronomy2/v8beta1")
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if e, a := fake.resourceMap["astronomy2/v8beta1"].list, r; !reflect.DeepEqual(e, a) {
-		t.Errorf("Expected %#v, got %#v", e, a)
-	}
-	_, err = c.ServerResourcesForGroupVersion("astronomy/v8beta1")
-	if err == nil {
-		t.Errorf("Expected error, got nil")
+	return nil, errors.NewNotFound(schema.GroupResource{}, "")
+}
+
+// Deprecated: use ServerGroupsAndResources instead.
+func (c *fakeDiscoveryClient) ServerResources() ([]*metav1.APIResourceList, error) {
+	_, rs, err := c.ServerGroupsAndResources()
+	return rs, err
+}
+
+func (c *fakeDiscoveryClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []*metav1.APIResourceList, error) {
+	c.resourceCalls = c.resourceCalls + 1
+
+	gs, _ := c.serverGroups()
+	resultGroups := []*metav1.APIGroup{}
+
+	for i := range gs.Groups {
+		resultGroups = append(resultGroups, &gs.Groups[i])
 	}
 
-	fake.lock.Lock()
-	fake.resourceMap["astronomy/v8beta1"] = &resourceMapEntry{
-		list: &metav1.APIResourceList{
-			GroupVersion: "astronomy/v8beta1",
-			APIResources: []metav1.APIResource{{
-				Name:         "dwarfplanets",
-				SingularName: "dwarfplanet",
-				Namespaced:   true,
-				Kind:         "DwarfPlanet",
-				ShortNames:   []string{"dp"},
-			}},
-		},
-		err: nil,
-	}
-	fake.lock.Unlock()
-	// We should retry retryable error even without Invalidate() being called,
-	// so no error is expected.
-	r, err = c.ServerResourcesForGroupVersion("astronomy/v8beta1")
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if e, a := fake.resourceMap["astronomy/v8beta1"].list, r; !reflect.DeepEqual(e, a) {
-		t.Errorf("Expected %#v, got %#v", e, a)
+	if c.serverResourcesHandler != nil {
+		rs, err := c.serverResourcesHandler()
+		return resultGroups, rs, err
 	}
 
-	// Check that the last result was cached and we don't retry further.
-	fake.lock.Lock()
-	fake.resourceMap["astronomy/v8beta1"].err = errors.New("some permanent error")
-	fake.lock.Unlock()
-	r, err = c.ServerResourcesForGroupVersion("astronomy/v8beta1")
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if e, a := fake.resourceMap["astronomy/v8beta1"].list, r; !reflect.DeepEqual(e, a) {
-		t.Errorf("Expected %#v, got %#v", e, a)
-	}
+	return resultGroups, []*metav1.APIResourceList{}, nil
+}
+
+func (c *fakeDiscoveryClient) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
+	c.resourceCalls = c.resourceCalls + 1
+	return nil, nil
+}
+
+func (c *fakeDiscoveryClient) ServerPreferredNamespacedResources() ([]*metav1.APIResourceList, error) {
+	c.resourceCalls = c.resourceCalls + 1
+	return nil, nil
+}
+
+func (c *fakeDiscoveryClient) ServerVersion() (*version.Info, error) {
+	c.versionCalls = c.versionCalls + 1
+	return &version.Info{}, nil
+}
+
+func (c *fakeDiscoveryClient) OpenAPISchema() (*openapi_v2.Document, error) {
+	c.openAPICalls = c.openAPICalls + 1
+	return &openapi_v2.Document{}, nil
 }

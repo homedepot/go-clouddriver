@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/cached/disk"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/discovery/cached/memory"
+	"github.com/homedepot/go-clouddriver/internal/kubernetes/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -36,6 +35,7 @@ type controller struct{}
 // stores and references its discovery of the Kubernetes API server.
 func (c *controller) NewClient(config *rest.Config) (Client, error) {
 	return newClientWithMemoryCache(config)
+	// return newClientWithDefaultDiskCache(config)
 }
 
 // NewClientset returns a new kubernetes Clientset wrapper.
@@ -54,7 +54,8 @@ const (
 	// Default cache directory.
 	cacheDir       = "/var/kube/cache"
 	defaultTimeout = 180 * time.Second
-	ttl            = 10 * time.Minute
+	// TODO increase.
+	ttl = 2 * time.Minute
 )
 
 func newClientWithMemoryCache(config *rest.Config) (Client, error) {
@@ -68,10 +69,12 @@ func newClientWithMemoryCache(config *rest.Config) (Client, error) {
 		return nil, err
 	}
 
-	mapper, err := mapperForConfig(config)
+	mc, err := memCacheClientForConfig(config)
 	if err != nil {
 		return nil, err
 	}
+
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(mc)
 
 	kubeClient := &client{
 		c:      dynamicClient,
@@ -115,12 +118,12 @@ func newClientWithDefaultDiskCache(config *rest.Config) (Client, error) {
 }
 
 var (
-	mux           sync.Mutex
-	cachedConfigs = map[string]*rest.Config{}
-	cachedMappers = map[string]*restmapper.DeferredDiscoveryRESTMapper{}
+	mux                   sync.Mutex
+	cachedConfigs         = map[string]*rest.Config{}
+	cachedMemCacheClients = map[string]memory.MemCachedDiscoveryClient{}
 )
 
-func mapperForConfig(inConfig *rest.Config) (*restmapper.DeferredDiscoveryRESTMapper, error) {
+func memCacheClientForConfig(inConfig *rest.Config) (memory.MemCachedDiscoveryClient, error) {
 	config := inConfig
 
 	if _, ok := cachedConfigs[config.Host]; ok {
@@ -139,11 +142,11 @@ func mapperForConfig(inConfig *rest.Config) (*restmapper.DeferredDiscoveryRESTMa
 		}
 	}
 
-	return cachedMapper(config), nil
+	return cachedMemCacheClient(config), nil
 }
 
 func setCaches(config *rest.Config) error {
-	m, err := newMapperForConfig(config)
+	mc, err := newMemCacheClientForConfig(config)
 	if err != nil {
 		return err
 	}
@@ -152,28 +155,20 @@ func setCaches(config *rest.Config) error {
 	defer mux.Unlock()
 
 	cachedConfigs[config.Host] = config
-	cachedMappers[config.Host] = m
+	cachedMemCacheClients[config.Host] = mc
 
 	return nil
 }
 
-func newMapperForConfig(config *rest.Config) (*restmapper.DeferredDiscoveryRESTMapper, error) {
-	// DiscoveryClient queries API server about the resources
-	dc, err := discovery.NewDiscoveryClientForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
-
-	return mapper, nil
+func newMemCacheClientForConfig(config *rest.Config) (memory.MemCachedDiscoveryClient, error) {
+	return memory.NewMemCachedDiscoveryClientForConfig(config, ttl)
 }
 
-func cachedMapper(config *rest.Config) *restmapper.DeferredDiscoveryRESTMapper {
+func cachedMemCacheClient(config *rest.Config) memory.MemCachedDiscoveryClient {
 	mux.Lock()
 	defer mux.Unlock()
 
-	return cachedMappers[config.Host]
+	return cachedMemCacheClients[config.Host]
 }
 
 // overlyCautiousIllegalFileCharacters matches characters that *might* not be supported.
