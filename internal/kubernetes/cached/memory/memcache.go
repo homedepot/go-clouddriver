@@ -56,9 +56,8 @@ type memCacheClient struct {
 	ourEntries      map[string]*metav1.APIResourceList
 	ourServerGroups *metav1.APIGroupList
 	ourTTLs         map[string]time.Time
-	// invalidated is true if all cache files should be ignored that are not ours (e.g. after Invalidate() was called)
-	invalidated bool
-	// fresh is true if all used cache files were ours
+	invalidated     bool
+	// fresh is true if the cache is not populated
 	fresh bool
 }
 
@@ -144,13 +143,13 @@ func (d *memCacheClient) createCachedServerGroups(serverGroups *metav1.APIGroupL
 }
 
 func (d *memCacheClient) getCachedEntry(key string) (*metav1.APIResourceList, error) {
+	if len(d.ourEntries) == 0 {
+		return nil, errors.New("cache not populated")
+	}
+
 	cachedEntry, ourEntry := d.ourEntries[key]
 	if d.invalidated && !ourEntry {
 		return nil, errors.New("cache invalidated")
-	}
-
-	if len(d.ourEntries) == 0 && !ourEntry {
-		return nil, errors.New("entry not found")
 	}
 
 	t, ok := d.ourTTLs[key]
