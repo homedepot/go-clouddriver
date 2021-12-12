@@ -66,6 +66,9 @@ var _ discovery.CachedDiscoveryInterface = &memCacheClient{}
 
 // ServerResourcesForGroupVersion returns the supported resources for a group and version.
 func (d *memCacheClient) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	cachedEntry, err := d.getCachedEntry(groupVersion)
 	if err == nil && cachedEntry != nil {
 		return cachedEntry, nil
@@ -94,6 +97,9 @@ func (d *memCacheClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []*meta
 }
 
 func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	cachedServerGroups, err := d.getCachedServerGroups()
 	// Don't fail on errors, we either don't have an entry or won't be able to run the cached check.
 	// Either way we can fallback.
@@ -116,9 +122,6 @@ func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 }
 
 func (d *memCacheClient) getCachedServerGroups() (*metav1.APIGroupList, error) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
 	if d.invalidated {
 		return nil, errors.New("cache invalidated")
 	}
@@ -132,23 +135,15 @@ func (d *memCacheClient) getCachedServerGroups() (*metav1.APIGroupList, error) {
 		return nil, errors.New("cache expired")
 	}
 
-	// d.fresh = d.fresh && d.ourServerGroups != nil
-
 	return d.ourServerGroups, nil
 }
 
 func (d *memCacheClient) createCachedServerGroups(serverGroups *metav1.APIGroupList) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
 	d.ourServerGroups = serverGroups
 	d.ourTTLs["servergroups"] = time.Now().Add(d.ttl)
 }
 
 func (d *memCacheClient) getCachedEntry(key string) (*metav1.APIResourceList, error) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
 	cachedEntry, ourEntry := d.ourEntries[key]
 	if d.invalidated && !ourEntry {
 		return nil, errors.New("cache invalidated")
@@ -159,10 +154,6 @@ func (d *memCacheClient) getCachedEntry(key string) (*metav1.APIResourceList, er
 	}
 
 	t, ok := d.ourTTLs[key]
-	// if !ok {
-	// 	return nil, errors.New("no ttl defined")
-	// }
-
 	if ok && time.Now().After(t) {
 		return nil, errors.New("cache expired")
 	}
@@ -173,9 +164,6 @@ func (d *memCacheClient) getCachedEntry(key string) (*metav1.APIResourceList, er
 }
 
 func (d *memCacheClient) createCachedEntry(key string, entry *metav1.APIResourceList) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
 	d.ourEntries[key] = entry
 	d.ourTTLs[key] = time.Now().Add(d.ttl)
 }

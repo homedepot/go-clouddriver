@@ -15,6 +15,10 @@ import (
 	"k8s.io/client-go/restmapper"
 )
 
+var (
+	useDiskCache bool
+)
+
 //go:generate counterfeiter . Controller
 // Controller holds the ability to generate a new
 // dynamic kubernetes client.
@@ -30,12 +34,28 @@ func NewController() Controller {
 
 type controller struct{}
 
+// UseDiskCache sets the controller to generate clients that use
+// disk cache instead of memory cache for discovery and HTTP responses.
+func UseDiskCache() {
+	useDiskCache = true
+}
+
 // NewClient returns a new dynamic Kubernetes client with a default
 // disk cache directory of /var/kube/cache. This is where the client
 // stores and references its discovery of the Kubernetes API server.
 func (c *controller) NewClient(config *rest.Config) (Client, error) {
-	return newClientWithMemoryCache(config)
-	// return newClientWithDefaultDiskCache(config)
+	var (
+		client Client
+		err    error
+	)
+
+	if useDiskCache {
+		client, err = newClientWithDefaultDiskCache(config)
+	} else {
+		client, err = newClientWithMemoryCache(config)
+	}
+
+	return client, err
 }
 
 // NewClientset returns a new kubernetes Clientset wrapper.
@@ -54,8 +74,7 @@ const (
 	// Default cache directory.
 	cacheDir       = "/var/kube/cache"
 	defaultTimeout = 180 * time.Second
-	// TODO increase.
-	ttl = 2 * time.Minute
+	ttl            = 10 * time.Minute
 )
 
 func newClientWithMemoryCache(config *rest.Config) (Client, error) {
@@ -146,7 +165,7 @@ func memCacheClientForConfig(inConfig *rest.Config) (memory.MemCachedDiscoveryCl
 }
 
 func setCaches(config *rest.Config) error {
-	mc, err := newMemCacheClientForConfig(config)
+	mc, err := memory.NewMemCachedDiscoveryClientForConfig(config, ttl)
 	if err != nil {
 		return err
 	}
@@ -158,10 +177,6 @@ func setCaches(config *rest.Config) error {
 	cachedMemCacheClients[config.Host] = mc
 
 	return nil
-}
-
-func newMemCacheClientForConfig(config *rest.Config) (memory.MemCachedDiscoveryClient, error) {
-	return memory.NewMemCachedDiscoveryClientForConfig(config, ttl)
 }
 
 func cachedMemCacheClient(config *rest.Config) memory.MemCachedDiscoveryClient {
