@@ -57,7 +57,7 @@ type memCacheClient struct {
 	ourServerGroups *metav1.APIGroupList
 	ourTTLs         map[string]time.Time
 	invalidated     bool
-	// fresh is true if the cache is not populated
+	// fresh is true if the cache is not populated or all requested entries
 	fresh bool
 }
 
