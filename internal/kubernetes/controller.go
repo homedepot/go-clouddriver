@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"errors"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -144,23 +145,26 @@ var (
 func memCacheClientForConfig(inConfig *rest.Config) (memory.MemCachedDiscoveryClient, error) {
 	config := inConfig
 
-	if _, ok := cachedConfigs[config.Host]; ok {
-		cachedConfig := cachedConfigs[config.Host]
-		if string(cachedConfig.TLSClientConfig.CAData) != string(config.TLSClientConfig.CAData) ||
-			cachedConfig.BearerToken != config.BearerToken {
-			err := setCaches(config)
-			if err != nil {
-				return nil, err
-			}
-		}
-	} else {
-		err := setCaches(config)
-		if err != nil {
+	cc, err := cachedConfig(config)
+	if err != nil || (string(cc.TLSClientConfig.CAData) != string(cc.TLSClientConfig.CAData) ||
+		cc.BearerToken != cc.BearerToken) {
+		if err := setCaches(config); err != nil {
 			return nil, err
 		}
 	}
 
 	return cachedMemCacheClient(config), nil
+}
+
+func cachedConfig(config *rest.Config) (*rest.Config, error) {
+	mux.Lock()
+	defer mux.Unlock()
+
+	if _, ok := cachedConfigs[config.Host]; !ok {
+		return nil, errors.New("config not found")
+	}
+
+	return cachedConfigs[config.Host], nil
 }
 
 func setCaches(config *rest.Config) error {
