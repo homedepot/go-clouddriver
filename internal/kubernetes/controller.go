@@ -94,7 +94,6 @@ func newClientWithMemoryCache(config *rest.Config) (Client, error) {
 	}
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(mc)
-
 	kubeClient := &client{
 		c:      dynamicClient,
 		config: config,
