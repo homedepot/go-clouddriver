@@ -149,7 +149,7 @@ func (d *memCacheClient) getCachedEntry(key string) (*metav1.APIResourceList, er
 		return nil, errors.New("cache invalidated")
 	}
 
-	if !ourEntry {
+	if len(d.ourEntries) == 0 && !ourEntry {
 		return nil, errors.New("entry not found")
 	}
 
