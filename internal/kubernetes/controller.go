@@ -75,7 +75,7 @@ const (
 	// Default cache directory.
 	cacheDir       = "/var/kube/cache"
 	defaultTimeout = 180 * time.Second
-	ttl            = 10 * time.Minute
+	ttl            = 2 * time.Minute
 )
 
 func newClientWithMemoryCache(config *rest.Config) (Client, error) {
@@ -104,50 +104,12 @@ func newClientWithMemoryCache(config *rest.Config) (Client, error) {
 	return kubeClient, nil
 }
 
-func newClientWithDefaultDiskCache(config *rest.Config) (Client, error) {
-	// If the timeout is not set, set it to the default timeout.
-	if config.Timeout == 0 {
-		config.Timeout = defaultTimeout
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	// Some code to define this take from
-	// https://github.com/kubernetes/cli-runtime/blob/master/pkg/genericclioptions/config_flags.go#L215
-	httpCacheDir := filepath.Join(cacheDir, "http")
-	discoveryCacheDir := computeDiscoverCacheDir(filepath.Join(cacheDir, "discovery"), config.Host)
-
-	// DiscoveryClient queries API server about the resources
-	cdc, err := disk.NewCachedDiscoveryClientForConfig(config, discoveryCacheDir, httpCacheDir, ttl)
-	if err != nil {
-		return nil, err
-	}
-
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(cdc)
-	kubeClient := &client{
-		c:      dynamicClient,
-		config: config,
-		mapper: mapper,
-	}
-
-	return kubeClient, nil
-}
-
-var (
-	mux                   sync.Mutex
-	cachedConfigs         = map[string]*rest.Config{}
-	cachedMemCacheClients = map[string]memory.MemCachedDiscoveryClient{}
-)
-
 func memCacheClientForConfig(inConfig *rest.Config) (memory.MemCachedDiscoveryClient, error) {
 	config := inConfig
 
 	cc, err := cachedConfig(config)
-	if err != nil || (string(cc.TLSClientConfig.CAData) != string(cc.TLSClientConfig.CAData) ||
-		cc.BearerToken != cc.BearerToken) {
+	if err != nil || (string(cc.TLSClientConfig.CAData) != string(config.TLSClientConfig.CAData) ||
+		cc.BearerToken != config.BearerToken) {
 		if err := setCaches(config); err != nil {
 			return nil, err
 		}
@@ -155,6 +117,12 @@ func memCacheClientForConfig(inConfig *rest.Config) (memory.MemCachedDiscoveryCl
 
 	return cachedMemCacheClient(config), nil
 }
+
+var (
+	mux                   sync.Mutex
+	cachedConfigs         = map[string]*rest.Config{}
+	cachedMemCacheClients = map[string]memory.MemCachedDiscoveryClient{}
+)
 
 func cachedConfig(config *rest.Config) (*rest.Config, error) {
 	mux.Lock()
@@ -187,6 +155,38 @@ func cachedMemCacheClient(config *rest.Config) memory.MemCachedDiscoveryClient {
 	defer mux.Unlock()
 
 	return cachedMemCacheClients[config.Host]
+}
+
+func newClientWithDefaultDiskCache(config *rest.Config) (Client, error) {
+	// If the timeout is not set, set it to the default timeout.
+	if config.Timeout == 0 {
+		config.Timeout = defaultTimeout
+	}
+
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	// Some code to define this take from
+	// https://github.com/kubernetes/cli-runtime/blob/master/pkg/genericclioptions/config_flags.go#L215
+	httpCacheDir := filepath.Join(cacheDir, "http")
+	discoveryCacheDir := computeDiscoverCacheDir(filepath.Join(cacheDir, "discovery"), config.Host)
+
+	// DiscoveryClient queries API server about the resources
+	cdc, err := disk.NewCachedDiscoveryClientForConfig(config, discoveryCacheDir, httpCacheDir, ttl)
+	if err != nil {
+		return nil, err
+	}
+
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(cdc)
+	kubeClient := &client{
+		c:      dynamicClient,
+		config: config,
+		mapper: mapper,
+	}
+
+	return kubeClient, nil
 }
 
 // overlyCautiousIllegalFileCharacters matches characters that *might* not be supported.

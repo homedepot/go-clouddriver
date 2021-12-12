@@ -62,7 +62,18 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 
 	restMapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if err != nil {
-		return metadata, err
+		// If we're using memory cache, try invalidating the cache and grabbing
+		// the rest mapping again.
+		if !useDiskCache {
+			c.mapper.Reset()
+
+			restMapping, err = c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+			if err != nil {
+				return metadata, err
+			}
+		} else {
+			return metadata, err
+		}
 	}
 
 	gvr := restMapping.Resource

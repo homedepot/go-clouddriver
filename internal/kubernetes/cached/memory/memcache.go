@@ -17,7 +17,9 @@ limitations under the License.
 package memory
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -25,6 +27,7 @@ import (
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
 	restclient "k8s.io/client-go/rest"
@@ -44,6 +47,11 @@ type MemCachedDiscoveryClient interface {
 	Invalidate()
 }
 
+type cacheEntry struct {
+	entry interface{}
+	err   error
+}
+
 // memCacheClient can Invalidate() to stay up-to-date with discovery
 // information.
 type memCacheClient struct {
@@ -52,13 +60,12 @@ type memCacheClient struct {
 	// ttl is how long the cache should be considered valid
 	ttl time.Duration
 
-	mutex           sync.Mutex
-	ourEntries      map[string]*metav1.APIResourceList
-	ourServerGroups *metav1.APIGroupList
-	ourTTLs         map[string]time.Time
-	invalidated     bool
-	// fresh is true if the cache is not populated or all requested entries
-	fresh bool
+	mutex       sync.Mutex
+	entries     map[string]*cacheEntry
+	expirations map[string]time.Time
+	invalidated bool
+	// valid is true if the cache is not populated or until a requested groupVersion does not exist in entries.
+	valid bool
 }
 
 var _ discovery.CachedDiscoveryInterface = &memCacheClient{}
@@ -68,25 +75,36 @@ func (d *memCacheClient) ServerResourcesForGroupVersion(groupVersion string) (*m
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	cachedEntry, err := d.getCachedEntry(groupVersion)
-	if err == nil && cachedEntry != nil {
+	if !d.valid {
+		if err := d.refreshLocked(); err != nil {
+			return nil, err
+		}
+	}
+
+	cachedEntry := &metav1.APIResourceList{}
+
+	err := d.getCachedEntry(groupVersion, cachedEntry)
+	if err == nil && d.valid {
 		return cachedEntry, nil
 	}
 
-	liveResources, err := d.delegate.ServerResourcesForGroupVersion(groupVersion)
-	if err != nil {
-		return liveResources, err
+	if err := d.refreshLocked(); err != nil {
+		return nil, err
 	}
 
-	d.createCachedEntry(groupVersion, liveResources)
+	err = d.getCachedEntry(groupVersion, cachedEntry)
+	if err != nil {
+		return nil, err
+	}
 
-	return liveResources, nil
+	return cachedEntry, nil
 }
 
 // ServerResources returns the supported resources for all groups and versions.
 // Deprecated: use ServerGroupsAndResources instead.
 func (d *memCacheClient) ServerResources() ([]*metav1.APIResourceList, error) {
 	_, rs, err := discovery.ServerGroupsAndResources(d)
+
 	return rs, err
 }
 
@@ -99,72 +117,58 @@ func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	cachedServerGroups, err := d.getCachedServerGroups()
-	// Don't fail on errors, we either don't have an entry or won't be able to run the cached check.
-	// Either way we can fallback.
-	if err == nil && cachedServerGroups != nil {
-		return cachedServerGroups, nil
+	if !d.valid {
+		if err := d.refreshLocked(); err != nil {
+			return nil, err
+		}
 	}
 
-	liveGroups, err := d.delegate.ServerGroups()
+	cachedEntry := &metav1.APIGroupList{}
+	// Don't fail on errors, we either don't have an entry or won't be able to run the cached check.
+	// Either way we can fallback.
+	err := d.getCachedEntry("servergroups", cachedEntry)
+	if err == nil && d.valid {
+		return cachedEntry, nil
+	}
+
+	if err := d.refreshLocked(); err != nil {
+		return nil, err
+	}
+
+	err = d.getCachedEntry("servergroups", cachedEntry)
 	if err != nil {
 		return nil, err
 	}
 
-	if liveGroups == nil || len(liveGroups.Groups) == 0 {
-		return liveGroups, err
-	}
-
-	d.createCachedServerGroups(liveGroups)
-
-	return liveGroups, nil
-}
-
-func (d *memCacheClient) getCachedServerGroups() (*metav1.APIGroupList, error) {
-	if d.invalidated {
-		return nil, errors.New("cache invalidated")
-	}
-
-	if d.ourServerGroups == nil {
-		return nil, errors.New("server groups not defined")
-	}
-
-	t, ok := d.ourTTLs["servergroups"]
-	if ok && time.Now().After(t) {
-		return nil, errors.New("cache expired")
-	}
-
-	return d.ourServerGroups, nil
-}
-
-func (d *memCacheClient) createCachedServerGroups(serverGroups *metav1.APIGroupList) {
-	d.ourServerGroups = serverGroups
-	d.ourTTLs["servergroups"] = time.Now().Add(d.ttl)
-}
-
-func (d *memCacheClient) getCachedEntry(key string) (*metav1.APIResourceList, error) {
-	if len(d.ourEntries) == 0 {
-		return nil, errors.New("cache not populated")
-	}
-
-	cachedEntry, ourEntry := d.ourEntries[key]
-	if d.invalidated && !ourEntry {
-		return nil, errors.New("cache invalidated")
-	}
-
-	t, ok := d.ourTTLs[key]
-	if ok && time.Now().After(t) {
-		return nil, errors.New("cache expired")
-	}
-
-	d.fresh = d.fresh && ourEntry
-
 	return cachedEntry, nil
 }
 
-func (d *memCacheClient) createCachedEntry(key string, entry *metav1.APIResourceList) {
-	d.ourEntries[key] = entry
-	d.ourTTLs[key] = time.Now().Add(d.ttl)
+func (d *memCacheClient) getCachedEntry(key string, into interface{}) error {
+	cachedEntry, exists := d.entries[key]
+	if d.invalidated && !exists {
+		return errors.New("cache invalidated")
+	}
+
+	t, ok := d.expirations[key]
+	if ok && time.Now().After(t) {
+		return errors.New("cache expired")
+	}
+
+	if exists {
+		b, err := json.Marshal(cachedEntry.entry)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(b, into)
+		if err != nil {
+			return err
+		}
+	}
+
+	d.valid = d.valid && exists
+
+	return nil
 }
 
 func (d *memCacheClient) RESTClient() restclient.Interface {
@@ -191,7 +195,75 @@ func (d *memCacheClient) Fresh() bool {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	return d.fresh
+	return d.valid
+}
+
+// refreshLocked refreshes the state of cache. The caller must hold d.lock for
+// writing.
+func (d *memCacheClient) refreshLocked() error {
+	// TODO: Could this multiplicative set of calls be replaced by a single call
+	// to ServerResources? If it's possible for more than one resulting
+	// APIResourceList to have the same GroupVersion, the lists would need merged.
+	gl, err := d.delegate.ServerGroups()
+	if err != nil || len(gl.Groups) == 0 {
+		utilruntime.HandleError(fmt.Errorf("couldn't get current server API group list: %v", err))
+
+		return err
+	}
+
+	wg := &sync.WaitGroup{}
+	resultLock := &sync.Mutex{}
+	rl := map[string]*cacheEntry{}
+
+	for _, g := range gl.Groups {
+		for _, v := range g.Versions {
+			gv := v.GroupVersion
+
+			wg.Add(1)
+
+			go func() {
+				defer wg.Done()
+				defer utilruntime.HandleCrash()
+
+				r, err := d.serverResourcesForGroupVersion(gv)
+				if err != nil {
+					utilruntime.HandleError(fmt.Errorf("couldn't get resource list for %v: %v", gv, err))
+				}
+
+				resultLock.Lock()
+				defer resultLock.Unlock()
+
+				rl[gv] = &cacheEntry{r, err}
+			}()
+		}
+	}
+
+	wg.Wait()
+
+	d.entries = rl
+	d.entries["servergroups"] = &cacheEntry{gl, nil}
+	e := time.Now().Add(d.ttl)
+
+	for k := range d.entries {
+		d.expirations[k] = e
+	}
+
+	d.valid = true
+
+	return nil
+}
+
+func (d *memCacheClient) serverResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
+	r, err := d.delegate.ServerResourcesForGroupVersion(groupVersion)
+	if err != nil {
+		return r, err
+	}
+
+	if len(r.APIResources) == 0 {
+		return r, fmt.Errorf("Got empty response for: %v", groupVersion)
+	}
+
+	return r, nil
 }
 
 // Invalidate enforces that no cached data that is older than the current time
@@ -200,10 +272,9 @@ func (d *memCacheClient) Invalidate() {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	d.ourEntries = map[string]*metav1.APIResourceList{}
-	d.ourTTLs = map[string]time.Time{}
-	d.ourServerGroups = nil
-	d.fresh = true
+	d.entries = map[string]*cacheEntry{}
+	d.expirations = map[string]time.Time{}
+	d.valid = false
 	d.invalidated = true
 }
 
@@ -232,10 +303,10 @@ func NewMemCachedDiscoveryClient(delegate discovery.DiscoveryInterface, ttl time
 // called with regularity.
 func newMemCachedDiscoveryClient(delegate discovery.DiscoveryInterface, ttl time.Duration) MemCachedDiscoveryClient {
 	return &memCacheClient{
-		delegate:   delegate,
-		ttl:        ttl,
-		ourEntries: map[string]*metav1.APIResourceList{},
-		ourTTLs:    map[string]time.Time{},
-		fresh:      true,
+		delegate:    delegate,
+		ttl:         ttl,
+		entries:     map[string]*cacheEntry{},
+		expirations: map[string]time.Time{},
+		// valid:       true,
 	}
 }

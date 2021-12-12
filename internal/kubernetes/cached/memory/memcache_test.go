@@ -52,8 +52,8 @@ var _ = Describe("MemCachedDiscovery", func() {
 		})
 
 		When("the client is created", func() {
-			It("should be fresh", func() {
-				Expect(mc.Fresh()).To(BeTrue())
+			It("should be invalid", func() {
+				Expect(mc.Fresh()).To(BeFalse())
 			})
 		})
 
@@ -88,7 +88,7 @@ var _ = Describe("MemCachedDiscovery", func() {
 
 			It("should be fresh", func() {
 				Expect(mc.Fresh()).To(BeTrue())
-				Expect(c.resourceCalls).To(Equal(1))
+				Expect(c.resourceCalls).To(Equal(2))
 			})
 		})
 
@@ -100,7 +100,19 @@ var _ = Describe("MemCachedDiscovery", func() {
 
 			It("should be fresh", func() {
 				Expect(mc.Fresh()).To(BeTrue())
-				Expect(c.resourceCalls).To(Equal(1))
+				Expect(c.resourceCalls).To(Equal(2))
+			})
+		})
+
+		When("the cache is valid but a request is made for a non-existing resource", func() {
+			BeforeEach(func() {
+				_, _ = mc.ServerResources()
+				_, _ = mc.ServerResourcesForGroupVersion("c/v1")
+			})
+
+			It("should not be fresh", func() {
+				Expect(mc.Fresh()).To(BeFalse())
+				Expect(c.resourceCalls).To(Equal(4))
 			})
 		})
 	})
@@ -162,6 +174,19 @@ func (c *fakeDiscoveryClient) serverGroups() (*metav1.APIGroupList, error) {
 					Version:      "v1",
 				},
 			},
+			{
+				Name: "b",
+				Versions: []metav1.GroupVersionForDiscovery{
+					{
+						GroupVersion: "b/v1",
+						Version:      "v1",
+					},
+				},
+				PreferredVersion: metav1.GroupVersionForDiscovery{
+					GroupVersion: "b/v1",
+					Version:      "v1",
+				},
+			},
 		},
 	}, nil
 }
@@ -171,6 +196,9 @@ func (c *fakeDiscoveryClient) ServerResourcesForGroupVersion(groupVersion string
 
 	if groupVersion == "a/v1" {
 		return &metav1.APIResourceList{APIResources: []metav1.APIResource{{Name: "widgets", Kind: "Widget"}}}, nil
+	}
+	if groupVersion == "b/v1" {
+		return &metav1.APIResourceList{APIResources: []metav1.APIResource{{Name: "bidgets", Kind: "Bidget"}}}, nil
 	}
 
 	return nil, errors.NewNotFound(schema.GroupResource{}, "")
