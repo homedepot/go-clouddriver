@@ -46,11 +46,6 @@ type CachedDiscoveryClient interface {
 	Reset()
 }
 
-type cacheEntry struct {
-	entry interface{}
-	err   error
-}
-
 // memCacheClient can Invalidate() to stay up-to-date with discovery
 // information. It is modeled after the disk cache implementation.
 type memCacheClient struct {
@@ -64,7 +59,7 @@ type memCacheClient struct {
 	// entries is a respresentation of everything that has been requested from the cache.
 	// Think of it like files on a filesystem - it will never be emptied unless the pod
 	// is restarted.
-	entries map[string]*cacheEntry
+	entries map[string]interface{}
 
 	// expirations holds the expiration time (creation time plus ttl) of given entries.
 	// Think of it like a cached files mod-time on disk plus ttl.
@@ -85,8 +80,8 @@ func (d *memCacheClient) ServerResourcesForGroupVersion(groupVersion string) (*m
 	defer d.mutex.Unlock()
 
 	cachedEntry, err := d.getCachedEntry(groupVersion)
-	if err == nil && cachedEntry != nil && cachedEntry.err == nil {
-		b, err := json.Marshal(cachedEntry.entry)
+	if err == nil && cachedEntry != nil {
+		b, err := json.Marshal(cachedEntry)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +101,7 @@ func (d *memCacheClient) ServerResourcesForGroupVersion(groupVersion string) (*m
 		return liveResources, err
 	}
 
-	d.createCachedEntry(groupVersion, &cacheEntry{liveResources, nil})
+	d.createCachedEntry(groupVersion, liveResources)
 
 	return liveResources, nil
 }
@@ -129,8 +124,8 @@ func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 	defer d.mutex.Unlock()
 
 	cachedEntry, err := d.getCachedEntry("servergroups")
-	if err == nil && cachedEntry != nil && cachedEntry.err == nil {
-		b, err := json.Marshal(cachedEntry.entry)
+	if err == nil && cachedEntry != nil {
+		b, err := json.Marshal(cachedEntry)
 		if err != nil {
 			return nil, err
 		}
@@ -154,12 +149,12 @@ func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 		return liveGroups, err
 	}
 
-	d.createCachedEntry("servergroups", &cacheEntry{liveGroups, nil})
+	d.createCachedEntry("servergroups", liveGroups)
 
 	return liveGroups, nil
 }
 
-func (d *memCacheClient) getCachedEntry(key string) (*cacheEntry, error) {
+func (d *memCacheClient) getCachedEntry(key string) (interface{}, error) {
 	_, ourEntry := d.ourEntries[key]
 	if d.invalidated && !ourEntry {
 		return nil, errors.New("cache invalidated")
@@ -180,7 +175,7 @@ func (d *memCacheClient) getCachedEntry(key string) (*cacheEntry, error) {
 	return cachedEntry, nil
 }
 
-func (d *memCacheClient) createCachedEntry(key string, entry *cacheEntry) {
+func (d *memCacheClient) createCachedEntry(key string, entry interface{}) {
 	d.entries[key] = entry
 	d.ourEntries[key] = struct{}{}
 	d.expirations[key] = time.Now().Add(d.ttl)
@@ -261,7 +256,7 @@ func newCachedDiscoveryClient(delegate discovery.DiscoveryInterface, ttl time.Du
 	return &memCacheClient{
 		delegate:    delegate,
 		ttl:         ttl,
-		entries:     map[string]*cacheEntry{},
+		entries:     map[string]interface{}{},
 		expirations: map[string]time.Time{},
 		fresh:       true,
 		ourEntries:  map[string]struct{}{},
