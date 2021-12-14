@@ -41,9 +41,10 @@ func UseDiskCache() {
 	useDiskCache = true
 }
 
-// NewClient returns a new dynamic Kubernetes client with a default
-// disk cache directory of /var/kube/cache. This is where the client
-// stores and references its discovery of the Kubernetes API server.
+// NewClient returns a new dynamic Kubernetes client. By default it returns
+// a client that uses in-memory cache store, unless `useDiskCache` is set
+// to true. This is where the client stores and references its discovery of
+// the Kubernetes API server.
 func (c *controller) NewClient(config *rest.Config) (Client, error) {
 	var (
 		client Client
@@ -75,7 +76,7 @@ const (
 	// Default cache directory.
 	cacheDir       = "/var/kube/cache"
 	defaultTimeout = 180 * time.Second
-	ttl            = 2 * time.Minute
+	ttl            = 10 * time.Minute
 )
 
 func newClientWithMemoryCache(config *rest.Config) (Client, error) {
