@@ -35,25 +35,25 @@ import (
 	"k8s.io/client-go/rest/fake"
 )
 
-var _ = Describe("MemCachedDiscovery", func() {
+var _ = Describe("CachedDiscovery", func() {
 	var (
 		err error
 		c   *fakeDiscoveryClient
-		mc  MemCachedDiscoveryClient
+		mc  CachedDiscoveryClient
 	)
 
 	Describe("#Fresh", func() {
 		BeforeEach(func() {
 			c = &fakeDiscoveryClient{}
-			mc = NewMemCachedDiscoveryClient(c, 60*time.Second)
+			mc = NewCachedDiscoveryClient(c, 60*time.Second)
 		})
 
 		JustBeforeEach(func() {
 		})
 
 		When("the client is created", func() {
-			It("should be invalid", func() {
-				Expect(mc.Fresh()).To(BeFalse())
+			It("should be fresh", func() {
+				Expect(mc.Fresh()).To(BeTrue())
 			})
 		})
 
@@ -71,8 +71,8 @@ var _ = Describe("MemCachedDiscovery", func() {
 
 		When("server groups is called twice", func() {
 			BeforeEach(func() {
-				_, _ = mc.ServerGroups()
-				_, _ = mc.ServerGroups()
+				mc.ServerGroups()
+				mc.ServerGroups()
 			})
 
 			It("should be fresh", func() {
@@ -83,7 +83,7 @@ var _ = Describe("MemCachedDiscovery", func() {
 
 		When("resources is called", func() {
 			BeforeEach(func() {
-				_, _ = mc.ServerResources()
+				mc.ServerResources()
 			})
 
 			It("should be fresh", func() {
@@ -94,8 +94,8 @@ var _ = Describe("MemCachedDiscovery", func() {
 
 		When("resources is called twice", func() {
 			BeforeEach(func() {
-				_, _ = mc.ServerResources()
-				_, _ = mc.ServerResources()
+				mc.ServerResources()
+				mc.ServerResources()
 			})
 
 			It("should be fresh", func() {
@@ -106,13 +106,65 @@ var _ = Describe("MemCachedDiscovery", func() {
 
 		When("the cache is valid but a request is made for a non-existing resource", func() {
 			BeforeEach(func() {
-				_, _ = mc.ServerResources()
-				_, _ = mc.ServerResourcesForGroupVersion("c/v1")
+				mc.ServerResources()
+				mc.ServerResourcesForGroupVersion("c/v1")
 			})
 
-			It("should not be fresh", func() {
-				Expect(mc.Fresh()).To(BeFalse())
-				Expect(c.resourceCalls).To(Equal(4))
+			It("should be fresh", func() {
+				Expect(mc.Fresh()).To(BeTrue())
+				Expect(c.resourceCalls).To(Equal(3))
+			})
+		})
+
+		Context("client is reset", func() {
+			BeforeEach(func() {
+				mc.ServerGroups()
+				mc.ServerResources()
+				mc.Reset()
+			})
+
+			When("server groups is called", func() {
+				BeforeEach(func() {
+					mc.ServerGroups()
+				})
+
+				It("should not be fresh", func() {
+					Expect(mc.Fresh()).To(BeFalse())
+					Expect(c.groupCalls).To(Equal(1))
+				})
+			})
+
+			When("resources is called", func() {
+				BeforeEach(func() {
+					mc.ServerResources()
+				})
+
+				It("should not be fresh", func() {
+					Expect(mc.Fresh()).To(BeFalse())
+					Expect(c.resourceCalls).To(Equal(2))
+				})
+			})
+
+			When("invalidate is called", func() {
+				BeforeEach(func() {
+					mc.Invalidate()
+				})
+
+				It("should be fresh", func() {
+					Expect(mc.Fresh()).To(BeTrue())
+				})
+
+				It("should ignore existing resources cached after validation", func() {
+					Expect(mc.Fresh()).To(BeTrue())
+					Expect(c.resourceCalls).To(Equal(2))
+				})
+
+				It("should ignore existing resources cache after invalidation", func() {
+					_, err = mc.ServerResources()
+					Expect(err).To(BeNil())
+					Expect(mc.Fresh()).To(BeTrue())
+					Expect(c.resourceCalls).To(Equal(4))
+				})
 			})
 		})
 	})
@@ -120,7 +172,7 @@ var _ = Describe("MemCachedDiscovery", func() {
 	Describe("#TTL", func() {
 		BeforeEach(func() {
 			c = &fakeDiscoveryClient{}
-			mc = NewMemCachedDiscoveryClient(c, 1*time.Second)
+			mc = NewCachedDiscoveryClient(c, 1*time.Second)
 		})
 
 		JustBeforeEach(func() {

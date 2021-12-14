@@ -104,8 +104,10 @@ func newClientWithMemoryCache(config *rest.Config) (Client, error) {
 	return kubeClient, nil
 }
 
-func memCacheClientForConfig(inConfig *rest.Config) (memory.MemCachedDiscoveryClient, error) {
+func memCacheClientForConfig(inConfig *rest.Config) (memory.CachedDiscoveryClient, error) {
 	config := inConfig
+
+	var memCacheClient memory.CachedDiscoveryClient
 
 	cc, err := cachedConfig(config)
 	if err != nil || (string(cc.TLSClientConfig.CAData) != string(config.TLSClientConfig.CAData) ||
@@ -113,15 +115,24 @@ func memCacheClientForConfig(inConfig *rest.Config) (memory.MemCachedDiscoveryCl
 		if err := setCaches(config); err != nil {
 			return nil, err
 		}
+
+		memCacheClient = cachedMemCacheClient(config)
+	} else {
+		// If we already have a cached memory client we need to reset it so its entries are
+		// considered "fresh". This is incredibly important when deploying new kinds that the cache
+		// is not aware of, such as CRDs.
+		memCacheClient = cachedMemCacheClient(config)
+		memCacheClient.Reset()
 	}
 
-	return cachedMemCacheClient(config), nil
+	// return cachedMemCacheClient(config), nil
+	return memCacheClient, nil
 }
 
 var (
 	mux                   sync.Mutex
 	cachedConfigs         = map[string]*rest.Config{}
-	cachedMemCacheClients = map[string]memory.MemCachedDiscoveryClient{}
+	cachedMemCacheClients = map[string]memory.CachedDiscoveryClient{}
 )
 
 func cachedConfig(config *rest.Config) (*rest.Config, error) {
@@ -136,7 +147,7 @@ func cachedConfig(config *rest.Config) (*rest.Config, error) {
 }
 
 func setCaches(config *rest.Config) error {
-	mc, err := memory.NewMemCachedDiscoveryClientForConfig(config, ttl)
+	mc, err := memory.NewCachedDiscoveryClientForConfig(config, ttl)
 	if err != nil {
 		return err
 	}
@@ -150,7 +161,7 @@ func setCaches(config *rest.Config) error {
 	return nil
 }
 
-func cachedMemCacheClient(config *rest.Config) memory.MemCachedDiscoveryClient {
+func cachedMemCacheClient(config *rest.Config) memory.CachedDiscoveryClient {
 	mux.Lock()
 	defer mux.Unlock()
 

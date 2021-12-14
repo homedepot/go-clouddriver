@@ -81,8 +81,8 @@ var _ = Describe("CachedDiscovery", func() {
 
 		When("server groups is called twice", func() {
 			BeforeEach(func() {
-				_, _ = cdc.ServerGroups()
-				_, _ = cdc.ServerGroups()
+				cdc.ServerGroups()
+				cdc.ServerGroups()
 			})
 
 			It("should be fresh", func() {
@@ -93,7 +93,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 		When("resources is called", func() {
 			BeforeEach(func() {
-				_, _ = cdc.ServerResources()
+				cdc.ServerResources()
 			})
 
 			It("should be fresh", func() {
@@ -104,8 +104,8 @@ var _ = Describe("CachedDiscovery", func() {
 
 		When("resources is called twice", func() {
 			BeforeEach(func() {
-				_, _ = cdc.ServerResources()
-				_, _ = cdc.ServerResources()
+				cdc.ServerResources()
+				cdc.ServerResources()
 			})
 
 			It("should be fresh", func() {
@@ -116,14 +116,14 @@ var _ = Describe("CachedDiscovery", func() {
 
 		Context("client is recreated", func() {
 			BeforeEach(func() {
-				_, _ = cdc.ServerGroups()
-				_, _ = cdc.ServerResources()
+				cdc.ServerGroups()
+				cdc.ServerResources()
 				cdc = NewCachedDiscoveryClient(c, d, 60*time.Second)
 			})
 
 			When("server groups is called", func() {
 				BeforeEach(func() {
-					_, _ = cdc.ServerGroups()
+					cdc.ServerGroups()
 				})
 
 				It("should not be fresh", func() {
@@ -134,7 +134,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 			When("resources is called", func() {
 				BeforeEach(func() {
-					_, _ = cdc.ServerResources()
+					cdc.ServerResources()
 				})
 
 				It("should not be fresh", func() {
@@ -200,7 +200,7 @@ var _ = Describe("CachedDiscovery", func() {
 			os.RemoveAll(d)
 			c = &fakeDiscoveryClient{}
 			cdc = NewCachedDiscoveryClient(c, d, 1*time.Nanosecond)
-			_, _ = cdc.ServerGroups()
+			cdc.ServerGroups()
 		})
 
 		JustBeforeEach(func() {
