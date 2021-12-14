@@ -119,6 +119,8 @@ func (d *memCacheClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []*meta
 	return discovery.ServerGroupsAndResources(d)
 }
 
+// ServerGroups returns the supported groups, with information like supported versions and the
+// preferred version.
 func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -181,26 +183,36 @@ func (d *memCacheClient) createCachedEntry(key string, entry interface{}) {
 	d.expirations[key] = time.Now().Add(d.ttl)
 }
 
+// RESTClient returns a RESTClient that is used to communicate with API server
+// by this client implementation.
 func (d *memCacheClient) RESTClient() restclient.Interface {
 	return d.delegate.RESTClient()
 }
 
+// ServerPreferredResources returns the supported resources with the version preferred by the
+// server.
 func (d *memCacheClient) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
 	return discovery.ServerPreferredResources(d)
 }
 
+// ServerPreferredNamespacedResources returns the supported namespaced resources with the
+// version preferred by the server.
 func (d *memCacheClient) ServerPreferredNamespacedResources() ([]*metav1.APIResourceList, error) {
 	return discovery.ServerPreferredNamespacedResources(d)
 }
 
+// ServerVersion retrieves and parses the server's version (git version).
 func (d *memCacheClient) ServerVersion() (*version.Info, error) {
 	return d.delegate.ServerVersion()
 }
 
+// OpenAPISchema retrieves and parses the swagger API schema the server supports.
 func (d *memCacheClient) OpenAPISchema() (*openapi_v2.Document, error) {
 	return d.delegate.OpenAPISchema()
 }
 
+// Fresh is supposed to tell the caller whether or not to retry if the cache
+// fails to find something (false = retry, true = no need to retry).
 func (d *memCacheClient) Fresh() bool {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -219,7 +231,7 @@ func (d *memCacheClient) Invalidate() {
 	d.invalidated = true
 }
 
-// Resets sets the memcache to its original state without invalidating it.
+// Reset sets the memcache to its original state without invalidating it.
 func (d *memCacheClient) Reset() {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -229,6 +241,9 @@ func (d *memCacheClient) Reset() {
 	d.ourEntries = map[string]struct{}{}
 }
 
+// NewCachedDiscoveryClientForConfig creates a new DiscoveryClient for the given config, and wraps
+// the created client in a CachedDiscoveryClient. The provided configuration is updated with a
+// custom transport that understands cache responses.
 func NewCachedDiscoveryClientForConfig(config *restclient.Config, ttl time.Duration) (CachedDiscoveryClient, error) {
 	// update the given restconfig with a custom roundtripper that
 	// understands how to handle cache responses.
@@ -245,13 +260,13 @@ func NewCachedDiscoveryClientForConfig(config *restclient.Config, ttl time.Durat
 	return newCachedDiscoveryClient(discoveryClient, ttl), nil
 }
 
+// NewCachedDiscoveryClient creates a new CachedDiscoveryClient which caches
+// discovery information in memory and will stay up-to-date if Invalidate is
+// called with regularity.
 func NewCachedDiscoveryClient(delegate discovery.DiscoveryInterface, ttl time.Duration) CachedDiscoveryClient {
 	return newCachedDiscoveryClient(delegate, ttl)
 }
 
-// NewCacheClient creates a new CachedDiscoveryInterface which caches
-// discovery information in memory and will stay up-to-date if Invalidate is
-// called with regularity.
 func newCachedDiscoveryClient(delegate discovery.DiscoveryInterface, ttl time.Duration) CachedDiscoveryClient {
 	return &memCacheClient{
 		delegate:    delegate,
