@@ -1,6 +1,9 @@
 package kubernetes
 
 import (
+	"time"
+
+	"github.com/homedepot/go-clouddriver/internal/kubernetes/cached/memory"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/rest"
@@ -17,6 +20,8 @@ var _ = Describe("Controller", func() {
 
 	Describe("#NewClient", func() {
 		BeforeEach(func() {
+			cachedConfigs = map[string]*rest.Config{}
+			cachedMemCacheClients = map[string]memory.CachedDiscoveryClient{}
 			config = &rest.Config{
 				Host:        "https://test-host",
 				BearerToken: "some.bearer.token",
@@ -59,11 +64,11 @@ var _ = Describe("Controller", func() {
 					Expect(client).ToNot(BeNil())
 					Expect(cachedConfigs).To(HaveLen(1))
 					Expect(cachedMemCacheClients).To(HaveLen(1))
-					cachedConfig := cachedConfigs[config.Host]
+					cachedConfig := cachedConfigs[keyForConfig(config)]
 					Expect(cachedConfig.Host).To(Equal("https://test-host"))
 					Expect(cachedConfig.BearerToken).To(Equal("some.bearer.token"))
 					Expect(string(cachedConfig.TLSClientConfig.CAData)).To(Equal("test-ca-data"))
-					cachedClient := cachedMemCacheClients[config.Host]
+					cachedClient := cachedMemCacheClients[keyForConfig(config)]
 					Expect(cachedClient.Fresh()).To(BeTrue())
 				})
 			})
@@ -85,11 +90,11 @@ var _ = Describe("Controller", func() {
 					Expect(client).ToNot(BeNil())
 					Expect(cachedConfigs).To(HaveLen(1))
 					Expect(cachedMemCacheClients).To(HaveLen(1))
-					cachedConfig := cachedConfigs[config.Host]
+					cachedConfig := cachedConfigs[keyForConfig(config)]
 					Expect(cachedConfig.Host).To(Equal("https://test-host"))
 					Expect(cachedConfig.BearerToken).To(Equal("another.bearer.token"))
 					Expect(string(cachedConfig.TLSClientConfig.CAData)).To(Equal("test-ca-data"))
-					cachedClient := cachedMemCacheClients[config.Host]
+					cachedClient := cachedMemCacheClients[keyForConfig(config)]
 					Expect(cachedClient.Fresh()).To(BeTrue())
 				})
 			})
@@ -111,12 +116,33 @@ var _ = Describe("Controller", func() {
 					Expect(client).ToNot(BeNil())
 					Expect(cachedConfigs).To(HaveLen(1))
 					Expect(cachedMemCacheClients).To(HaveLen(1))
-					cachedConfig := cachedConfigs[config.Host]
+					cachedConfig := cachedConfigs[keyForConfig(config)]
 					Expect(cachedConfig.Host).To(Equal("https://test-host"))
 					Expect(cachedConfig.BearerToken).To(Equal("some.bearer.token"))
 					Expect(string(cachedConfig.TLSClientConfig.CAData)).To(Equal("different-ca-data"))
-					cachedClient := cachedMemCacheClients[config.Host]
+					cachedClient := cachedMemCacheClients[keyForConfig(config)]
 					Expect(cachedClient.Fresh()).To(BeTrue())
+				})
+			})
+
+			When("the same host has two defined timeouts", func() {
+				JustBeforeEach(func() {
+					newConfig := &rest.Config{
+						Host:        "https://test-host",
+						BearerToken: "some.bearer.token",
+						TLSClientConfig: rest.TLSClientConfig{
+							CAData: []byte("test-ca-data"),
+						},
+						Timeout: 1 * time.Second,
+					}
+					client, err = controller.NewClient(newConfig)
+				})
+
+				It("caches two copies of the client", func() {
+					Expect(err).To(BeNil())
+					Expect(client).ToNot(BeNil())
+					Expect(cachedConfigs).To(HaveLen(2))
+					Expect(cachedMemCacheClients).To(HaveLen(2))
 				})
 			})
 
@@ -125,11 +151,11 @@ var _ = Describe("Controller", func() {
 				Expect(client).ToNot(BeNil())
 				Expect(cachedConfigs).To(HaveLen(1))
 				Expect(cachedMemCacheClients).To(HaveLen(1))
-				cachedConfig := cachedConfigs[config.Host]
+				cachedConfig := cachedConfigs[keyForConfig(config)]
 				Expect(cachedConfig.Host).To(Equal("https://test-host"))
 				Expect(cachedConfig.BearerToken).To(Equal("some.bearer.token"))
 				Expect(string(cachedConfig.TLSClientConfig.CAData)).To(Equal("test-ca-data"))
-				cachedClient := cachedMemCacheClients[config.Host]
+				cachedClient := cachedMemCacheClients[keyForConfig(config)]
 				Expect(cachedClient.Fresh()).To(BeTrue())
 			})
 		})

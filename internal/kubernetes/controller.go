@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -110,6 +111,9 @@ func memCacheClientForConfig(inConfig *rest.Config) (memory.CachedDiscoveryClien
 
 	var memCacheClient memory.CachedDiscoveryClient
 
+	mux.Lock()
+	defer mux.Unlock()
+
 	cc, err := cachedConfig(config)
 	if err != nil || (string(cc.TLSClientConfig.CAData) != string(config.TLSClientConfig.CAData) ||
 		cc.BearerToken != config.BearerToken) {
@@ -137,14 +141,11 @@ var (
 )
 
 func cachedConfig(config *rest.Config) (*rest.Config, error) {
-	mux.Lock()
-	defer mux.Unlock()
-
-	if _, ok := cachedConfigs[config.Host]; !ok {
+	if _, ok := cachedConfigs[keyForConfig(config)]; !ok {
 		return nil, errors.New("config not found")
 	}
 
-	return cachedConfigs[config.Host], nil
+	return cachedConfigs[keyForConfig(config)], nil
 }
 
 func setCaches(config *rest.Config) error {
@@ -153,20 +154,19 @@ func setCaches(config *rest.Config) error {
 		return err
 	}
 
-	mux.Lock()
-	defer mux.Unlock()
-
-	cachedConfigs[config.Host] = config
-	cachedMemCacheClients[config.Host] = mc
+	cachedConfigs[keyForConfig(config)] = config
+	cachedMemCacheClients[keyForConfig(config)] = mc
 
 	return nil
 }
 
 func cachedMemCacheClient(config *rest.Config) memory.CachedDiscoveryClient {
-	mux.Lock()
-	defer mux.Unlock()
+	return cachedMemCacheClients[keyForConfig(config)]
+}
 
-	return cachedMemCacheClients[config.Host]
+// keyForConfig returns a string in format of <CONFIG_HOST>|<CONFIG_TIMEOUT>.
+func keyForConfig(config *rest.Config) string {
+	return fmt.Sprintf("%s|%d", config.Host, config.Timeout)
 }
 
 func newClientWithDefaultDiskCache(config *rest.Config) (Client, error) {

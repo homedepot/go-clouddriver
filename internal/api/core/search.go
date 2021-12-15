@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/internal"
+	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -90,10 +91,18 @@ func (cc *Controller) Search(c *gin.Context) {
 	wg := &sync.WaitGroup{}
 	ac := make(chan accountName, internal.DefaultChanSize)
 
-	wg.Add(len(accounts))
+	providers, err := cc.AllKubernetesProvidersWithTimeout(time.Second * internal.DefaultListTimeoutSeconds)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	providers = filterProviders(providers, accounts)
+
+	wg.Add(len(providers))
 	// List the requested resource across accounts concurrently.
-	for _, account := range accounts {
-		go cc.search(wg, account, kind, namespace, ac)
+	for _, provider := range providers {
+		go cc.search(wg, provider, kind, namespace, ac)
 	}
 
 	// Wait for all concurrent calls to finish.
@@ -147,14 +156,11 @@ type accountName struct {
 
 // search lists a requested resource by account and kind and namespace
 // then writes to a channel of accountName.
-func (cc *Controller) search(wg *sync.WaitGroup, account, kind, namespace string, ac chan accountName) {
+func (cc *Controller) search(wg *sync.WaitGroup, provider *kubernetes.Provider,
+	kind, namespace string, ac chan accountName) {
 	// Increment the wait group counter when we're done here.
 	defer wg.Done()
-	// Grab the kube provider for the given account.
-	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*internal.DefaultListTimeoutSeconds)
-	if err != nil {
-		return
-	}
+
 	// If namespace-scoped account and we are attempting to list kinds in a forbidden namespace,
 	// just return.
 	if provider.Namespace != nil && *provider.Namespace != namespace {
@@ -167,6 +173,7 @@ func (cc *Controller) search(wg *sync.WaitGroup, account, kind, namespace string
 	// Declare a context with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
 	defer cancel()
+
 	// List resources with the context.
 	ul, err := provider.Client.ListResourcesByKindAndNamespaceWithContext(ctx, kind, namespace, metav1.ListOptions{})
 	if err != nil {
@@ -175,9 +182,27 @@ func (cc *Controller) search(wg *sync.WaitGroup, account, kind, namespace string
 
 	for _, u := range ul.Items {
 		an := accountName{
-			account: account,
+			account: provider.Name,
 			name:    u.GetName(),
 		}
 		ac <- an
 	}
+}
+
+// filterProviders returs a list of providers filtered by the allowe account names passed in.
+func filterProviders(providers []*kubernetes.Provider, allowedAccounts []string) []*kubernetes.Provider {
+	ps := []*kubernetes.Provider{}
+	m := map[string]bool{}
+
+	for _, allowedAccount := range allowedAccounts {
+		m[allowedAccount] = true
+	}
+
+	for _, provider := range providers {
+		if m[provider.Name] {
+			ps = append(ps, provider)
+		}
+	}
+
+	return ps
 }

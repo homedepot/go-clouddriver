@@ -17,6 +17,10 @@ var _ = Describe("Search", func() {
 			setup()
 			uri = svr.URL + "/search?pageSize=500&q=default&type=pod"
 			accountsHeader = "account1"
+			provider := kubernetes.Provider{
+				Name: "account1",
+			}
+			fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{provider}, nil)
 		})
 
 		AfterEach(func() {
@@ -55,15 +59,17 @@ var _ = Describe("Search", func() {
 			})
 		})
 
-		When("getting the provider returns an error", func() {
+		When("grabbing all providers returns an error", func() {
 			BeforeEach(func() {
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
+				fakeSQLClient.ListKubernetesProvidersReturns(nil, errors.New("error listing providers"))
 			})
 
-			It("returns an empty response", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				validateResponse(payloadSearchEmptyResponse)
-				Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(BeZero())
+			It("returns internal server error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
+				Expect(ce.Message).To(Equal("internal: error listing kubernetes providers: error listing providers"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
 		})
 
@@ -72,15 +78,16 @@ var _ = Describe("Search", func() {
 
 			BeforeEach(func() {
 				d := "default"
+				provider.Name = "account1"
 				provider.Namespace = &d
-				fakeSQLClient.GetKubernetesProviderReturns(provider, nil)
+				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{provider}, nil)
 			})
 
 			When("the namespace is incorrect", func() {
 				BeforeEach(func() {
 					d := "different-namespace"
 					provider.Namespace = &d
-					fakeSQLClient.GetKubernetesProviderReturns(provider, nil)
+					fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{provider}, nil)
 				})
 
 				It("returns an empty response", func() {
@@ -119,9 +126,32 @@ var _ = Describe("Search", func() {
 			})
 		})
 
+		When("listing providers returns accounts the user does not have access to", func() {
+			BeforeEach(func() {
+				providers := []kubernetes.Provider{
+					{
+						Name: "account1",
+					},
+					{
+						Name: "account2",
+					},
+					{
+						Name: "account3",
+					},
+				}
+				fakeSQLClient.ListKubernetesProvidersReturns(providers, nil)
+			})
+
+			It("filters the accounts", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				validateResponse(payloadSearch)
+			})
+		})
+
 		It("succeeds", func() {
 			Expect(res.StatusCode).To(Equal(http.StatusOK))
 			validateResponse(payloadSearch)
+			Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(Equal(1))
 		})
 	})
 })
