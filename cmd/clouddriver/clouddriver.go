@@ -84,6 +84,10 @@ func init() {
 		server.WithVerboseRequestLogging()
 	}
 
+	if os.Getenv("KUBERNETES_USE_DISK_CACHE") == "true" {
+		kubernetes.UseDiskCache()
+	}
+
 	server.Setup()
 }
 
