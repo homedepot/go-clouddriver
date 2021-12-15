@@ -91,7 +91,6 @@ func (cc *Controller) Search(c *gin.Context) {
 	wg := &sync.WaitGroup{}
 	ac := make(chan accountName, internal.DefaultChanSize)
 
-	// Grab the kube provider for the given account.
 	providers, err := cc.AllKubernetesProvidersWithTimeout(time.Second * internal.DefaultListTimeoutSeconds)
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
