@@ -76,7 +76,6 @@ var _ discovery.CachedDiscoveryInterface = &memCacheClient{}
 
 // ServerResourcesForGroupVersion returns the supported resources for a group and version.
 func (d *memCacheClient) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
-
 	cachedEntry, err := d.getCachedEntry(groupVersion)
 	if err == nil && cachedEntry != nil {
 		b, err := json.Marshal(cachedEntry)
