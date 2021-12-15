@@ -76,8 +76,6 @@ var _ discovery.CachedDiscoveryInterface = &memCacheClient{}
 
 // ServerResourcesForGroupVersion returns the supported resources for a group and version.
 func (d *memCacheClient) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
 
 	cachedEntry, err := d.getCachedEntry(groupVersion)
 	if err == nil && cachedEntry != nil {
@@ -122,9 +120,6 @@ func (d *memCacheClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []*meta
 // ServerGroups returns the supported groups, with information like supported versions and the
 // preferred version.
 func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
 	cachedEntry, err := d.getCachedEntry("servergroups")
 	if err == nil && cachedEntry != nil {
 		b, err := json.Marshal(cachedEntry)
@@ -157,6 +152,9 @@ func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 }
 
 func (d *memCacheClient) getCachedEntry(key string) (interface{}, error) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	_, ourEntry := d.ourEntries[key]
 	if d.invalidated && !ourEntry {
 		return nil, errors.New("cache invalidated")
@@ -178,6 +176,9 @@ func (d *memCacheClient) getCachedEntry(key string) (interface{}, error) {
 }
 
 func (d *memCacheClient) createCachedEntry(key string, entry interface{}) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	d.entries[key] = entry
 	d.ourEntries[key] = struct{}{}
 	d.expirations[key] = time.Now().Add(d.ttl)
