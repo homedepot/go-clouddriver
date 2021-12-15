@@ -174,7 +174,7 @@ func (cc *Controller) search(wg *sync.WaitGroup, provider *kubernetes.Provider,
 	// Declare a context with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
 	defer cancel()
-	// lo := metav1.ListOptions{}
+
 	// List resources with the context.
 	ul, err := provider.Client.ListResourcesByKindAndNamespaceWithContext(ctx, kind, namespace, metav1.ListOptions{})
 	if err != nil {
