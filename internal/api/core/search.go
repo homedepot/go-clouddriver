@@ -178,7 +178,6 @@ func (cc *Controller) search(wg *sync.WaitGroup, provider *kubernetes.Provider,
 	// List resources with the context.
 	ul, err := provider.Client.ListResourcesByKindAndNamespaceWithContext(ctx, kind, namespace, metav1.ListOptions{})
 	if err != nil {
-		clouddriver.Log(fmt.Errorf("error searching for account %s: %v", provider.Name, err))
 		return
 	}
 
