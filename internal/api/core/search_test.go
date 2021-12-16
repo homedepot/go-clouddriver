@@ -47,15 +47,65 @@ var _ = Describe("Search", func() {
 			})
 		})
 
-		When("kind is securityGroups", func() {
-			BeforeEach(func() {
-				uri = svr.URL + "/search?pageSize=500&q=default&type=securityGroups"
+		Context("unsupported kinds", func() {
+			When("kind is applications", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/search?pageSize=500&q=default&type=applications"
+				})
+
+				It("returns the default response", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadSearchDefault)
+					Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(BeZero())
+				})
 			})
 
-			It("returns the default response", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				validateResponse(payloadSearchDefault)
-				Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(BeZero())
+			When("kind is instances", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/search?pageSize=500&q=default&type=instances"
+				})
+
+				It("returns the default response", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadSearchDefault)
+					Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(BeZero())
+				})
+			})
+
+			When("kind is loadBalancers", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/search?pageSize=500&q=default&type=loadBalancers"
+				})
+
+				It("returns the default response", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadSearchDefault)
+					Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(BeZero())
+				})
+			})
+
+			When("kind is projects", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/search?pageSize=500&q=default&type=projects"
+				})
+
+				It("returns the default response", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadSearchDefault)
+					Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(BeZero())
+				})
+			})
+
+			When("kind is securityGroups", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/search?pageSize=500&q=default&type=securityGroups"
+				})
+
+				It("returns the default response", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadSearchDefault)
+					Expect(fakeKubeClient.ListResourcesByKindAndNamespaceWithContextCallCount()).To(BeZero())
+				})
 			})
 		})
 

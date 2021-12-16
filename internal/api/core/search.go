@@ -41,6 +41,14 @@ type PageResult struct {
 	Cluster        string `json:"cluster,omitempty"`
 }
 
+var unsupportedKinds = []string{
+	"applications",
+	"instances",
+	"loadBalancers",
+	"projects",
+	"securityGroups",
+}
+
 // Search is the generic search endpoint. It ignores the `pageSize` query parameter
 // and lists resources for a kind and namespace across all accounts the user
 // has access to concurrently.
@@ -59,19 +67,8 @@ func (cc *Controller) Search(c *gin.Context) {
 	}
 
 	results := []PageResult{}
-	// Ignore requests for 'securityGroups' as this is a bogus Kubernetes kind and always
-	// returns the following JSON:
-	// [
-	//   {
-	//     "pageNumber": 1,
-	//     "pageSize": 500,
-	//     "platform": "aws",
-	//     "query": "namespace",
-	//     "results": [],
-	//     "totalMatches": 0
-	//   }
-	// ]
-	if strings.EqualFold(kind, "securityGroups") {
+	// Ignore requests for unsupported kinds
+	if containsIgnoreCase(unsupportedKinds, kind) {
 		sr := SearchResponse{}
 		page := Page{
 			PageNumber:   1,
