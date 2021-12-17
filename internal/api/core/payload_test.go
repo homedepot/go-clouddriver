@@ -4193,3 +4193,126 @@ const payloadListProjectClusters = `[
 		"stack": "*"
 	}
 ]`
+
+const payloadTaskIncomplete = `{
+              "id": "task-id",
+              "resultObjects": [
+                {
+                  "boundArtifacts": [
+                    {
+                      "customKind": false,
+                      "location": "test-namespace",
+                      "metadata": {
+                        "account": "test-account-name"
+                      },
+                      "name": "",
+                      "reference": "test-deployment",
+                      "type": "kubernetes/deployment"
+                    }
+                  ],
+                  "createdArtifacts": [
+                    {
+                      "customKind": false,
+                      "location": "test-namespace",
+                      "metadata": {
+                        "account": "test-account-name"
+                      },
+                      "name": "",
+                      "reference": "test-deployment",
+                      "type": "kubernetes/deployment"
+                    }
+                  ],
+                  "deployedNamesByLocation": {
+                    "test-namespace": [
+                      "Deployment test-deployment"
+                    ]
+                  },
+                  "manifestNamesByNamespace": {
+                    "test-namespace": [
+                      "Deployment test-deployment"
+                    ]
+                  },
+                  "manifestNamesByNamespaceToRefresh": {
+                    "test-namespace": [
+                      "Deployment test-deployment"
+                    ]
+                  },
+                  "manifests": [
+                    {
+                      "apiVersion": "apps/v1",
+                      "kind": "Deployment",
+                      "metadata": {
+                        "name": "test-deployment",
+                        "namespace": "test-namespace"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "status": {
+                "complete": false,
+                "completed": false,
+                "failed": false,
+                "phase": "ORCHESTRATION",
+                "retryable": false,
+                "status": "Orchestration in progress."
+              }
+            }`
+
+const payloadTaskComplete = `{
+              "id": "task-id",
+              "resultObjects": [
+                {
+                  "boundArtifacts": [
+                    {
+                      "customKind": false,
+                      "location": "test-namespace",
+                      "metadata": {
+                        "account": "test-account-name"
+                      },
+                      "name": "",
+                      "reference": "test-deployment",
+                      "type": "kubernetes/deployment"
+                    }
+                  ],
+                  "createdArtifacts": [
+                    {
+                      "customKind": false,
+                      "location": "test-namespace",
+                      "metadata": {
+                        "account": "test-account-name"
+                      },
+                      "name": "",
+                      "reference": "test-deployment",
+                      "type": "kubernetes/deployment"
+                    }
+                  ],
+                  "deployedNamesByLocation": {
+                    "test-namespace": [
+                      "Deployment test-deployment"
+                    ]
+                  },
+                  "manifestNamesByNamespace": {
+                    "test-namespace": [
+                      "Deployment test-deployment"
+                    ]
+                  },
+                  "manifestNamesByNamespaceToRefresh": {
+                    "test-namespace": [
+                      "Deployment test-deployment"
+                    ]
+                  },
+                  "manifests": [
+                    {}
+                  ]
+                }
+              ],
+              "status": {
+                "complete": true,
+                "completed": true,
+                "failed": false,
+                "phase": "ORCHESTRATION",
+                "retryable": false,
+                "status": "Orchestration completed."
+              }
+            }`
