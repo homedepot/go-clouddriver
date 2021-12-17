@@ -9,8 +9,10 @@ import (
 )
 
 const (
-	defaultCacheControlMaxAge = 30
-	headerXSpinnakerAccounts  = "X-Spinnaker-Accounts"
+	cacheControlMaxAge30     = 30
+	cacheControlMaxAge60     = 60
+	headerXSpinnakerAccounts = "X-Spinnaker-Accounts"
+	headerXSpinnakerUser     = "X-Spinnaker-User"
 )
 
 // Server hold the gin engine and any clients we need for the API.
@@ -63,7 +65,7 @@ func (s *Server) Setup() {
 		api.POST("/cache/kubernetes/manifest", core.OK)
 
 		// Credentials API controller.
-		api.GET("/credentials", c.ListCredentials)
+		api.GET("/credentials", middleware.CacheControl(cacheControlMaxAge60), c.ListCredentials)
 		api.GET("/credentials/:account", c.GetAccountCredentials)
 
 		// Applications API controller.
@@ -71,16 +73,16 @@ func (s *Server) Setup() {
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ApplicationsController.groovy#L38
 		// @PreAuthorize("#restricted ? @fiatPermissionEvaluator.storeWholePermission() : true")
 		// @PostFilter("#restricted ? hasPermission(filterObject.name, 'APPLICATION', 'READ') : true")
-		api.GET("/applications", mc.PostFilterAuthorizedApplications("READ"), c.ListApplications)
+		api.GET("/applications", middleware.CacheControl(cacheControlMaxAge60), middleware.Vary(headerXSpinnakerUser), mc.PostFilterAuthorizedApplications("READ"), c.ListApplications)
 
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ServerGroupManagerController.java#L39
-		api.GET("/applications/:application/serverGroupManagers", middleware.CacheControl(defaultCacheControlMaxAge), c.ListServerGroupManagers)
+		api.GET("/applications/:application/serverGroupManagers", middleware.CacheControl(cacheControlMaxAge30), c.ListServerGroupManagers)
 
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ServerGroupController.groovy#L172
-		api.GET("/applications/:application/serverGroups", middleware.CacheControl(defaultCacheControlMaxAge), c.ListServerGroups)
+		api.GET("/applications/:application/serverGroups", middleware.CacheControl(cacheControlMaxAge30), c.ListServerGroups)
 
 		// https: //github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/LoadBalancerController.groovy#L42
-		api.GET("/applications/:application/loadBalancers", middleware.CacheControl(defaultCacheControlMaxAge), c.ListLoadBalancers)
+		api.GET("/applications/:application/loadBalancers", middleware.CacheControl(cacheControlMaxAge30), c.ListLoadBalancers)
 
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ServerGroupController.groovy#L75
 		// @PreAuthorize("hasPermission(#account, 'ACCOUNT', 'READ')")
@@ -120,7 +122,7 @@ func (s *Server) Setup() {
 
 		// Generic search endpoint.
 		// https://github.com/spinnaker/clouddriver/blob/0524d08f6bcf775c469a0576a79b2679b5653325/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/SearchController.groovy#L55
-		api.GET("/search", middleware.CacheControl(defaultCacheControlMaxAge), middleware.Vary(headerXSpinnakerAccounts), c.Search)
+		api.GET("/search", middleware.CacheControl(cacheControlMaxAge30), middleware.Vary(headerXSpinnakerAccounts), c.Search)
 
 		// Not implemented.
 		//
@@ -139,7 +141,7 @@ func (s *Server) Setup() {
 
 		// Projects API controller.
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ProjectController.groovy
-		api.GET("/projects/:project/clusters", middleware.CacheControl(defaultCacheControlMaxAge), c.ListProjectClusters)
+		api.GET("/projects/:project/clusters", middleware.CacheControl(cacheControlMaxAge30), c.ListProjectClusters)
 	}
 
 	// V1 endpoint.
