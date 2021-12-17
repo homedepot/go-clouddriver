@@ -12,7 +12,6 @@ const (
 	cacheControlMaxAge30     = 30
 	cacheControlMaxAge60     = 60
 	headerXSpinnakerAccounts = "X-Spinnaker-Accounts"
-	headerXSpinnakerUser     = "X-Spinnaker-User"
 )
 
 // Server hold the gin engine and any clients we need for the API.
