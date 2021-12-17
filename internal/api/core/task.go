@@ -37,11 +37,14 @@ func (cc *Controller) GetTask(c *gin.Context) {
 		return
 	}
 
+	task := clouddriver.NewDefaultTask(id)
+
 	for _, r := range resources {
 		// Ignore getting the manifest if task type is "cleanup" or "noop".
 		if strings.EqualFold(r.TaskType, clouddriver.TaskTypeCleanup) ||
 			strings.EqualFold(r.TaskType, clouddriver.TaskTypeNoOp) {
 			manifests = append(manifests, map[string]interface{}{})
+
 			continue
 		}
 
@@ -56,12 +59,17 @@ func (cc *Controller) GetTask(c *gin.Context) {
 			if strings.EqualFold(r.TaskType, clouddriver.TaskTypeDelete) &&
 				strings.HasSuffix(err.Error(), "not found") {
 				manifests = append(manifests, map[string]interface{}{})
+
 				continue
 			}
 
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 
 			return
+		} else if strings.EqualFold(r.TaskType, clouddriver.TaskTypeDelete) {
+			task.Status.Complete = false
+			task.Status.Completed = false
+			task.Status.Status = "Orchestration in progress."
 		}
 
 		manifests = append(manifests, result.Object)
@@ -81,7 +89,6 @@ func (cc *Controller) GetTask(c *gin.Context) {
 		ManifestNamesByNamespaceToRefresh: mnr,
 	}
 
-	task := clouddriver.NewDefaultTask(id)
 	task.ResultObjects = []clouddriver.TaskResultObject{ro}
 
 	c.JSON(http.StatusOK, task)

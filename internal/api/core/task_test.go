@@ -3,11 +3,13 @@ package core_test
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var _ = Describe("Task", func() {
@@ -101,7 +103,19 @@ var _ = Describe("Task", func() {
 				fakeSQLClient.ListKubernetesResourcesByTaskIDReturns([]kubernetes.Resource{
 					{
 						AccountName: "test-account-name",
-						TaskType:    clouddriver.TaskTypeDelete,
+						// ID:           "",
+						Timestamp: time.Time{},
+						// TaskID:       "",
+						TaskType:     clouddriver.TaskTypeDelete,
+						APIGroup:     "apps",
+						Name:         "test-deployment",
+						ArtifactName: "",
+						Namespace:    "test-namespace",
+						// Resource:     "",
+						Version:      "v1",
+						Kind:         "Deployment",
+						SpinnakerApp: "test-app",
+						Cluster:      "test-cluster",
 					},
 				}, nil)
 			})
@@ -111,9 +125,10 @@ var _ = Describe("Task", func() {
 					fakeKubeClient.GetReturns(nil, errors.New(`horizontalpodautoscalers.autoscaling "php-apache1-v008" not found`))
 				})
 
-				It("ignores the not found error", func() {
+				It("ignores the not found error and returns a complete task", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
 					Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+					validateResponse(payloadTaskComplete)
 				})
 			})
 
@@ -125,6 +140,27 @@ var _ = Describe("Task", func() {
 				It("ignores the not found error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 					Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+				})
+			})
+
+			When("the server returns the resource", func() {
+				BeforeEach(func() {
+					fakeKubeClient.GetReturns(&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"kind":       "Deployment",
+							"apiVersion": "apps/v1",
+							"metadata": map[string]interface{}{
+								"name":      "test-deployment",
+								"namespace": "test-namespace",
+							},
+						},
+					}, nil)
+				})
+
+				It("returns an incomplete task", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+					validateResponse(payloadTaskIncomplete)
 				})
 			})
 		})
