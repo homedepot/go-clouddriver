@@ -12,7 +12,6 @@ const (
 	cacheControlMaxAge30     = 30
 	cacheControlMaxAge60     = 60
 	headerXSpinnakerAccounts = "X-Spinnaker-Accounts"
-	headerXSpinnakerUser     = "X-Spinnaker-User"
 )
 
 // Server hold the gin engine and any clients we need for the API.
@@ -73,7 +72,7 @@ func (s *Server) Setup() {
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ApplicationsController.groovy#L38
 		// @PreAuthorize("#restricted ? @fiatPermissionEvaluator.storeWholePermission() : true")
 		// @PostFilter("#restricted ? hasPermission(filterObject.name, 'APPLICATION', 'READ') : true")
-		api.GET("/applications", middleware.CacheControl(cacheControlMaxAge60), middleware.Vary(headerXSpinnakerUser), mc.PostFilterAuthorizedApplications("READ"), c.ListApplications)
+		api.GET("/applications", mc.PostFilterAuthorizedApplications("READ"), c.ListApplications)
 
 		// https://github.com/spinnaker/clouddriver/blob/master/clouddriver-web/src/main/groovy/com/netflix/spinnaker/clouddriver/controllers/ServerGroupManagerController.java#L39
 		api.GET("/applications/:application/serverGroupManagers", middleware.CacheControl(cacheControlMaxAge30), c.ListServerGroupManagers)
