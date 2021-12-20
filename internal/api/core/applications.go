@@ -81,13 +81,20 @@ func (cc *Controller) ListApplications(c *gin.Context) {
 
 	response := Applications{}
 	apps := uniqueSpinnakerApps(rs)
+	m := makeMapOfSpinnakerAppsToClusters(rs)
 
 	for _, app := range apps {
+		clusterNames := map[string][]string{}
+
+		if _, ok := m[app]; ok {
+			clusterNames = m[app]
+		}
+
 		application := Application{
 			Attributes: ApplicationAttributes{
 				Name: app,
 			},
-			ClusterNames: clusterNamesForSpinnakerApp(app, rs),
+			ClusterNames: clusterNames,
 			Name:         app,
 		}
 
@@ -139,24 +146,22 @@ func containsIgnoreCase(s []string, e string) bool {
 	return false
 }
 
-// clusterNamesForSpinnakerApp returns a map of Kubernetes provider account names
-// to a list of Kubernetes resources in the format `<KIND> <NAME>`.
-func clusterNamesForSpinnakerApp(application string, rs []kubernetes.Resource) map[string][]string {
-	clusterNames := map[string][]string{}
+func makeMapOfSpinnakerAppsToClusters(rs []kubernetes.Resource) map[string]map[string][]string {
+	m := map[string]map[string][]string{}
 
 	for _, r := range rs {
-		if r.SpinnakerApp == application {
-			if _, ok := clusterNames[r.AccountName]; !ok {
-				clusterNames[r.AccountName] = []string{}
-			}
-
-			resources := clusterNames[r.AccountName]
-			resources = append(resources, fmt.Sprintf("%s %s", r.Kind, r.Name))
-			clusterNames[r.AccountName] = resources
+		if _, ok := m[r.SpinnakerApp]; !ok {
+			m[r.SpinnakerApp] = map[string][]string{}
 		}
+
+		clusterNames := m[r.SpinnakerApp]
+		resources := clusterNames[r.AccountName]
+		resources = append(resources, fmt.Sprintf("%s %s", r.Kind, r.Name))
+		clusterNames[r.AccountName] = resources
+		m[r.SpinnakerApp] = clusterNames
 	}
 
-	return clusterNames
+	return m
 }
 
 type ServerGroupManagers []ServerGroupManager
