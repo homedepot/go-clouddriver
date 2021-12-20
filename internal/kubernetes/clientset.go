@@ -58,8 +58,7 @@ func (c *clientset) PodLogs(name, namespace, container string) (string, error) {
 // Events returns events for a given kind, name, and namespace.
 func (c *clientset) Events(ctx context.Context, kind, name, namespace string) ([]v1.Event, error) {
 	lo := metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("involvedObject.name=%s", name),
-		TypeMeta:      metav1.TypeMeta{Kind: kind},
+		FieldSelector: fmt.Sprintf("involvedObject.kind=%s,involvedObject.name=%s", kind, name),
 	}
 
 	events, err := c.clientset.CoreV1().Events(namespace).List(ctx, lo)
