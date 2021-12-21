@@ -80,16 +80,9 @@ func (cc *Controller) ListApplications(c *gin.Context) {
 	}
 
 	response := Applications{}
-	apps := uniqueSpinnakerApps(rs)
+
 	m := makeMapOfSpinnakerAppsToClusters(rs)
-
-	for _, app := range apps {
-		clusterNames := map[string][]string{}
-
-		if _, ok := m[app]; ok {
-			clusterNames = m[app]
-		}
-
+	for app, clusterNames := range m {
 		application := Application{
 			Attributes: ApplicationAttributes{
 				Name: app,
@@ -107,21 +100,6 @@ func (cc *Controller) ListApplications(c *gin.Context) {
 	})
 
 	c.Set(KeyAllApplications, response)
-}
-
-// uniqueSpinnakerApps returns a slice of unique Spinnaker
-// applications associated with a given list of kubernetes
-// resources.
-func uniqueSpinnakerApps(rs []kubernetes.Resource) []string {
-	apps := []string{}
-
-	for _, r := range rs {
-		if !contains(apps, r.SpinnakerApp) {
-			apps = append(apps, r.SpinnakerApp)
-		}
-	}
-
-	return apps
 }
 
 // contains returns true if slice s contains element e.
