@@ -35,6 +35,7 @@ type Metadata struct {
 //go:generate counterfeiter . Client
 type Client interface {
 	Apply(*unstructured.Unstructured) (Metadata, error)
+	Replace(*unstructured.Unstructured) (Metadata, error)
 	DeleteResourceByKindAndNameAndNamespace(string, string, string, metav1.DeleteOptions) error
 	Discover() error
 	GVRForKind(string) (schema.GroupVersionResource, error)
@@ -125,6 +126,81 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 	}
 
 	_ = info.Refresh(patchedObject, true)
+
+	metadata.Name = u.GetName()
+	metadata.Namespace = u.GetNamespace()
+	metadata.Group = gvr.Group
+	metadata.Resource = gvr.Resource
+	metadata.Kind = gvk.Kind
+	metadata.Version = gvr.Version
+
+	return metadata, nil
+}
+
+// Replace a given manifest.
+func (c *client) Replace(u *unstructured.Unstructured) (Metadata, error) {
+	metadata := Metadata{}
+	gvk := u.GroupVersionKind()
+
+	restMapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return metadata, err
+	}
+
+	gvr := restMapping.Resource
+	gv := gvk.GroupVersion()
+	c.config.GroupVersion = &gv
+
+	restClient, err := newRestClient(*c.config, gv)
+	if err != nil {
+		return metadata, err
+	}
+
+	helper := resource.NewHelper(restClient, restMapping)
+
+	info := &resource.Info{
+		Client:          restClient,
+		Mapping:         restMapping,
+		Namespace:       u.GetNamespace(),
+		Name:            u.GetName(),
+		Source:          "",
+		Object:          u,
+		ResourceVersion: restMapping.Resource.Version,
+	}
+
+	// If annotation kubectl.kubernetes.io/last-applied-configuration exists, then update it.
+	err = util.CreateOrUpdateAnnotation(false, info.Object, unstructured.UnstructuredJSONScheme)
+	if err != nil {
+		return metadata, err
+	}
+
+	// Determine if the resource currently exists.
+	exists := true
+	if err := info.Get(); err != nil {
+		if !errors.IsNotFound(err) {
+			return metadata, err
+		}
+
+		exists = false
+	}
+
+	if !exists {
+		// Create the resource if it doesn't exist.
+		obj, err := helper.Create(info.Namespace, true, info.Object)
+		if err != nil {
+			return metadata, err
+		}
+
+		_ = info.Refresh(obj, true)
+	} else {
+		// Replace the resource if it does exist.
+		obj, err := helper.Replace(info.Namespace, info.Name, true, info.Object)
+		if err != nil {
+			return metadata, err
+		}
+
+		_ = info.Refresh(obj, true)
+	}
 
 	metadata.Name = u.GetName()
 	metadata.Namespace = u.GetNamespace()
