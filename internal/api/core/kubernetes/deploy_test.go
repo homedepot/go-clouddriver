@@ -314,6 +314,42 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
+	When("the manifest uses replace strategy", func() {
+		BeforeEach(func() {
+			deployManifestRequest = DeployManifestRequest{
+				Manifests: []map[string]interface{}{
+					{
+						"kind":       "Job",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"annotations": map[string]interface{}{
+								"strategy.spinnaker.io/replace": "true",
+							},
+							"name":      "test-name",
+							"namespace": "test-namespace",
+						},
+					},
+				},
+			}
+		})
+
+		When("replace returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ReplaceReturns(kubernetes.Metadata{}, errors.New("ReplaceReturns fake error"))
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+				Expect(c.Errors.Last().Error()).To(Equal("error replacing manifest (kind: Job, apiVersion: v1, name: test-name): ReplaceReturns fake error"))
+			})
+		})
+
+		It("it succeeds, calling replace", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			Expect(fakeKubeClient.ReplaceCallCount()).To(Equal(1))
+		})
+	})
+
 	Context("when the manifest uses Spinnaker managed traffic", func() {
 		BeforeEach(func() {
 			deployManifestRequest = DeployManifestRequest{
