@@ -174,8 +174,8 @@ func (c *client) Replace(u *unstructured.Unstructured) (Metadata, error) {
 		return metadata, err
 	}
 
-	// Determine if the resource currently exists.
 	exists := true
+	// Determine if the resource currently exists.
 	if err := info.Get(); err != nil {
 		if !errors.IsNotFound(err) {
 			return metadata, err
