@@ -56,7 +56,13 @@ func (cc *Controller) RunJob(c *gin.Context, rj RunJobRequest) {
 
 	kubernetes.BindArtifacts(&u, append(rj.RequiredArtifacts, rj.OptionalArtifacts...))
 
-	meta, err := provider.Client.Apply(&u)
+	meta := kubernetes.Metadata{}
+	if kubernetes.Replace(u) {
+		meta, err = provider.Client.Replace(&u)
+	} else {
+		meta, err = provider.Client.Apply(&u)
+	}
+
 	if err != nil {
 		clouddriver.Error(c, http.StatusInternalServerError, err)
 		return

@@ -113,6 +113,38 @@ var _ = Describe("RunJob", func() {
 		})
 	})
 
+	When("the manifest uses replace strategy", func() {
+		BeforeEach(func() {
+			runJobRequest.Manifest = map[string]interface{}{
+				"kind":       "Job",
+				"apiVersion": "v1",
+				"metadata": map[string]interface{}{
+					"annotations": map[string]interface{}{
+						"strategy.spinnaker.io/replace": "true",
+					},
+					"name":      "test-name",
+					"namespace": "test-namespace",
+				},
+			}
+		})
+
+		When("replace returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.ReplaceReturns(kubernetes.Metadata{}, errors.New("ReplaceReturns fake error"))
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+				Expect(c.Errors.Last().Error()).To(Equal("ReplaceReturns fake error"))
+			})
+		})
+
+		It("it succeeds, calling replace", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			Expect(fakeKubeClient.ReplaceCallCount()).To(Equal(1))
+		})
+	})
+
 	Context("annotating 'artifact.spinnaker.io/location'", func() {
 		When("the namespace is not set", func() {
 			BeforeEach(func() {
