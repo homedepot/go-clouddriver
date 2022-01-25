@@ -204,6 +204,19 @@ type FakeClient struct {
 		result2 *unstructured.Unstructured
 		result3 error
 	}
+	ReplaceStub        func(*unstructured.Unstructured) (kubernetes.Metadata, error)
+	replaceMutex       sync.RWMutex
+	replaceArgsForCall []struct {
+		arg1 *unstructured.Unstructured
+	}
+	replaceReturns struct {
+		result1 kubernetes.Metadata
+		result2 error
+	}
+	replaceReturnsOnCall map[int]struct {
+		result1 kubernetes.Metadata
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -1065,6 +1078,70 @@ func (fake *FakeClient) PatchUsingStrategyReturnsOnCall(i int, result1 kubernete
 	}{result1, result2, result3}
 }
 
+func (fake *FakeClient) Replace(arg1 *unstructured.Unstructured) (kubernetes.Metadata, error) {
+	fake.replaceMutex.Lock()
+	ret, specificReturn := fake.replaceReturnsOnCall[len(fake.replaceArgsForCall)]
+	fake.replaceArgsForCall = append(fake.replaceArgsForCall, struct {
+		arg1 *unstructured.Unstructured
+	}{arg1})
+	stub := fake.ReplaceStub
+	fakeReturns := fake.replaceReturns
+	fake.recordInvocation("Replace", []interface{}{arg1})
+	fake.replaceMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) ReplaceCallCount() int {
+	fake.replaceMutex.RLock()
+	defer fake.replaceMutex.RUnlock()
+	return len(fake.replaceArgsForCall)
+}
+
+func (fake *FakeClient) ReplaceCalls(stub func(*unstructured.Unstructured) (kubernetes.Metadata, error)) {
+	fake.replaceMutex.Lock()
+	defer fake.replaceMutex.Unlock()
+	fake.ReplaceStub = stub
+}
+
+func (fake *FakeClient) ReplaceArgsForCall(i int) *unstructured.Unstructured {
+	fake.replaceMutex.RLock()
+	defer fake.replaceMutex.RUnlock()
+	argsForCall := fake.replaceArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClient) ReplaceReturns(result1 kubernetes.Metadata, result2 error) {
+	fake.replaceMutex.Lock()
+	defer fake.replaceMutex.Unlock()
+	fake.ReplaceStub = nil
+	fake.replaceReturns = struct {
+		result1 kubernetes.Metadata
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ReplaceReturnsOnCall(i int, result1 kubernetes.Metadata, result2 error) {
+	fake.replaceMutex.Lock()
+	defer fake.replaceMutex.Unlock()
+	fake.ReplaceStub = nil
+	if fake.replaceReturnsOnCall == nil {
+		fake.replaceReturnsOnCall = make(map[int]struct {
+			result1 kubernetes.Metadata
+			result2 error
+		})
+	}
+	fake.replaceReturnsOnCall[i] = struct {
+		result1 kubernetes.Metadata
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -1094,6 +1171,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.patchMutex.RUnlock()
 	fake.patchUsingStrategyMutex.RLock()
 	defer fake.patchUsingStrategyMutex.RUnlock()
+	fake.replaceMutex.RLock()
+	defer fake.replaceMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

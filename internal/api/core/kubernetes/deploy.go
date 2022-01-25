@@ -148,13 +148,25 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			}
 		}
 
-		meta, err := provider.Client.Apply(&manifest)
-		if err != nil {
-			e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
-				manifest.GetKind(), manifest.GroupVersionKind().Version, manifest.GetName(), err.Error())
-			clouddriver.Error(c, http.StatusInternalServerError, e)
+		meta := kubernetes.Metadata{}
+		if kubernetes.Replace(manifest) {
+			meta, err = provider.Client.Replace(&manifest)
+			if err != nil {
+				e := fmt.Errorf("error replacing manifest (kind: %s, apiVersion: %s, name: %s): %s",
+					manifest.GetKind(), manifest.GroupVersionKind().Version, manifest.GetName(), err.Error())
+				clouddriver.Error(c, http.StatusInternalServerError, e)
 
-			return
+				return
+			}
+		} else {
+			meta, err = provider.Client.Apply(&manifest)
+			if err != nil {
+				e := fmt.Errorf("error applying manifest (kind: %s, apiVersion: %s, name: %s): %s",
+					manifest.GetKind(), manifest.GroupVersionKind().Version, manifest.GetName(), err.Error())
+				clouddriver.Error(c, http.StatusInternalServerError, e)
+
+				return
+			}
 		}
 
 		kr := kubernetes.Resource{
