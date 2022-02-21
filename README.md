@@ -10,7 +10,7 @@ Go Clouddriver brings many features to the table which allow it to perform bette
 - it stores Kubernetes providers in a database, fronted by a simple CRUD API
 - it removes over-complicated strategies such as [Cache All The Stuff](https://github.com/spinnaker/clouddriver/tree/master/cats), instead making live calls for all operations
 
-Go Clouddriver is *not* an API complete implementation of Clouddriver OSS and only handles Kubernetes providers and operations. It is meant to be run in tandem with Clouddriver OSS. Visit [the wiki](https://github.com/homedepot/go-clouddriver/wiki) for feature support.
+Go Clouddriver is *not* an API complete implementation of Clouddriver OSS and only handles Kubernetes providers and operations. It is meant to be run in tandem with Clouddriver OSS. Visit [the wiki](https://github.com/homedepot/go-clouddriver/wiki) for feature support and intallation instructions.
 
 ## Getting Started
 
