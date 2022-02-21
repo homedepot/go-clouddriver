@@ -83,13 +83,13 @@ curl localhost:7002/credentials | jq
 
 ### Configuration
 
-| Environment Variable | Description | Notes |
-|----------|:-------------:|-----------:|
-| `ARCADE_API_KEY` | Needed to talk to [Arcade](https://github.com/billiford/arcade). | Required for most operations. |
-| `ARTIFACTS_CREDENTIALS_CONFIG_DIR` | Sets the directory for artifacts configuration. | Not recommended - use OSS Clouddriver's artifacts API instead. |
-| `KUBERNETES_USE_DISK_CACHE` | Stores Kubernetes API discovery on disk instead of in-memory. | |
-| `DB_HOST` | Used to connect to MySQL datastore. | If not set will default to local SQLite DB. |
-| `DB_NAME` | Used to connect to MySQL datastore. | If not set will default to local SQLite DB. |
-| `DB_PASS` | Used to connect to MySQL datastore. | If not set will default to local SQLite DB. |
-| `DB_USER` | Used to connect to MySQL datastore. | If not set will default to local SQLite DB. |
-| `VERBOSE_REQUEST_LOGGING` | Logs all incoming request information. | Should only be used in non-production for testing. |
+| Environment Variable | Description | Notes | Default Value |
+|----------|:-------------:|-----------:|------------:|
+| `ARCADE_API_KEY` | Needed to talk to [Arcade](https://github.com/billiford/arcade). | Required for most operations. ||
+| `ARTIFACTS_CREDENTIALS_CONFIG_DIR` | Sets the directory for artifacts configuration. | Optional. Leave unset to use OSS Clouddriver's Artifacts API. ||
+| `KUBERNETES_USE_DISK_CACHE` | Stores Kubernetes API discovery on disk instead of in-memory. || `false` |
+| `DB_HOST` | Used to connect to MySQL datastore. | If not set will default to local SQLite DB. ||
+| `DB_NAME` | Used to connect to MySQL datastore. | If not set will default to local SQLite DB. ||
+| `DB_PASS` | Used to connect to MySQL datastore. | If not set will default to local SQLite DB. ||
+| `DB_USER` | Used to connect to MySQL datastore. | If not set will default to local SQLite DB. ||
+| `VERBOSE_REQUEST_LOGGING` | Logs all incoming request information. | Should only be used in non-production for testing. | `false` |
