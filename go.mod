@@ -19,8 +19,8 @@ require (
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
-	github.com/onsi/ginkgo v1.16.2
-	github.com/onsi/gomega v1.12.0
+	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/gomega v1.18.1
 	github.com/peterbourgon/diskv v2.0.1+incompatible
 	github.com/zsais/go-gin-prometheus v0.1.1-0.20200217150448-2199a42d96c1
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
