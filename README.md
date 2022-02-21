@@ -2,13 +2,15 @@
 
 # Go Clouddriver
 
-Go Clouddriver is a rewrite of Spinnaker's [Clouddriver](https://github.com/spinnaker/clouddriver) microservice. It aims to fix severe scaling problems and operational concerns when using Clouddriver at production scale.
+Go Clouddriver is a rewrite of Spinnaker's [Clouddriver](https://github.com/spinnaker/clouddriver) microservice. It has an observed 95%+ decrease in CPU and memory load for Kubernetes operations.
 
-It changes how clouddriver operates by providing an extended API for account onboarding (no more "dynamic accounts") and removing over-complicated strategies such as [Cache All The Stuff](https://github.com/spinnaker/clouddriver/tree/master/cats) in favor of talking directly to APIs.
+Go Clouddriver brings many features to the table which allow it to perform better than Clouddriver OSS for production loads:
+- it does not rely on `kubectl` and instead interfaces directly with the Kubenretes API for all operations
+- it utilizes an in-memory cache store for Kubernetes API discovery
+- it stores Kubernetes providers in a database, fronted by a simple CRUD API
+- it removes over-complicated strategies such as [Cache All The Stuff](https://github.com/spinnaker/clouddriver/tree/master/cats), instead making live calls for all operations
 
-Go Clouddriver generates its access tokens using [Arcade](https://github.com/billiford/arcade), which is meant to be used in tandem with Google's [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) to generate your tokens in a sidecar and make them retrievable through a simple authenticated API.
-
-Visit [the wiki](https://github.com/homedepot/go-clouddriver/wiki) for feature support.
+Go Clouddriver is *not* an API complete implementation of Clouddriver OSS and only handles Kubernetes providers and operations. It is meant to be run in tandem with Clouddriver OSS. Visit [the wiki](https://github.com/homedepot/go-clouddriver/wiki) for feature support.
 
 ## Getting Started
 
@@ -28,7 +30,7 @@ make build
 
 ### Running Locally
 
-1) Clone and run [arcade](https://github.com/billiford/arcade).
+1) Go Clouddriver generates its access tokens using [Arcade](https://github.com/billiford/arcade) as a sidecar, so a working instance of Arcade will need to be running locally in order for Go Clouddriver to talk to Kubernetes clusters.
 
 2) Export the Arcade API key (the same one you set up in step 1).
 ```bash
