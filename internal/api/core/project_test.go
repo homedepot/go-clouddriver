@@ -83,8 +83,8 @@ var _ = Describe("Project", func() {
 								"replicas": 1,
 								"template": map[string]interface{}{
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
 										},
@@ -92,8 +92,8 @@ var _ = Describe("Project", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"desiredNumberScheduled": 2,
-								"numberReady":            1,
+								"desiredNumberScheduled": int64(2),
+								"numberReady":            int64(1),
 							},
 						},
 					},
@@ -115,8 +115,8 @@ var _ = Describe("Project", func() {
 								"replicas": 1,
 								"template": map[string]interface{}{
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image-1",
 											},
 										},
@@ -124,8 +124,8 @@ var _ = Describe("Project", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"desiredNumberScheduled": 4,
-								"numberReady":            2,
+								"desiredNumberScheduled": int64(4),
+								"numberReady":            int64(2),
 							},
 						},
 					},
@@ -149,11 +149,11 @@ var _ = Describe("Project", func() {
 								"replicas": 1,
 								"template": map[string]interface{}{
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image-1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image-2",
 											},
 										},
@@ -161,8 +161,8 @@ var _ = Describe("Project", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      8,
-								"readyReplicas": 4,
+								"replicas":      int64(8),
+								"readyReplicas": int64(4),
 							},
 						},
 					},
@@ -188,8 +188,8 @@ var _ = Describe("Project", func() {
 								"replicas": 1,
 								"template": map[string]interface{}{
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image-3",
 											},
 										},
@@ -197,8 +197,8 @@ var _ = Describe("Project", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      16,
-								"readyReplicas": 8,
+								"replicas":      int64(16),
+								"readyReplicas": int64(8),
 							},
 						},
 					},

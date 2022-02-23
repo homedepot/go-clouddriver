@@ -869,7 +869,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -877,11 +877,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -889,7 +889,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -920,7 +920,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -928,11 +928,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -940,7 +940,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -968,14 +968,14 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid3",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -983,7 +983,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -1007,14 +1007,14 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid3",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -1022,7 +1022,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -1046,14 +1046,14 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid3",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -1061,7 +1061,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -1418,7 +1418,7 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid11",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"metadata": map[string]interface{}{
 											"labels": map[string]interface{}{
@@ -1426,11 +1426,11 @@ var _ = Describe("Application", func() {
 											},
 										},
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -1438,7 +1438,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -1469,7 +1469,7 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid11",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"metadata": map[string]interface{}{
 											"labels": map[string]interface{}{
@@ -1477,11 +1477,11 @@ var _ = Describe("Application", func() {
 											},
 										},
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -1489,7 +1489,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -1517,7 +1517,7 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid3",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"metadata": map[string]interface{}{
 											"labels": map[string]interface{}{
@@ -1525,11 +1525,11 @@ var _ = Describe("Application", func() {
 											},
 										},
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -1537,7 +1537,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -1561,7 +1561,7 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid3",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"metadata": map[string]interface{}{
 											"labels": map[string]interface{}{
@@ -1569,11 +1569,11 @@ var _ = Describe("Application", func() {
 											},
 										},
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -1581,7 +1581,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -1605,14 +1605,14 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid34",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -1620,7 +1620,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -1774,7 +1774,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -1782,11 +1782,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -1794,7 +1794,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -1829,7 +1829,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -1837,11 +1837,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -1849,7 +1849,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -1884,7 +1884,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -1892,11 +1892,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -1904,7 +1904,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -1939,7 +1939,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -1947,11 +1947,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -1959,7 +1959,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -2186,7 +2186,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -2194,11 +2194,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -2206,7 +2206,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -2237,7 +2237,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -2245,11 +2245,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -2257,7 +2257,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -2285,14 +2285,14 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid2",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -2300,9 +2300,9 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"desiredNumberScheduled": 2,
+								"desiredNumberScheduled": int64(2),
 								"currentNumberScheduled": 1,
-								"numberReady":            1,
+								"numberReady":            int64(1),
 							},
 						},
 					},
@@ -2325,14 +2325,14 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid2",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -2340,9 +2340,9 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"desiredNumberScheduled": 2,
+								"desiredNumberScheduled": int64(2),
 								"currentNumberScheduled": 1,
-								"numberReady":            1,
+								"numberReady":            int64(1),
 							},
 						},
 					},
@@ -2369,7 +2369,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid3",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -2377,11 +2377,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -2389,7 +2389,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -2413,7 +2413,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid3",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -2421,11 +2421,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image1",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image2",
 											},
 										},
@@ -2433,7 +2433,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -2652,14 +2652,14 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid1",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -2667,7 +2667,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -2866,14 +2866,14 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid1",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -2881,7 +2881,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -2912,14 +2912,14 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid1",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -2927,7 +2927,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -2955,14 +2955,14 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid2",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -2970,9 +2970,9 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"desiredNumberScheduled": 2,
+									"desiredNumberScheduled": int64(2),
 									"currentNumberScheduled": 1,
-									"numberReady":            1,
+									"numberReady":            int64(1),
 								},
 							},
 						},
@@ -2995,14 +2995,14 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid2",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -3010,9 +3010,9 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"desiredNumberScheduled": 2,
+									"desiredNumberScheduled": int64(2),
 									"currentNumberScheduled": 1,
-									"numberReady":            1,
+									"numberReady":            int64(1),
 								},
 							},
 						},
@@ -3035,14 +3035,14 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid2",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -3050,9 +3050,9 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"desiredNumberScheduled": 2,
+									"desiredNumberScheduled": int64(2),
 									"currentNumberScheduled": 1,
-									"numberReady":            1,
+									"numberReady":            int64(1),
 								},
 							},
 						},
@@ -3079,14 +3079,14 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid3",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -3094,7 +3094,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -3118,14 +3118,14 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid3",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -3133,7 +3133,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -3157,14 +3157,14 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid3",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -3172,7 +3172,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -3236,7 +3236,7 @@ var _ = Describe("Application", func() {
 									"uid": "test-uid1",
 								},
 								"spec": map[string]interface{}{
-									"replicas": 1,
+									"replicas": int64(1),
 									"template": map[string]interface{}{
 										"metadata": map[string]interface{}{
 											"labels": map[string]interface{}{
@@ -3244,11 +3244,11 @@ var _ = Describe("Application", func() {
 											},
 										},
 										"spec": map[string]interface{}{
-											"containers": []map[string]interface{}{
-												{
+											"containers": []interface{}{
+												map[string]interface{}{
 													"image": "test-image1",
 												},
-												{
+												map[string]interface{}{
 													"image": "test-image2",
 												},
 											},
@@ -3256,7 +3256,7 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"status": map[string]interface{}{
-									"replicas":      1,
+									"replicas":      int64(1),
 									"readyReplicas": 0,
 								},
 							},
@@ -3296,7 +3296,7 @@ var _ = Describe("Application", func() {
 										"uid": "test-uid1",
 									},
 									"spec": map[string]interface{}{
-										"replicas": 1,
+										"replicas": int64(1),
 										"template": map[string]interface{}{
 											"metadata": map[string]interface{}{
 												"labels": map[string]interface{}{
@@ -3304,11 +3304,11 @@ var _ = Describe("Application", func() {
 												},
 											},
 											"spec": map[string]interface{}{
-												"containers": []map[string]interface{}{
-													{
+												"containers": []interface{}{
+													map[string]interface{}{
 														"image": "test-image1",
 													},
-													{
+													map[string]interface{}{
 														"image": "test-image2",
 													},
 												},
@@ -3316,7 +3316,7 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"status": map[string]interface{}{
-										"replicas":      1,
+										"replicas":      int64(1),
 										"readyReplicas": 0,
 									},
 								},
@@ -3362,7 +3362,7 @@ var _ = Describe("Application", func() {
 										"uid": "test-uid1",
 									},
 									"spec": map[string]interface{}{
-										"replicas": 1,
+										"replicas": int64(1),
 										"template": map[string]interface{}{
 											"metadata": map[string]interface{}{
 												"labels": map[string]interface{}{
@@ -3370,11 +3370,11 @@ var _ = Describe("Application", func() {
 												},
 											},
 											"spec": map[string]interface{}{
-												"containers": []map[string]interface{}{
-													{
+												"containers": []interface{}{
+													map[string]interface{}{
 														"image": "test-image1",
 													},
-													{
+													map[string]interface{}{
 														"image": "test-image2",
 													},
 												},
@@ -3382,7 +3382,7 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"status": map[string]interface{}{
-										"replicas":      1,
+										"replicas":      int64(1),
 										"readyReplicas": 0,
 									},
 								},
@@ -3428,7 +3428,7 @@ var _ = Describe("Application", func() {
 										"uid": "test-uid1",
 									},
 									"spec": map[string]interface{}{
-										"replicas": 1,
+										"replicas": int64(1),
 										"template": map[string]interface{}{
 											"metadata": map[string]interface{}{
 												"labels": map[string]interface{}{
@@ -3436,11 +3436,11 @@ var _ = Describe("Application", func() {
 												},
 											},
 											"spec": map[string]interface{}{
-												"containers": []map[string]interface{}{
-													{
+												"containers": []interface{}{
+													map[string]interface{}{
 														"image": "test-image1",
 													},
-													{
+													map[string]interface{}{
 														"image": "test-image2",
 													},
 												},
@@ -3448,7 +3448,7 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"status": map[string]interface{}{
-										"replicas":      1,
+										"replicas":      int64(1),
 										"readyReplicas": 0,
 									},
 								},
@@ -3494,7 +3494,7 @@ var _ = Describe("Application", func() {
 										"uid": "test-uid1",
 									},
 									"spec": map[string]interface{}{
-										"replicas": 1,
+										"replicas": int64(1),
 										"template": map[string]interface{}{
 											"metadata": map[string]interface{}{
 												"labels": map[string]interface{}{
@@ -3502,11 +3502,11 @@ var _ = Describe("Application", func() {
 												},
 											},
 											"spec": map[string]interface{}{
-												"containers": []map[string]interface{}{
-													{
+												"containers": []interface{}{
+													map[string]interface{}{
 														"image": "test-image1",
 													},
-													{
+													map[string]interface{}{
 														"image": "test-image2",
 													},
 												},
@@ -3514,7 +3514,7 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"status": map[string]interface{}{
-										"replicas":      1,
+										"replicas":      int64(1),
 										"readyReplicas": 0,
 									},
 								},
@@ -3641,7 +3641,7 @@ var _ = Describe("Application", func() {
 						},
 					},
 					"spec": map[string]interface{}{
-						"replicas": 1,
+						"replicas": int64(1),
 						"template": map[string]interface{}{
 							"metadata": map[string]interface{}{
 								"labels": map[string]interface{}{
@@ -3649,11 +3649,11 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"spec": map[string]interface{}{
-								"containers": []map[string]interface{}{
-									{
+								"containers": []interface{}{
+									map[string]interface{}{
 										"image": "test-image3",
 									},
-									{
+									map[string]interface{}{
 										"image": "test-image4",
 									},
 								},
@@ -3661,7 +3661,7 @@ var _ = Describe("Application", func() {
 						},
 					},
 					"status": map[string]interface{}{
-						"replicas":      1,
+						"replicas":      int64(1),
 						"readyReplicas": 0,
 					},
 				},
@@ -3763,7 +3763,7 @@ var _ = Describe("Application", func() {
 							"uid": "test-uid1",
 						},
 						"spec": map[string]interface{}{
-							"replicas": 1,
+							"replicas": int64(1),
 							"template": map[string]interface{}{
 								"metadata": map[string]interface{}{
 									"labels": map[string]interface{}{
@@ -3771,11 +3771,11 @@ var _ = Describe("Application", func() {
 									},
 								},
 								"spec": map[string]interface{}{
-									"containers": []map[string]interface{}{
-										{
+									"containers": []interface{}{
+										map[string]interface{}{
 											"image": "test-image3",
 										},
-										{
+										map[string]interface{}{
 											"image": "test-image4",
 										},
 									},
@@ -3783,7 +3783,7 @@ var _ = Describe("Application", func() {
 							},
 						},
 						"status": map[string]interface{}{
-							"replicas":      1,
+							"replicas":      int64(1),
 							"readyReplicas": 0,
 						},
 					},
@@ -3805,7 +3805,7 @@ var _ = Describe("Application", func() {
 							},
 						},
 						"status": map[string]interface{}{
-							"replicas":      1,
+							"replicas":      int64(1),
 							"readyReplicas": 0,
 						},
 					},
@@ -3843,7 +3843,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -3851,11 +3851,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image3",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image4",
 											},
 										},
@@ -3863,7 +3863,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -3907,7 +3907,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -3915,11 +3915,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image3",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image4",
 											},
 										},
@@ -3927,7 +3927,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -3971,7 +3971,7 @@ var _ = Describe("Application", func() {
 								"uid": "test-uid1",
 							},
 							"spec": map[string]interface{}{
-								"replicas": 1,
+								"replicas": int64(1),
 								"template": map[string]interface{}{
 									"metadata": map[string]interface{}{
 										"labels": map[string]interface{}{
@@ -3979,11 +3979,11 @@ var _ = Describe("Application", func() {
 										},
 									},
 									"spec": map[string]interface{}{
-										"containers": []map[string]interface{}{
-											{
+										"containers": []interface{}{
+											map[string]interface{}{
 												"image": "test-image3",
 											},
-											{
+											map[string]interface{}{
 												"image": "test-image4",
 											},
 										},
@@ -3991,7 +3991,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -4034,7 +4034,7 @@ var _ = Describe("Application", func() {
 								},
 							},
 							"status": map[string]interface{}{
-								"replicas":      1,
+								"replicas":      int64(1),
 								"readyReplicas": 0,
 							},
 						},
@@ -4088,14 +4088,14 @@ var _ = Describe("Application", func() {
 						},
 					},
 					"spec": map[string]interface{}{
-						"replicas": 1,
+						"replicas": int64(1),
 						"template": map[string]interface{}{
 							"spec": map[string]interface{}{
-								"containers": []map[string]interface{}{
-									{
+								"containers": []interface{}{
+									map[string]interface{}{
 										"image": "test-image3",
 									},
-									{
+									map[string]interface{}{
 										"image": "test-image4",
 									},
 								},

@@ -29,15 +29,11 @@ const (
 )
 
 var (
-	errCancelJobNotImplemented = errors.New("cancelJob is not implemented for the Kubernetes provider")
-	// serverGroupManagerResources consist of Kubernetes kinds Deployments
-	// and ReplicaSets.
+	errCancelJobNotImplemented  = errors.New("cancelJob is not implemented for the Kubernetes provider")
 	serverGroupManagerResources = []string{
 		"deployments",
 		"replicaSets",
 	}
-	// serverGroupResources consist of Kubernetes kinds Pods, ReplicaSets,
-	// DaemonSets, StatefulSets, and Services.
 	serverGroupResources = []string{
 		"pods",
 		"replicaSets",
@@ -45,8 +41,6 @@ var (
 		"statefulSets",
 		"services",
 	}
-	// loadBalancerResources consist of Kubernetes kinds Services,
-	// Ingresses, Pods, and ReplicaSets.
 	loadBalancerResources = []string{
 		"pods",
 		"replicaSets",
@@ -211,6 +205,7 @@ func (cc *Controller) ListServerGroupManagers(c *gin.Context) {
 	// Declare slices to hold resources.
 	deployments := filterResourcesByKind(rs, "deployment")
 	replicaSets := filterResourcesByKind(rs, "replicaSet")
+
 	// Make a server group manager map of the replicaSets.
 	serverGroupManagerMap := makeServerGroupManagerMap(replicaSets, application)
 	// Create a new server group manager for each deployment.
@@ -456,10 +451,10 @@ func makeLoadBalancerInstanceMap(pods []resource) map[string][]LoadBalancerInsta
 	instances := map[string][]LoadBalancerInstance{}
 
 	for _, r := range pods {
-		p := kubernetes.NewPod(r.u.Object)
+		phase, _, _ := unstructured.NestedString(r.u.Object, "status", "phase")
 
 		state := stateUp
-		if p.Object().Status.Phase != statusRunning {
+		if phase != statusRunning {
 			state = stateDown
 		}
 
@@ -876,17 +871,17 @@ type BuildInfo struct {
 }
 
 type Capacity struct {
-	Desired int32 `json:"desired"`
-	Pinned  bool  `json:"pinned"`
+	Desired int  `json:"desired"`
+	Pinned  bool `json:"pinned"`
 }
 
 type InstanceCounts struct {
-	Down         int   `json:"down"`
-	OutOfService int   `json:"outOfService"`
-	Starting     int   `json:"starting"`
-	Total        int32 `json:"total"`
-	Unknown      int   `json:"unknown"`
-	Up           int32 `json:"up"`
+	Down         int `json:"down"`
+	OutOfService int `json:"outOfService"`
+	Starting     int `json:"starting"`
+	Total        int `json:"total"`
+	Unknown      int `json:"unknown"`
+	Up           int `json:"up"`
 }
 
 // Instance if a Kuberntes kind "Pod".
@@ -939,12 +934,14 @@ func (cc *Controller) ListServerGroups(c *gin.Context) {
 
 		return
 	}
+
 	// Declare slices to hold resources.
 	pods := filterResourcesByKind(rs, "pod")
 	replicaSets := filterResourcesByKind(rs, "replicaSet")
 	daemonSets := filterResourcesByKind(rs, "daemonSet")
 	statefulSets := filterResourcesByKind(rs, "statefulSet")
 	services := filterResourcesByKind(rs, "service")
+
 	// Make a map of a Pod's owner reference to the list of pods
 	// it owns.
 	serverGroupMap := makeServerGroupMap(pods)
@@ -1154,9 +1151,6 @@ func newInstance(pod unstructured.Unstructured) Instance {
 // It references the given resources owner reference to determine which resource owns it (for example, a ReplicaSet
 // is owned by a given Deployment).
 func newServerGroup(result unstructured.Unstructured, serverGroupMap map[string][]Instance, account string) ServerGroup {
-	images := listImages(&result)
-	desired := getDesiredReplicasCount(&result)
-
 	serverGroupManagers := []ServerGroupServerGroupManager{}
 	instances := []Instance{}
 	annotations := result.GetAnnotations()
@@ -1188,10 +1182,10 @@ func newServerGroup(result unstructured.Unstructured, serverGroupMap map[string]
 	return ServerGroup{
 		Account: account,
 		BuildInfo: BuildInfo{
-			Images: images,
+			Images: listImages(&result),
 		},
 		Capacity: Capacity{
-			Desired: desired,
+			Desired: getDesiredReplicasCount(&result),
 			Pinned:  false,
 		},
 		CloudProvider: typeKubernetes,
@@ -1250,27 +1244,33 @@ func sequence(annotations map[string]string) int {
 func listImages(result *unstructured.Unstructured) []string {
 	images := []string{}
 
-	switch strings.ToLower(result.GetKind()) {
-	case "replicaset":
-		rs := kubernetes.NewReplicaSet(result.Object)
-		o := rs.Object()
+	kind := result.GetKind()
+	if !strings.EqualFold(kind, "replicaSet") &&
+		!strings.EqualFold(kind, "daemonSet") &&
+		!strings.EqualFold(kind, "statefulSet") {
+		return images
+	}
 
-		for _, container := range o.Spec.Template.Spec.Containers {
-			images = append(images, container.Image)
+	containers, found, err := unstructured.NestedSlice(result.Object,
+		"spec", "template", "spec", "containers")
+	if err != nil || !found {
+		return images
+	}
+
+	for _, container := range containers {
+		c, ok := container.(map[string]interface{})
+		if !ok {
+			continue
 		}
-	case "daemonset":
-		ds := kubernetes.NewDaemonSet(result.Object)
-		o := ds.Object()
 
-		for _, container := range o.Spec.Template.Spec.Containers {
-			images = append(images, container.Image)
+		image, ok := c["image"]
+		if !ok {
+			continue
 		}
-	case "statefulset":
-		sts := kubernetes.NewStatefulSet(result.Object)
 
-		o := sts.Object()
-		for _, container := range o.Spec.Template.Spec.Containers {
-			images = append(images, container.Image)
+		i, ok := image.(string)
+		if ok {
+			images = append(images, i)
 		}
 	}
 
@@ -1279,75 +1279,53 @@ func listImages(result *unstructured.Unstructured) []string {
 
 // getDesiredReplicasCount returns the desired replicas for
 // replicaSets, statefulSets, and daemonSets.
-func getDesiredReplicasCount(result *unstructured.Unstructured) int32 {
-	desired := int32(0)
+func getDesiredReplicasCount(result *unstructured.Unstructured) int {
+	desired := int64(0)
 
 	switch strings.ToLower(result.GetKind()) {
-	case "replicaset":
-		rs := kubernetes.NewReplicaSet(result.Object)
-		if rs.Object().Spec.Replicas != nil {
-			desired = *rs.Object().Spec.Replicas
-		}
+	case "replicaset", "statefulset":
+		desired, _, _ = unstructured.NestedInt64(result.Object,
+			"spec", "replicas")
 	case "daemonset":
-		ds := kubernetes.NewDaemonSet(result.Object)
-		o := ds.Object()
-		desired = o.Status.DesiredNumberScheduled
-	case "statefulset":
-		sts := kubernetes.NewStatefulSet(result.Object)
-		o := sts.Object()
-
-		if o.Spec.Replicas != nil {
-			desired = *o.Spec.Replicas
-		}
+		desired, _, _ = unstructured.NestedInt64(result.Object,
+			"status", "desiredNumberScheduled")
 	}
 
-	return desired
+	return int(desired)
 }
 
 // getTotalReplicasCount returns total desired replicas for
 // replicaSets, statefulSets, and daemonSets.
-func getTotalReplicasCount(result *unstructured.Unstructured) int32 {
-	total := int32(0)
+func getTotalReplicasCount(result *unstructured.Unstructured) int {
+	total := int64(0)
 
 	switch strings.ToLower(result.GetKind()) {
-	case "replicaset":
-		rs := kubernetes.NewReplicaSet(result.Object)
-		total = rs.Object().Status.Replicas
+	case "replicaset", "statefulset":
+		total, _, _ = unstructured.NestedInt64(result.Object,
+			"status", "replicas")
 	case "daemonset":
-		ds := kubernetes.NewDaemonSet(result.Object)
-		o := ds.Object()
-		total = o.Status.DesiredNumberScheduled
-	case "statefulset":
-		sts := kubernetes.NewStatefulSet(result.Object)
-		o := sts.Object()
-		total = o.Status.Replicas
+		total, _, _ = unstructured.NestedInt64(result.Object,
+			"status", "desiredNumberScheduled")
 	}
 
-	return total
+	return int(total)
 }
 
 // getTotalReplicasCount returns total replicas in a ready state for replicaSets,
 // statefulSets, and daemonSets.
-func getReadyReplicasCount(result *unstructured.Unstructured) int32 {
-	ready := int32(0)
+func getReadyReplicasCount(result *unstructured.Unstructured) int {
+	ready := int64(0)
 
 	switch strings.ToLower(result.GetKind()) {
-	case "replicaset":
-		rs := kubernetes.NewReplicaSet(result.Object)
-		if rs.Object().Spec.Replicas != nil {
-			ready = rs.Object().Status.ReadyReplicas
-		}
+	case "replicaset", "statefulset":
+		ready, _, _ = unstructured.NestedInt64(result.Object,
+			"status", "readyReplicas")
 	case "daemonset":
-		ds := kubernetes.NewDaemonSet(result.Object)
-		o := ds.Object()
-		ready = o.Status.NumberReady
-	case "statefulset":
-		sts := kubernetes.NewStatefulSet(result.Object)
-		o := sts.Object()
-		ready = o.Status.ReadyReplicas
+		ready, _, _ = unstructured.NestedInt64(result.Object,
+			"status", "numberReady")
 	}
 
-	return ready
+	return int(ready)
 }
 
 // GetServerGroup returns a specific server group (Kubernetes kind ReplicaSet,
