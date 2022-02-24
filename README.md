@@ -5,7 +5,7 @@
 Go Clouddriver is a rewrite of Spinnaker's [Clouddriver](https://github.com/spinnaker/clouddriver) microservice. It has an observed 95%+ decrease in CPU and memory load for Kubernetes operations.
 
 Go Clouddriver brings many features to the table which allow it to perform better than Clouddriver OSS for production loads:
-- it does not rely on `kubectl` and instead interfaces directly with the Kubenretes API for all operations
+- it does not rely on `kubectl` and instead interfaces directly with the Kubernetes API for all operations
 - it utilizes an in-memory cache store for Kubernetes API discovery
 - it stores Kubernetes providers in a database, fronted by a simple CRUD API
 - it removes over-complicated strategies such as [Cache All The Stuff](https://github.com/spinnaker/clouddriver/tree/master/cats), instead making live calls for all operations
