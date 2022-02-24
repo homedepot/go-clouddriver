@@ -20,7 +20,6 @@ var _ = Describe("Controller", func() {
 
 	Describe("#NewClient", func() {
 		BeforeEach(func() {
-			cachedConfigs = map[string]*rest.Config{}
 			cachedMemCacheClients = map[string]memory.CachedDiscoveryClient{}
 			config = &rest.Config{
 				Host:        "https://test-host",
@@ -62,13 +61,8 @@ var _ = Describe("Controller", func() {
 				It("returns and cached client", func() {
 					Expect(err).To(BeNil())
 					Expect(client).ToNot(BeNil())
-					Expect(cachedConfigs).To(HaveLen(1))
 					Expect(cachedMemCacheClients).To(HaveLen(1))
-					cachedConfig := cachedConfigs[keyForConfig(config)]
-					Expect(cachedConfig.Host).To(Equal("https://test-host"))
-					Expect(cachedConfig.BearerToken).To(Equal("some.bearer.token"))
-					Expect(string(cachedConfig.TLSClientConfig.CAData)).To(Equal("test-ca-data"))
-					cachedClient := cachedMemCacheClients[keyForConfig(config)]
+					cachedClient := cachedMemCacheClients[config.Host]
 					Expect(cachedClient.Fresh()).To(BeTrue())
 				})
 			})
@@ -88,13 +82,8 @@ var _ = Describe("Controller", func() {
 				It("resets the cache and returns the new client", func() {
 					Expect(err).To(BeNil())
 					Expect(client).ToNot(BeNil())
-					Expect(cachedConfigs).To(HaveLen(1))
 					Expect(cachedMemCacheClients).To(HaveLen(1))
-					cachedConfig := cachedConfigs[keyForConfig(config)]
-					Expect(cachedConfig.Host).To(Equal("https://test-host"))
-					Expect(cachedConfig.BearerToken).To(Equal("another.bearer.token"))
-					Expect(string(cachedConfig.TLSClientConfig.CAData)).To(Equal("test-ca-data"))
-					cachedClient := cachedMemCacheClients[keyForConfig(config)]
+					cachedClient := cachedMemCacheClients[config.Host]
 					Expect(cachedClient.Fresh()).To(BeTrue())
 				})
 			})
@@ -114,13 +103,8 @@ var _ = Describe("Controller", func() {
 				It("resets the cache and returns the new client", func() {
 					Expect(err).To(BeNil())
 					Expect(client).ToNot(BeNil())
-					Expect(cachedConfigs).To(HaveLen(1))
 					Expect(cachedMemCacheClients).To(HaveLen(1))
-					cachedConfig := cachedConfigs[keyForConfig(config)]
-					Expect(cachedConfig.Host).To(Equal("https://test-host"))
-					Expect(cachedConfig.BearerToken).To(Equal("some.bearer.token"))
-					Expect(string(cachedConfig.TLSClientConfig.CAData)).To(Equal("different-ca-data"))
-					cachedClient := cachedMemCacheClients[keyForConfig(config)]
+					cachedClient := cachedMemCacheClients[config.Host]
 					Expect(cachedClient.Fresh()).To(BeTrue())
 				})
 			})
@@ -138,24 +122,18 @@ var _ = Describe("Controller", func() {
 					client, err = controller.NewClient(newConfig)
 				})
 
-				It("caches two copies of the client", func() {
+				It("caches a single copy of the client", func() {
 					Expect(err).To(BeNil())
 					Expect(client).ToNot(BeNil())
-					Expect(cachedConfigs).To(HaveLen(2))
-					Expect(cachedMemCacheClients).To(HaveLen(2))
+					Expect(cachedMemCacheClients).To(HaveLen(1))
 				})
 			})
 
 			It("returns and caches client", func() {
 				Expect(err).To(BeNil())
 				Expect(client).ToNot(BeNil())
-				Expect(cachedConfigs).To(HaveLen(1))
 				Expect(cachedMemCacheClients).To(HaveLen(1))
-				cachedConfig := cachedConfigs[keyForConfig(config)]
-				Expect(cachedConfig.Host).To(Equal("https://test-host"))
-				Expect(cachedConfig.BearerToken).To(Equal("some.bearer.token"))
-				Expect(string(cachedConfig.TLSClientConfig.CAData)).To(Equal("test-ca-data"))
-				cachedClient := cachedMemCacheClients[keyForConfig(config)]
+				cachedClient := cachedMemCacheClients[config.Host]
 				Expect(cachedClient.Fresh()).To(BeTrue())
 			})
 		})

@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/gregjones/httpcache"
 	. "github.com/homedepot/go-clouddriver/internal/kubernetes/cached/memory"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -41,21 +42,22 @@ func (rt *testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error)
 
 var _ = Describe("CachedDiscovery", func() {
 	var (
-		rt      *testRoundTripper
-		err     error
-		cache   http.RoundTripper
-		req     *http.Request
-		resp    *http.Response
-		content []byte
+		rt           *testRoundTripper
+		err          error
+		cache        http.RoundTripper
+		httpMemCache *httpcache.MemoryCache
+		req          *http.Request
+		resp         *http.Response
+		content      []byte
 	)
 
 	BeforeEach(func() {
 		rt = &testRoundTripper{}
-		Expect(err).To(BeNil())
+		httpMemCache = httpcache.NewMemoryCache()
 	})
 
 	JustBeforeEach(func() {
-		cache = NewMemCacheRoundTripper(rt)
+		cache = NewMemCacheRoundTripper(rt, httpMemCache)
 	})
 
 	AfterEach(func() {

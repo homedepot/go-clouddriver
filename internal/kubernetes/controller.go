@@ -1,8 +1,6 @@
 package kubernetes
 
 import (
-	"errors"
-	"fmt"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -80,6 +78,11 @@ const (
 	ttl            = 10 * time.Minute
 )
 
+var (
+	mux                   sync.Mutex
+	cachedMemCacheClients = map[string]memory.CachedDiscoveryClient{}
+)
+
 func newClientWithMemoryCache(config *rest.Config) (Client, error) {
 	// If the timeout is not set, set it to the default timeout.
 	if config.Timeout == 0 {
@@ -109,64 +112,21 @@ func newClientWithMemoryCache(config *rest.Config) (Client, error) {
 func memCacheClientForConfig(inConfig *rest.Config) (memory.CachedDiscoveryClient, error) {
 	config := inConfig
 
-	var memCacheClient memory.CachedDiscoveryClient
-
 	mux.Lock()
 	defer mux.Unlock()
 
-	cc, err := cachedConfig(config)
-	if err != nil || (string(cc.TLSClientConfig.CAData) != string(config.TLSClientConfig.CAData) ||
-		cc.BearerToken != config.BearerToken) {
-		if err := setCaches(config); err != nil {
+	if _, ok := cachedMemCacheClients[config.Host]; !ok {
+		mc, err := memory.NewCachedDiscoveryClientForConfig(config, ttl)
+		if err != nil {
 			return nil, err
 		}
 
-		memCacheClient = cachedMemCacheClient(config)
-	} else {
-		// If we already have a cached memory client we need to reset it so its entries are
-		// considered "fresh". This is incredibly important when deploying new kinds that the cache
-		// is not aware of, such as CRDs.
-		memCacheClient = cachedMemCacheClient(config)
-		memCacheClient.Reset()
+		cachedMemCacheClients[config.Host] = mc
 	}
 
-	// return cachedMemCacheClient(config), nil
-	return memCacheClient, nil
-}
+	memCacheClient := cachedMemCacheClients[config.Host]
 
-var (
-	mux                   sync.Mutex
-	cachedConfigs         = map[string]*rest.Config{}
-	cachedMemCacheClients = map[string]memory.CachedDiscoveryClient{}
-)
-
-func cachedConfig(config *rest.Config) (*rest.Config, error) {
-	if _, ok := cachedConfigs[keyForConfig(config)]; !ok {
-		return nil, errors.New("config not found")
-	}
-
-	return cachedConfigs[keyForConfig(config)], nil
-}
-
-func setCaches(config *rest.Config) error {
-	mc, err := memory.NewCachedDiscoveryClientForConfig(config, ttl)
-	if err != nil {
-		return err
-	}
-
-	cachedConfigs[keyForConfig(config)] = config
-	cachedMemCacheClients[keyForConfig(config)] = mc
-
-	return nil
-}
-
-func cachedMemCacheClient(config *rest.Config) memory.CachedDiscoveryClient {
-	return cachedMemCacheClients[keyForConfig(config)]
-}
-
-// keyForConfig returns a string in format of <CONFIG_HOST>|<CONFIG_TIMEOUT>.
-func keyForConfig(config *rest.Config) string {
-	return fmt.Sprintf("%s|%d", config.Host, config.Timeout)
+	return memCacheClient.CopyForConfig(config)
 }
 
 func newClientWithDefaultDiskCache(config *rest.Config) (Client, error) {

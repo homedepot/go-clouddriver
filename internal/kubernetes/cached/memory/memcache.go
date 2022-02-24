@@ -24,6 +24,7 @@ import (
 	"time"
 
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
+	"github.com/gregjones/httpcache"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
@@ -43,7 +44,7 @@ type CachedDiscoveryClient interface {
 	OpenAPISchema() (*openapi_v2.Document, error)
 	Fresh() bool
 	Invalidate()
-	Reset()
+	CopyForConfig(*restclient.Config) (CachedDiscoveryClient, error)
 }
 
 // memCacheClient can Invalidate() to stay up-to-date with discovery
@@ -52,24 +53,27 @@ type memCacheClient struct {
 	delegate discovery.DiscoveryInterface
 
 	// ttl is how long the cache should be considered valid
-	ttl time.Duration
-
-	mutex sync.Mutex
+	ttl   time.Duration
+	mutex *sync.Mutex
 
 	// entries is a respresentation of everything that has been requested from the cache.
 	// Think of it like files on a filesystem - it will never be emptied unless the pod
 	// is restarted.
-	entries map[string]interface{}
-
-	// expirations holds the expiration time (creation time plus ttl) of given entries.
-	// Think of it like a cached files mod-time on disk plus ttl.
-	expirations map[string]time.Time
+	entries map[string]*entry
 
 	// ourEntries holds entries created during this process. The caller should call Reset()
 	// to empty these entries if they are caching these clients.
 	ourEntries  map[string]struct{}
 	invalidated bool
 	fresh       bool
+
+	// Used to cache API discovery responses.
+	httpMemCache *httpcache.MemoryCache
+}
+
+type entry struct {
+	Content   interface{}
+	CreatedAt time.Time
 }
 
 var _ discovery.CachedDiscoveryInterface = &memCacheClient{}
@@ -77,8 +81,8 @@ var _ discovery.CachedDiscoveryInterface = &memCacheClient{}
 // ServerResourcesForGroupVersion returns the supported resources for a group and version.
 func (d *memCacheClient) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
 	cachedEntry, err := d.getCachedEntry(groupVersion)
-	if err == nil && cachedEntry != nil {
-		b, err := json.Marshal(cachedEntry)
+	if err == nil && cachedEntry != nil && cachedEntry.Content != nil {
+		b, err := json.Marshal(cachedEntry.Content)
 		if err != nil {
 			return nil, err
 		}
@@ -120,8 +124,8 @@ func (d *memCacheClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []*meta
 // preferred version.
 func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 	cachedEntry, err := d.getCachedEntry("servergroups")
-	if err == nil && cachedEntry != nil {
-		b, err := json.Marshal(cachedEntry)
+	if err == nil && cachedEntry != nil && cachedEntry.Content != nil {
+		b, err := json.Marshal(cachedEntry.Content)
 		if err != nil {
 			return nil, err
 		}
@@ -150,7 +154,7 @@ func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 	return liveGroups, nil
 }
 
-func (d *memCacheClient) getCachedEntry(key string) (interface{}, error) {
+func (d *memCacheClient) getCachedEntry(key string) (*entry, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -164,8 +168,7 @@ func (d *memCacheClient) getCachedEntry(key string) (interface{}, error) {
 		return nil, errors.New("cache entry does not exist")
 	}
 
-	t, ok := d.expirations[key]
-	if ok && time.Now().After(t) {
+	if time.Now().After(cachedEntry.CreatedAt.Add(d.ttl)) {
 		return nil, errors.New("cache expired")
 	}
 
@@ -174,13 +177,20 @@ func (d *memCacheClient) getCachedEntry(key string) (interface{}, error) {
 	return cachedEntry, nil
 }
 
-func (d *memCacheClient) createCachedEntry(key string, entry interface{}) {
+func (d *memCacheClient) createCachedEntry(key string, content interface{}) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	d.entries[key] = entry
+	d.entries[key] = newEntry(content)
 	d.ourEntries[key] = struct{}{}
-	d.expirations[key] = time.Now().Add(d.ttl)
+}
+
+// newEntry creates a cached entry and generates its created at timestamp.
+func newEntry(content interface{}) *entry {
+	return &entry{
+		Content:   content,
+		CreatedAt: time.Now(),
+	}
 }
 
 // RESTClient returns a RESTClient that is used to communicate with API server
@@ -231,25 +241,21 @@ func (d *memCacheClient) Invalidate() {
 	d.invalidated = true
 }
 
-// Reset sets the memcache to its original state without invalidating it.
-func (d *memCacheClient) Reset() {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
+// CopyForConfig returns a copy of the mem cache client maintaining its cached entries in memory,
+// but declaring a new discovery client for the config.
+func (m *memCacheClient) CopyForConfig(config *restclient.Config) (CachedDiscoveryClient, error) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
-	d.fresh = true
-	d.invalidated = false
-	d.ourEntries = map[string]struct{}{}
-}
-
-// NewCachedDiscoveryClientForConfig creates a new DiscoveryClient for the given config, and wraps
-// the created client in a CachedDiscoveryClient. The provided configuration is updated with a
-// custom transport that understands cache responses.
-func NewCachedDiscoveryClientForConfig(config *restclient.Config, ttl time.Duration) (CachedDiscoveryClient, error) {
 	// update the given restconfig with a custom roundtripper that
 	// understands how to handle cache responses.
 	config = restclient.CopyConfig(config)
 	config.Wrap(func(rt http.RoundTripper) http.RoundTripper {
-		return newMemCacheRoundTripper(rt)
+		if m.httpMemCache == nil {
+			m.httpMemCache = httpcache.NewMemoryCache()
+		}
+
+		return newMemCacheRoundTripper(rt, m.httpMemCache)
 	})
 
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
@@ -257,23 +263,53 @@ func NewCachedDiscoveryClientForConfig(config *restclient.Config, ttl time.Durat
 		return nil, err
 	}
 
-	return newCachedDiscoveryClient(discoveryClient, ttl), nil
+	return &memCacheClient{
+		delegate:    discoveryClient,
+		ttl:         m.ttl,
+		entries:     m.entries,
+		invalidated: false,
+		fresh:       true,
+		mutex:       m.mutex,
+		ourEntries:  map[string]struct{}{},
+	}, nil
+}
+
+// NewCachedDiscoveryClientForConfig creates a new DiscoveryClient for the given config, and wraps
+// the created client in a CachedDiscoveryClient. The provided configuration is updated with a
+// custom transport that understands cache responses.
+func NewCachedDiscoveryClientForConfig(config *restclient.Config, ttl time.Duration) (CachedDiscoveryClient, error) {
+	httpMemCache := httpcache.NewMemoryCache()
+	// update the given restconfig with a custom roundtripper that
+	// understands how to handle cache responses.
+	config = restclient.CopyConfig(config)
+	config.Wrap(func(rt http.RoundTripper) http.RoundTripper {
+		return newMemCacheRoundTripper(rt, httpMemCache)
+	})
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return newCachedDiscoveryClient(discoveryClient, ttl, httpMemCache), nil
 }
 
 // NewCachedDiscoveryClient creates a new CachedDiscoveryClient which caches
 // discovery information in memory and will stay up-to-date if Invalidate is
 // called with regularity.
 func NewCachedDiscoveryClient(delegate discovery.DiscoveryInterface, ttl time.Duration) CachedDiscoveryClient {
-	return newCachedDiscoveryClient(delegate, ttl)
+	return newCachedDiscoveryClient(delegate, ttl, httpcache.NewMemoryCache())
 }
 
-func newCachedDiscoveryClient(delegate discovery.DiscoveryInterface, ttl time.Duration) CachedDiscoveryClient {
+func newCachedDiscoveryClient(delegate discovery.DiscoveryInterface, ttl time.Duration,
+	httpMemCache *httpcache.MemoryCache) CachedDiscoveryClient {
 	return &memCacheClient{
-		delegate:    delegate,
-		ttl:         ttl,
-		entries:     map[string]interface{}{},
-		expirations: map[string]time.Time{},
-		fresh:       true,
-		ourEntries:  map[string]struct{}{},
+		delegate:     delegate,
+		ttl:          ttl,
+		entries:      map[string]*entry{},
+		httpMemCache: httpMemCache,
+		fresh:        true,
+		mutex:        &sync.Mutex{},
+		ourEntries:   map[string]struct{}{},
 	}
 }
