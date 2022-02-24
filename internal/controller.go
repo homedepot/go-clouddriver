@@ -89,6 +89,83 @@ func (cc *Controller) KubernetesProviderWithTimeout(account string,
 	return &provider, nil
 }
 
+// KubernetesProvidersForAccountsWithTimeout returns a all kubernetes providers for a given list of accounts,
+// defining their client and clientset's timeouts to be the timeout passed in.
+// If no timeout is passed this field is not set.
+func (cc *Controller) KubernetesProvidersForAccountsWithTimeout(accounts []string,
+	timeout time.Duration) ([]*kubernetes.Provider, error) {
+	ps := []*kubernetes.Provider{}
+	m := map[string]bool{}
+
+	// Make a map of accounts, so accounts lookup is O(1).
+	for _, account := range accounts {
+		m[account] = true
+	}
+
+	// Get the provider info for the account.
+	providers, err := cc.SQLClient.ListKubernetesProviders()
+	if err != nil {
+		return nil, fmt.Errorf("internal: error listing kubernetes providers: %v", err)
+	}
+
+	for _, provider := range providers {
+		provider := provider
+		if !m[provider.Name] {
+			continue
+		}
+
+		// Decode the provider's CA data.
+		cd, err := base64.StdEncoding.DecodeString(provider.CAData)
+		if err != nil {
+			clouddriver.Log(fmt.Errorf("internal: error decoding provider CA data: %v", err))
+
+			continue
+		}
+
+		// Grab the auth token from arcade.
+		token, err := cc.ArcadeClient.Token(provider.TokenProvider)
+		if err != nil {
+			clouddriver.Log(fmt.Errorf("internal: error getting token from arcade for provider %s: %v",
+				provider.TokenProvider, err))
+
+			continue
+		}
+
+		config := &rest.Config{
+			Host:        provider.Host,
+			BearerToken: token,
+			TLSClientConfig: rest.TLSClientConfig{
+				CAData: cd,
+			},
+		}
+
+		if timeout > 0 {
+			config.Timeout = timeout
+		}
+
+		client, err := cc.KubernetesController.NewClient(config)
+		if err != nil {
+			clouddriver.Log(fmt.Errorf("internal: error creating new kubernetes client: %v", err))
+
+			continue
+		}
+
+		clientset, err := cc.KubernetesController.NewClientset(config)
+		if err != nil {
+			clouddriver.Log(fmt.Errorf("internal: error creating new kubernetes clientset: %v", err))
+
+			continue
+		}
+
+		provider.WithClient(client)
+		provider.WithClientset(clientset)
+
+		ps = append(ps, &provider)
+	}
+
+	return ps, nil
+}
+
 // AllKubernetesProvidersWithTimeout returns a all kubernetes providers,
 // defining their client and clientset's timeouts to be the timeout
 // passed in. If no timeout is passed this field is not set.

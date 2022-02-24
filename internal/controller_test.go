@@ -168,6 +168,132 @@ var _ = Describe("Controller", func() {
 		})
 	})
 
+	Describe("#KubernetesProvidersForAccountswithTimeout", func() {
+		var accounts []string
+
+		BeforeEach(func() {
+			accounts = []string{
+				"test-name1",
+				"test-name2",
+			}
+		})
+
+		JustBeforeEach(func() {
+			providers, err = c.KubernetesProvidersForAccountsWithTimeout(accounts, time.Second*1)
+		})
+
+		When("listing the providers from sql returns an error", func() {
+			BeforeEach(func() {
+				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{}, errors.New("error listing providers"))
+			})
+
+			It("returns an error", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("internal: error listing kubernetes providers: error listing providers"))
+			})
+		})
+
+		When("the ca data is bad", func() {
+			BeforeEach(func() {
+				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{
+					{
+						Name:   "test-name1",
+						CAData: "{}",
+					},
+					{
+						Name:   "test-name2",
+						CAData: "12341234",
+					},
+				}, nil)
+			})
+
+			It("continues and returns an empty list", func() {
+				Expect(err).To(BeNil())
+				Expect(providers).To(HaveLen(1))
+			})
+		})
+
+		When("getting the arcade token returns an error", func() {
+			BeforeEach(func() {
+				fakeArcadeClient.TokenReturns("", errors.New("error getting token"))
+			})
+
+			It("continues and returns an empty list", func() {
+				Expect(err).To(BeNil())
+				Expect(providers).To(HaveLen(0))
+			})
+		})
+
+		When("generating a new client returns an error", func() {
+			BeforeEach(func() {
+				fakeKubernetesController.NewClientReturns(nil, errors.New("error generating client"))
+			})
+
+			It("continues and returns an empty list", func() {
+				Expect(err).To(BeNil())
+				Expect(providers).To(HaveLen(0))
+			})
+		})
+
+		When("generating a new clientset returns an error", func() {
+			BeforeEach(func() {
+				fakeKubernetesController.NewClientsetReturns(nil, errors.New("error generating clientset"))
+			})
+
+			It("continues and returns an empty list", func() {
+				Expect(err).To(BeNil())
+				Expect(providers).To(HaveLen(0))
+			})
+		})
+
+		When("a subset of accounts are requested", func() {
+			BeforeEach(func() {
+				accounts = []string{
+					"test-name2",
+				}
+			})
+
+			It("only returns the requested providers", func() {
+				Expect(err).To(BeNil())
+				Expect(providers).ToNot(BeNil())
+				Expect(providers).To(HaveLen(1))
+				Expect(providers[0]).ToNot(BeNil())
+				Expect(providers[0].Name).To(Equal("test-name2"))
+				Expect(providers[0].Host).To(Equal("test-host2"))
+				Expect(providers[0].CAData).To(Equal("56785678"))
+				Expect(providers[0].TokenProvider).To(Equal("test-token-provider2"))
+				Expect(providers[0].Client).ToNot(BeNil())
+				Expect(providers[0].Clientset).ToNot(BeNil())
+				config := fakeKubernetesController.NewClientArgsForCall(0)
+				Expect(config.Timeout).To(Equal(time.Second * 1))
+			})
+		})
+
+		It("succeeds", func() {
+			Expect(err).To(BeNil())
+			Expect(providers).ToNot(BeNil())
+			Expect(providers).To(HaveLen(2))
+			Expect(providers[0]).ToNot(BeNil())
+			Expect(providers[1]).ToNot(BeNil())
+			Expect(providers[0].Name).To(Equal("test-name1"))
+			Expect(providers[0].Host).To(Equal("test-host1"))
+			Expect(providers[0].CAData).To(Equal("12341234"))
+			Expect(providers[0].TokenProvider).To(Equal("test-token-provider1"))
+			Expect(providers[0].Client).ToNot(BeNil())
+			Expect(providers[0].Clientset).ToNot(BeNil())
+			Expect(providers[1].Name).To(Equal("test-name2"))
+			Expect(providers[1].Host).To(Equal("test-host2"))
+			Expect(providers[1].CAData).To(Equal("56785678"))
+			Expect(providers[1].TokenProvider).To(Equal("test-token-provider2"))
+			Expect(providers[1].Client).ToNot(BeNil())
+			Expect(providers[1].Clientset).ToNot(BeNil())
+			config := fakeKubernetesController.NewClientArgsForCall(0)
+			Expect(config.Timeout).To(Equal(time.Second * 1))
+			config = fakeKubernetesController.NewClientArgsForCall(1)
+			Expect(config.Timeout).To(Equal(time.Second * 1))
+		})
+	})
+
 	Describe("#AllKubernetesProvidersWithTimeout", func() {
 		JustBeforeEach(func() {
 			providers, err = c.AllKubernetesProvidersWithTimeout(time.Second * 1)

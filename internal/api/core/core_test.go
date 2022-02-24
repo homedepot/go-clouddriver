@@ -68,6 +68,28 @@ func setup() {
 			AccountName: "test-account-name",
 		},
 	}, nil)
+	fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{
+		{
+			Name:   "account1",
+			Host:   "http://localhost",
+			CAData: "",
+		},
+		{
+			Name:   "account2",
+			Host:   "http://localhost",
+			CAData: "",
+		},
+		{
+			Name:   "account3",
+			Host:   "http://localhost",
+			CAData: "",
+		},
+		{
+			Name:   "account4",
+			Host:   "http://localhost",
+			CAData: "",
+		},
+	}, nil)
 
 	fakeKubeClient = &kubernetesfakes.FakeClient{}
 	fakeKubeClient.GetReturns(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil)
