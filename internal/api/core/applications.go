@@ -1652,15 +1652,22 @@ func DeleteJob(c *gin.Context) {
 
 // listApplicationsResources lists all accounts for a given app, then concurrently lists
 // all requested resources for the given app concurrently.
-func (cc *Controller) listApplicationResources(c *gin.Context, rs, accounts, applications []string) ([]resource, error) {
+func (cc *Controller) listApplicationResources(c *gin.Context, rs, accounts,
+	applications []string) ([]resource, error) {
+	providers, err := cc.KubernetesProvidersForAccountsWithTimeout(accounts,
+		time.Second*internal.DefaultListTimeoutSeconds)
+	if err != nil {
+		return nil, err
+	}
+
 	wg := &sync.WaitGroup{}
 	// Create channel of resouces to send to.
 	rc := make(chan resource, internal.DefaultChanSize)
 	// Add the number of accounts to the wait group.
-	wg.Add(len(accounts))
+	wg.Add(len(providers))
 	// List all requested resources across accounts concurrently.
-	for _, account := range accounts {
-		go cc.listResources(wg, rs, rc, account, applications)
+	for _, provider := range providers {
+		go cc.listResources(wg, rs, rc, provider, applications)
 	}
 	// Wait for all concurrent calls to finish.
 	wg.Wait()
@@ -1678,15 +1685,9 @@ func (cc *Controller) listApplicationResources(c *gin.Context, rs, accounts, app
 // listResources initializes discovery for a given client then lists
 // the requested resources concurrently.
 func (cc *Controller) listResources(wg *sync.WaitGroup, rs []string, rc chan resource,
-	account string, applications []string) {
+	provider *kubernetes.Provider, applications []string) {
 	// Increment the wait group counter when we're done here.
 	defer wg.Done()
-	// Grab the kube provider for the given account.
-	provider, err := cc.KubernetesProviderWithTimeout(account, time.Second*internal.DefaultListTimeoutSeconds)
-	if err != nil {
-		clouddriver.Log(err)
-		return
-	}
 	// First, run discovery on this dynamic client before listing resources
 	// concurrently. This is necessary since the rest mapper for dynamic
 	// clients uses a mutex lock. Failure to do this will make concurrent
@@ -1695,7 +1696,7 @@ func (cc *Controller) listResources(wg *sync.WaitGroup, rs []string, rc chan res
 	// would take 40 seconds since the API cannot be discovered concurrently.
 	//
 	// See https://github.com/kubernetes/client-go/blob/f6ce18ae578c8cca64d14ab9687824d9e1305a67/restmapper/discovery.go#L194.
-	if err = provider.Client.Discover(); err != nil {
+	if err := provider.Client.Discover(); err != nil {
 		clouddriver.Log(err)
 		return
 	}
@@ -1705,7 +1706,7 @@ func (cc *Controller) listResources(wg *sync.WaitGroup, rs []string, rc chan res
 	_wg.Add(len(rs))
 	// List all required resources concurrently.
 	for _, r := range rs {
-		go list(_wg, rc, provider, r, account, applications)
+		go list(_wg, rc, provider, r, applications)
 	}
 	// Wait for the calls to finish.
 	_wg.Wait()
@@ -1714,7 +1715,7 @@ func (cc *Controller) listResources(wg *sync.WaitGroup, rs []string, rc chan res
 // list lists a given resource and send to a channel of unstructured.Unstructured.
 // It uses a context with a timeout of 10 seconds.
 func list(wg *sync.WaitGroup, rc chan resource,
-	provider *kubernetes.Provider, r, account string, applications []string) {
+	provider *kubernetes.Provider, r string, applications []string) {
 	// Finish the wait group when we're done here.
 	defer wg.Done()
 	// Declare server side filtering options.
@@ -1759,7 +1760,7 @@ func list(wg *sync.WaitGroup, rc chan resource,
 		for _, u := range items {
 			res := resource{
 				u:           u,
-				account:     account,
+				account:     provider.Name,
 				application: application,
 			}
 			rc <- res

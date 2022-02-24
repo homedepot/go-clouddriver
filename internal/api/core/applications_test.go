@@ -242,13 +242,17 @@ var _ = Describe("Application", func() {
 			})
 		})
 
-		When("getting the kubernetes provider for an account errors", func() {
+		When("listing the kubernetes providers for accounts errors", func() {
 			BeforeEach(func() {
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
+				fakeSQLClient.ListKubernetesProvidersReturns(nil, errors.New("error listing providers"))
 			})
 
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
+				Expect(ce.Message).To(Equal("internal: error listing kubernetes providers: error listing providers"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
 		})
 
@@ -625,11 +629,13 @@ var _ = Describe("Application", func() {
 		When("using a namespace-scoped provider", func() {
 			BeforeEach(func() {
 				namespace := "test-namespace"
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-					Name:      "test-account",
-					Host:      "http://localhost",
-					CAData:    "",
-					Namespace: &namespace,
+				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{
+					{
+						Name:      "account1",
+						Host:      "http://localhost",
+						CAData:    "",
+						Namespace: &namespace,
+					},
 				}, nil)
 			})
 
@@ -1093,13 +1099,17 @@ var _ = Describe("Application", func() {
 			})
 		})
 
-		When("getting the kubernetes provider for an account errors", func() {
+		When("listing the kubernetes providers for accounts errors", func() {
 			BeforeEach(func() {
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
+				fakeSQLClient.ListKubernetesProvidersReturns(nil, errors.New("error listing providers"))
 			})
 
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
+				Expect(ce.Message).To(Equal("internal: error listing kubernetes providers: error listing providers"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
 		})
 
@@ -1638,11 +1648,13 @@ var _ = Describe("Application", func() {
 		When("using a namespace-scoped provider", func() {
 			BeforeEach(func() {
 				namespace := "test-namespace"
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-					Name:      "test-account",
-					Host:      "http://localhost",
-					CAData:    "",
-					Namespace: &namespace,
+				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{
+					{
+						Name:      "account1",
+						Host:      "http://localhost",
+						CAData:    "",
+						Namespace: &namespace,
+					},
 				}, nil)
 			})
 
@@ -2526,13 +2538,17 @@ var _ = Describe("Application", func() {
 			})
 		})
 
-		When("getting the kubernetes provider for an account errors", func() {
+		When("listing the kubernetes providers for accounts errors", func() {
 			BeforeEach(func() {
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
+				fakeSQLClient.ListKubernetesProvidersReturns(nil, errors.New("error listing providers"))
 			})
 
-			It("continues", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
+			It("returns an error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
+				Expect(ce.Message).To(Equal("internal: error listing kubernetes providers: error listing providers"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
 			})
 		})
 
@@ -3190,11 +3206,13 @@ var _ = Describe("Application", func() {
 		When("using a namespace-scoped provider", func() {
 			BeforeEach(func() {
 				namespace := "test-namespace"
-				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-					Name:      "test-account",
-					Host:      "http://localhost",
-					CAData:    "",
-					Namespace: &namespace,
+				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{
+					{
+						Name:      "account1",
+						Host:      "http://localhost",
+						CAData:    "",
+						Namespace: &namespace,
+					},
 				}, nil)
 			})
 
