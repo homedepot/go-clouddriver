@@ -79,8 +79,8 @@ const (
 )
 
 var (
-	mux                   sync.Mutex
-	cachedMemCacheClients = map[string]memory.CachedDiscoveryClient{}
+	mux       sync.Mutex
+	memCaches = map[string]*memory.Cache{}
 )
 
 func newClientWithMemoryCache(config *rest.Config) (Client, error) {
@@ -110,23 +110,17 @@ func newClientWithMemoryCache(config *rest.Config) (Client, error) {
 }
 
 func memCacheClientForConfig(inConfig *rest.Config) (memory.CachedDiscoveryClient, error) {
-	config := inConfig
-
 	mux.Lock()
 	defer mux.Unlock()
 
-	if _, ok := cachedMemCacheClients[config.Host]; !ok {
-		mc, err := memory.NewCachedDiscoveryClientForConfig(config, ttl)
-		if err != nil {
-			return nil, err
-		}
-
-		cachedMemCacheClients[config.Host] = mc
+	config := inConfig
+	if _, ok := memCaches[config.Host]; !ok {
+		memCaches[config.Host] = memory.NewCache(ttl)
 	}
 
-	memCacheClient := cachedMemCacheClients[config.Host]
+	memCache := memCaches[config.Host]
 
-	return memCacheClient.CopyForConfig(config)
+	return memCache.NewClientForConfig(config)
 }
 
 func newClientWithDefaultDiskCache(config *rest.Config) (Client, error) {

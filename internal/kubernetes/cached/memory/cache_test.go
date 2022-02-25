@@ -36,6 +36,7 @@ var _ = Describe("CachedDiscovery", func() {
 		config      *restclient.Config
 		fakeCluster *ghttp.Server
 		mc          CachedDiscoveryClient
+		c           *Cache
 	)
 
 	BeforeEach(func() {
@@ -180,7 +181,8 @@ var _ = Describe("CachedDiscovery", func() {
 		config = &restclient.Config{
 			Host: fakeCluster.URL(),
 		}
-		mc, err = NewCachedDiscoveryClientForConfig(config, 60*time.Second)
+		c = NewCache(1 * time.Second)
+		mc, err = c.NewClientForConfig(config)
 		Expect(err).To(BeNil())
 	})
 
@@ -256,68 +258,32 @@ var _ = Describe("CachedDiscovery", func() {
 			})
 		})
 
-		Context("client is copied", func() {
+		When("invalidate is called", func() {
 			BeforeEach(func() {
 				mc.ServerGroups()
 				mc.ServerResources()
-				mc, err = mc.CopyForConfig(&restclient.Config{
-					Host: fakeCluster.URL(),
-				})
+				mc.Invalidate()
+			})
+
+			It("should be fresh", func() {
+				Expect(mc.Fresh()).To(BeTrue())
+			})
+
+			It("should ignore existing resources cached after validation", func() {
+				Expect(mc.Fresh()).To(BeTrue())
+				Expect(fakeCluster.ReceivedRequests()).To(HaveLen(4))
+			})
+
+			It("should ignore existing resources cache after invalidation", func() {
+				_, err = mc.ServerResources()
 				Expect(err).To(BeNil())
-			})
-
-			When("server groups is called", func() {
-				BeforeEach(func() {
-					mc.ServerGroups()
-				})
-
-				It("should not be fresh", func() {
-					Expect(mc.Fresh()).To(BeFalse())
-					Expect(fakeCluster.ReceivedRequests()).To(HaveLen(4))
-				})
-			})
-
-			When("resources is called", func() {
-				BeforeEach(func() {
-					mc.ServerResources()
-				})
-
-				It("should not be fresh", func() {
-					Expect(mc.Fresh()).To(BeFalse())
-					Expect(fakeCluster.ReceivedRequests()).To(HaveLen(4))
-				})
-			})
-
-			When("invalidate is called", func() {
-				BeforeEach(func() {
-					mc.Invalidate()
-				})
-
-				It("should be fresh", func() {
-					Expect(mc.Fresh()).To(BeTrue())
-				})
-
-				It("should ignore existing resources cached after validation", func() {
-					Expect(mc.Fresh()).To(BeTrue())
-					Expect(fakeCluster.ReceivedRequests()).To(HaveLen(4))
-				})
-
-				It("should ignore existing resources cache after invalidation", func() {
-					_, err = mc.ServerResources()
-					Expect(err).To(BeNil())
-					Expect(mc.Fresh()).To(BeTrue())
-					Expect(fakeCluster.ReceivedRequests()).To(HaveLen(8))
-				})
+				Expect(mc.Fresh()).To(BeTrue())
+				Expect(fakeCluster.ReceivedRequests()).To(HaveLen(8))
 			})
 		})
 	})
 
 	Describe("#TTL", func() {
-		BeforeEach(func() {
-			mc, err = NewCachedDiscoveryClientForConfig(config, 1*time.Second)
-			Expect(err).To(BeNil())
-		})
-
 		It("respects the ttl", func() {
 			_, err = mc.ServerGroups()
 			Expect(err).To(BeNil())
