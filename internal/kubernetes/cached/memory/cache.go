@@ -249,6 +249,7 @@ func NewCache(ttl time.Duration) *Cache {
 		ttl:          ttl,
 		entries:      map[string]entry{},
 		httpMemCache: httpcache.NewMemoryCache(),
+		invalidated:  false,
 		fresh:        true,
 		mutex:        &sync.Mutex{},
 		ourEntries:   map[string]struct{}{},
