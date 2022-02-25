@@ -50,7 +50,12 @@ type CachedDiscoveryClient interface {
 // information. It is modeled after the disk cache implementation.
 type memCacheClient struct {
 	delegate discovery.DiscoveryInterface
-	*Cache
+	// ourEntries holds entries created during this process.
+	ourEntries  map[string]struct{}
+	invalidated bool
+	fresh       bool
+
+	c *Cache
 }
 
 // entry represents an in-memory cache of an API discovery resource.
@@ -138,20 +143,20 @@ func (m *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {
 }
 
 func (m *memCacheClient) getCachedEntry(key string) (entry, error) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.c.mutex.Lock()
+	defer m.c.mutex.Unlock()
 
 	_, ourEntry := m.ourEntries[key]
 	if m.invalidated && !ourEntry {
 		return entry{}, errors.New("cache invalidated")
 	}
 
-	cachedEntry, exists := m.entries[key]
+	cachedEntry, exists := m.c.entries[key]
 	if !exists {
 		return entry{}, errors.New("cache entry does not exist")
 	}
 
-	if time.Now().After(cachedEntry.CreatedAt.Add(m.ttl)) {
+	if time.Now().After(cachedEntry.CreatedAt.Add(m.c.ttl)) {
 		return entry{}, errors.New("cache expired")
 	}
 
@@ -161,10 +166,10 @@ func (m *memCacheClient) getCachedEntry(key string) (entry, error) {
 }
 
 func (m *memCacheClient) createCachedEntry(key string, content interface{}) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.c.mutex.Lock()
+	defer m.c.mutex.Unlock()
 
-	m.entries[key] = newEntry(content)
+	m.c.entries[key] = newEntry(content)
 	m.ourEntries[key] = struct{}{}
 }
 
@@ -207,8 +212,8 @@ func (m *memCacheClient) OpenAPISchema() (*openapi_v2.Document, error) {
 // Fresh is supposed to tell the caller whether or not to retry if the cache
 // fails to find something (false = retry, true = no need to retry).
 func (m *memCacheClient) Fresh() bool {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.c.mutex.Lock()
+	defer m.c.mutex.Unlock()
 
 	return m.fresh
 }
@@ -216,8 +221,8 @@ func (m *memCacheClient) Fresh() bool {
 // Invalidate enforces that no cached data that is older than the current time
 // is used.
 func (m *memCacheClient) Invalidate() {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.c.mutex.Lock()
+	defer m.c.mutex.Unlock()
 
 	m.ourEntries = map[string]struct{}{}
 	m.fresh = true
@@ -227,18 +232,14 @@ func (m *memCacheClient) Invalidate() {
 // Cache is an in-memory store for API discovery objects.
 type Cache struct {
 	// ttl is how long the cache should be considered valid
-	ttl   time.Duration
+	ttl time.Duration
+
 	mutex *sync.Mutex
 
 	// entries is a respresentation of everything that has been requested from the cache.
 	// Think of it like files on a filesystem - each entry holds content and a created ts
 	// of an API discovery resource. Like the disk cache, it should not be emptied.
 	entries map[string]entry
-
-	// ourEntries holds entries created during this process.
-	ourEntries  map[string]struct{}
-	invalidated bool
-	fresh       bool
 
 	// Used to cache API discovery responses.
 	httpMemCache *httpcache.MemoryCache
@@ -249,10 +250,7 @@ func NewCache(ttl time.Duration) *Cache {
 		ttl:          ttl,
 		entries:      map[string]entry{},
 		httpMemCache: httpcache.NewMemoryCache(),
-		invalidated:  false,
-		fresh:        true,
 		mutex:        &sync.Mutex{},
-		ourEntries:   map[string]struct{}{},
 	}
 }
 
@@ -274,5 +272,11 @@ func (c *Cache) NewClientForConfig(config *restclient.Config) (CachedDiscoveryCl
 		return nil, err
 	}
 
-	return &memCacheClient{discoveryClient, c}, nil
+	return &memCacheClient{
+		delegate:    discoveryClient,
+		c:           c,
+		fresh:       true,
+		invalidated: false,
+		ourEntries:  map[string]struct{}{},
+	}, nil
 }

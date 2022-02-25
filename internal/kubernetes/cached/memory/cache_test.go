@@ -258,27 +258,56 @@ var _ = Describe("CachedDiscovery", func() {
 			})
 		})
 
-		When("invalidate is called", func() {
+		Context("client is recreated", func() {
 			BeforeEach(func() {
 				mc.ServerGroups()
 				mc.ServerResources()
-				mc.Invalidate()
-			})
-
-			It("should be fresh", func() {
-				Expect(mc.Fresh()).To(BeTrue())
-			})
-
-			It("should ignore existing resources cached after validation", func() {
-				Expect(mc.Fresh()).To(BeTrue())
-				Expect(fakeCluster.ReceivedRequests()).To(HaveLen(4))
-			})
-
-			It("should ignore existing resources cache after invalidation", func() {
-				_, err = mc.ServerResources()
+				mc, err = c.NewClientForConfig(config)
 				Expect(err).To(BeNil())
-				Expect(mc.Fresh()).To(BeTrue())
-				Expect(fakeCluster.ReceivedRequests()).To(HaveLen(8))
+			})
+
+			When("server groups is called", func() {
+				BeforeEach(func() {
+					mc.ServerGroups()
+				})
+
+				It("should not be fresh", func() {
+					Expect(mc.Fresh()).To(BeFalse())
+					Expect(fakeCluster.ReceivedRequests()).To(HaveLen(4))
+				})
+			})
+
+			When("resources is called", func() {
+				BeforeEach(func() {
+					mc.ServerResources()
+				})
+
+				It("should not be fresh", func() {
+					Expect(mc.Fresh()).To(BeFalse())
+					Expect(fakeCluster.ReceivedRequests()).To(HaveLen(4))
+				})
+			})
+
+			When("invalidate is called", func() {
+				BeforeEach(func() {
+					mc.Invalidate()
+				})
+
+				It("should be fresh", func() {
+					Expect(mc.Fresh()).To(BeTrue())
+				})
+
+				It("should ignore existing resources cached after validation", func() {
+					Expect(mc.Fresh()).To(BeTrue())
+					Expect(fakeCluster.ReceivedRequests()).To(HaveLen(4))
+				})
+
+				It("should ignore existing resources cache after invalidation", func() {
+					_, err = mc.ServerResources()
+					Expect(err).To(BeNil())
+					Expect(mc.Fresh()).To(BeTrue())
+					Expect(fakeCluster.ReceivedRequests()).To(HaveLen(8))
+				})
 			})
 		})
 	})
