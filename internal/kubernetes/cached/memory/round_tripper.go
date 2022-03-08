@@ -33,15 +33,15 @@ type memCacheRoundTripper struct {
 	rt *httpcache.Transport
 }
 
-func NewMemCacheRoundTripper(rt http.RoundTripper) http.RoundTripper {
-	return newMemCacheRoundTripper(rt)
+func NewMemCacheRoundTripper(rt http.RoundTripper, c *httpcache.MemoryCache) http.RoundTripper {
+	return newMemCacheRoundTripper(rt, c)
 }
 
 // newMemCacheRoundTripper creates a roundtripper that reads the ETag on
 // response headers and send the If-None-Match header on subsequent
 // corresponding requests.
-func newMemCacheRoundTripper(rt http.RoundTripper) http.RoundTripper {
-	t := httpcache.NewTransport(httpcache.NewMemoryCache())
+func newMemCacheRoundTripper(rt http.RoundTripper, c *httpcache.MemoryCache) http.RoundTripper {
+	t := httpcache.NewTransport(c)
 	t.Transport = rt
 
 	return &memCacheRoundTripper{rt: t}
