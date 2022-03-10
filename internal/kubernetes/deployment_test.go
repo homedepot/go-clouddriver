@@ -105,6 +105,7 @@ var _ = Describe("Deployment", func() {
 
 			It("returns the expected status", func() {
 				Expect(s.Failed.State).To(BeTrue())
+				Expect(s.Failed.Message).To(Equal("Deployment exceeded its progress deadline"))
 			})
 		})
 
