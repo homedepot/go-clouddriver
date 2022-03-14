@@ -111,13 +111,15 @@ var _ = Describe("Job", func() {
 					o := job.Object()
 					o.Status.Conditions = []v1.JobCondition{
 						{
-							Type: v1.JobFailed,
+							Type:    v1.JobFailed,
+							Message: "Some failure message",
 						},
 					}
 				})
 
 				It("returns status failed", func() {
 					Expect(s.Failed.State).To(BeTrue())
+					Expect(s.Failed.Message).To(Equal("Some failure message"))
 				})
 			})
 

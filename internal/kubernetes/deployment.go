@@ -51,6 +51,7 @@ func (d *Deployment) Status() manifest.Status {
 		if strings.EqualFold(string(condition.Type), "progressing") &&
 			strings.EqualFold(condition.Reason, "progressdeadlineexceeded") {
 			s.Failed.State = true
+			s.Failed.Message = condition.Message
 		}
 	}
 

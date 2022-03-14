@@ -77,6 +77,8 @@ func (j *Job) Status() manifest.Status {
 		for _, condition := range conditions {
 			if condition.Type == v1.JobFailed {
 				s.Failed.State = true
+				s.Failed.Message = condition.Message
+
 				return s
 			}
 		}

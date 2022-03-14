@@ -99,12 +99,15 @@ var _ = Describe("Deployment", func() {
 					{
 						Type:   "progressing",
 						Reason: "progressdeadlineexceeded",
+						// Where this error is defined in k8s: https://github.com/kubernetes/kubernetes/blob/ea0764452222146c47ec826977f49d7001b0ea8c/staging/src/k8s.io/kubectl/pkg/polymorphichelpers/rollout_status.go#L78
+						Message: "deployment exceeded its progress deadline",
 					},
 				}
 			})
 
 			It("returns the expected status", func() {
 				Expect(s.Failed.State).To(BeTrue())
+				Expect(s.Failed.Message).To(Equal("deployment exceeded its progress deadline"))
 			})
 		})
 
