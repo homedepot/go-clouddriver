@@ -16,16 +16,24 @@ import (
 // GetTask gets a task - currently only associated with kubernetes 'tasks'.
 func (cc *Controller) GetTask(c *gin.Context) {
 	id := c.Param("id")
+	task := clouddriver.NewDefaultTask(id)
 	manifests := []map[string]interface{}{}
 
 	resources, err := cc.SQLClient.ListKubernetesResourcesByTaskID(id)
 	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
+		task.Status.Failed = true
+		task.Status.Retryable = true
+		task.Status.Status = fmt.Sprintf("Error listing resources for task (id: %s): %v", id, err)
+		c.JSON(http.StatusInternalServerError, task)
+
 		return
 	}
 
 	if len(resources) == 0 {
-		clouddriver.Error(c, http.StatusNotFound, fmt.Errorf("Task not found (id: %s)", id))
+		task.Status.Failed = true
+		task.Status.Status = fmt.Sprintf("Task not found (id: %s)", id)
+		c.JSON(http.StatusNotFound, task)
+
 		return
 	}
 
@@ -33,11 +41,14 @@ func (cc *Controller) GetTask(c *gin.Context) {
 
 	provider, err := cc.KubernetesProvider(accountName)
 	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
+		task.Status.Failed = true
+		task.Status.Retryable = true
+		task.Status.Status = fmt.Sprintf("Error getting kubernetes provider %s for task (id: %s): %v",
+			accountName, id, err)
+		c.JSON(http.StatusInternalServerError, task)
+
 		return
 	}
-
-	task := clouddriver.NewDefaultTask(id)
 
 	for _, r := range resources {
 		// Ignore getting the manifest if task type is "cleanup" or "noop".
@@ -52,10 +63,6 @@ func (cc *Controller) GetTask(c *gin.Context) {
 		if err != nil {
 			// If the task type is "delete" and the resource was not found,
 			// append an empty manifest and continue.
-			// I tried to use `errors.IsNotFound(err)` here to check
-			// if the error was a not found error, but was unable to get the
-			// test to work in doing this, so for now we are just checking
-			// the string suffix.
 			if strings.EqualFold(r.TaskType, clouddriver.TaskTypeDelete) &&
 				strings.HasSuffix(err.Error(), "not found") {
 				manifests = append(manifests, map[string]interface{}{})
@@ -63,7 +70,11 @@ func (cc *Controller) GetTask(c *gin.Context) {
 				continue
 			}
 
-			clouddriver.Error(c, http.StatusInternalServerError, err)
+			task.Status.Failed = true
+			task.Status.Retryable = true
+			task.Status.Status = fmt.Sprintf("Error getting resource for task (task ID: %s, kind: %s, name: %s, namespace: %s): %v",
+				id, r.Resource, r.Name, r.Namespace, err)
+			c.JSON(http.StatusInternalServerError, task)
 
 			return
 		} else if strings.EqualFold(r.TaskType, clouddriver.TaskTypeDelete) {
@@ -76,10 +87,8 @@ func (cc *Controller) GetTask(c *gin.Context) {
 	}
 
 	mnr := buildMapOfNamespaceToResource(resources)
-
-	//Refactor bound artifact to get the list of bound artifacts as not all created artifacts need to be bound
+	// Refactor bound artifact to get the list of bound artifacts as not all created artifacts need to be bound.
 	createdArtifacts := buildCreatedArtifacts(resources)
-
 	ro := clouddriver.TaskResultObject{
 		BoundArtifacts:                    createdArtifacts,
 		DeployedNamesByLocation:           mnr,

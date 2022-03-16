@@ -1,7 +1,9 @@
 package core_test
 
 import (
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -33,12 +35,15 @@ var _ = Describe("Task", func() {
 				fakeSQLClient.ListKubernetesResourcesByTaskIDReturns(nil, errors.New("error listing resources"))
 			})
 
-			It("returns status internal server error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Bad Request"))
-				Expect(ce.Message).To(Equal("error listing resources"))
-				Expect(ce.Status).To(Equal(http.StatusBadRequest))
+			It("returns a failed task", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				t := clouddriver.Task{}
+				b, _ := ioutil.ReadAll(res.Body)
+				err := json.Unmarshal(b, &t)
+				Expect(err).To(BeNil())
+				Expect(t.Status.Failed).To(BeTrue())
+				Expect(t.Status.Retryable).To(BeTrue())
+				Expect(t.Status.Status).To(Equal("Error listing resources for task (id: task-id): error listing resources"))
 			})
 		})
 
@@ -57,12 +62,15 @@ var _ = Describe("Task", func() {
 				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{}, errors.New("error getting provider"))
 			})
 
-			It("returns status internal server error", func() {
-				Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Bad Request"))
-				Expect(ce.Message).To(Equal("internal: error getting kubernetes provider test-account-name: error getting provider"))
-				Expect(ce.Status).To(Equal(http.StatusBadRequest))
+			It("returns a failed task", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				t := clouddriver.Task{}
+				b, _ := ioutil.ReadAll(res.Body)
+				err := json.Unmarshal(b, &t)
+				Expect(err).To(BeNil())
+				Expect(t.Status.Failed).To(BeTrue())
+				Expect(t.Status.Retryable).To(BeTrue())
+				Expect(t.Status.Status).To(Equal("Error getting kubernetes provider test-account-name for task (id: task-id): internal: error getting kubernetes provider test-account-name: error getting provider"))
 			})
 		})
 
@@ -170,12 +178,15 @@ var _ = Describe("Task", func() {
 				fakeKubeClient.GetReturns(nil, errors.New("error getting resource"))
 			})
 
-			It("returns status internal server error", func() {
+			It("returns a failed task", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-				ce := getClouddriverError()
-				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
-				Expect(ce.Message).To(Equal("error getting resource"))
-				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+				t := clouddriver.Task{}
+				b, _ := ioutil.ReadAll(res.Body)
+				err := json.Unmarshal(b, &t)
+				Expect(err).To(BeNil())
+				Expect(t.Status.Failed).To(BeTrue())
+				Expect(t.Status.Retryable).To(BeTrue())
+				Expect(t.Status.Status).To(Equal("Error getting resource for task (task ID: task-id, kind: test-kind, name: test-name, namespace: test-namespace): error getting resource"))
 			})
 		})
 

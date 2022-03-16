@@ -66,6 +66,9 @@ func setup() {
 	fakeSQLClient.ListKubernetesResourcesByTaskIDReturns([]kubernetes.Resource{
 		{
 			AccountName: "test-account-name",
+			Resource:    "test-kind",
+			Name:        "test-name",
+			Namespace:   "test-namespace",
 		},
 	}, nil)
 	fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{
