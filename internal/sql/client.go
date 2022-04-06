@@ -256,7 +256,7 @@ func (c *client) GetKubernetesProviderAndPermissions(name string) (kubernetes.Pr
 func (c *client) ListKubernetesClustersByApplication(spinnakerApp string) ([]kubernetes.Resource, error) {
 	var rs []kubernetes.Resource
 	db := c.db.Select("account_name, cluster").
-		Where("spinnaker_app = ? AND kind in ('Deployment', 'StatefulSet', 'ReplicaSet', 'Ingress', 'Service', 'DaemonSet')",
+		Where("spinnaker_app = ? AND UPPER(kind) in ('DEPLOYMENT', 'STATEFULSET', 'REPLICASET', 'INGRESS', 'SERVICE', 'DAEMONSET')",
 			spinnakerApp).
 		Group("account_name, cluster").Find(&rs)
 
@@ -277,7 +277,7 @@ func (c *client) ListKubernetesClustersByFields(fields ...string) ([]kubernetes.
 	}
 
 	var rs []kubernetes.Resource
-	db := c.db.Select(list).Where("kind in ('Deployment', 'StatefulSet', 'ReplicaSet', 'Ingress', 'Service', 'DaemonSet')").Group(list).Find(&rs)
+	db := c.db.Select(list).Where("UPPER(kind) in ('DEPLOYMENT', 'STATEFULSET', 'REPLICASET', 'INGRESS', 'SERVICE', 'DAEMONSET')").Group(list).Find(&rs)
 
 	return rs, db.Error
 }
