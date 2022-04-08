@@ -121,7 +121,7 @@ CREATE INDEX account_name_idx ON provider_write_permissions(account_name);
 
 #### SQL Cleanup
 
-The `kubernetes_resources` tables is incredibly important for storing the most-recent state of a cluster, for the Kubernetes kinds we care about.
+The `kubernetes_resources` tables is incredibly important for storing the most-recent state of a cluster for the Kubernetes kinds we care about.
 
 It is recommended to run the following cleanup statements *daily* to maintain a healthy state of onboarded Kubernetes clusters.
 ```sql
