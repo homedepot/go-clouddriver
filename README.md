@@ -93,3 +93,51 @@ curl localhost:7002/credentials | jq
 | `DB_PASS` | Used to connect to MySQL database. | If not set will default to local SQLite database. ||
 | `DB_USER` | Used to connect to MySQL database. | If not set will default to local SQLite database. ||
 | `VERBOSE_REQUEST_LOGGING` | Logs all incoming request information. | Should only be used in non-production for testing. | `false` |
+
+### MySQL Indexes and Cleanup
+
+Go Clouddriver stores all deployed resource requests in its `kubernetes_resources` table, which needs to be cleaned up periodically. It also requires a few indexes
+to work efficiently and properly for continued deployments over long periods of time.
+
+#### Indexes
+
+First, an index to help the Applications API remain efficient.
+```sql
+CREATE INDEX kind_account_name_kind_name_spinnaker_app_idx ON kubernetes_resources(account_name, kind, name, spinnaker_app);
+```
+Next, an index to assist in pulling "cluster" kinds from the `kubernetes_resources` table.
+```sql
+CREATE INDEX kind_idx ON kubernetes_resources(kind);
+```
+Next, an index to assist the Task API.
+```sql
+CREATE INDEX task_id_idx ON kubernetes_resources(task_id);
+```
+Finally, a couple of indexes on the provider read/write permissions tables to help the Credentials API and any queries to select providers from the database.
+```sql
+CREATE INDEX account_name_idx ON provider_read_permissions(account_name);
+CREATE INDEX account_name_idx ON provider_write_permissions(account_name);
+```
+
+#### SQL Cleanup
+
+The `kubernetes_resources` tables is incredibly important for storing the most-recent state of a cluster for the Kubernetes kinds we care about.
+
+It is recommended to run the following cleanup statements *daily* to maintain a healthy state of onboarded Kubernetes clusters.
+```sql
+DELETE FROM kubernetes_resources where cluster = '' and timestamp < (NOW() - INTERVAL 6 HOUR);
+
+DELETE t1 FROM kubernetes_resources t1
+INNER JOIN kubernetes_resources t2
+WHERE
+    t1.id < t2.id AND
+    t1.account_name = t2.account_name AND
+    t1.api_group = t2.api_group AND
+    t1.name = t2.name AND
+    t1.namespace = t2.namespace AND
+    t1.resource = t2.resource AND
+    t1.version = t2.version AND
+    t1.kind = t2.kind AND
+    t1.cluster = t2.cluster AND
+    t1.timestamp < (NOW() - INTERVAL 6 HOUR);
+```
