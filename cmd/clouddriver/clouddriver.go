@@ -67,6 +67,7 @@ func init() {
 	}
 
 	arcadeClient.WithAPIKey(arcadeAPIKey)
+	arcadeClient.WithShortExpiration(60)
 
 	ic := &internal.Controller{
 		ArcadeClient:                  arcadeClient,
