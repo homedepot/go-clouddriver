@@ -8,7 +8,7 @@ import (
 	"net/url"
 )
 
-//go:generate counterfeiter . Client
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Client
 type Client interface {
 	Token(string) (string, error)
 	WithAPIKey(string)

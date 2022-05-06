@@ -26,6 +26,11 @@ type FakeClient struct {
 	withAPIKeyArgsForCall []struct {
 		arg1 string
 	}
+	WithShortExpirationStub        func(int)
+	withShortExpirationMutex       sync.RWMutex
+	withShortExpirationArgsForCall []struct {
+		arg1 int
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -126,6 +131,38 @@ func (fake *FakeClient) WithAPIKeyArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
+func (fake *FakeClient) WithShortExpiration(arg1 int) {
+	fake.withShortExpirationMutex.Lock()
+	fake.withShortExpirationArgsForCall = append(fake.withShortExpirationArgsForCall, struct {
+		arg1 int
+	}{arg1})
+	stub := fake.WithShortExpirationStub
+	fake.recordInvocation("WithShortExpiration", []interface{}{arg1})
+	fake.withShortExpirationMutex.Unlock()
+	if stub != nil {
+		fake.WithShortExpirationStub(arg1)
+	}
+}
+
+func (fake *FakeClient) WithShortExpirationCallCount() int {
+	fake.withShortExpirationMutex.RLock()
+	defer fake.withShortExpirationMutex.RUnlock()
+	return len(fake.withShortExpirationArgsForCall)
+}
+
+func (fake *FakeClient) WithShortExpirationCalls(stub func(int)) {
+	fake.withShortExpirationMutex.Lock()
+	defer fake.withShortExpirationMutex.Unlock()
+	fake.WithShortExpirationStub = stub
+}
+
+func (fake *FakeClient) WithShortExpirationArgsForCall(i int) int {
+	fake.withShortExpirationMutex.RLock()
+	defer fake.withShortExpirationMutex.RUnlock()
+	argsForCall := fake.withShortExpirationArgsForCall[i]
+	return argsForCall.arg1
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -133,6 +170,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.tokenMutex.RUnlock()
 	fake.withAPIKeyMutex.RLock()
 	defer fake.withAPIKeyMutex.RUnlock()
+	fake.withShortExpirationMutex.RLock()
+	defer fake.withShortExpirationMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
