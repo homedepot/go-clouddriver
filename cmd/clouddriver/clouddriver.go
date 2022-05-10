@@ -22,7 +22,8 @@ import (
 )
 
 const (
-	mysqlDefaultStringSize = 256
+	arcadeShortExpirationSeconds = 60
+	mysqlDefaultStringSize       = 256
 )
 
 var (
@@ -67,7 +68,7 @@ func init() {
 	}
 
 	arcadeClient.WithAPIKey(arcadeAPIKey)
-	arcadeClient.WithShortExpiration(60)
+	arcadeClient.WithShortExpiration(arcadeShortExpirationSeconds)
 
 	ic := &internal.Controller{
 		ArcadeClient:                  arcadeClient,
