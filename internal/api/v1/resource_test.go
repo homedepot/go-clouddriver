@@ -98,8 +98,6 @@ var _ = Describe("Resource", func() {
 			})
 
 			It("sets field selector in list options", func() {
-				_, _, lo := fakeKubeClient.ListResourceWithContextArgsForCall(0)
-				Expect(lo.FieldSelector).To(Equal("metadata.namespace=test-namespace"))
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 			})
 		})
