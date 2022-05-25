@@ -27,7 +27,7 @@ import (
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	// . "github.com/onsi/ginkgo"
+	// "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 )

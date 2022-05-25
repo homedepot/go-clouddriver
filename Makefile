@@ -26,7 +26,7 @@ test:
 	ginkgo -r
 
 tools:
-	go get github.com/onsi/ginkgo/ginkgo
+	go get github.com/onsi/ginkgo/v2/ginkgo
 	go get github.com/onsi/gomega/...
 
 vendor:

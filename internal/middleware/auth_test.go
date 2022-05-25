@@ -14,7 +14,7 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/fiat/fiatfakes"
 	"github.com/homedepot/go-clouddriver/internal/middleware"
 	. "github.com/homedepot/go-clouddriver/internal/middleware"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

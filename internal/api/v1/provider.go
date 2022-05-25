@@ -37,6 +37,12 @@ func (cc *Controller) CreateKubernetesProvider(c *gin.Context) {
 		p.Namespace = nil
 	}
 
+	// If creating a new provider with the deprecated `namespace` key, it will be converted to the new `namespaces` array.
+	if p.Namespace != nil && len(p.Namespaces) == 0 {
+		p.Namespaces = []*string{p.Namespace}
+		p.Namespace = nil
+	}
+
 	err = cc.SQLClient.CreateKubernetesProvider(p)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -99,6 +105,16 @@ func (cc *Controller) ListKubernetesProvider(c *gin.Context) {
 		return
 	}
 
+	for providerIndex, provider := range providers {
+		if provider.Namespace == nil {
+			continue
+		} else {
+			provider.Namespaces = []*string{provider.Namespace}
+			provider.Namespace = nil
+		}
+		providers[providerIndex] = provider
+	}
+
 	c.JSON(http.StatusOK, providers)
 }
 
@@ -123,6 +139,12 @@ func (cc *Controller) CreateOrReplaceKubernetesProvider(c *gin.Context) {
 		p.Namespace = nil
 	}
 
+	// If updating a provider with the deprecated `namespace` key, it will be converted to the new `namespaces` array, replacing any existing namespaces value.
+	if p.Namespace != nil {
+		p.Namespaces = []*string{p.Namespace}
+		p.Namespace = nil
+	}
+
 	err = cc.SQLClient.DeleteKubernetesProvider(p.Name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -138,7 +160,7 @@ func (cc *Controller) CreateOrReplaceKubernetesProvider(c *gin.Context) {
 	c.JSON(http.StatusOK, p)
 }
 
-// validates verifies the providers data.  Validations performed:
+// validates verifies the provider's data.  Validations performed:
 // - the CAData is base64 encoded
 // - the TokenProvider is known/supported by arcade
 // - every Permissions.Write entry exists in Permissions.Read

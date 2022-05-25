@@ -9,7 +9,7 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	"gorm.io/gorm"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -118,9 +118,48 @@ var _ = Describe("Provider", func() {
 				createRequest(http.MethodPost)
 			})
 
-			It("returns ok and the namespace is nil", func() {
+			It("returns ok and the namespace is nil and namespace array is nil", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusCreated))
 				validateResponse(payloadKubernetesProviderCreated)
+			})
+		})
+
+		When("namespaces and namespaces are empty", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesProvidersEmptyNamespace))
+				createRequest(http.MethodPost)
+			})
+
+			It("returns ok and namespace is nil and namespaces is an empty array", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusCreated))
+				validateResponse(payloadKubernetesProviderCreated)
+			})
+		})
+
+		When("the deprecated namespace property is provided", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesProviderDeprecatedNamespace))
+				createRequest(http.MethodPost)
+			})
+
+			It("returns ok with the namespace as part of the namespaces property", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusCreated))
+				validateResponse(payloadKubernetesProviderCreatedWithDeprecatedNamespace)
+			})
+		})
+
+		When("namespaces are provided", func() {
+			BeforeEach(func() {
+				body = &bytes.Buffer{}
+				body.Write([]byte(payloadRequestKubernetesProvidersMultipleNamespaces))
+				createRequest(http.MethodPost)
+			})
+
+			It("returns ok and the namespaces", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusCreated))
+				validateResponse(payloadRequestKubernetesProvidersMultipleNamespaces)
 			})
 		})
 	})
@@ -244,6 +283,45 @@ var _ = Describe("Provider", func() {
 					validateResponse(payloadKubernetesProviderCreated)
 				})
 			})
+
+			When("the namespace is set on a provider with no namespaces (updating deprecated field)", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(payloadRequestKubernetesProviderDeprecatedNamespace))
+					createRequest(http.MethodPut)
+				})
+
+				It("returns ok and the namespace is nil and namespaces including the provided namespace value", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadKubernetesProviderCreatedWithDeprecatedNamespace)
+				})
+			})
+
+			When("the namespaces field is updated", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(payloadRequestKubernetesProvidersMultipleNamespaces))
+					createRequest(http.MethodPut)
+				})
+
+				It("returns ok and the namespaces are updated to the ones passed in", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadRequestKubernetesProvidersMultipleNamespaces)
+				})
+			})
+
+			When("the namespace is set on a provider with existing namespaces", func() {
+				BeforeEach(func() {
+					body = &bytes.Buffer{}
+					body.Write([]byte(payloadRequestKubernetesUpdateProvidersExistingNamespaces))
+					createRequest(http.MethodPut)
+				})
+
+				It("returns ok and the namespaces are updated to the one passed in for the namespace field", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadKubernetesProviderCreatedWithDeprecatedNamespace)
+				})
+			})
 		})
 	})
 
@@ -325,6 +403,16 @@ var _ = Describe("Provider", func() {
 					Permissions: kubernetes.ProviderPermissions{
 						Read:  []string{"gg_test2"},
 						Write: []string{"gg_test2"},
+					},
+				},
+				{
+					Name:       "test-name3",
+					Host:       "test-host3",
+					CAData:     "dGVzdC1jYS1kYXRhCg==",
+					Namespaces: []*string{&namespace},
+					Permissions: kubernetes.ProviderPermissions{
+						Read:  []string{"gg_test3"},
+						Write: []string{"gg_test3"},
 					},
 				},
 			}

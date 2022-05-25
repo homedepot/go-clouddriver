@@ -2,7 +2,7 @@ package internal_test
 
 import (
 	. "github.com/homedepot/go-clouddriver/internal"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

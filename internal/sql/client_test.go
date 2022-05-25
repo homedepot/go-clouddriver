@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm/logger"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
