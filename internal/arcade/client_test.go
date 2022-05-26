@@ -2,6 +2,7 @@ package arcade_test
 
 import (
 	"net/http"
+	"time"
 
 	. "github.com/homedepot/go-clouddriver/internal/arcade"
 	. "github.com/onsi/ginkgo/v2"
@@ -102,6 +103,37 @@ var _ = Describe("Client", func() {
 			It("succeeds", func() {
 				Expect(err).To(BeNil())
 				Expect(token).To(Equal("some.bearer.token"))
+			})
+		})
+
+		When("provider is rancher and the 60 second short expiry has passed", func() {
+			BeforeEach(func() {
+				provider = "rancher"
+				client = NewClient(server.URL())
+				client.WithAPIKey("test-api-key")
+				client.WithShortExpiration(2)
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyHeaderKV("api-key", "test-api-key"),
+					ghttp.VerifyRequest(http.MethodGet, "/tokens", "provider=rancher"),
+					ghttp.RespondWith(http.StatusOK, `{"token":"some.bearer.token"}`),
+				))
+
+				// call to test the short expiration
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyHeaderKV("api-key", "test-api-key"),
+					ghttp.VerifyRequest(http.MethodGet, "/tokens", "provider=rancher"),
+					ghttp.RespondWith(http.StatusOK, `{"token":"new.bearer.token"}`),
+				))
+			})
+			It("returns a new token", func() {
+				Expect(err).To(BeNil())
+				Expect(token).To(Equal("some.bearer.token"))
+
+				time.Sleep(3 * time.Second)
+
+				token, err = client.Token(provider)
+				Expect(err).To(BeNil())
+				Expect(token).To(Equal("new.bearer.token"))
 			})
 		})
 

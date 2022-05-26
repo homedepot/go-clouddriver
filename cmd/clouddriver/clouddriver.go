@@ -22,7 +22,8 @@ import (
 )
 
 const (
-	mysqlDefaultStringSize = 256
+	arcadeShortExpirationSeconds = 60
+	mysqlDefaultStringSize       = 256
 )
 
 var (
@@ -33,6 +34,43 @@ func main() {
 	if err := r.Run(":7002"); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func setupArcadeClient() (client arcade.Client) {
+	url := os.Getenv("ARCADE_URL")
+	if url != "" {
+		client = arcade.NewClient(url)
+	} else {
+		client = arcade.NewDefaultClient()
+	}
+
+	arcadeAPIKey := os.Getenv("ARCADE_API_KEY")
+	if arcadeAPIKey == "" {
+		log.Println("[CLOUDDRIVER] WARNING: ARCADE_API_KEY not set")
+	}
+
+	client.WithAPIKey(arcadeAPIKey)
+	client.WithShortExpiration(arcadeShortExpirationSeconds)
+
+	return client
+}
+
+func setupFiatClient() fiat.Client {
+	url := os.Getenv("FIAT_URL")
+	if url != "" {
+		return fiat.NewClient(url)
+	}
+
+	return fiat.NewDefaultClient()
+}
+
+func setupFront50Client() front50.Client {
+	url := os.Getenv("FRONT50_URL")
+	if url != "" {
+		return front50.NewClient(url)
+	}
+
+	return front50.NewDefaultClient()
 }
 
 func init() {
@@ -56,17 +94,10 @@ func init() {
 	}
 
 	artifactCredentialsController := getArtifactsCredentialsController()
-	fiatClient := fiat.NewDefaultClient()
-	front50Client := front50.NewDefaultClient()
+	fiatClient := setupFiatClient()
+	front50Client := setupFront50Client()
 	kubeController := kubernetes.NewController()
-	arcadeClient := arcade.NewDefaultClient()
-
-	arcadeAPIKey := os.Getenv("ARCADE_API_KEY")
-	if arcadeAPIKey == "" {
-		log.Println("[CLOUDDRIVER] WARNING: ARCADE_API_KEY not set")
-	}
-
-	arcadeClient.WithAPIKey(arcadeAPIKey)
+	arcadeClient := setupArcadeClient()
 
 	ic := &internal.Controller{
 		ArcadeClient:                  arcadeClient,

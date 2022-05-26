@@ -8,10 +8,11 @@ import (
 	"net/url"
 )
 
-//go:generate counterfeiter . Client
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Client
 type Client interface {
 	Token(string) (string, error)
 	WithAPIKey(string)
+	WithShortExpiration(int)
 }
 
 func NewDefaultClient() Client {
@@ -27,12 +28,17 @@ func NewClient(url string) Client {
 }
 
 type client struct {
-	apiKey string
-	url    string
+	apiKey          string
+	shortExpiration int
+	url             string
 }
 
 func (c *client) WithAPIKey(apiKey string) {
 	c.apiKey = apiKey
+}
+
+func (c *client) WithShortExpiration(seconds int) {
+	c.shortExpiration = seconds
 }
 
 func (c *client) Token(tokenProvider string) (string, error) {
