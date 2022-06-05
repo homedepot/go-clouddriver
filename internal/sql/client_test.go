@@ -45,7 +45,7 @@ var _ = Describe("Sql", func() {
 			"`host` varchar\\(256\\)," +
 			"`ca_data` text," +
 			"`bearer_token` varchar\\(2048\\)," +
-			"`token_provider` varchar\\(32\\) NOT NULL DEFAULT 'google'," +
+			"`token_provider` varchar\\(128\\) NOT NULL DEFAULT 'google'," +
 			"`namespace` varchar\\(253\\)," +
 			"PRIMARY KEY \\(`name`\\)" +
 			"\\)$").
