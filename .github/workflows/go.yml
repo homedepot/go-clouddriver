@@ -79,8 +79,8 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./
-          file: ./Dockerfile
-          builder: ${{ steps.buildx.outputs.name }}
+          file: ./docker/Dockerfile
+          cache: enabled
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/go-clouddriver:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/go-clouddrive:buildcache
