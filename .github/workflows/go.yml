@@ -80,7 +80,6 @@ jobs:
         with:
           context: ./
           file: ./docker/Dockerfile
-          cache: enabled
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/go-clouddriver:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/go-clouddrive:buildcache
