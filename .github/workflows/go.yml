@@ -82,5 +82,3 @@ jobs:
           file: ./docker/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/go-clouddriver:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/go-clouddrive:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/go-clouddrive:buildcache,mode=max
