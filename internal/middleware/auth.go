@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -209,8 +210,8 @@ func (cc *Controller) PostFilterAuthorizedApplications(permissions ...string) gi
 		}
 
 		allApps := c.MustGet(core.KeyAllApplications).(core.Applications)
-
 		user := c.GetHeader(headerSpinnakerUser)
+
 		if user == "" {
 			c.JSON(http.StatusOK, allApps)
 			return
@@ -226,7 +227,7 @@ func (cc *Controller) PostFilterAuthorizedApplications(permissions ...string) gi
 		authorizedAppsMap := map[string]fiat.Application{}
 
 		for _, app := range authorizedApps {
-			authorizedAppsMap[app.Name] = app
+			authorizedAppsMap[strings.ToLower(app.Name)] = app
 		}
 
 		filteredApps := FilterAuthorizedApps(authorizedAppsMap, allApps, permissions...)
@@ -249,7 +250,7 @@ func FilterAuthorizedApps(authorizedAppsMap map[string]fiat.Application, allApps
 	filteredApps := []core.Application{}
 
 	for _, app := range allApps {
-		if authorizedApp, ok := authorizedAppsMap[app.Name]; ok {
+		if authorizedApp, ok := authorizedAppsMap[strings.ToLower(app.Name)]; ok {
 			for _, p := range permissions {
 				if ok := find(authorizedApp.Authorizations, p); ok {
 					filteredApps = append(filteredApps, app)

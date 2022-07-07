@@ -1722,15 +1722,21 @@ func list(wg *sync.WaitGroup, rc chan resource,
 	lo := metav1.ListOptions{
 		LabelSelector: kubernetes.DefaultLabelSelector(),
 	}
-	// If namespace-scoped account, then only get resources in the namespace.
-	if provider.Namespace != nil {
-		lo.FieldSelector = "metadata.namespace=" + *provider.Namespace
-	}
 	// Declare a context with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
 	defer cancel()
 	// List resources with the context.
-	ul, err := provider.Client.ListResourceWithContext(ctx, r, lo)
+
+	var ul *unstructured.UnstructuredList
+
+	var err error
+
+	if provider.Namespace != nil {
+		ul, err = provider.Client.ListResourcesByKindAndNamespaceWithContext(ctx, r, *provider.Namespace, lo)
+	} else {
+		ul, err = provider.Client.ListResourceWithContext(ctx, r, lo)
+	}
+
 	if err != nil {
 		// If there was an error, log and return.
 		clouddriver.Log(err)
