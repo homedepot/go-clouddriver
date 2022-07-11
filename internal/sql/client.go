@@ -62,6 +62,7 @@ func (c *client) Connect() error {
 	err = db.AutoMigrate(
 		&kubernetes.Provider{},
 		&kubernetes.Resource{},
+		&kubernetes.ProviderNamespaces{},
 		&clouddriver.ReadPermission{},
 		&clouddriver.WritePermission{},
 	)
@@ -116,6 +117,25 @@ func (c *client) CreateKubernetesProvider(p kubernetes.Provider) error {
 		}
 	}
 
+	fmt.Println("n1: ", p.Namespace)
+
+	for _, namespace := range p.Namespaces {
+		fmt.Println("namespace: ", namespace)
+
+		ns := kubernetes.ProviderNamespaces{
+			AccountName: p.Name,
+			Namespace:   namespace,
+		}
+
+		fmt.Println("NS: ", ns)
+
+		err = c.db.Create(&ns).Error
+		if err != nil {
+			fmt.Println("Insertion error: ", err)
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -125,7 +145,7 @@ func (c *client) CreateKubernetesResource(r kubernetes.Resource) error {
 	return db.Error
 }
 
-// DeleteKubernetesProvider deletes the provider and permission from the DB.
+// DeleteKubernetesProvider deletes the provider, namespaces, and permission from the DB.
 func (c *client) DeleteKubernetesProvider(name string) error {
 	err := c.db.Delete(&kubernetes.Provider{Name: name}).Error
 	if err != nil {
@@ -138,6 +158,11 @@ func (c *client) DeleteKubernetesProvider(name string) error {
 	}
 
 	err = c.db.Where("account_name = ?", name).Delete(&clouddriver.WritePermission{}).Error
+	if err != nil {
+		return err
+	}
+
+	err = c.db.Where("account_name = ?", name).Delete(&kubernetes.ProviderNamespaces{}).Error
 	if err != nil {
 		return err
 	}
@@ -163,7 +188,11 @@ func (c *client) DeleteKubernetesResourcesByAccountName(account string) error {
 // GetKubernetesProvider reads the provider from the DB.
 func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error) {
 	var p kubernetes.Provider
-	db := c.db.Select("host, ca_data, bearer_token, token_provider, namespace").Where("name = ?", name).First(&p)
+	db := c.db.Table("kubernetes_providers a").
+		Select("a.host, a.ca_data, a.bearer_token, a.token_provider, b.namespace").
+		Joins("LEFT JOIN "+kubernetes.ProviderNamespaces{}.TableName()+" b ON a.name = b.account_name").
+		Where("name = ?", name).
+		First(&p)
 
 	return p, db.Error
 }

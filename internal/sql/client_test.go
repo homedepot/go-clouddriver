@@ -2,7 +2,7 @@ package sql_test
 
 import (
 	"database/sql"
-
+	"fmt"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/homedepot/go-clouddriver/internal/sql"
 	"gorm.io/driver/mysql"
@@ -67,6 +67,10 @@ var _ = Describe("Sql", func() {
 			"`cluster` varchar\\(256\\)," +
 			"PRIMARY KEY \\(`id`\\)" +
 			"\\)$").
+			WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("CREATE TABLE `kubernetes_providers_namespaces` " +
+			"\\(`account_name` varchar\\(256\\)," +
+			"`namespace` varchar\\(256\\)").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("(?i)^CREATE TABLE `provider_read_permissions` " +
 			"\\(`id`\\ varchar\\(256\\)," +
@@ -155,6 +159,48 @@ var _ = Describe("Sql", func() {
 			})
 
 			It("succeeds", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("namespaces are set", func() {
+			BeforeEach(func() {
+				provider = kubernetes.Provider{
+					Name:          "test-name",
+					Host:          "test-host",
+					CAData:        "test-ca-data",
+					TokenProvider: "test-token",
+					Namespaces:    []string{"n1", "n2", "n3"},
+				}
+				mock.ExpectBegin()
+				mock.ExpectExec("(?i)^INSERT INTO `kubernetes_providers` \\(" +
+					"`name`" +
+					",`host`" +
+					",`ca_data`" +
+					",`bearer_token`" +
+					",`token_provider`" +
+					",`namespace`" +
+					"\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?\\)$").
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+
+				for i := 1; i <= 3; i++ {
+					mock.ExpectBegin()
+					mock.ExpectExec("INSERT INTO `kubernetes_providers_namespaces` \\(`account_name`,`namespace`\\) VALUES \\(\\?,\\?\\)").
+						WithArgs("test-name", "n"+fmt.Sprint(i)).
+						WillReturnResult(sqlmock.NewResult(int64(i), 1))
+
+					mock.ExpectCommit()
+
+					// we make sure that all expectations were met
+					if err := mock.ExpectationsWereMet(); err != nil {
+						fmt.Errorf("there were unfulfilled expections: %s", err)
+					}
+				}
+
+			})
+
+			It("adds the namespaces to the DB and succeeds", func() {
 				Expect(err).To(BeNil())
 			})
 		})
@@ -278,10 +324,17 @@ var _ = Describe("Sql", func() {
 				mock.ExpectCommit()
 
 				mock.ExpectBegin()
+				mock.ExpectExec("(?i)^DELETE FROM `" + kubernetes.ProviderNamespaces{}.TableName() + "` WHERE " +
+					"account_name = \\?$").
+					WillReturnResult(sqlmock.NewResult(1, 3))
+				mock.ExpectCommit()
+
+				mock.ExpectBegin()
 				mock.ExpectExec("(?i)^DELETE FROM `kubernetes_resources` WHERE " +
 					"account_name = \\?$").
 					WillReturnResult(sqlmock.NewResult(1, 10))
 				mock.ExpectCommit()
+
 			})
 
 			It("succeeds", func() {
@@ -331,7 +384,8 @@ var _ = Describe("Sql", func() {
 			BeforeEach(func() {
 				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data"}).
 					AddRow("test-name", "test-host", "test-ca-data")
-				mock.ExpectQuery("(?i)^SELECT host, ca_data, bearer_token, token_provider, namespace FROM `kubernetes_providers` " +
+				mock.ExpectQuery("(?i)^SELECT a.host, a.ca_data, a.bearer_token, a.token_provider, b.namespace FROM kubernetes_providers a " +
+					"LEFT JOIN kubernetes_providers_namespaces b ON a.name = b.account_name " +
 					"WHERE name = \\? ORDER BY `kubernetes_providers`.`name` LIMIT 1$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()

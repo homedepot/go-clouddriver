@@ -39,7 +39,7 @@ func (cc *Controller) CreateKubernetesProvider(c *gin.Context) {
 
 	// If creating a new provider with the deprecated `namespace` key, it will be converted to the new `namespaces` array.
 	if p.Namespace != nil && len(p.Namespaces) == 0 {
-		p.Namespaces = []*string{p.Namespace}
+		p.Namespaces = []string{*p.Namespace}
 		p.Namespace = nil
 	}
 
@@ -109,9 +109,10 @@ func (cc *Controller) ListKubernetesProvider(c *gin.Context) {
 		if provider.Namespace == nil {
 			continue
 		} else {
-			provider.Namespaces = []*string{provider.Namespace}
+			provider.Namespaces = []string{*provider.Namespace}
 			provider.Namespace = nil
 		}
+
 		providers[providerIndex] = provider
 	}
 
@@ -141,7 +142,7 @@ func (cc *Controller) CreateOrReplaceKubernetesProvider(c *gin.Context) {
 
 	// If updating a provider with the deprecated `namespace` key, it will be converted to the new `namespaces` array, replacing any existing namespaces value.
 	if p.Namespace != nil {
-		p.Namespaces = []*string{p.Namespace}
+		p.Namespaces = []string{*p.Namespace}
 		p.Namespace = nil
 	}
 

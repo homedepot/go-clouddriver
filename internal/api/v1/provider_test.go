@@ -409,7 +409,7 @@ var _ = Describe("Provider", func() {
 					Name:       "test-name3",
 					Host:       "test-host3",
 					CAData:     "dGVzdC1jYS1kYXRhCg==",
-					Namespaces: []*string{&namespace},
+					Namespaces: []string{namespace},
 					Permissions: kubernetes.ProviderPermissions{
 						Read:  []string{"gg_test3"},
 						Write: []string{"gg_test3"},

@@ -30,7 +30,7 @@ make build
 
 ### Running Locally
 
-1) Go Clouddriver generates its access tokens using [Arcade](https://github.com/billiford/arcade) as a sidecar, so a working instance of Arcade will need to be running locally in order for Go Clouddriver to talk to Kubernetes clusters.
+1) Go Clouddriver generates its access tokens using [Arcade](https://github.com/homedepot/arcade) as a sidecar, so a working instance of Arcade will need to be running locally in order for Go Clouddriver to talk to Kubernetes clusters.
 
 2) Export the Arcade API key (the same one you set up in step 1).
 ```bash

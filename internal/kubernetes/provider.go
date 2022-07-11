@@ -27,7 +27,7 @@ type Provider struct {
 	BearerToken   string              `json:"bearerToken,omitempty" gorm:"size:2048"`
 	TokenProvider string              `json:"tokenProvider,omitempty" gorm:"size:32;not null;default:'google'"`
 	Namespace     *string             `json:"namespace,omitempty" gorm:"size:253"`
-	Namespaces    []*string           `json:"namespaces,omitempty" gorm:"-"`
+	Namespaces    []string            `json:"namespaces,omitempty" gorm:"-"`
 	Permissions   ProviderPermissions `json:"permissions" gorm:"-"`
 	// Providers can hold instances of clients.
 	Client    Client    `json:"-" gorm:"-"`
@@ -41,6 +41,16 @@ type ProviderPermissions struct {
 
 func (Provider) TableName() string {
 	return "kubernetes_providers"
+}
+
+type ProviderNamespaces struct {
+	//ID          string `json:"-" gorm:"primary_key"`
+	AccountName string `json:"accountName"`
+	Namespace   string `json:"namespace,omitempty"`
+}
+
+func (ProviderNamespaces) TableName() string {
+	return "kubernetes_providers_namespaces"
 }
 
 // ValidateKindStatus verifies that this provider can access the given kind.
