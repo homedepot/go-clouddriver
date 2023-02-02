@@ -3,15 +3,17 @@ kind: Service
 metadata:
   labels:
     app: spin
-    cluster: spin-clouddriver
-  name: spin-clouddriver
+    cluster: spin-go-clouddriver
+  name: spin-go-clouddriver
   namespace: spinnaker
 spec:
   ports:
-  - name: http
-    port: 7002
+  - port: 7002
     protocol: TCP
     targetPort: 7002
   selector:
     app: spin
-    cluster: spin-clouddriver
+    cluster: spin-go-clouddriver
+  sessionAffinity: None
+  type: ClusterIP
+
