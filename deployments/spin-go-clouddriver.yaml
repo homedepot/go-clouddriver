@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: "2021-11-15T19:54:11Z"
+  generation: 35
+  labels:
+    app: spin
+    cluster: spin-go-clouddriver
+  name: spin-go-clouddriver
+  namespace: spinnaker
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: spin
+      cluster: spin-go-clouddriver
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: spin
+        cluster: spin-go-clouddriver
+    spec:
+      containers:
+      - args:
+        - clouddriver
+        command:
+        - /bin/sh
+        - -c
+        env:
+        - name: ARCADE_API_KEY
+          value: <required: secret>
+        - name: ARTIFACTS_CREDENTIALS_CONFIG_DIR
+          value: <required: /vault/secrets/artifacts/credentials>
+        - name: DB_HOST
+          value: <optional: if not set will default to local sqlite3>
+        - name: DB_NAME
+          value: <optional: if not set will default to local sqlite3>
+        - name: DB_PASS
+          value: <optional: if not set will default to local sqlite3>
+        - name: DB_USER
+          value: <optional: if not set will default to local sqlite3>
+        - name: GIN_MODE
+          value: release
+        - name: KUBERNETES_USE_DISK_CACHE
+          value: <optional: do not include to use memory cache which is recommended>
+        - name: VERBOSE_REQUEST_LOGGING
+          value: <optional: logs all incoming request data - not for production use>
+        image: docker.io/oshomedepot/go-clouddriver:1.0.0
+        name: clouddriver
+        ports:
+        - containerPort: 7002
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - wget
+            - --no-check-certificate
+            - --spider
+            - -q
+            - http://localhost:7002/health
+          failureThreshold: 3
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: "3"
+            memory: 4Gi
+        volumeMounts:
+        - mountPath: /var/kube/cache
+          name: kube-cache-volume
+      - args:
+        - arcade
+        command:
+        - /bin/sh
+        - -c
+        env:
+        - name: ARCADE_API_KEY
+          value: <required: secret>
+        image: docker.io/oshomedepot/arcade:1.0.2
+        name: arcade
+        ports:
+        - containerPort: 1982
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /secret/arcade/providers
+          name: arcade-providers-volume
+          readOnly: true
+      terminationGracePeriodSeconds: 720
+      volumes:
+      - name: arcade-providers-volume
+        secret:
+          defaultMode: 420
+          secretName: arcade-providers
+      - emptyDir: {}
+        name: kube-cache-volume
+
