@@ -23,7 +23,7 @@ spec:
         app: spin-router
     spec:
       containers:
-      - image: <TODO>
+      - image: billiford/spin-router:v0.8.0
         livenessProbe:
           failureThreshold: 3
           httpGet:
