@@ -2,4 +2,4 @@
 /test/
 *.coverprofile
 clouddriver.db
-.idea/
+.idea/.DS_Store
