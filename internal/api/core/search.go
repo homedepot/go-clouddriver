@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/homedepot/go-clouddriver/internal"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type SearchResponse []Page
@@ -102,10 +103,11 @@ func (cc *Controller) Search(c *gin.Context) {
 		go cc.search(wg, provider, kind, namespace, ac)
 	}
 
-	// Wait for all concurrent calls to finish.
-	wg.Wait()
-	// Close the channel.
-	close(ac)
+	go func() {
+		wg.Wait()
+		close(ac)
+	}()
+
 	// Receive all account/names from the channel.
 	accountNames := []accountName{}
 	for an := range ac {
@@ -186,7 +188,7 @@ func (cc *Controller) search(wg *sync.WaitGroup, provider *kubernetes.Provider,
 	}
 }
 
-// filterProviders returs a list of providers filtered by the allowe account names passed in.
+// filterProviders returns a list of providers filtered by the allowe account names passed in.
 func filterProviders(providers []*kubernetes.Provider, allowedAccounts []string) []*kubernetes.Provider {
 	ps := []*kubernetes.Provider{}
 	m := map[string]bool{}

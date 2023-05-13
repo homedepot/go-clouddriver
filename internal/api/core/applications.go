@@ -12,10 +12,10 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/gin-gonic/gin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/gin-gonic/gin"
 	"github.com/homedepot/go-clouddriver/internal"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
@@ -884,7 +884,7 @@ type InstanceCounts struct {
 	Up           int `json:"up"`
 }
 
-// Instance if a Kuberntes kind "Pod".
+// Instance if a Kubernetes kind "Pod".
 type Instance struct {
 	Account           string                 `json:"account,omitempty"`
 	AccountName       string                 `json:"accountName,omitempty"`
@@ -1661,7 +1661,7 @@ func (cc *Controller) listApplicationResources(c *gin.Context, rs, accounts,
 	}
 
 	wg := &sync.WaitGroup{}
-	// Create channel of resouces to send to.
+	// Create channel of resources to send to.
 	rc := make(chan resource, internal.DefaultChanSize)
 	// Add the number of accounts to the wait group.
 	wg.Add(len(providers))
@@ -1669,10 +1669,11 @@ func (cc *Controller) listApplicationResources(c *gin.Context, rs, accounts,
 	for _, provider := range providers {
 		go cc.listResources(wg, rs, rc, provider, applications)
 	}
-	// Wait for all concurrent calls to finish.
-	wg.Wait()
-	// Close the channel.
-	close(rc)
+
+	go func() {
+		wg.Wait()
+		close(rc)
+	}()
 	// Receive all resources from the channel.
 	resources := []resource{}
 	for r := range rc {

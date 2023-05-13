@@ -19,7 +19,7 @@ import (
 var _ = Describe("Controller", func() {
 	Describe("#const", func() {
 		Expect(internal.DefaultListTimeoutSeconds).To(Equal(10))
-		Expect(internal.DefaultChanSize).To(Equal(100000))
+		Expect(internal.DefaultChanSize).To(Equal(10))
 	})
 
 	var (

@@ -11,13 +11,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/homedepot/go-clouddriver/internal"
 	ops "github.com/homedepot/go-clouddriver/internal/api/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var (
@@ -71,9 +72,10 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 		go getEvents(provider, wg, eventsCh, kind, name, namespace)
 	}
 
-	wg.Wait()
-
-	close(eventsCh)
+	go func() {
+		wg.Wait()
+		close(eventsCh)
+	}()
 
 	// Receive all events.
 	for event := range eventsCh {

@@ -8,12 +8,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/homedepot/go-clouddriver/internal"
-	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"gorm.io/gorm"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/homedepot/go-clouddriver/internal"
+	"github.com/homedepot/go-clouddriver/internal/kubernetes"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
 
 var (
@@ -72,10 +73,11 @@ func (cc *Controller) LoadKubernetesResources(c *gin.Context) {
 	for _, kind := range infrastructureKinds {
 		go listKinds(wg, uc, provider, kind)
 	}
-	// Wait for the calls to finish.
-	wg.Wait()
-	// Close the channel.
-	close(uc)
+
+	go func() {
+		wg.Wait()
+		close(uc)
+	}()
 
 	// Remove existing entries from the DB.
 	err = cc.SQLClient.DeleteKubernetesResourcesByAccountName(account)
