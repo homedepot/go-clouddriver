@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/client-go/rest"
+
 	"github.com/homedepot/go-clouddriver/internal/arcade"
 	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/fiat"
@@ -12,11 +14,10 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/sql"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	"k8s.io/client-go/rest"
 )
 
 const (
-	DefaultChanSize           = 100000
+	DefaultChanSize           = 10
 	DefaultListTimeoutSeconds = 10
 )
 
