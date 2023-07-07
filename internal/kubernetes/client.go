@@ -141,6 +141,7 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 // Replace a given manifest.
 func (c *client) Replace(u *unstructured.Unstructured) (Metadata, error) {
 	log.Println("here: Inside Replace")
+
 	metadata := Metadata{}
 	gvk := u.GroupVersionKind()
 
@@ -196,6 +197,7 @@ func (c *client) Replace(u *unstructured.Unstructured) (Metadata, error) {
 		_ = info.Refresh(obj, true)
 	} else {
 		log.Println("here: calling helper.Replace")
+
 		// Replace the resource if it does exist.
 		obj, err := helper.Replace(info.Namespace, info.Name, true, info.Object)
 		if err != nil {
