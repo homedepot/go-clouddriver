@@ -176,7 +176,7 @@ func (c *client) Replace(u *unstructured.Unstructured) (Metadata, error) {
 
 	exists := true
 	// Determine if the resource currently exists.
-	if err := info.Get(); err != nil {
+	if _, err := helper.Get(info.Namespace, info.Name); err != nil {
 		if !errors.IsNotFound(err) {
 			return metadata, err
 		}
