@@ -11,3 +11,4 @@ This document contains a list of maintainers of this repo.  For information on c
 | Ryan Johnson | [@ryanjohnsontv](https://github.com/ryanjohnsontv) <img src="https://avatars.githubusercontent.com/ryanjohnsontv" width="20"> |
 | Abel Rodriguez | [@rodrig67](https://github.com/rodrig67) <img src="https://avatars.githubusercontent.com/rodrig67" width="20"> |
 | Rodrigo Tovar | [@tovar-rodrigo](https://github.com/tovar-rodrigo) <img src="https://avatars.githubusercontent.com/tovar-rodrigo" width="20"> |
+| Jose Anguiano | [@JoseAngui](https://github.com/JoseAngui) <img src="https://avatars.githubusercontent.com/JoseAngui" width="20"> |
