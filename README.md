@@ -94,6 +94,9 @@ curl localhost:7002/credentials | jq
 | `DB_USER` | Used to connect to MySQL database. | If not set will default to local SQLite database. ||
 | `VERBOSE_REQUEST_LOGGING` | Logs all incoming request information. | Should only be used in non-production for testing. | `false` |
 
+
+NOTE: If KUBERNETES_USE_DISK_CACHE environment variable is set to true, _kube-cache-volume_ persistent volume claim will be used. Please ensure that your PVC on the same namespace is created on your kubernetes cluster before the rollout of this variable set to avoid unexpected behaviors.
+
 ### MySQL Indexes and Cleanup
 
 Go Clouddriver stores all deployed resource requests in its `kubernetes_resources` table, which needs to be cleaned up periodically. It also requires a few indexes
