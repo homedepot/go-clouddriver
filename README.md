@@ -96,6 +96,33 @@ curl localhost:7002/credentials | jq
 
 
 NOTE: If KUBERNETES_USE_DISK_CACHE environment variable is set to true, _kube-cache-volume_ persistent volume claim will be used. Please ensure that your PVC on the same namespace is created on your kubernetes cluster before the rollout of this variable set to avoid unexpected behaviors.
+The following snippet shows the trims of the go-clouddriver deployment YML manifest to avoid the usage of _kube-cache-volume_ PVC when KUBERNETES_USE_DISK_CACHE environment variable is set to false.
+```
+...
+         resources:
+            requests:
+              cpu: '3'
+              memory: 4Gi
+# REMOVE FROM HERE
+          volumeMounts:
+            - mountPath: /var/kube/cache
+              name: kube-cache-volume
+# REMOVE UNTIL HERE
+        - args:
+            - for f in /vault/secrets/*.env; do source $f; done; arcade
+          command:
+...
+...
+volumes:
+  - name: arcade-providers-volume
+    secret:
+      secretName: arcade-providers
+# REMOVE FROM HERE
+  - name: kube-cache-volume
+    emptyDir: {}
+# REMOVE UNTIL HERE
+...
+```
 
 ### MySQL Indexes and Cleanup
 
