@@ -100,7 +100,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
-		kubernetes.BindArtifacts(&manifest, artifacts)
+		kubernetes.BindArtifacts(&manifest, artifacts, dm.Account)
 
 		if kubernetes.IsVersioned(manifest) {
 			err := handleVersionedManifest(provider.Client, &manifest, application)

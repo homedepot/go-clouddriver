@@ -54,7 +54,7 @@ func (cc *Controller) RunJob(c *gin.Context, rj RunJobRequest) {
 		u.SetName(generateName + rand.String(randNameNumber))
 	}
 
-	kubernetes.BindArtifacts(&u, append(rj.RequiredArtifacts, rj.OptionalArtifacts...))
+	kubernetes.BindArtifacts(&u, append(rj.RequiredArtifacts, rj.OptionalArtifacts...), rj.Account)
 
 	meta := kubernetes.Metadata{}
 	if kubernetes.Replace(u) {

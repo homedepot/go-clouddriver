@@ -65,7 +65,7 @@ func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 		u := unstructured.Unstructured{
 			Object: m,
 		}
-		kubernetes.BindArtifacts(&u, pm.AllArtifacts)
+		kubernetes.BindArtifacts(&u, pm.AllArtifacts, pm.Account)
 
 		b, err = json.Marshal(&u.Object)
 		if err != nil {

@@ -16,50 +16,59 @@ var _ = Describe("Artifact", func() {
 		var (
 			resource  *unstructured.Unstructured
 			artifacts []clouddriver.Artifact
+			account   string
 		)
 
 		BeforeEach(func() {
+			account = "my-test-acct"
 			artifacts = []clouddriver.Artifact{
 				{
 					Name:      "gcr.io/test-project/test-container-image",
 					Type:      artifact.TypeDockerImage,
 					Reference: "gcr.io/test-project/test-container-image:v1.0.0",
+					Metadata:  clouddriver.ArtifactMetadata{Account: account},
 				},
 				{
 					Name:      "my-config-map",
 					Type:      artifact.TypeKubernetesConfigMap,
 					Reference: "my-config-map-v000",
+					Metadata:  clouddriver.ArtifactMetadata{Account: account},
 				},
 				{
 					Name:      "my-config-map2",
 					Type:      artifact.TypeKubernetesConfigMap,
 					Reference: "my-config-map2-v000",
+					Metadata:  clouddriver.ArtifactMetadata{Account: account},
 				},
 				{
 					Name:      "my-secret",
 					Type:      artifact.TypeKubernetesSecret,
 					Reference: "my-secret-v000",
+					Metadata:  clouddriver.ArtifactMetadata{Account: account},
 				},
 				{
 					Name:      "my-secret2",
 					Type:      artifact.TypeKubernetesSecret,
 					Reference: "my-secret2-v000",
+					Metadata:  clouddriver.ArtifactMetadata{Account: account},
 				},
 				{
 					Name:      "my-deployment",
 					Type:      artifact.TypeKubernetesDeployment,
 					Reference: "my-deployment-v000",
+					Metadata:  clouddriver.ArtifactMetadata{Account: account},
 				},
 				{
 					Name:      "my-replicaSet",
 					Type:      artifact.TypeKubernetesReplicaSet,
 					Reference: "my-replicaSet-v000",
+					Metadata:  clouddriver.ArtifactMetadata{Account: account},
 				},
 			}
 		})
 
 		JustBeforeEach(func() {
-			BindArtifacts(resource, artifacts)
+			BindArtifacts(resource, artifacts, account)
 		})
 
 		When("the iterable path is not of type []interface{}", func() {
