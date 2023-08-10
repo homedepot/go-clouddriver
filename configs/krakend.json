@@ -1,0 +1,1021 @@
+{
+  "version": 2,
+  "name": "Spinnaker Krakend API Gateway",
+  "port": 8000,
+  "plugin": {
+    "pattern":".so",
+    "folder": "/etc/krakend/plugin/"
+  },
+  "timeout": "75s",
+  "extra_config": {
+    "github_com/devopsfaith/krakend-gologging": {
+      "level": "DEBUG",
+      "prefix": "[KRAKEND]",
+      "syslog": false,
+      "stdout": true
+    },
+    "github_com/devopsfaith/krakend-opencensus": {
+      "sample_rate": 100,
+      "reporting_period": 10,
+      "enabled_layers": {
+        "backend": true,
+        "router": true,
+        "pipe": true
+      },
+      "exporters": {
+        "prometheus": {
+          "port": 9091,
+          "namespace": "krakend",
+          "tag_host": true,
+          "tag_path": true,
+          "tag_method": true,
+          "tag_statuscode": true
+        }
+      }
+    }
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "endpoint": "/hello/{name}",
+      "backend": [
+        {
+          "host": [
+            "http://does.not.matter"
+          ],
+          "encoding": "string",
+          "url_pattern": "/hello/{name}",
+          "extra_config": {
+            "github.com/devopsfaith/krakend/transport/http/client/executor": {
+              "name": "krakend-example"
+            }
+          }
+        }
+      ],
+      "output_encoding": "string"
+    },
+
+
+    {
+      "method": "POST",
+      "endpoint": "/appengine/ops",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/appengine/ops"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+
+    {
+      "endpoint": "/applications",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "clouddriver",
+          "url_pattern": "/applications"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "go-clouddriver",
+          "url_pattern": "/applications"
+        }
+      ],
+      "extra_config": {
+        "github.com/devopsfaith/krakend/proxy": {
+          "flatmap_filter": [
+            {
+              "type": "append",
+              "args": ["go-clouddriver.collection", "clouddriver.collection"]
+            },
+            {
+              "type": "move",
+              "args": ["clouddriver.collection", "collection"]
+            }
+          ]
+        }
+      },
+      "output_encoding": "json-collection"
+    },
+    {
+      "endpoint": "/applications/{application}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+    {
+      "endpoint": "/applications/{application}/loadBalancers",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "clouddriver",
+          "url_pattern": "/applications/{application}/loadBalancers"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "go-clouddriver",
+          "url_pattern": "/applications/{application}/loadBalancers",
+          "extra_config": {
+            "github.com/devopsfaith/krakend-httpcache": {}
+          }
+        }
+      ],
+      "extra_config": {
+        "github.com/devopsfaith/krakend/proxy": {
+          "flatmap_filter": [
+            {
+              "type": "append",
+              "args": ["go-clouddriver.collection", "clouddriver.collection"]
+            },
+            {
+              "type": "move",
+              "args": ["clouddriver.collection", "collection"]
+            }
+          ]
+        }
+      },
+      "output_encoding": "json-collection"
+    },
+
+    {
+      "endpoint": "/applications/{application}/serverGroupManagers",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "clouddriver",
+          "url_pattern": "/applications/{application}/serverGroupManagers"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "go-clouddriver",
+          "url_pattern": "/applications/{application}/serverGroupManagers",
+          "extra_config": {
+            "github.com/devopsfaith/krakend-httpcache": {}
+          }
+        }
+      ],
+      "extra_config": {
+        "github.com/devopsfaith/krakend/proxy": {
+          "flatmap_filter": [
+            {
+              "type": "append",
+              "args": ["go-clouddriver.collection", "clouddriver.collection"]
+            },
+            {
+              "type": "move",
+              "args": ["clouddriver.collection", "collection"]
+            }
+          ]
+        }
+      },
+      "output_encoding": "json-collection"
+    },
+
+    {
+      "endpoint": "/applications/{application}/serverGroups",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "clouddriver",
+          "url_pattern": "/applications/{application}/serverGroups"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "go-clouddriver",
+          "url_pattern": "/applications/{application}/serverGroups",
+          "extra_config": {
+            "github.com/devopsfaith/krakend-httpcache": {}
+          }
+        }
+      ],
+      "extra_config": {
+        "github.com/devopsfaith/krakend/proxy": {
+          "flatmap_filter": [
+            {
+              "type": "append",
+              "args": ["go-clouddriver.collection", "clouddriver.collection"]
+            },
+            {
+              "type": "move",
+              "args": ["clouddriver.collection", "collection"]
+            }
+          ]
+        }
+      },
+      "output_encoding": "json-collection"
+    },
+    {
+      "endpoint": "/applications/{application}/serverGroups/{account}/{location}/{name}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/applications/{application}/serverGroups/{account}/{location}/{name}"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/applications/{application}/serverGroups/{account}/{location}/{name}"
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/applications/{application}/clusters",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/applications/{application}/clusters"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/applications/{application}/clusters"
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/applications/{application}/clusters/{account}/{clusterName}/appengine",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/clusters/{account}/{clusterName}/appengine"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "endpoint": "/applications/{application}/clusters/{account}/{clusterName}/appengine/serverGroups",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/clusters/{account}/{clusterName}/appengine/serverGroups"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "endpoint": "/applications/{application}/clusters/{account}/{clusterName}/appengine/serverGroups/{serverGroup}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/clusters/{account}/{clusterName}/appengine/serverGroups/{serverGroup}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "endpoint": "/applications/{application}/clusters/{account}/{clusterName}/appengine/{scope}/serverGroups/target/{target}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/clusters/{account}/{clusterName}/appengine/{scope}/serverGroups/target/{target}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "endpoint": "/applications/{application}/clusters/{account}/{clusterName}/appengine/{scope}/serverGroups/target/{target}/{summaryType}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/clusters/{account}/{clusterName}/appengine/{scope}/serverGroups/target/{target}/{summaryType}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+    {
+      "endpoint": "/applications/{application}/clusters/{account}/{clusterName}/aws/serverGroups/{serverGroup}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/clusters/{account}/{clusterName}/appengine/serverGroups/{serverGroup}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+    {
+      "endpoint": "/applications/{application}/clusters/{account}/{clusterName}/kubernetes",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-router.cd:3000"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/clusters/{account}/{clusterName}/kubernetes"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "endpoint": "/applications/{application}/clusters/{account}/{clusterName}/kubernetes/serverGroups",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/clusters/{account}/{clusterName}/kubernetes/serverGroups"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "endpoint": "/applications/{application}/clusters/{account}/{clusterName}/kubernetes/serverGroups/{serverGroup}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/clusters/{account}/{clusterName}/kubernetes/serverGroups/{serverGroup}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "endpoint": "/applications/{application}/clusters/{account}/{clusterName}/kubernetes/{scope}/serverGroups/target/{target}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/clusters/{account}/{clusterName}/kubernetes/{scope}/serverGroups/target/{target}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "endpoint": "/applications/{application}/clusters/{account}/{clusterName}/kubernetes/{scope}/serverGroups/target/{target}/{summaryType}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/clusters/{account}/{clusterName}/kubernetes/{scope}/serverGroups/target/{target}/{summaryType}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+
+    {
+      "endpoint": "/applications/{application}/jobs/{account}/{location}/{name}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-router.cd:3000"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/jobs/{account}/{location}/{name}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "method": "DELETE",
+      "endpoint": "/applications/{application}/jobs/{account}/{location}/{name}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/applications/{application}/jobs/{account}/{location}/{name}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+
+    {
+      "endpoint": "/artifacts/credentials",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "is_collection": true,
+          "url_pattern": "/artifacts/credentials"
+        }
+      ],
+      "output_encoding": "json-collection"
+    },
+    {
+      "endpoint": "/artifacts/account/{account}/names",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "is_collection": true,
+          "url_pattern": "/artifacts/account/{account}/names"
+        }
+      ],
+      "output_encoding": "json-collection"
+    },
+    {
+      "endpoint": "/artifacts/account/{account}/versions",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "is_collection": true,
+          "url_pattern": "/artifacts/account/{account}/versions"
+        }
+      ],
+      "output_encoding": "json-collection"
+    },
+    {
+      "method": "PUT",
+      "endpoint": "/artifacts/fetch/",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "method": "PUT",
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/artifacts/fetch/"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+
+    {
+      "method": "GET",
+      "endpoint": "/cache/appengine/{type}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/cache/appengine/{type}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/cache/appengine/{type}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/cache/appengine/{type}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+    {
+      "method": "GET",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "endpoint": "/cache/introspection",
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/cache/introspection"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+    {
+      "method": "POST",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "endpoint": "/cache/kubernetes/manifest",
+      "backend": [
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/cache/kubernetes/manifest"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+
+    {
+      "endpoint": "/credentials",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "clouddriver",
+          "url_pattern": "/credentials"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "go-clouddriver",
+          "url_pattern": "/credentials"
+        }
+      ],
+      "extra_config": {
+        "github.com/devopsfaith/krakend/proxy": {
+          "flatmap_filter": [
+            {
+              "type": "append",
+              "args": ["go-clouddriver.collection", "clouddriver.collection"]
+            },
+            {
+              "type": "move",
+              "args": ["clouddriver.collection", "collection"]
+            }
+          ]
+        }
+      },
+      "output_encoding": "json-collection"
+    },
+    {
+      "endpoint": "/credentials/{account}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/credentials/{account}"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/credentials/{account}"
+        }
+      ]
+    },
+
+
+    {
+      "endpoint": "features/stages",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "features/stages"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+
+    {
+      "endpoint": "/health",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/health"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/health"
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/healthz",
+      "backend": [
+        {
+          "url_pattern": "/__health",
+          "host": [
+              "http://localhost:8000"
+          ]
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/instances/{account}/{location}/{name}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/instances/{account}/{location}/{name}"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/instances/{account}/{location}/{name}"
+        }
+      ]
+    },
+    {
+      "endpoint": "/instances/{account}/{location}/{name}/console",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/instances/{account}/{location}/{name}/console"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/instances/{account}/{location}/{name}/console"
+        }
+      ]
+    },
+
+
+    {
+      "method": "POST",
+      "endpoint": "/kubernetes/ops",
+      "timeout": "300s",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-router.cd:3000"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/kubernetes/ops"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+    {
+      "endpoint": "/manifests/{account}/{location}/{kind}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-router.cd:3000"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/manifests/{account}/{location}/{kind}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "endpoint": "/manifests/{account}/{location}/{kind}/cluster/{application}/{cluster}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-router.cd:3000"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/manifests/{account}/{location}/{kind}/cluster/{application}/{cluster}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+    {
+      "endpoint": "/manifests/{account}/{location}/{kind}/cluster/{application}/{cluster}/dynamic/{target}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-router.cd:3000"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/manifests/{account}/{location}/{kind}/cluster/{application}/{cluster}/dynamic/{target}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+
+    {
+      "endpoint": "/projects/{project}/clusters",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "clouddriver",
+          "url_pattern": "/projects/{project}/clusters"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "go-clouddriver",
+          "url_pattern": "/projects/{project}/clusters",
+          "extra_config": {
+            "github.com/devopsfaith/krakend-httpcache": {}
+          }
+        }
+      ],
+      "extra_config": {
+        "github.com/devopsfaith/krakend/proxy": {
+          "flatmap_filter": [
+            {
+              "type": "append",
+              "args": ["go-clouddriver.collection", "clouddriver.collection"]
+            },
+            {
+              "type": "move",
+              "args": ["clouddriver.collection", "collection"]
+            }
+          ]
+        }
+      },
+      "output_encoding": "json-collection"
+    },
+
+
+    {
+      "endpoint": "search",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "clouddriver",
+          "url_pattern": "/search"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "group": "go-clouddriver",
+          "url_pattern": "/search",
+          "extra_config": {
+            "github.com/devopsfaith/krakend-httpcache": {}
+          }
+        }
+      ],
+      "extra_config": {
+        "github.com/devopsfaith/krakend/proxy": {
+          "flatmap_filter": [
+            {
+              "type": "append",
+              "args": ["go-clouddriver.collection.0.results", "clouddriver.collection.0.results"]
+            },
+            {
+              "type": "move",
+              "args": ["clouddriver.collection", "collection"]
+            }
+          ]
+        }
+      },
+      "output_encoding": "json-collection"
+    },
+
+    {
+      "endpoint": "/securityGroups",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/securityGroups"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/securityGroups"
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/serverGroups/{account}/{location}/{name}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/serverGroups/{account}/{location}/{name}"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+    {
+      "endpoint": "/storage",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "no-op",
+          "url_pattern": "/storage"
+        }
+      ],
+      "output_encoding": "no-op"
+    },
+
+
+    {
+      "endpoint": "/task/{ref}",
+      "headers_to_pass": ["*"],
+      "querystring_params": ["*"],
+      "backend": [
+        {
+          "host": [
+            "http://spin-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/task/{ref}"
+        },
+        {
+          "host": [
+            "http://spin-go-clouddriver.spinnaker:7002"
+          ],
+          "encoding": "safejson",
+          "url_pattern": "/task/{ref}"
+        }
+      ]
+    }
+  ]
+}
+

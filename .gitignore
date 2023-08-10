@@ -3,3 +3,4 @@
 *.coverprofile
 clouddriver.db
 .idea/
+.DS_Store

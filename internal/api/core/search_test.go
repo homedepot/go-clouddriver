@@ -1,12 +1,17 @@
 package core_test
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 
-	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/homedepot/go-clouddriver/internal/api/core"
+	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 )
 
 var _ = Describe("Search", func() {
@@ -195,6 +200,44 @@ var _ = Describe("Search", func() {
 			It("filters the accounts", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 				validateResponse(payloadSearch)
+			})
+		})
+
+		When("load test", func() {
+			BeforeEach(func() {
+				// Generate 1000 providers.
+				providers := []kubernetes.Provider{}
+				for i := 0; i < 1000; i++ {
+					i := i
+					p := kubernetes.Provider{
+						Name:        fmt.Sprintf("provider-%d", i),
+						Host:        fmt.Sprintf("host-%d", i),
+						CAData:      "dGVzdAo=",
+						BearerToken: "some.bearer.token",
+						Permissions: kubernetes.ProviderPermissions{
+							Read: []string{
+								"gg_test",
+							},
+							Write: []string{
+								"gg_test",
+							},
+						},
+					}
+					providers = append(providers, p)
+				}
+				for _, p := range providers {
+					accountsHeader = fmt.Sprintf("%s,%s", accountsHeader, p.Name)
+				}
+				fakeSQLClient.ListKubernetesProvidersReturns(providers, nil)
+			})
+
+			It("succeeds", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				b, _ := ioutil.ReadAll(res.Body)
+				s := core.SearchResponse{}
+				err := json.Unmarshal(b, &s)
+				Expect(err).To(BeNil())
+				Expect(s[0].Results).To(HaveLen(1000))
 			})
 		})
 

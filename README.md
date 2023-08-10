@@ -141,3 +141,5 @@ WHERE
     t1.cluster = t2.cluster AND
     t1.timestamp < (NOW() - INTERVAL 6 HOUR);
 ```
+
+

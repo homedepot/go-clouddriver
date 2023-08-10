@@ -1,17 +1,19 @@
 package core_test
 
 import (
-	// . "github.com/homedepot/go-clouddriver/internal/api/v0"
-
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 
-	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/homedepot/go-clouddriver/internal/kubernetes"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
 
 var _ = Describe("Credential", func() {
@@ -263,6 +265,61 @@ var _ = Describe("Credential", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
 					Expect(fakeKubeClient.ListByGVRWithContextCallCount()).To(Equal(0))
 					validateResponse(payloadCredentialsExpandTrueNamespaceScopedProvider)
+				})
+			})
+
+			When("load test", func() {
+				BeforeEach(func() {
+					// Generate 1000 providers.
+					providers := []kubernetes.Provider{}
+					for i := 0; i < 100; i++ {
+						i := i
+						p := kubernetes.Provider{
+							Name:        fmt.Sprintf("provider-%d", i),
+							Host:        fmt.Sprintf("host-%d", i),
+							CAData:      "dGVzdAo=",
+							BearerToken: "some.bearer.token",
+							Permissions: kubernetes.ProviderPermissions{
+								Read: []string{
+									"gg_test",
+								},
+								Write: []string{
+									"gg_test",
+								},
+							},
+						}
+						providers = append(providers, p)
+					}
+					// Generate 1000 namespaces.
+					namespaces := []unstructured.Unstructured{}
+					for i := 0; i < 100; i++ {
+						i := i
+						u := unstructured.Unstructured{
+							Object: map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"name": fmt.Sprintf("namespace-%d", i),
+								},
+							},
+						}
+						namespaces = append(namespaces, u)
+					}
+
+					fakeSQLClient.ListKubernetesProvidersAndPermissionsReturns(providers, nil)
+					fakeKubeClient.ListByGVRWithContextReturns(&unstructured.UnstructuredList{
+						Items: namespaces,
+					}, nil)
+				})
+
+				It("succeeds", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					b, _ := ioutil.ReadAll(res.Body)
+					creds := []clouddriver.Credentials{}
+					err := json.Unmarshal(b, &creds)
+					Expect(err).To(BeNil())
+					Expect(creds).To(HaveLen(100))
+					for _, c := range creds {
+						Expect(c.Namespaces).To(HaveLen(100))
+					}
 				})
 			})
 

@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
+
+	"github.com/homedepot/go-clouddriver/internal/kubernetes"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
 
 var listNamespacesTimeout = int64(5)
@@ -88,6 +89,9 @@ func (cc *Controller) ListCredentials(c *gin.Context) {
 
 		if expand == "true" {
 			sca.SpinnakerKindMap = spinnakerKindMap
+			if provider.Namespace != nil && *provider.Namespace != "" {
+				sca.Namespaces = []string{*provider.Namespace}
+			}
 		}
 
 		credentials = append(credentials, sca)
@@ -101,16 +105,20 @@ func (cc *Controller) ListCredentials(c *gin.Context) {
 	if expand == "true" {
 		wg := &sync.WaitGroup{}
 		accountNamespacesCh := make(chan AccountNamespaces, len(providers))
-		wg.Add(len(providers))
 
 		// Get all namespaces of allowed accounts asynchronously.
 		for _, provider := range providers {
-			go cc.listNamespaces(provider, wg, accountNamespacesCh)
+			if provider.Namespace == nil || *provider.Namespace == "" {
+				wg.Add(1)
+
+				go cc.listNamespaces(provider, wg, accountNamespacesCh)
+			}
 		}
 
-		wg.Wait()
-
-		close(accountNamespacesCh)
+		go func() {
+			wg.Wait()
+			close(accountNamespacesCh)
+		}()
 
 		for an := range accountNamespacesCh {
 			for i, cred := range credentials {

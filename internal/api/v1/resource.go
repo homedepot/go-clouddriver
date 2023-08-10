@@ -8,12 +8,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/homedepot/go-clouddriver/internal"
-	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"gorm.io/gorm"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/homedepot/go-clouddriver/internal"
+	"github.com/homedepot/go-clouddriver/internal/kubernetes"
+	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 )
 
 var (
@@ -70,12 +71,13 @@ func (cc *Controller) LoadKubernetesResources(c *gin.Context) {
 	uc := make(chan unstructured.Unstructured, internal.DefaultChanSize)
 	// List all required kinds concurrently.
 	for _, kind := range infrastructureKinds {
-		go listKinds(wg, uc, provider, kind, account)
+		go listKinds(wg, uc, provider, kind)
 	}
-	// Wait for the calls to finish.
-	wg.Wait()
-	// Close the channel.
-	close(uc)
+
+	go func() {
+		wg.Wait()
+		close(uc)
+	}()
 
 	// Remove existing entries from the DB.
 	err = cc.SQLClient.DeleteKubernetesResourcesByAccountName(account)
@@ -154,7 +156,7 @@ func (cc *Controller) DeleteKubernetesResources(c *gin.Context) {
 // listKinds lists a given kind and sends to a channel of unstructured.Unstructured.
 // It uses a context with a timeout of 10 seconds.
 func listKinds(wg *sync.WaitGroup, uc chan unstructured.Unstructured,
-	provider *kubernetes.Provider, kind, account string) {
+	provider *kubernetes.Provider, kind string) {
 	// Finish the wait group when we're done here.
 	defer wg.Done()
 
@@ -162,23 +164,31 @@ func listKinds(wg *sync.WaitGroup, uc chan unstructured.Unstructured,
 	lo := metav1.ListOptions{
 		LabelSelector: kubernetes.DefaultLabelSelector(),
 	}
-	// If namespace-scoped account, then only get resources in the namespace.
-	if provider.Namespace != nil {
-		lo.FieldSelector = "metadata.namespace=" + *provider.Namespace
-	}
 
 	// Declare a context with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
 	defer cancel()
-	// List resources with the context.
-	ul, err := provider.Client.ListResourceWithContext(ctx, kind, lo)
+
+	var ul *unstructured.UnstructuredList
+
+	var err error
+
+	if provider.Namespace != nil {
+		ul, err = provider.Client.ListResourcesByKindAndNamespaceWithContext(ctx, kind, *provider.Namespace, lo)
+	} else {
+		ul, err = provider.Client.ListResourceWithContext(ctx, kind, lo)
+	}
+
 	if err != nil {
-		// If there was an error, log and return.
 		clouddriver.Log(err)
 		return
 	}
 
 	// Send all unstructured objects to the channel.
+	if ul == nil {
+		return
+	}
+
 	for _, u := range ul.Items {
 		uc <- u
 	}

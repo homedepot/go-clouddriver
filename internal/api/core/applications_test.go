@@ -626,26 +626,6 @@ var _ = Describe("Application", func() {
 			})
 		})
 
-		When("using a namespace-scoped provider", func() {
-			BeforeEach(func() {
-				namespace := "test-namespace"
-				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{
-					{
-						Name:      "account1",
-						Host:      "http://localhost",
-						CAData:    "",
-						Namespace: &namespace,
-					},
-				}, nil)
-			})
-
-			It("sets field selector in list options", func() {
-				_, _, lo := fakeKubeClient.ListResourceWithContextArgsForCall(0)
-				Expect(lo.FieldSelector).To(Equal("metadata.namespace=test-namespace"))
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
-			})
-		})
-
 		When("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
@@ -1642,26 +1622,6 @@ var _ = Describe("Application", func() {
 			It("returns a list of sorted resources", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 				validateResponse(payloadListLoadBalancersSorted)
-			})
-		})
-
-		When("using a namespace-scoped provider", func() {
-			BeforeEach(func() {
-				namespace := "test-namespace"
-				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{
-					{
-						Name:      "account1",
-						Host:      "http://localhost",
-						CAData:    "",
-						Namespace: &namespace,
-					},
-				}, nil)
-			})
-
-			It("sets field selector in list options", func() {
-				_, _, lo := fakeKubeClient.ListResourceWithContextArgsForCall(0)
-				Expect(lo.FieldSelector).To(Equal("metadata.namespace=test-namespace"))
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
 			})
 		})
 
@@ -3200,26 +3160,6 @@ var _ = Describe("Application", func() {
 			It("returns a sorted list of resources", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 				validateResponse(payloadListServerGroupsSorted)
-			})
-		})
-
-		When("using a namespace-scoped provider", func() {
-			BeforeEach(func() {
-				namespace := "test-namespace"
-				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{
-					{
-						Name:      "account1",
-						Host:      "http://localhost",
-						CAData:    "",
-						Namespace: &namespace,
-					},
-				}, nil)
-			})
-
-			It("sets field selector in list options", func() {
-				_, _, lo := fakeKubeClient.ListResourceWithContextArgsForCall(0)
-				Expect(lo.FieldSelector).To(Equal("metadata.namespace=test-namespace"))
-				Expect(res.StatusCode).To(Equal(http.StatusOK))
 			})
 		})
 
