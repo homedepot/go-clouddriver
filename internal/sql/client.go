@@ -375,6 +375,7 @@ func (c *client) ListKubernetesProviders() ([]kubernetes.Provider, error) {
 			p.Namespaces = append(p.Namespaces, *r.LegacyNamespace)
 			providers[r.Name] = p
 		}
+
 		if r.Namespace != nil {
 			p := providers[r.Name]
 			p.Namespaces = append(p.Namespaces, *r.Namespace)
@@ -477,6 +478,7 @@ func (c *client) ListKubernetesProvidersAndPermissions() ([]kubernetes.Provider,
 			p.Namespaces = append(p.Namespaces, *r.LegacyNamespace)
 			providers[r.Name] = p
 		}
+
 		if r.Namespace != nil {
 			p := providers[r.Name]
 			p.Namespaces = append(p.Namespaces, *r.Namespace)

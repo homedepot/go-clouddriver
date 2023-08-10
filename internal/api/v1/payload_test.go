@@ -7,6 +7,10 @@ const payloadBadRequest = `{
 const payloadRequestKubernetesProviders = `{
 						"name": "test-name",
 						"host": "test-host",
+						"namespaces": [
+          				  "ns1",
+         				  "ns2"
+        				],
 						"caData": "dGVzdC1jYS1kYXRhCg==",
 						"permissions": {
 						  "read": [
@@ -136,6 +140,24 @@ const payloadErrorMissingReadGroup = `{
 				}`
 
 const payloadKubernetesProviderCreated = `{
+            "name": "test-name",
+            "host": "test-host",
+			"namespaces": [
+				"ns1",
+				"ns2"
+			],
+            "caData": "dGVzdC1jYS1kYXRhCg==",
+            "permissions": {
+              "read": [
+                "gg_test"
+              ],
+              "write": [
+                "gg_test"
+              ]
+            }
+          }`
+
+const payloadKubernetesProviderCreatedNoNamespace = `{
             "name": "test-name",
             "host": "test-host",
             "caData": "dGVzdC1jYS1kYXRhCg==",

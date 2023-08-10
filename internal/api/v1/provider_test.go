@@ -120,11 +120,11 @@ var _ = Describe("Provider", func() {
 
 			It("returns ok and the namespace is nil and namespace array is nil", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusCreated))
-				validateResponse(payloadKubernetesProviderCreated)
+				validateResponse(payloadKubernetesProviderCreatedNoNamespace)
 			})
 		})
 
-		When("namespaces and namespaces are empty", func() {
+		When("namespace and namespaces are empty", func() {
 			BeforeEach(func() {
 				body = &bytes.Buffer{}
 				body.Write([]byte(payloadRequestKubernetesProvidersEmptyNamespace))
@@ -133,7 +133,7 @@ var _ = Describe("Provider", func() {
 
 			It("returns ok and namespace is nil and namespaces is an empty array", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusCreated))
-				validateResponse(payloadKubernetesProviderCreated)
+				validateResponse(payloadKubernetesProviderCreatedNoNamespace)
 			})
 		})
 
@@ -280,7 +280,7 @@ var _ = Describe("Provider", func() {
 
 				It("returns ok and the namespace is nil", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
-					validateResponse(payloadKubernetesProviderCreated)
+					validateResponse(payloadKubernetesProviderCreatedNoNamespace)
 				})
 			})
 
@@ -329,9 +329,10 @@ var _ = Describe("Provider", func() {
 		BeforeEach(func() {
 			setup()
 			testProvider := kubernetes.Provider{
-				Name:   "test-name",
-				Host:   "test-host",
-				CAData: "dGVzdC1jYS1kYXRhCg==",
+				Name:       "test-name",
+				Host:       "test-host",
+				Namespaces: []string{"ns1", "ns2"},
+				CAData:     "dGVzdC1jYS1kYXRhCg==",
 				Permissions: kubernetes.ProviderPermissions{
 					Read:  []string{"gg_test"},
 					Write: []string{"gg_test"},
