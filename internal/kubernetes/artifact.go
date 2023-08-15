@@ -90,6 +90,7 @@ func BindArtifacts(u *unstructured.Unstructured,
 		if !isBindable(a, account) {
 			continue
 		}
+
 		switch a.Type {
 		case artifact.TypeDockerImage:
 			bindArtifact(u.Object, a, iterables(jsonPathDockerImageContainers)...)
@@ -191,10 +192,7 @@ func bindArtifact(obj map[string]interface{}, a clouddriver.Artifact, paths ...s
 }
 
 func isBindable(artifact clouddriver.Artifact, account string) bool {
-	if artifact.Metadata.Account == account {
-		return true
-	}
-	return false
+	return artifact.Metadata.Account == account
 }
 
 // FindArtifacts lists all artifacts found in a given manifest.
