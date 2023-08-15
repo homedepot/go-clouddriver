@@ -71,6 +71,64 @@ var _ = Describe("Artifact", func() {
 			BindArtifacts(resource, artifacts, account)
 		})
 
+		When("an artifact that does not exist in the target cluster is present in the execution context", func() {
+			BeforeEach(func() {
+				account = "my-test-acct"
+				artifacts = []clouddriver.Artifact{
+					{
+						Name:      "my-config-map",
+						Type:      artifact.TypeKubernetesConfigMap,
+						Reference: "my-config-map-v001",
+						Metadata:  clouddriver.ArtifactMetadata{Account: "my-test-acct-2"},
+					},
+					{
+						Name:      "my-config-map",
+						Type:      artifact.TypeKubernetesConfigMap,
+						Reference: "my-config-map-v000",
+						Metadata:  clouddriver.ArtifactMetadata{Account: account},
+					},
+					{
+						Name:      "my-config-map2",
+						Type:      artifact.TypeKubernetesConfigMap,
+						Reference: "my-config-map2-v000",
+						Metadata:  clouddriver.ArtifactMetadata{Account: account},
+					},
+				}
+				resource = &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Deployment",
+						"apiVersion": "apps/v1",
+						"spec": map[string]interface{}{
+							"template": map[string]interface{}{
+								"spec": map[string]interface{}{
+									"volumes": []interface{}{
+										map[string]interface{}{
+											"configMap": map[string]interface{}{
+												"name": "not-my-config-map",
+											},
+										},
+										map[string]interface{}{
+											"configMap": map[string]interface{}{
+												"name": "my-config-map",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("ignores the artifact corresponding to the wrong target cluster", func() {
+				o := NewDeployment(resource.Object)
+				volumes := o.Object().Spec.Template.Spec.Volumes
+				Expect(volumes).To(HaveLen(2))
+				Expect(volumes[0].VolumeSource.ConfigMap.Name).To(Equal("not-my-config-map"))
+				Expect(volumes[1].VolumeSource.ConfigMap.Name).To(Equal("my-config-map-v000"))
+			})
+		})
+
 		When("the iterable path is not of type []interface{}", func() {
 			BeforeEach(func() {
 				resource = &unstructured.Unstructured{
