@@ -117,21 +117,15 @@ func (c *client) CreateKubernetesProvider(p kubernetes.Provider) error {
 		}
 	}
 
-	fmt.Println("n1: ", p.Namespace)
-
 	for _, namespace := range p.Namespaces {
-		fmt.Println("namespace: ", namespace)
 
 		ns := kubernetes.ProviderNamespaces{
 			AccountName: p.Name,
 			Namespace:   namespace,
 		}
 
-		fmt.Println("NS: ", ns)
-
 		err = c.db.Create(&ns).Error
 		if err != nil {
-			fmt.Println("Insertion error: ", err)
 			return err
 		}
 	}
