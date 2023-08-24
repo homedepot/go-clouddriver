@@ -317,6 +317,20 @@ var _ = Describe("CleanupArtifacts", func() {
 			})
 		})
 
+		When("the account is scoped to multiple namespaces", func() {
+			BeforeEach(func() {
+				p := namespaceScopedProvider
+				p.Namespaces = []string{"provider-namespace", "provider-namespace-2"}
+				fakeSQLClient.GetKubernetesProviderReturns(p, nil)
+			})
+
+			It("ignores resources whose namespace is not in the account's scope", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceCallCount()).To(Equal(0))
+				Expect(fakeKubeClient.ListResourcesByKindAndNamespaceCallCount()).To(Equal(0))
+			})
+		})
+
 		When("it deletes the resources", func() {
 			It("deletes the oldest resource", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))

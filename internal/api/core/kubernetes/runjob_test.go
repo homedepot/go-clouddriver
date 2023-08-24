@@ -100,7 +100,9 @@ var _ = Describe("RunJob", func() {
 
 	When("Using a namespace-scoped provider", func() {
 		BeforeEach(func() {
-			fakeSQLClient.GetKubernetesProviderReturns(namespaceScopedProvider, nil)
+			p := namespaceScopedProvider
+			p.Namespaces = []string{"provider-namespace", "provider-namespace-2"}
+			fakeSQLClient.GetKubernetesProviderReturns(p, nil)
 		})
 
 		It("succeeds, using providers namespace", func() {

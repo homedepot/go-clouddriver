@@ -39,8 +39,15 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		return
 	}
 
-	if provider.Namespace != nil {
-		namespace = *provider.Namespace
+	// Preserve backwards compatibility
+	if len(provider.Namespaces) == 1 {
+		namespace = provider.Namespaces[0]
+	}
+
+	err = provider.ValidateNamespaceAccess(namespace)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	// First, convert all manifests to unstructured objects.

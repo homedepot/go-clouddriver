@@ -31,15 +31,16 @@ func (fake *FakeClient) Project(arg1 string) (front50.Response, error) {
 	fake.projectArgsForCall = append(fake.projectArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.ProjectStub
+	fakeReturns := fake.projectReturns
 	fake.recordInvocation("Project", []interface{}{arg1})
 	fake.projectMutex.Unlock()
-	if fake.ProjectStub != nil {
-		return fake.ProjectStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.projectReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

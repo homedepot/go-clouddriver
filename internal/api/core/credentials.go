@@ -89,8 +89,8 @@ func (cc *Controller) ListCredentials(c *gin.Context) {
 
 		if expand == "true" {
 			sca.SpinnakerKindMap = spinnakerKindMap
-			if provider.Namespace != nil && *provider.Namespace != "" {
-				sca.Namespaces = []string{*provider.Namespace}
+			if len(provider.Namespaces) > 0 {
+				sca.Namespaces = provider.Namespaces
 			}
 		}
 
@@ -108,7 +108,7 @@ func (cc *Controller) ListCredentials(c *gin.Context) {
 
 		// Get all namespaces of allowed accounts asynchronously.
 		for _, provider := range providers {
-			if provider.Namespace == nil || *provider.Namespace == "" {
+			if len(provider.Namespaces) == 0 {
 				wg.Add(1)
 
 				go cc.listNamespaces(provider, wg, accountNamespacesCh)
@@ -145,11 +145,6 @@ func (cc *Controller) listNamespaces(provider kubernetes.Provider,
 
 	defer wg.Done()
 	defer sendToNsChan(accountNamespacesCh, &provider.Name, &namespaces)
-
-	if provider.Namespace != nil {
-		namespaces = append(namespaces, *provider.Namespace)
-		return
-	}
 
 	cd, err := base64.StdEncoding.DecodeString(provider.CAData)
 	if err != nil {

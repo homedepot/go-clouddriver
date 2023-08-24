@@ -38,7 +38,11 @@ func (cc *Controller) CreateKubernetesProvider(c *gin.Context) {
 	}
 
 	// If creating a new provider with the deprecated `namespace` key, it will be converted to the new `namespaces` array.
-	if p.Namespace != nil && len(p.Namespaces) == 0 {
+	if p.Namespace != nil {
+		if len(p.Namespaces) > 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot provide both namespace and namespaces field"})
+			return
+		}
 		p.Namespaces = []string{*p.Namespace}
 		p.Namespace = nil
 	}

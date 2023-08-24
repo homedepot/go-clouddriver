@@ -162,7 +162,7 @@ func (cc *Controller) search(wg *sync.WaitGroup, provider *kubernetes.Provider,
 
 	// If namespace-scoped account and we are attempting to list kinds in a forbidden namespace,
 	// just return.
-	if provider.Namespace != nil && *provider.Namespace != namespace {
+	if err := provider.ValidateNamespaceAccess(namespace); err != nil {
 		return
 	}
 	// If the provider is not allowed to list this given kind, just return.

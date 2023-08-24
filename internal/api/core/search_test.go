@@ -134,14 +134,14 @@ var _ = Describe("Search", func() {
 			BeforeEach(func() {
 				d := "default"
 				provider.Name = "account1"
-				provider.Namespace = &d
+				provider.Namespaces = []string{d}
 				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{provider}, nil)
 			})
 
 			When("the namespace is incorrect", func() {
 				BeforeEach(func() {
 					d := "different-namespace"
-					provider.Namespace = &d
+					provider.Namespaces = []string{d}
 					fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{provider}, nil)
 				})
 

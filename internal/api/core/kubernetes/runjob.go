@@ -29,8 +29,10 @@ func (cc *Controller) RunJob(c *gin.Context, rj RunJobRequest) {
 	}
 
 	namespace := ""
-	if provider.Namespace != nil {
-		namespace = *provider.Namespace
+
+	// Preserve backwards compatibility
+	if len(provider.Namespaces) > 0 {
+		namespace = provider.Namespaces[0]
 	}
 
 	kubernetes.SetNamespaceOnManifest(&u, namespace)

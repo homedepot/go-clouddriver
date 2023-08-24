@@ -187,14 +187,56 @@ func (c *client) DeleteKubernetesResourcesByAccountName(account string) error {
 
 // GetKubernetesProvider reads the provider from the DB.
 func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error) {
-	var p kubernetes.Provider
-	db := c.db.Table("kubernetes_providers a").
-		Select("a.host, a.ca_data, a.bearer_token, a.token_provider, b.namespace").
+	p := kubernetes.Provider{}
+	rows, err := c.db.Table("kubernetes_providers a").
+		Select("a.host, a.ca_data, a.bearer_token, a.token_provider, a.namespace as legacy_namespace, b.namespace").
 		Joins("LEFT JOIN "+kubernetes.ProviderNamespaces{}.TableName()+" b ON a.name = b.account_name").
-		Where("name = ?", name).
-		First(&p)
+		Where("a.name = ?", name).
+		Rows()
 
-	return p, db.Error
+	if err != nil {
+		return p, err
+	}
+	defer rows.Close()
+
+	namespaces := []string{}
+
+	for rows.Next() {
+		var r struct {
+			CAData          string
+			Host            string
+			Name            string
+			BearerToken     string
+			LegacyNamespace *string
+			Namespace       *string
+			ReadGroup       *string
+			WriteGroup      *string
+			TokenProvider   string
+		}
+
+		err = rows.Scan(&r.Name, &r.Host, &r.CAData, &r.BearerToken, &r.TokenProvider, &r.LegacyNamespace, &r.Namespace)
+		if err != nil {
+			return p, err
+		}
+
+		p = kubernetes.Provider{
+			Name:          r.Name,
+			Host:          r.Host,
+			CAData:        r.CAData,
+			TokenProvider: r.TokenProvider,
+		}
+
+		if r.LegacyNamespace != nil {
+			namespaces = append(namespaces, *r.LegacyNamespace)
+		}
+
+		if r.Namespace != nil {
+			namespaces = append(namespaces, *r.Namespace)
+		}
+	}
+	p.Namespaces = namespaces
+
+	return p, nil
 }
 
 // GetKubernetesProviderAndPermissions reads the provider and permissions from the DB.

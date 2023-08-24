@@ -48,17 +48,17 @@ func setup() {
 	fakeArcadeClient = &arcadefakes.FakeClient{}
 
 	clusterScopedProvider = kubernetes.Provider{
-		Name:      "test-account",
-		Host:      "http://localhost",
-		CAData:    "",
-		Namespace: nil,
+		Name:       "test-account",
+		Host:       "http://localhost",
+		CAData:     "",
+		Namespaces: nil,
 	}
 
 	namespaceScopedProvider = kubernetes.Provider{
-		Name:      "test-account",
-		Host:      "http://localhost",
-		CAData:    "",
-		Namespace: &providerNamespace,
+		Name:       "test-account",
+		Host:       "http://localhost",
+		CAData:     "",
+		Namespaces: []string{providerNamespace},
 	}
 
 	fakeSQLClient = &sqlfakes.FakeClient{}

@@ -39,8 +39,15 @@ func (cc *Controller) CleanupArtifacts(c *gin.Context, ca CleanupArtifactsReques
 		}
 
 		namespace := u.GetNamespace()
-		if provider.Namespace != nil {
-			namespace = *provider.Namespace
+
+		// Preserve backwards compatibility
+		if len(provider.Namespaces) == 1 {
+			namespace = provider.Namespaces[0]
+		}
+		err = provider.ValidateNamespaceAccess(namespace)
+		if err != nil {
+			clouddriver.Log(err)
+			continue
 		}
 
 		// Grab the cluster of this resource from its annotations.

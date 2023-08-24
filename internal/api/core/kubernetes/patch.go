@@ -24,8 +24,15 @@ func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 		return
 	}
 
-	if provider.Namespace != nil {
-		namespace = *provider.Namespace
+	// Preserve backwards compatibility
+	if len(provider.Namespaces) == 1 {
+		namespace = provider.Namespaces[0]
+	}
+
+	err = provider.ValidateNamespaceAccess(namespace)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	b, err := json.Marshal(pm.PatchBody)

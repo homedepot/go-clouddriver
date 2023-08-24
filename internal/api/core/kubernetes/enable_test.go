@@ -206,13 +206,13 @@ var _ = Describe("Enable", func() {
 
 	When("the provider is namespace scoped and the manifest kind is not valid", func() {
 		BeforeEach(func() {
-			ns := "test-ns"
 			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-				Name:      "test-name",
-				Host:      "test-host",
-				Namespace: &ns,
+				Name:       "test-name",
+				Host:       "test-host",
+				Namespaces: []string{"test-ns", "test-ns-2"},
 			}, nil)
 			enableManifestRequest.ManifestName = "clusterRole my-role"
+			enableManifestRequest.Location = ""
 		})
 
 		It("returns an error", func() {

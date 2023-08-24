@@ -1153,6 +1153,43 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
+	When("Using a provider scoped to multiple namespaces", func() {
+		BeforeEach(func() {
+			p := namespaceScopedProvider
+			p.Namespaces = []string{"provider-namespace", "provider-namespace-2"}
+			fakeSQLClient.GetKubernetesProviderReturns(p, nil)
+			deployManifestRequest.NamespaceOverride = "forbidden-namespace"
+		})
+
+		When("the kind is not supported", func() {
+			BeforeEach(func() {
+				deployManifestRequest = DeployManifestRequest{
+					Manifests: []map[string]interface{}{
+						{
+							"kind":       "Namespace",
+							"apiVersion": "v1",
+							"metadata": map[string]interface{}{
+								"name": "sommeNamespace",
+							},
+						},
+					},
+				}
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: 'Namespace'"))
+			})
+		})
+
+		When("the kind is supported", func() {
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access forbidden namespace: 'forbidden-namespace'"))
+			})
+		})
+	})
+
 	Context("annotating 'artifact.spinnaker.io/location'", func() {
 		When("the kind is namespace-scoped and the namespace is not set", func() {
 			BeforeEach(func() {

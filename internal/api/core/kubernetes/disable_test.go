@@ -228,9 +228,9 @@ var _ = Describe("Disable", func() {
 		BeforeEach(func() {
 			ns := "test-ns"
 			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-				Name:      "test-name",
-				Host:      "test-host",
-				Namespace: &ns,
+				Name:       "test-name",
+				Host:       "test-host",
+				Namespaces: []string{ns},
 			}, nil)
 			disableManifestRequest.ManifestName = "clusterRole my-role"
 		})

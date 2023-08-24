@@ -383,11 +383,12 @@ var _ = Describe("Sql", func() {
 
 		When("it succeeds", func() {
 			BeforeEach(func() {
-				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data"}).
-					AddRow("test-name", "test-host", "test-ca-data")
-				mock.ExpectQuery("(?i)^SELECT a.host, a.ca_data, a.bearer_token, a.token_provider, b.namespace FROM kubernetes_providers a " +
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "bearer_token", "token_provider", "legacy_namespace", "namespace"}).
+					AddRow("test-name", "test-host", "test-ca-data", "test-token", "google", nil, "ns1").
+					AddRow("test-name", "test-host", "test-ca-data", "test-token", "google", nil, "ns2")
+				mock.ExpectQuery("(?i)^SELECT a.host, a.ca_data, a.bearer_token, a.token_provider, a.namespace as legacy_namespace, b.namespace FROM kubernetes_providers a " +
 					"LEFT JOIN kubernetes_providers_namespaces b ON a.name = b.account_name " +
-					"WHERE name = \\? ORDER BY `kubernetes_providers`.`name` LIMIT 1$").
+					"WHERE a.name = \\?").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -397,6 +398,8 @@ var _ = Describe("Sql", func() {
 				Expect(provider.Name).To(Equal("test-name"))
 				Expect(provider.Host).To(Equal("test-host"))
 				Expect(provider.CAData).To(Equal("test-ca-data"))
+				Expect(provider.Namespace).To(BeNil())
+				Expect(provider.Namespaces).To(HaveLen(2))
 			})
 		})
 	})

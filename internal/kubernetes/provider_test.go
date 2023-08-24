@@ -25,7 +25,7 @@ var _ = Describe("Provider", func() {
 
 		When("Provider is namespace-scoped", func() {
 			BeforeEach(func() {
-				provider.Namespace = &namespace
+				provider.Namespaces = []string{namespace}
 			})
 
 			When("kind is not allowed", func() {

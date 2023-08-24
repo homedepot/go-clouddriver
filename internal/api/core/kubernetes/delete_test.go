@@ -338,4 +338,31 @@ var _ = Describe("Delete", func() {
 		})
 	})
 
+	When("Using a provider scoped to multiple namespaces", func() {
+		BeforeEach(func() {
+			p := namespaceScopedProvider
+			p.Namespaces = []string{"provider-namespace", "provider-namespace-2"}
+			fakeSQLClient.GetKubernetesProviderReturns(p, nil)
+		})
+
+		When("the kind is not supported", func() {
+			BeforeEach(func() {
+				deleteManifestRequest.ManifestName = "namespace someNamespace"
+				deleteManifestRequest.Location = ""
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: 'namespace'"))
+			})
+		})
+
+		When("the kind is supported", func() {
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access forbidden namespace: 'test-namespace'"))
+			})
+		})
+	})
+
 })

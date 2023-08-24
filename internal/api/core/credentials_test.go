@@ -245,7 +245,7 @@ var _ = Describe("Credential", func() {
 					fakeSQLClient.ListKubernetesProvidersAndPermissionsReturns([]kubernetes.Provider{
 						{
 							Name:        "provider1",
-							Namespace:   &namespace,
+							Namespaces:  []string{namespace},
 							Host:        "host1",
 							CAData:      "dGVzdAo=",
 							BearerToken: "some.bearer.token",
@@ -326,6 +326,7 @@ var _ = Describe("Credential", func() {
 			When("it succeeds", func() {
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					Expect(fakeKubeClient.ListByGVRWithContextCallCount()).To(Equal(2))
 					validateResponse(payloadCredentialsExpandTrue)
 				})
 			})
