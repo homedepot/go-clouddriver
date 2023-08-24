@@ -1746,6 +1746,7 @@ func list(wg *sync.WaitGroup, rc chan resource,
 			clouddriver.Log(err)
 			return
 		}
+
 		items = append(items, ul.Items...)
 	}
 
@@ -1755,6 +1756,7 @@ func list(wg *sync.WaitGroup, rc chan resource,
 			clouddriver.Log(err)
 			return
 		}
+
 		items = append(items, ul.Items...)
 	}
 

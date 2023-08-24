@@ -92,9 +92,11 @@ func (p *Provider) ValidateNamespaceAccess(namespace string) error {
 	if namespace == "" {
 		return nil
 	}
+
 	if len(p.Namespaces) > 0 && !slice.ContainsString(p.Namespaces, namespace, nil) {
 		return fmt.Errorf("namespace-scoped account not allowed to access forbidden namespace: '%s'", namespace)
 	}
+
 	return nil
 }
 

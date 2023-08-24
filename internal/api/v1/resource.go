@@ -177,6 +177,7 @@ func listKinds(wg *sync.WaitGroup, uc chan unstructured.Unstructured,
 			clouddriver.Log(err)
 			return
 		}
+
 		items = append(items, ul.Items...)
 	}
 
@@ -186,6 +187,7 @@ func listKinds(wg *sync.WaitGroup, uc chan unstructured.Unstructured,
 			clouddriver.Log(err)
 			return
 		}
+
 		items = append(items, ul.Items...)
 	}
 

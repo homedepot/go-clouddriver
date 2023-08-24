@@ -234,6 +234,7 @@ func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error)
 			namespaces = append(namespaces, *r.Namespace)
 		}
 	}
+
 	p.Namespaces = namespaces
 
 	return p, nil

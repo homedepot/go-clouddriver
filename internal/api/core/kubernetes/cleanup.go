@@ -44,6 +44,7 @@ func (cc *Controller) CleanupArtifacts(c *gin.Context, ca CleanupArtifactsReques
 		if len(provider.Namespaces) == 1 {
 			namespace = provider.Namespaces[0]
 		}
+
 		err = provider.ValidateNamespaceAccess(namespace)
 		if err != nil {
 			clouddriver.Log(err)

@@ -43,6 +43,7 @@ func (cc *Controller) CreateKubernetesProvider(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot provide both namespace and namespaces field"})
 			return
 		}
+
 		p.Namespaces = []string{*p.Namespace}
 		p.Namespace = nil
 	}
