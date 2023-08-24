@@ -118,7 +118,6 @@ func (c *client) CreateKubernetesProvider(p kubernetes.Provider) error {
 	}
 
 	for _, namespace := range p.Namespaces {
-
 		ns := kubernetes.ProviderNamespaces{
 			AccountName: p.Name,
 			Namespace:   namespace,
