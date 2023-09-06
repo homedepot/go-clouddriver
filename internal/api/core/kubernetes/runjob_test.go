@@ -71,6 +71,7 @@ var _ = Describe("RunJob", func() {
 					Reference: "gcr.io/test-project/test-container-image:v1.0.0",
 					Name:      "gcr.io/test-project/test-container-image",
 					Type:      artifact.TypeDockerImage,
+					Metadata:  clouddriver.ArtifactMetadata{Account: runJobRequest.Account},
 				},
 			}
 		})
