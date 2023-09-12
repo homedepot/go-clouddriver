@@ -160,15 +160,17 @@ func (cc *Controller) search(wg *sync.WaitGroup, provider *kubernetes.Provider,
 	// Increment the wait group counter when we're done here.
 	defer wg.Done()
 
+	// If the provider is not allowed to list this given kind, just return.
+	if err := provider.ValidateKindStatus(kind); err != nil {
+		return
+	}
+
 	// If namespace-scoped account and we are attempting to list kinds in a forbidden namespace,
 	// just return.
 	if err := provider.ValidateNamespaceAccess(namespace); err != nil {
 		return
 	}
-	// If the provider is not allowed to list this given kind, just return.
-	if err := provider.ValidateKindStatus(kind); err != nil {
-		return
-	}
+
 	// Declare a context with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
 	defer cancel()

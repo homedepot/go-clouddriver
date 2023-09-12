@@ -31,11 +31,17 @@ func (cc *Controller) RunJob(c *gin.Context, rj RunJobRequest) {
 	namespace := ""
 
 	// Preserve backwards compatibility
-	if len(provider.Namespaces) > 0 {
+	if len(provider.Namespaces) == 1 {
 		namespace = provider.Namespaces[0]
 	}
 
 	kubernetes.SetNamespaceOnManifest(&u, namespace)
+
+	err = provider.ValidateNamespaceAccess(u.GetNamespace()) // pass in the current manifest's namespace
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
 
 	err = kube.AddSpinnakerAnnotations(&u, rj.Application)
 	if err != nil {

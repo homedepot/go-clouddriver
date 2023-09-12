@@ -31,7 +31,7 @@ var (
 // one by one.
 func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 	taskID := clouddriver.TaskIDFromContext(c)
-	namespace := dm.NamespaceOverride
+	namespace := strings.TrimSpace(dm.NamespaceOverride)
 
 	provider, err := cc.KubernetesProvider(dm.Account)
 	if err != nil {
@@ -42,12 +42,6 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 	// Preserve backwards compatibility
 	if len(provider.Namespaces) == 1 {
 		namespace = provider.Namespaces[0]
-	}
-
-	err = provider.ValidateNamespaceAccess(namespace)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
 	}
 
 	// First, convert all manifests to unstructured objects.
@@ -81,6 +75,17 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		manifest := manifest
 
 		err = provider.ValidateKindStatus(manifest.GetKind())
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+
+		if namespace == "" {
+			err = provider.ValidateNamespaceAccess(manifest.GetNamespace()) // pass in the current manifest's namespace
+		} else {
+			err = provider.ValidateNamespaceAccess(namespace)
+		}
+
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
 			return

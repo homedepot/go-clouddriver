@@ -30,17 +30,17 @@ func (cc *Controller) RollingRestart(c *gin.Context, rr RollingRestartManifestRe
 		namespace = provider.Namespaces[0]
 	}
 
-	err = provider.ValidateNamespaceAccess(namespace)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
 	a := strings.Split(rr.ManifestName, " ")
 	kind := a[0]
 	name := a[1]
 
 	err = provider.ValidateKindStatus(kind)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	err = provider.ValidateNamespaceAccess(namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return

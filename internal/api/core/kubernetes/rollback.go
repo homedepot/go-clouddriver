@@ -67,13 +67,13 @@ func (cc *Controller) Rollback(c *gin.Context, ur UndoRolloutManifestRequest) {
 		namespace = provider.Namespaces[0]
 	}
 
-	err = provider.ValidateNamespaceAccess(namespace)
+	err = provider.ValidateKindStatus(manifestKind)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
 
-	err = provider.ValidateKindStatus(manifestKind)
+	err = provider.ValidateNamespaceAccess(namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return

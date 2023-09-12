@@ -339,4 +339,57 @@ var _ = Describe("Rollback", func() {
 			})
 		})
 	})
+
+	When("Using a multiple namespace-scoped provider", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(multipleNamespaceScopedProvider, nil)
+			fakeUnstructured := unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "test-kind",
+					"apiVersion": "test-api-version",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerMonikerApplication: "test-app",
+							kubernetes.AnnotationSpinnakerArtifactName:       "test-deployment",
+							kubernetes.AnnotationSpinnakerArtifactType:       "kubernetes/deployment",
+							"deployment.kubernetes.io/revision":              "100",
+						},
+						"name":      "test-name",
+						"namespace": "provider-namespace",
+					},
+				},
+			}
+			fakeUnstructuredList := &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					fakeUnstructured,
+				},
+			}
+			fakeKubeClient.ListByGVRReturns(fakeUnstructuredList, nil)
+		})
+
+		When("the kind is not supported", func() {
+			BeforeEach(func() {
+				undoRolloutManifestRequest.ManifestName = "namespace fake-namespace"
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: 'namespace'"))
+			})
+		})
+
+		When("the kind is supported", func() {
+			BeforeEach(func() {
+				undoRolloutManifestRequest.Location = "provider-namespace"
+			})
+			It("succeeds", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				_, _, namespace := fakeKubeClient.GetArgsForCall(0)
+				Expect(namespace).To(Equal("provider-namespace"))
+				u := fakeKubeClient.ApplyArgsForCall(0)
+				b, _ := json.Marshal(&u)
+				Expect(string(b)).To(Equal("{\"metadata\":{\"annotations\":{\"artifact.spinnaker.io/name\":\"test-deployment\",\"artifact.spinnaker.io/type\":\"kubernetes/deployment\",\"moniker.spinnaker.io/application\":\"test-app\"},\"creationTimestamp\":null},\"spec\":{\"selector\":null,\"strategy\":{},\"template\":{\"metadata\":{\"creationTimestamp\":null},\"spec\":{\"containers\":null}}},\"status\":{}}"))
+			})
+		})
+	})
 })

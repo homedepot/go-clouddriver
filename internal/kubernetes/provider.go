@@ -89,8 +89,10 @@ func (p *Provider) ValidateKindStatus(kind string) error {
 
 // ValidateNamespaceAccess verifies that this provider can access the given namespace
 func (p *Provider) ValidateNamespaceAccess(namespace string) error {
+	namespace = strings.TrimSpace(namespace)
+
 	if namespace == "" {
-		return nil
+		namespace = "default"
 	}
 
 	if len(p.Namespaces) > 0 && !slice.ContainsString(p.Namespaces, namespace, nil) {

@@ -19,30 +19,32 @@ import (
 )
 
 var (
-	c                             *gin.Context
-	fakeArcadeClient              *arcadefakes.FakeClient
-	fakeSQLClient                 *sqlfakes.FakeClient
-	fakeKubeClient                *kubernetesfakes.FakeClient
-	fakeKubeController            *kubernetesfakes.FakeController
-	kubernetesController          *Controller
-	deployManifestRequest         DeployManifestRequest
-	disableManifestRequest        DisableManifestRequest
-	enableManifestRequest         EnableManifestRequest
-	scaleManifestRequest          ScaleManifestRequest
-	cleanupArtifactsRequest       CleanupArtifactsRequest
-	deleteManifestRequest         DeleteManifestRequest
-	undoRolloutManifestRequest    UndoRolloutManifestRequest
-	rollingRestartManifestRequest RollingRestartManifestRequest
-	patchManifestRequest          PatchManifestRequest
-	runJobRequest                 RunJobRequest
-	clusterScopedProvider         kubernetes.Provider
-	namespaceScopedProvider       kubernetes.Provider
+	c                               *gin.Context
+	fakeArcadeClient                *arcadefakes.FakeClient
+	fakeSQLClient                   *sqlfakes.FakeClient
+	fakeKubeClient                  *kubernetesfakes.FakeClient
+	fakeKubeController              *kubernetesfakes.FakeController
+	kubernetesController            *Controller
+	deployManifestRequest           DeployManifestRequest
+	disableManifestRequest          DisableManifestRequest
+	enableManifestRequest           EnableManifestRequest
+	scaleManifestRequest            ScaleManifestRequest
+	cleanupArtifactsRequest         CleanupArtifactsRequest
+	deleteManifestRequest           DeleteManifestRequest
+	undoRolloutManifestRequest      UndoRolloutManifestRequest
+	rollingRestartManifestRequest   RollingRestartManifestRequest
+	patchManifestRequest            PatchManifestRequest
+	runJobRequest                   RunJobRequest
+	clusterScopedProvider           kubernetes.Provider
+	namespaceScopedProvider         kubernetes.Provider
+	multipleNamespaceScopedProvider kubernetes.Provider
 )
 
 func setup() {
 	gin.SetMode(gin.ReleaseMode)
 
 	var providerNamespace = "provider-namespace"
+	var providerNamespace2 = "provider-namespace-2"
 
 	// Setup fakes.
 	fakeArcadeClient = &arcadefakes.FakeClient{}
@@ -59,6 +61,13 @@ func setup() {
 		Host:       "http://localhost",
 		CAData:     "",
 		Namespaces: []string{providerNamespace},
+	}
+
+	multipleNamespaceScopedProvider = kubernetes.Provider{
+		Name:       "test-account",
+		Host:       "http://localhost",
+		CAData:     "",
+		Namespaces: []string{providerNamespace, providerNamespace2},
 	}
 
 	fakeSQLClient = &sqlfakes.FakeClient{}

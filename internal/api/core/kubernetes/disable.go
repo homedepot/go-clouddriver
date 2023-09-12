@@ -45,12 +45,6 @@ func (cc *Controller) Disable(c *gin.Context, dm DisableManifestRequest) {
 		namespace = provider.Namespaces[0]
 	}
 
-	err = provider.ValidateNamespaceAccess(namespace)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
 	// ManifestName is the kind and name of the manifest, including any version, like
 	// 'ReplicaSet test-rs-v001'.
 	a := strings.Split(dm.ManifestName, " ")
@@ -63,6 +57,12 @@ func (cc *Controller) Disable(c *gin.Context, dm DisableManifestRequest) {
 	name := a[1]
 
 	err = provider.ValidateKindStatus(kind)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	err = provider.ValidateNamespaceAccess(namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return

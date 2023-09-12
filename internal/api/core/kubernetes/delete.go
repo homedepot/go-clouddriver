@@ -31,12 +31,6 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 		namespace = provider.Namespaces[0]
 	}
 
-	err = provider.ValidateNamespaceAccess(namespace)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
 	do := metav1.DeleteOptions{}
 	if dm.Options.GracePeriodSeconds != nil {
 		do.GracePeriodSeconds = dm.Options.GracePeriodSeconds
@@ -71,6 +65,12 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 		name := a[1]
 
 		err = provider.ValidateKindStatus(kind)
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+
+		err = provider.ValidateNamespaceAccess(namespace)
 		if err != nil {
 			clouddriver.Error(c, http.StatusBadRequest, err)
 			return
@@ -139,6 +139,12 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 
 		for _, kind := range dm.Kinds {
 			err = provider.ValidateKindStatus(kind)
+			if err != nil {
+				clouddriver.Error(c, http.StatusBadRequest, err)
+				return
+			}
+
+			err = provider.ValidateNamespaceAccess(namespace)
 			if err != nil {
 				clouddriver.Error(c, http.StatusBadRequest, err)
 				return

@@ -241,6 +241,23 @@ var _ = Describe("Disable", func() {
 		})
 	})
 
+	When("the provider is scoped to multiple namespaces and the manifest kind is not valid", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
+				Name:       "test-name",
+				Host:       "test-host",
+				Namespaces: []string{"test-ns", "test-ns-2"},
+			}, nil)
+			disableManifestRequest.ManifestName = "clusterRole my-role"
+			disableManifestRequest.Location = ""
+		})
+
+		It("returns an error", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: 'clusterRole'"))
+		})
+	})
+
 	When("getting the target manifest returns an error not found", func() {
 		BeforeEach(func() {
 			fakeKubeClient.GetReturnsOnCall(0, nil, k8serrors.NewNotFound(schema.GroupResource{Group: "",

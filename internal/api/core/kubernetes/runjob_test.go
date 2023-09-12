@@ -100,9 +100,7 @@ var _ = Describe("RunJob", func() {
 
 	When("Using a namespace-scoped provider", func() {
 		BeforeEach(func() {
-			p := namespaceScopedProvider
-			p.Namespaces = []string{"provider-namespace", "provider-namespace-2"}
-			fakeSQLClient.GetKubernetesProviderReturns(p, nil)
+			fakeSQLClient.GetKubernetesProviderReturns(namespaceScopedProvider, nil)
 		})
 
 		It("succeeds, using providers namespace", func() {
@@ -112,6 +110,36 @@ var _ = Describe("RunJob", func() {
 			name := u.GetName()
 			Expect(name).To(HavePrefix("test-"))
 			Expect(name).To(HaveLen(10))
+		})
+	})
+
+	When("Using a multiple namespace-scoped provider", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(multipleNamespaceScopedProvider, nil)
+		})
+
+		When("the manifest namespace is not included in provider's namespaces", func() {
+			It("fails", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access forbidden namespace: 'default'"))
+			})
+		})
+
+		When("the manifest namespace IS included in provider's namespaces", func() {
+			BeforeEach(func() {
+				runJobRequest.Manifest["metadata"] = map[string]interface{}{
+					"namespace":    "provider-namespace",
+					"generateName": "test-",
+				}
+			})
+			It("succeeds", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				u := fakeKubeClient.ApplyArgsForCall(0)
+				Expect(u.GetNamespace()).To(Equal("provider-namespace"))
+				name := u.GetName()
+				Expect(name).To(HavePrefix("test-"))
+				Expect(name).To(HaveLen(10))
+			})
 		})
 	})
 

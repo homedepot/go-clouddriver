@@ -29,12 +29,6 @@ func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 		namespace = provider.Namespaces[0]
 	}
 
-	err = provider.ValidateNamespaceAccess(namespace)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
 	b, err := json.Marshal(pm.PatchBody)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
@@ -53,6 +47,12 @@ func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 	}
 
 	err = provider.ValidateKindStatus(kind)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	err = provider.ValidateNamespaceAccess(namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return

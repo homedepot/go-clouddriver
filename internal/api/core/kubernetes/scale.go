@@ -29,17 +29,17 @@ func (cc *Controller) Scale(c *gin.Context, sm ScaleManifestRequest) {
 		namespace = provider.Namespaces[0]
 	}
 
-	err = provider.ValidateNamespaceAccess(namespace)
-	if err != nil {
-		clouddriver.Error(c, http.StatusBadRequest, err)
-		return
-	}
-
 	a := strings.Split(sm.ManifestName, " ")
 	kind := a[0]
 	name := a[1]
 
 	err = provider.ValidateKindStatus(kind)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	err = provider.ValidateNamespaceAccess(namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
