@@ -6,7 +6,7 @@ set -o errexit
 build_and_publish_image(){
     GOOS=linux GOARCH=amd64 go build cmd/clouddriver/clouddriver.go
     GCR_TAG="oshomedepot/go-clouddriver:${TAG_VERSION}"
-    docker docker buildx build --platform linux/amd64 . -f docker/Dockerfile -t ${GCR_TAG}
+    docker buildx build --platform linux/amd64 . -f docker/Dockerfile -t ${GCR_TAG}
     docker push ${GCR_TAG}
 }
 
