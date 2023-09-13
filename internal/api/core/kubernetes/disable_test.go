@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -228,11 +228,28 @@ var _ = Describe("Disable", func() {
 		BeforeEach(func() {
 			ns := "test-ns"
 			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-				Name:      "test-name",
-				Host:      "test-host",
-				Namespace: &ns,
+				Name:       "test-name",
+				Host:       "test-host",
+				Namespaces: []string{ns},
 			}, nil)
 			disableManifestRequest.ManifestName = "clusterRole my-role"
+		})
+
+		It("returns an error", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+			Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: 'clusterRole'"))
+		})
+	})
+
+	When("the provider is scoped to multiple namespaces and the manifest kind is not valid", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
+				Name:       "test-name",
+				Host:       "test-host",
+				Namespaces: []string{"test-ns", "test-ns-2"},
+			}, nil)
+			disableManifestRequest.ManifestName = "clusterRole my-role"
+			disableManifestRequest.Location = ""
 		})
 
 		It("returns an error", func() {

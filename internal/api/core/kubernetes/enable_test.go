@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -206,13 +206,13 @@ var _ = Describe("Enable", func() {
 
 	When("the provider is namespace scoped and the manifest kind is not valid", func() {
 		BeforeEach(func() {
-			ns := "test-ns"
 			fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-				Name:      "test-name",
-				Host:      "test-host",
-				Namespace: &ns,
+				Name:       "test-name",
+				Host:       "test-host",
+				Namespaces: []string{"test-ns", "test-ns-2"},
 			}, nil)
 			enableManifestRequest.ManifestName = "clusterRole my-role"
+			enableManifestRequest.Location = ""
 		})
 
 		It("returns an error", func() {

@@ -2,7 +2,7 @@ package kubernetes_test
 
 import (
 	. "github.com/homedepot/go-clouddriver/internal/kubernetes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -25,7 +25,7 @@ var _ = Describe("Provider", func() {
 
 		When("Provider is namespace-scoped", func() {
 			BeforeEach(func() {
-				provider.Namespace = &namespace
+				provider.Namespaces = []string{namespace}
 			})
 
 			When("kind is not allowed", func() {

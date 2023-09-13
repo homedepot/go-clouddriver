@@ -26,7 +26,7 @@ import (
 	"path/filepath"
 
 	. "github.com/homedepot/go-clouddriver/internal/kubernetes/cached/disk"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

@@ -40,8 +40,9 @@ func (cc *Controller) Disable(c *gin.Context, dm DisableManifestRequest) {
 		return
 	}
 
-	if provider.Namespace != nil {
-		namespace = *provider.Namespace
+	// Preserve backwards compatibility
+	if len(provider.Namespaces) == 1 {
+		namespace = provider.Namespaces[0]
 	}
 
 	// ManifestName is the kind and name of the manifest, including any version, like
@@ -56,6 +57,12 @@ func (cc *Controller) Disable(c *gin.Context, dm DisableManifestRequest) {
 	name := a[1]
 
 	err = provider.ValidateKindStatus(kind)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	err = provider.ValidateNamespaceAccess(namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
@@ -192,12 +199,16 @@ type jsonPatch struct {
 //
 // For a pod, this looks like:
 // [
-//   {"op": "add", "path": "/metadata/labels/key1", "value": "value1"}
+//
+//	{"op": "add", "path": "/metadata/labels/key1", "value": "value1"}
+//
 // ]
 //
 // For other kinds, this looks like:
 // [
-//   {"op": "remove", "path": "/spec/template/metadata/labels/key1"}
+//
+//	{"op": "remove", "path": "/spec/template/metadata/labels/key1"}
+//
 // ]
 func attachDetach(client kubernetes.Client, lb, target *unstructured.Unstructured, op string) error {
 	labelsPath := "spec.template.metadata.labels"

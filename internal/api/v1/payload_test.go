@@ -7,6 +7,10 @@ const payloadBadRequest = `{
 const payloadRequestKubernetesProviders = `{
 						"name": "test-name",
 						"host": "test-host",
+						"namespaces": [
+          				  "ns1",
+         				  "ns2"
+        				],
 						"caData": "dGVzdC1jYS1kYXRhCg==",
 						"permissions": {
 						  "read": [
@@ -23,6 +27,52 @@ const payloadRequestKubernetesProvidersEmptyNamespace = `{
 					"host": "test-host",
 					"caData": "dGVzdC1jYS1kYXRhCg==",
 					"namespace": "  ",
+					"permissions": {
+						"read": [
+							"gg_test"
+						],
+						"write": [
+							"gg_test"
+						]
+					}
+				}`
+
+const payloadRequestKubernetesUpdateProvidersExistingNamespaces = `{
+					"name": "test-name",
+					"host": "test-host",
+					"caData": "dGVzdC1jYS1kYXRhCg==",
+					"namespace": "deprecated-field",
+					"namespaces": ["n1", "n2", "n3"],
+					"permissions": {
+						"read": [
+							"gg_test"
+						],
+						"write": [
+							"gg_test"
+						]
+					}
+				}`
+
+const payloadRequestKubernetesProviderDeprecatedNamespace = `{
+					"name": "test-name",
+					"host": "test-host",
+					"caData": "dGVzdC1jYS1kYXRhCg==",
+					"namespace": "deprecated-field",
+					"permissions": {
+						"read": [
+							"gg_test"
+						],
+						"write": [
+							"gg_test"
+						]
+					}
+				}`
+
+const payloadRequestKubernetesProvidersMultipleNamespaces = `{
+					"name": "test-name",
+					"host": "test-host",
+					"caData": "dGVzdC1jYS1kYXRhCg==",
+					"namespaces": ["n1", "n2", "n3"],
 					"permissions": {
 						"read": [
 							"gg_test"
@@ -92,7 +142,40 @@ const payloadErrorMissingReadGroup = `{
 const payloadKubernetesProviderCreated = `{
             "name": "test-name",
             "host": "test-host",
+			"namespaces": [
+				"ns1",
+				"ns2"
+			],
             "caData": "dGVzdC1jYS1kYXRhCg==",
+            "permissions": {
+              "read": [
+                "gg_test"
+              ],
+              "write": [
+                "gg_test"
+              ]
+            }
+          }`
+
+const payloadKubernetesProviderCreatedNoNamespace = `{
+            "name": "test-name",
+            "host": "test-host",
+            "caData": "dGVzdC1jYS1kYXRhCg==",
+            "permissions": {
+              "read": [
+                "gg_test"
+              ],
+              "write": [
+                "gg_test"
+              ]
+            }
+          }`
+
+const payloadKubernetesProviderCreatedWithDeprecatedNamespace = `{
+            "name": "test-name",
+            "host": "test-host",
+            "caData": "dGVzdC1jYS1kYXRhCg==",
+			"namespaces": ["deprecated-field"],
             "permissions": {
               "read": [
                 "gg_test"
@@ -121,13 +204,27 @@ const payloadListKubernetesProviders = `[
 							"name": "test-name2",
 							"host": "test-host2",
 							"caData": "dGVzdC1jYS1kYXRhCg==",
-							"namespace": "test-namespace",
+							"namespaces": ["test-namespace"],
 							"permissions": {
 								"read": [
 									"gg_test2"
 								],
 								"write": [
 									"gg_test2"
+								]
+							}
+						},
+						{
+							"name": "test-name3",
+							"host": "test-host3",
+							"caData": "dGVzdC1jYS1kYXRhCg==",
+							"namespaces": ["test-namespace"],
+							"permissions": {
+								"read": [
+									"gg_test3"
+								],
+								"write": [
+									"gg_test3"
 								]
 							}
 						}

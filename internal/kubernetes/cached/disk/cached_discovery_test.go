@@ -24,7 +24,7 @@ import (
 	"time"
 
 	. "github.com/homedepot/go-clouddriver/internal/kubernetes/cached/disk"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"

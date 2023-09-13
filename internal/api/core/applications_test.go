@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -1980,7 +1980,7 @@ var _ = Describe("Application", func() {
 
 		When("listing resources returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.ListResourceWithContextReturns(nil, errors.New("error listing resources"))
+				fakeKubeClient.ListResourceWithContextReturnsOnCall(0, nil, errors.New("error listing resources"))
 			})
 
 			It("returns an error", func() {
@@ -1996,10 +1996,10 @@ var _ = Describe("Application", func() {
 			BeforeEach(func() {
 				namespace := "test-namespace1"
 				fakeSQLClient.GetKubernetesProviderReturns(kubernetes.Provider{
-					Name:      "test-account",
-					Host:      "http://localhost",
-					CAData:    "",
-					Namespace: &namespace,
+					Name:       "test-account",
+					Host:       "http://localhost",
+					CAData:     "",
+					Namespaces: []string{namespace},
 				}, nil)
 			})
 

@@ -169,27 +169,30 @@ func listKinds(wg *sync.WaitGroup, uc chan unstructured.Unstructured,
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
 	defer cancel()
 
-	var ul *unstructured.UnstructuredList
+	var items []unstructured.Unstructured
 
-	var err error
+	if len(provider.Namespaces) == 0 {
+		ul, err := provider.Client.ListResourceWithContext(ctx, kind, lo)
+		if err != nil {
+			clouddriver.Log(err)
+			return
+		}
 
-	if provider.Namespace != nil {
-		ul, err = provider.Client.ListResourcesByKindAndNamespaceWithContext(ctx, kind, *provider.Namespace, lo)
-	} else {
-		ul, err = provider.Client.ListResourceWithContext(ctx, kind, lo)
+		items = append(items, ul.Items...)
 	}
 
-	if err != nil {
-		clouddriver.Log(err)
-		return
+	for _, ns := range provider.Namespaces {
+		ul, err := provider.Client.ListResourcesByKindAndNamespaceWithContext(ctx, kind, ns, lo)
+		if err != nil {
+			clouddriver.Log(err)
+			return
+		}
+
+		items = append(items, ul.Items...)
 	}
 
 	// Send all unstructured objects to the channel.
-	if ul == nil {
-		return
-	}
-
-	for _, u := range ul.Items {
+	for _, u := range items {
 		uc <- u
 	}
 }

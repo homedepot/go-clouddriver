@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -314,6 +314,20 @@ var _ = Describe("CleanupArtifacts", func() {
 				Expect(kind).To(Equal("ReplicaSet"))
 				Expect(name).To(Equal("test-name-v000"))
 				Expect(namespace).To(Equal("provider-namespace"))
+			})
+		})
+
+		When("the account is scoped to multiple namespaces", func() {
+			BeforeEach(func() {
+				p := namespaceScopedProvider
+				p.Namespaces = []string{"provider-namespace", "provider-namespace-2"}
+				fakeSQLClient.GetKubernetesProviderReturns(p, nil)
+			})
+
+			It("ignores resources whose namespace is not in the account's scope", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.DeleteResourceByKindAndNameAndNamespaceCallCount()).To(Equal(0))
+				Expect(fakeKubeClient.ListResourcesByKindAndNamespaceCallCount()).To(Equal(0))
 			})
 		})
 

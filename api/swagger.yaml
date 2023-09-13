@@ -1,4 +1,4 @@
-swagger: "2.0"
+swagger: "3.0.1"
 info:
   description: "This is the go-clouddriver server API."
   version: "0.1.0"
@@ -485,8 +485,15 @@ definitions:
         example: "google"
       namespace:
         type: "string"
-        description: "The kubernetes namespace that this account is limited to accessing.  If not specified, defaults to all namespaces"
+        description: "(DEPRECATED: Use namespaces array instead) The kubernetes namespace that this account is limited to accessing. If not specified, defaults to all namespaces. If specified along with the namespace array, the namespace behaves as if it were appended to the namespaces array."
         example: "example-namespace"
+        deprecated: true
+      namespaces:
+        type: "array"
+        items:
+          type: "string"
+        description: "The kubernetes namespaces that this account is limited to accessing. If not specified, defaults to all namespaces."
+        example: ["namespace-1", "namespace-2"]
       permissions:
         $ref: "#/definitions/Permissions"
   KubernetesResource:

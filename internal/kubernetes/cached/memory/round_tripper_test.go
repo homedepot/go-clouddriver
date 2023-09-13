@@ -24,7 +24,7 @@ import (
 
 	"github.com/gregjones/httpcache"
 	. "github.com/homedepot/go-clouddriver/internal/kubernetes/cached/memory"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
