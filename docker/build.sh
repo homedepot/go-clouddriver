@@ -5,8 +5,8 @@ set -o errexit
 # Builds the base image including the solver dependencies
 build_and_publish_image(){
     GOOS=linux GOARCH=amd64 go build cmd/clouddriver/clouddriver.go
-    GCR_TAG="billiford/go-clouddriver:${TAG_VERSION}"
-    docker build . -f docker/Dockerfile -t ${GCR_TAG}
+    GCR_TAG="oshomedepot/go-clouddriver:${TAG_VERSION}"
+    docker buildx build --platform linux/amd64 . -f docker/Dockerfile -t ${GCR_TAG}
     docker push ${GCR_TAG}
 }
 

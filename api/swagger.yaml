@@ -1,4 +1,4 @@
-swagger: "3.0.1"
+openapi: "3.0.0"
 info:
   description: "This is the go-clouddriver server API."
   version: "0.1.0"
@@ -7,7 +7,8 @@ info:
   license:
     name: "Apache 2.0"
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
-host: "spin-clouddriver.spinnaker:7002"
+servers: 
+  - url: "http://spin-clouddriver.spinnaker:7002"
 tags:
 - name: "core"
   description: "Core endpoints to the microservice"
@@ -25,8 +26,6 @@ tags:
   description: "Tasks API controller"
 - name: "instances"
   description: "Instances API controller"
-schemes:
-- "http"
 paths:
   /health:
     get:
@@ -60,7 +59,8 @@ paths:
       - name: "account"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       tags:
       - "credentials"
       summary: "Get account credentials"
@@ -85,7 +85,8 @@ paths:
       - name: "application"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       tags:
       - "applications"
       summary: "List server group managers for a given Spinnaker application"
@@ -100,7 +101,8 @@ paths:
       - name: "application"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       tags:
       - "applications"
       summary: "List server groups for a given Spinnaker application"
@@ -115,19 +117,23 @@ paths:
       - name: "application"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       - name: "account"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       - name: "location"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       - name: "name"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       tags:
       - "applications"
       summary: "Get a server group for a given application, account, location, and name"
@@ -142,7 +148,8 @@ paths:
       - name: "application"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       tags:
       - "applications"
       summary: "List load balancers for a given Spinnaker application"
@@ -157,7 +164,8 @@ paths:
       - name: "application"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       tags:
       - "applications"
       summary: "List clusters for a given Spinnaker application"
@@ -184,15 +192,18 @@ paths:
       - name: "account"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       - name: "location"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       - name: "name"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       summary: "Get a manifest for a given account, location, and name"
       responses:
         "200":
@@ -207,15 +218,18 @@ paths:
       - name: "account"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       - name: "location"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       - name: "name"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       summary: "Get an instance for a given account, location, and name"
       responses:
         "200":
@@ -230,19 +244,23 @@ paths:
       - name: "account"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       - name: "location"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       - name: "name"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       - name: "provider"
         in: "query"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       summary: "Get instance console logs for a given account, location, and name"
       responses:
         "200":
@@ -259,7 +277,8 @@ paths:
       - name: "id"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       summary: "Get a task result"
       responses:
         "200":
@@ -284,7 +303,8 @@ paths:
       - name: "account"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       summary: "List artifact names for a given (helm) account"
       responses:
         "200":
@@ -299,7 +319,8 @@ paths:
       - name: "account"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       summary: "List artifact versions for a given (helm) account"
       responses:
         "200":
@@ -323,37 +344,35 @@ paths:
       tags:
       - "kubernetes"
       summary: "Retrieves list of all Kubernetes accounts (providers)"
-      produces:
-      - "application/json"
       responses:
         "200":
           description: "OK"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/KubernetesProvider"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/KubernetesProvider"
         "500":
           description: "Internal Server Error"
     post:
       tags:
       - "kubernetes"
       summary: "Create a new Kubernetes account (provider)"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
+      requestBody:
         description: "Object that describes the kubernetes provider"
         required: true
-        schema:
-          $ref: "#/definitions/KubernetesProvider"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KubernetesProvider"
       responses:
         "200":
           description: "OK"
-          schema:
-            $ref: "#/definitions/KubernetesProvider"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KubernetesProvider"
         "400":
           description: "Bad Request"
         "409":
@@ -364,22 +383,20 @@ paths:
       tags:
       - "kubernetes"
       summary: "Create, or replace, a Kubernetes account (provider)"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
+      requestBody:
         description: "Object that describes the kubernetes provider"
         required: true
-        schema:
-          $ref: "#/definitions/KubernetesProvider"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KubernetesProvider"
       responses:
         "200":
           description: "OK"
-          schema:
-            $ref: "#/definitions/KubernetesProvider"
+          content:
+            applicqtion/json:
+              schema:
+                $ref: "#/components/schemas/KubernetesProvider"
         "400":
           description: "Bad Request"
         "500":
@@ -392,15 +409,16 @@ paths:
       - name: "name"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       summary: "Retrieve a Kubernetes account (provider)"
-      produces:
-      - "application/json"
       responses:
         "200":
           description: "OK"
-          schema:
-            $ref: "#/definitions/KubernetesProvider"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KubernetesProvider"
         "404":
           description: "Not Found"
         "500":
@@ -412,7 +430,8 @@ paths:
       - name: "name"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       summary: "Delete a Kubernetes account (provider)"
       responses:
         "204":
@@ -429,17 +448,18 @@ paths:
       - name: "name"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       summary: "Updates resources, read from the cluster, for the Kubernetes account (provider)"
-      produces:
-      - "application/json"
       responses:
         "200":
           description: "OK"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/KubernetesResource"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/KubernetesResource"
         "404":
           description: "Not Found"
         "500":
@@ -451,7 +471,8 @@ paths:
       - name: "name"
         in: "path"
         required: true
-        type: "string"
+        schema:
+          type: "string"
       summary: "Deletes the database entries for all resources for the Kubernetes account (provider)"
       responses:
         "204":
@@ -460,108 +481,108 @@ paths:
           description: "Not Found"
         "500":
           description: "Internal Server Error"
-definitions:
-  KubernetesProvider:
-    type: "object"
-    required:
-    - name
-    - host
-    properties:
-      name:
-        type: "string"
-        description: "The unique name identifiying this Spinnaker account"
-        example: "gke_np-platforms-cd-thd_us-east1_np-us-east1-np"
-      host:
-        type: "string"
-        description: "The endpoint (hostname or ip address) for reaching the kubernetes cluster's control plane"
-        example: "https://34.73.20.115"
-      caData:
-        type: "string"
-        description: "The base64-encoded CA certificate of the kubernetes cluster"
-        example: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0t..."
-      tokenProvider:
-        type: "string"
-        description: "The provider of the kubernetes auth token, defaults to google"
-        example: "google"
-      namespace:
-        type: "string"
-        description: "(DEPRECATED: Use namespaces array instead) The kubernetes namespace that this account is limited to accessing. If not specified, defaults to all namespaces. If specified along with the namespace array, the namespace behaves as if it were appended to the namespaces array."
-        example: "example-namespace"
-        deprecated: true
-      namespaces:
-        type: "array"
-        items:
+components:
+  schemas:
+    KubernetesProvider:
+      type: "object"
+      required:
+      - name
+      - host
+      properties:
+        name:
           type: "string"
-        description: "The kubernetes namespaces that this account is limited to accessing. If not specified, defaults to all namespaces."
-        example: ["namespace-1", "namespace-2"]
-      permissions:
-        $ref: "#/definitions/Permissions"
-  KubernetesResource:
-    type: "object"
-    required:
-    - accountName
-    - id
-    properties:
-      acccountName:
-        type: "string"
-        description: "The Spinnaker account that deployed this resource"
-        example: "gke_gcp-project-id_us-east1_cluster-name"
-      id:
-        type: "string"
-        description: "The unique ID for identifying this row in the database"
-        example: "f0500ae7-5db3-4c09-be11-c6c4d8016402"
-      timestamp:
-        type: "string"
-        description: "The time this resource row was added to the database"
-        example: "2021-10-16T19:48:47.923Z"
-      taskId:
-        type: "string"
-        description: "An identifier of the task responsible for creating this resource row in the database"
-        example: "f0500ae7-5db3-4c09-be11-c6c4d8016402"
-      apiGroup:
-        type: "string"
-        description: "The kubernetes API group for this resource"
-        example: "apps"
-      name:
-        type: "string"
-        description: "The name of this resource"
-        example: "example-name"
-      namespace:
-        type: "string"
-        description: "The kubernetes namespace of this resource"
-        example: "example-namespace"
-      resource:
-        type: "string"
-        description: "The Kubernetes API resource name for this resource"
-        example: "deployments"
-      version:
-        type: "string"
-        description: "The kubernetes API version for this resource"
-        example: "v1"
-      kind:
-        type: "string"
-        description: "The kubernetes kind of this resource"
-        example: "Deployment"
-      spinnakerApp:
-        type: "string"
-        description: "The name of the Spinnaker application which deployed this resource"
-        example: "example-application"
-  Permissions:
-    type: "object"
-    required:
-    - read
-    - write
-    properties:
-      read:
-        type: "array"
-        items:
+          description: "The unique name identifiying this Spinnaker account"
+          example: "gke_np-platforms-cd-thd_us-east1_np-us-east1-np"
+        host:
           type: "string"
-        description: "List of groups that have READ access"
-        example: ["group1"]
-      write:
-        type: "array"
-        items:
+          description: "The endpoint (hostname or ip address) for reaching the kubernetes cluster's control plane"
+          example: "https://34.73.20.115"
+        caData:
           type: "string"
-        description: "List of groups that have WRITE access"
-        example: ["group1", "group2"]
-
+          description: "The base64-encoded CA certificate of the kubernetes cluster"
+          example: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0t..."
+        tokenProvider:
+          type: "string"
+          description: "The provider of the kubernetes auth token, defaults to google"
+          example: "google"
+        namespaces:
+          type: "array"
+          items:
+            type: "string"
+          description: "The kubernetes namespaces that this account is limited to accessing.  If not specified, defaults to all namespaces"
+          example: ["example-namespace"]
+        namespace:
+          type: "string"
+          deprecated: true
+          description: "The kubernetes namespace that this account is limited to accessing.  If not specified, defaults to all namespaces"
+          example: "example-namespace"
+        permissions:
+          $ref: "#/components/schemas/Permissions"
+    KubernetesResource:
+      type: "object"
+      required:
+      - accountName
+      - id
+      properties:
+        acccountName:
+          type: "string"
+          description: "The Spinnaker account that deployed this resource"
+          example: "gke_gcp-project-id_us-east1_cluster-name"
+        id:
+          type: "string"
+          description: "The unique ID for identifying this row in the database"
+          example: "f0500ae7-5db3-4c09-be11-c6c4d8016402"
+        timestamp:
+          type: "string"
+          description: "The time this resource row was added to the database"
+          example: "2021-10-16T19:48:47.923Z"
+        taskId:
+          type: "string"
+          description: "An identifier of the task responsible for creating this resource row in the database"
+          example: "f0500ae7-5db3-4c09-be11-c6c4d8016402"
+        apiGroup:
+          type: "string"
+          description: "The kubernetes API group for this resource"
+          example: "apps"
+        name:
+          type: "string"
+          description: "The name of this resource"
+          example: "example-name"
+        namespace:
+          type: "string"
+          description: "The kubernetes namespace of this resource"
+          example: "example-namespace"
+        resource:
+          type: "string"
+          description: "The Kubernetes API resource name for this resource"
+          example: "deployments"
+        version:
+          type: "string"
+          description: "The kubernetes API version for this resource"
+          example: "v1"
+        kind:
+          type: "string"
+          description: "The kubernetes kind of this resource"
+          example: "Deployment"
+        spinnakerApp:
+          type: "string"
+          description: "The name of the Spinnaker application which deployed this resource"
+          example: "example-application"
+    Permissions:
+      type: "object"
+      required:
+      - read
+      - write
+      properties:
+        read:
+          type: "array"
+          items:
+            type: "string"
+          description: "List of groups that have READ access"
+          example: ["group1"]
+        write:
+          type: "array"
+          items:
+            type: "string"
+          description: "List of groups that have WRITE access"
+          example: ["group1", "group2"]
