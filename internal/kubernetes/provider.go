@@ -3,6 +3,8 @@ package kubernetes
 import (
 	"fmt"
 	"strings"
+
+	"k8s.io/kubectl/pkg/util/slice"
 )
 
 var (
@@ -27,6 +29,7 @@ type Provider struct {
 	BearerToken   string              `json:"bearerToken,omitempty" gorm:"size:2048"`
 	TokenProvider string              `json:"tokenProvider,omitempty" gorm:"size:128;not null;default:'google'"`
 	Namespace     *string             `json:"namespace,omitempty" gorm:"size:253"`
+	Namespaces    []string            `json:"namespaces,omitempty" gorm:"-"`
 	Permissions   ProviderPermissions `json:"permissions" gorm:"-"`
 	// Providers can hold instances of clients.
 	Client    Client    `json:"-" gorm:"-"`
@@ -40,6 +43,16 @@ type ProviderPermissions struct {
 
 func (Provider) TableName() string {
 	return "kubernetes_providers"
+}
+
+type ProviderNamespaces struct {
+	//ID          string `json:"-" gorm:"primary_key"`
+	AccountName string `json:"accountName"`
+	Namespace   string `json:"namespace,omitempty"`
+}
+
+func (ProviderNamespaces) TableName() string {
+	return "kubernetes_providers_namespaces"
 }
 
 // ValidateKindStatus verifies that this provider can access the given kind.
@@ -61,12 +74,29 @@ func (Provider) TableName() string {
 // See https://github.com/spinnaker/clouddriver/blob/58ab154b0ec0d62772201b5b319af349498a4e3f/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/description/manifest/KubernetesKindProperties.java#L31
 // for clouddriver OSS namespace-scoped kinds.
 func (p *Provider) ValidateKindStatus(kind string) error {
-	if p.Namespace != nil {
-		for _, value := range clusterScopedKinds {
-			if strings.EqualFold(value, kind) {
-				return fmt.Errorf("namespace-scoped account not allowed to access cluster-scoped kind: '%s'", kind)
-			}
+	if p.Namespace == nil && len(p.Namespaces) == 0 {
+		return nil
+	}
+
+	for _, value := range clusterScopedKinds {
+		if strings.EqualFold(value, kind) {
+			return fmt.Errorf("namespace-scoped account not allowed to access cluster-scoped kind: '%s'", kind)
 		}
+	}
+
+	return nil
+}
+
+// ValidateNamespaceAccess verifies that this provider can access the given namespace
+func (p *Provider) ValidateNamespaceAccess(namespace string) error {
+	namespace = strings.TrimSpace(namespace)
+
+	if namespace == "" {
+		namespace = "default"
+	}
+
+	if len(p.Namespaces) > 0 && !slice.ContainsString(p.Namespaces, namespace, nil) {
+		return fmt.Errorf("namespace-scoped account not allowed to access forbidden namespace: '%s'", namespace)
 	}
 
 	return nil

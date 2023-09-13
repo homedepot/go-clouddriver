@@ -9,7 +9,7 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -40,6 +40,7 @@ var _ = Describe("Patch", func() {
 					Reference: "gcr.io/test-project/test-container-image:v1.0.0",
 					Name:      "gcr.io/test-project/test-container-image",
 					Type:      artifact.TypeDockerImage,
+					Metadata:  clouddriver.ArtifactMetadata{Account: patchManifestRequest.Account},
 				},
 			}
 		})
@@ -301,6 +302,38 @@ var _ = Describe("Patch", func() {
 		})
 
 		When("the kind is supported", func() {
+			It("succeeds", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				kind, name, namespace, _, strategy := fakeKubeClient.PatchUsingStrategyArgsForCall(0)
+				Expect(string(kind)).To(Equal("deployment"))
+				Expect(string(name)).To(Equal("test-deployment"))
+				Expect(string(namespace)).To(Equal("provider-namespace"))
+				Expect(string(strategy)).To(Equal("application/strategic-merge-patch+json"))
+			})
+		})
+	})
+
+	When("Using a multiple namespace-scoped provider", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(multipleNamespaceScopedProvider, nil)
+		})
+
+		When("the kind is not supported", func() {
+			BeforeEach(func() {
+				patchManifestRequest.ManifestName = "namespace someNamespace"
+
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: 'namespace'"))
+			})
+		})
+
+		When("the kind is supported", func() {
+			BeforeEach(func() {
+				patchManifestRequest.Location = "provider-namespace"
+			})
 			It("succeeds", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				kind, name, namespace, _, strategy := fakeKubeClient.PatchUsingStrategyArgsForCall(0)

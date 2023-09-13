@@ -32,8 +32,9 @@ func (cc *Controller) Enable(c *gin.Context, dm EnableManifestRequest) {
 		return
 	}
 
-	if provider.Namespace != nil {
-		namespace = *provider.Namespace
+	// Preserve backwards compatibility
+	if len(provider.Namespaces) == 1 {
+		namespace = provider.Namespaces[0]
 	}
 
 	// ManifestName is the kind and name of the manifest, including any version, like
@@ -48,6 +49,12 @@ func (cc *Controller) Enable(c *gin.Context, dm EnableManifestRequest) {
 	name := a[1]
 
 	err = provider.ValidateKindStatus(kind)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
+	err = provider.ValidateNamespaceAccess(namespace)
 	if err != nil {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return

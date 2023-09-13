@@ -31,7 +31,7 @@ var (
 // one by one.
 func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 	taskID := clouddriver.TaskIDFromContext(c)
-	namespace := dm.NamespaceOverride
+	namespace := strings.TrimSpace(dm.NamespaceOverride)
 
 	provider, err := cc.KubernetesProvider(dm.Account)
 	if err != nil {
@@ -39,8 +39,9 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		return
 	}
 
-	if provider.Namespace != nil {
-		namespace = *provider.Namespace
+	// Preserve backwards compatibility
+	if len(provider.Namespaces) == 1 {
+		namespace = provider.Namespaces[0]
 	}
 
 	// First, convert all manifests to unstructured objects.
@@ -79,6 +80,17 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
+		if namespace == "" {
+			err = provider.ValidateNamespaceAccess(manifest.GetNamespace()) // pass in the current manifest's namespace
+		} else {
+			err = provider.ValidateNamespaceAccess(namespace)
+		}
+
+		if err != nil {
+			clouddriver.Error(c, http.StatusBadRequest, err)
+			return
+		}
+
 		nameWithoutVersion := manifest.GetName()
 		// If the kind is a job, its name is not set, and generateName is set,
 		// generate a name for the job as `apply` will throw the error
@@ -100,7 +112,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			return
 		}
 
-		kubernetes.BindArtifacts(&manifest, artifacts)
+		kubernetes.BindArtifacts(&manifest, artifacts, dm.Account)
 
 		if kubernetes.IsVersioned(manifest) {
 			err := handleVersionedManifest(provider.Client, &manifest, application)

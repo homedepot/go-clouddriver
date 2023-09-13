@@ -53,27 +53,31 @@ var (
 // apiVersion: v1
 // kind: Pod
 // metadata:
-//   name: dapi-test-pod
+//
+//	name: dapi-test-pod
+//
 // spec:
-//   containers:
-//     - name: test-container
-//       image: k8s.gcr.io/busybox
-//       volumeMounts:
-//       - name: my-volume
-//         mountPath: /etc/config
-//   volumes:
-//     - name: my-volume
-//       configMap:
-//         # Provide the name of the ConfigMap containing the files you want
-//         # to add to the container
-//         name: replace-me
-//   restartPolicy: Never
+//
+//	containers:
+//	  - name: test-container
+//	    image: k8s.gcr.io/busybox
+//	    volumeMounts:
+//	    - name: my-volume
+//	      mountPath: /etc/config
+//	volumes:
+//	  - name: my-volume
+//	    configMap:
+//	      # Provide the name of the ConfigMap containing the files you want
+//	      # to add to the container
+//	      name: replace-me
+//	restartPolicy: Never
 //
 // Now let's say we pass in the following Clouddriver Artifact:
-// {
-//   "name": "replace-me",
-//   "reference": "my-config-map-v000"
-// }
+//
+//	{
+//	  "name": "replace-me",
+//	  "reference": "my-config-map-v000"
+//	}
 //
 // This would result in the JSON path '.spec.volumes[0].configMap.name' changing from
 // 'replace-me' to 'my-config-map-v000'.
@@ -81,8 +85,12 @@ var (
 // The source code for these Replacers can be found here:
 // https://github.com/spinnaker/clouddriver/blob/4d4e01084ac5259792020e419b1af7686ab38019/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/artifact/Replacer.java#L150
 func BindArtifacts(u *unstructured.Unstructured,
-	artifacts []clouddriver.Artifact) {
+	artifacts []clouddriver.Artifact, account string) {
 	for _, a := range artifacts {
+		if !isBindable(a, account) {
+			continue
+		}
+
 		switch a.Type {
 		case artifact.TypeDockerImage:
 			bindArtifact(u.Object, a, iterables(jsonPathDockerImageContainers)...)
@@ -147,9 +155,11 @@ func BindArtifacts(u *unstructured.Unstructured,
 //
 // Take for example the following variadic arguments for paths passed into the function:
 // [
-//   '.spec.containers',
-//   '.env',
-//   '.field.name'
+//
+//	'.spec.containers',
+//	'.env',
+//	'.field.name'
+//
 // ]
 //
 // In this case the first two args ('.spec.containers' and '.env') are of type []interface{}.
@@ -179,6 +189,10 @@ func bindArtifact(obj map[string]interface{}, a clouddriver.Artifact, paths ...s
 	if found && a.Name == name {
 		_ = unstructured.SetNestedField(obj, a.Reference, fields(paths[0])...)
 	}
+}
+
+func isBindable(artifact clouddriver.Artifact, account string) bool {
+	return artifact.Metadata.Account == account
 }
 
 // FindArtifacts lists all artifacts found in a given manifest.

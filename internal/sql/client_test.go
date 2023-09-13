@@ -2,6 +2,7 @@ package sql_test
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/homedepot/go-clouddriver/internal/sql"
@@ -10,7 +11,7 @@ import (
 	"gorm.io/gorm/logger"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -67,6 +68,10 @@ var _ = Describe("Sql", func() {
 			"`cluster` varchar\\(256\\)," +
 			"PRIMARY KEY \\(`id`\\)" +
 			"\\)$").
+			WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("CREATE TABLE `kubernetes_providers_namespaces` " +
+			"\\(`account_name` varchar\\(256\\)," +
+			"`namespace` varchar\\(256\\)").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("(?i)^CREATE TABLE `provider_read_permissions` " +
 			"\\(`id`\\ varchar\\(256\\)," +
@@ -155,6 +160,48 @@ var _ = Describe("Sql", func() {
 			})
 
 			It("succeeds", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("namespaces are set", func() {
+			BeforeEach(func() {
+				provider = kubernetes.Provider{
+					Name:          "test-name",
+					Host:          "test-host",
+					CAData:        "test-ca-data",
+					TokenProvider: "test-token",
+					Namespaces:    []string{"n1", "n2", "n3"},
+				}
+				mock.ExpectBegin()
+				mock.ExpectExec("(?i)^INSERT INTO `kubernetes_providers` \\(" +
+					"`name`" +
+					",`host`" +
+					",`ca_data`" +
+					",`bearer_token`" +
+					",`token_provider`" +
+					",`namespace`" +
+					"\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?\\)$").
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+
+				for i := 1; i <= 3; i++ {
+					mock.ExpectBegin()
+					mock.ExpectExec("INSERT INTO `kubernetes_providers_namespaces` \\(`account_name`,`namespace`\\) VALUES \\(\\?,\\?\\)").
+						WithArgs("test-name", "n"+fmt.Sprint(i)).
+						WillReturnResult(sqlmock.NewResult(int64(i), 1))
+
+					mock.ExpectCommit()
+
+					// we make sure that all expectations were met
+					if err := mock.ExpectationsWereMet(); err != nil {
+						fmt.Errorf("there were unfulfilled expections: %s", err)
+					}
+				}
+
+			})
+
+			It("adds the namespaces to the DB and succeeds", func() {
 				Expect(err).To(BeNil())
 			})
 		})
@@ -278,10 +325,17 @@ var _ = Describe("Sql", func() {
 				mock.ExpectCommit()
 
 				mock.ExpectBegin()
+				mock.ExpectExec("(?i)^DELETE FROM `" + kubernetes.ProviderNamespaces{}.TableName() + "` WHERE " +
+					"account_name = \\?$").
+					WillReturnResult(sqlmock.NewResult(1, 3))
+				mock.ExpectCommit()
+
+				mock.ExpectBegin()
 				mock.ExpectExec("(?i)^DELETE FROM `kubernetes_resources` WHERE " +
 					"account_name = \\?$").
 					WillReturnResult(sqlmock.NewResult(1, 10))
 				mock.ExpectCommit()
+
 			})
 
 			It("succeeds", func() {
@@ -329,10 +383,12 @@ var _ = Describe("Sql", func() {
 
 		When("it succeeds", func() {
 			BeforeEach(func() {
-				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data"}).
-					AddRow("test-name", "test-host", "test-ca-data")
-				mock.ExpectQuery("(?i)^SELECT host, ca_data, bearer_token, token_provider, namespace FROM `kubernetes_providers` " +
-					"WHERE name = \\? ORDER BY `kubernetes_providers`.`name` LIMIT 1$").
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "bearer_token", "token_provider", "legacy_namespace", "namespace"}).
+					AddRow("test-name", "test-host", "test-ca-data", "test-token", "google", nil, "ns1").
+					AddRow("test-name", "test-host", "test-ca-data", "test-token", "google", nil, "ns2")
+				mock.ExpectQuery("(?i)^SELECT a.host, a.ca_data, a.bearer_token, a.token_provider, a.namespace as legacy_namespace, b.namespace FROM kubernetes_providers a " +
+					"LEFT JOIN kubernetes_providers_namespaces b ON a.name = b.account_name " +
+					"WHERE a.name = \\?").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -342,6 +398,8 @@ var _ = Describe("Sql", func() {
 				Expect(provider.Name).To(Equal("test-name"))
 				Expect(provider.Host).To(Equal("test-host"))
 				Expect(provider.CAData).To(Equal("test-ca-data"))
+				Expect(provider.Namespace).To(BeNil())
+				Expect(provider.Namespaces).To(HaveLen(2))
 			})
 		})
 	})
@@ -359,18 +417,20 @@ var _ = Describe("Sql", func() {
 
 		When("it succeeds", func() {
 			BeforeEach(func() {
-				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "token_provider", "namespace", "read_group", "write_group"}).
-					AddRow("test-name", "test-host", "test-ca-data", "test-token-provider", nil, "test-read-group", "test-write-group")
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "token_provider", "legacy_namespace", "namespace", "read_group", "write_group"}).
+					AddRow("test-name", "test-host", "test-ca-data", "test-token-provider", nil, nil, "test-read-group", "test-write-group")
 				mock.ExpectQuery("(?i)^SELECT a.name," +
 					" a.host," +
 					" a.ca_data," +
 					" a.token_provider," +
-					" a.namespace," +
+					" a.namespace as legacy_namespace," +
+					" d.namespace," +
 					" b.read_group," +
 					" c.write_group" +
 					" FROM kubernetes_providers a" +
 					" LEFT JOIN provider_read_permissions b ON a.name = b.account_name " +
 					" LEFT JOIN provider_write_permissions c ON a.name = c.account_name" +
+					" LEFT JOIN kubernetes_providers_namespaces d ON a.name = d.account_name" +
 					" WHERE a.name = \\?").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
@@ -383,6 +443,40 @@ var _ = Describe("Sql", func() {
 				Expect(provider.CAData).To(Equal("test-ca-data"))
 				Expect(provider.TokenProvider).To(Equal("test-token-provider"))
 				Expect(provider.Namespace).To(BeNil())
+				Expect(provider.Permissions.Read[0]).To(Equal("test-read-group"))
+				Expect(provider.Permissions.Write[0]).To(Equal("test-write-group"))
+			})
+		})
+
+		When("namespaces is not nil", func() {
+			BeforeEach(func() {
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "token_provider", "legacy_namespace", "namespace", "read_group", "write_group"}).
+					AddRow("test-name", "test-host", "test-ca-data", "test-token-provider", nil, "n1", "test-read-group", "test-write-group")
+				mock.ExpectQuery("(?i)^SELECT a.name," +
+					" a.host," +
+					" a.ca_data," +
+					" a.token_provider," +
+					" a.namespace as legacy_namespace," +
+					" d.namespace," +
+					" b.read_group," +
+					" c.write_group" +
+					" FROM kubernetes_providers a" +
+					" LEFT JOIN provider_read_permissions b ON a.name = b.account_name " +
+					" LEFT JOIN provider_write_permissions c ON a.name = c.account_name" +
+					" LEFT JOIN kubernetes_providers_namespaces d on a.name = d.account_name" +
+					" WHERE a.name = \\?").
+					WillReturnRows(sqlRows)
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+				Expect(provider.Name).To(Equal("test-name"))
+				Expect(provider.Host).To(Equal("test-host"))
+				Expect(provider.CAData).To(Equal("test-ca-data"))
+				Expect(provider.TokenProvider).To(Equal("test-token-provider"))
+				Expect(provider.Namespace).To(BeNil())
+				Expect(provider.Namespaces[0]).To(Equal("n1"))
 				Expect(provider.Permissions.Read[0]).To(Equal("test-read-group"))
 				Expect(provider.Permissions.Write[0]).To(Equal("test-write-group"))
 			})
@@ -512,23 +606,29 @@ var _ = Describe("Sql", func() {
 
 		When("it succeeds", func() {
 			BeforeEach(func() {
-				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "token_provider", "namespace"}).
-					AddRow("name1", "host1", "ca_data1", "google", nil).
-					AddRow("name2", "host2", "ca_data2", "rancher", nil)
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "token_provider", "legacy_namespace", "namespace"}).
+					AddRow("name1", "host1", "ca_data1", "google", nil, "ns1").
+					AddRow("name1", "host1", "ca_data1", "google", nil, "ns2").
+					AddRow("name2", "host2", "ca_data2", "rancher", nil, "ns3").
+					AddRow("name3", "host3", "ca_data3", "rancher", "legacy-ns", nil)
 				mock.ExpectQuery("(?i)^SELECT " +
-					"name, " +
-					"host, " +
-					"ca_data, " +
-					"token_provider, " +
-					"namespace " +
-					"FROM `kubernetes_providers`$").
+					"a.name, " +
+					"a.host, " +
+					"a.ca_data, " +
+					"a.token_provider, " +
+					"a.namespace as legacy_namespace, " +
+					"b.namespace " +
+					"FROM kubernetes_providers a " +
+					"LEFT JOIN kubernetes_providers_namespaces b on a.name = b.account_name$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
 
 			It("succeeds", func() {
 				Expect(err).To(BeNil())
-				Expect(providers).To(HaveLen(2))
+				Expect(providers).To(HaveLen(3))
+				Expect(providers[0].Namespaces).To(HaveLen(2))
+				Expect(providers[2].Namespaces[0]).To(Equal("legacy-ns"))
 			})
 		})
 	})
@@ -560,39 +660,45 @@ var _ = Describe("Sql", func() {
 					"a.host, " +
 					"a.ca_data, " +
 					"a.token_provider, " +
-					"a.namespace, " +
+					"a.namespace as legacy_namespace, " +
+					"d.namespace, " +
 					"b.read_group, " +
 					"c.write_group " +
 					"FROM kubernetes_providers a " +
-					"left join provider_read_permissions b on a.name = b.account_name " +
-					"left join provider_write_permissions c on a.name = c.account_name$").
+					"LEFT JOIN provider_read_permissions b on a.name = b.account_name " +
+					"LEFT JOIN provider_write_permissions c on a.name = c.account_name " +
+					"LEFT JOIN kubernetes_providers_namespaces d on a.name = d.account_name$").
 					WillReturnRows(sqlRows)
 			})
 
 			It("returns an error", func() {
 				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(Equal("sql: expected 4 destination arguments in Scan, not 7"))
+				Expect(err.Error()).To(Equal("sql: expected 4 destination arguments in Scan, not 8"))
 			})
 		})
 
 		When("it succeeds", func() {
 			BeforeEach(func() {
-				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "google", "namespace", "read_group", "write_group"}).
-					AddRow("name1", "host1", "ca_data1", "google", "namespace1", "read_group1", "write_group1").
-					AddRow("name1", "host1", "ca_data1", "google", "namespace1", "read_group2", "write_group1").
-					AddRow("name2", "host2", "ca_data2", "rancher", nil, "read_group2", "write_group2").
-					AddRow("name2", "host2", "ca_data2", "rancher", nil, "read_group2", "write_group3")
+				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "google", "legacy_namespace", "namespace", "read_group", "write_group"}).
+					AddRow("name1", "host1", "ca_data1", "google", "namespace1", nil, "read_group1", "write_group1").
+					AddRow("name1", "host1", "ca_data1", "google", "namespace1", nil, "read_group2", "write_group1").
+					AddRow("name2", "host2", "ca_data2", "rancher", nil, nil, "read_group2", "write_group2").
+					AddRow("name2", "host2", "ca_data2", "rancher", nil, nil, "read_group2", "write_group3").
+					AddRow("name3", "host3", "ca_data3", "google", nil, "namespace2", "read_group3", "write_group3").
+					AddRow("name3", "host3", "ca_data3", "google", nil, "namespace3", "read_group3", "write_group3")
 				mock.ExpectQuery("(?i)^SELECT " +
 					"a.name, " +
 					"a.host, " +
 					"a.ca_data, " +
 					"a.token_provider, " +
-					"a.namespace, " +
+					"a.namespace as legacy_namespace, " +
+					"d.namespace, " +
 					"b.read_group, " +
 					"c.write_group " +
 					"FROM kubernetes_providers a " +
-					"left join provider_read_permissions b on a.name = b.account_name " +
-					"left join provider_write_permissions c on a.name = c.account_name$").
+					"LEFT JOIN provider_read_permissions b on a.name = b.account_name " +
+					"LEFT JOIN provider_write_permissions c on a.name = c.account_name " +
+					"LEFT JOIN kubernetes_providers_namespaces d on a.name = d.account_name$").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -600,13 +706,15 @@ var _ = Describe("Sql", func() {
 			It("succeeds", func() {
 				ns := "namespace1"
 				Expect(err).To(BeNil())
-				Expect(providers).To(HaveLen(2))
-				Expect(providers[0].Namespace).To(Equal(&ns))
+				Expect(providers).To(HaveLen(3))
+				Expect(providers[0].Namespace).To(BeNil())
+				Expect(providers[0].Namespaces[0]).To(Equal(ns))
 				Expect(providers[0].Permissions.Read).To(HaveLen(2))
 				Expect(providers[0].Permissions.Write).To(HaveLen(1))
 				Expect(providers[1].Namespace).To(BeNil())
 				Expect(providers[1].Permissions.Read).To(HaveLen(1))
 				Expect(providers[1].Permissions.Write).To(HaveLen(2))
+				Expect(providers[2].Namespaces).To(HaveLen(2))
 			})
 		})
 	})

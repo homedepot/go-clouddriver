@@ -745,26 +745,36 @@ func (cc *Controller) ListClustersByName(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*internal.DefaultListTimeoutSeconds)
 	defer cancel()
 
-	lo := metav1.ListOptions{
-		LabelSelector: kubernetes.DefaultLabelSelector(),
-	}
-	// If namespace-scoped account, then only get resources in the namespace.
-	if provider.Namespace != nil {
-		lo.FieldSelector = "metadata.namespace=" + *provider.Namespace
+	var lo []metav1.ListOptions
+
+	// If namespace-scoped account, then only get resources in the namespaces.
+	if len(provider.Namespaces) > 0 {
+		for _, ns := range provider.Namespaces {
+			lo = append(lo, metav1.ListOptions{
+				LabelSelector: kubernetes.DefaultLabelSelector(),
+				FieldSelector: "metadata.namespace=" + ns,
+			})
+		}
+	} else {
+		lo = []metav1.ListOptions{{LabelSelector: kubernetes.DefaultLabelSelector()}}
 	}
 
-	ul, err := provider.Client.ListResourceWithContext(ctx, kind, lo)
-	if err != nil {
-		clouddriver.Error(c, http.StatusInternalServerError, err)
-		return
-	}
+	var items []unstructured.Unstructured
 
-	// Filter out all unassociated objects based on the 'moniker.spinnaker.io/cluster' annotation.
-	items := kubernetes.FilterOnAnnotation(ul.Items,
-		kubernetes.AnnotationSpinnakerMonikerCluster, clusterName)
-	// Filter out all unassociated objects based on the 'moniker.spinnaker.io/application' annotation.
-	items = kubernetes.FilterOnAnnotation(items,
-		kubernetes.AnnotationSpinnakerMonikerApplication, application)
+	for _, opts := range lo {
+		ul, err := provider.Client.ListResourceWithContext(ctx, kind, opts)
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
+		// Filter out all unassociated objects based on the 'moniker.spinnaker.io/cluster' annotation.
+		filtered := kubernetes.FilterOnAnnotation(ul.Items,
+			kubernetes.AnnotationSpinnakerMonikerCluster, clusterName)
+		// Filter out all unassociated objects based on the 'moniker.spinnaker.io/application' annotation.
+		filtered = kubernetes.FilterOnAnnotation(filtered,
+			kubernetes.AnnotationSpinnakerMonikerApplication, application)
+		items = append(items, filtered...)
+	}
 
 	serverGroups := []ClusterServerGroupsServerGroup{}
 
@@ -1728,25 +1738,32 @@ func list(wg *sync.WaitGroup, rc chan resource,
 	defer cancel()
 	// List resources with the context.
 
-	var ul *unstructured.UnstructuredList
+	var items []unstructured.Unstructured
 
-	var err error
+	if len(provider.Namespaces) == 0 {
+		ul, err := provider.Client.ListResourceWithContext(ctx, r, lo)
+		if err != nil {
+			clouddriver.Log(err)
+			return
+		}
 
-	if provider.Namespace != nil {
-		ul, err = provider.Client.ListResourcesByKindAndNamespaceWithContext(ctx, r, *provider.Namespace, lo)
-	} else {
-		ul, err = provider.Client.ListResourceWithContext(ctx, r, lo)
+		items = append(items, ul.Items...)
 	}
 
-	if err != nil {
-		// If there was an error, log and return.
-		clouddriver.Log(err)
-		return
+	for _, ns := range provider.Namespaces {
+		ul, err := provider.Client.ListResourcesByKindAndNamespaceWithContext(ctx, r, ns, lo)
+		if err != nil {
+			clouddriver.Log(err)
+			return
+		}
+
+		items = append(items, ul.Items...)
 	}
+
 	// Sometimes the application annotation has a double quote ('"')
 	// character prefix and suffix, remove those to make sure we associate
 	// the resources correctly. This happens with the Spinnaker Operator, for example.
-	for _, item := range ul.Items {
+	for _, item := range items {
 		annotations := item.GetAnnotations()
 		if annotations != nil {
 			if _, ok := annotations[kubernetes.AnnotationSpinnakerMonikerApplication]; ok {
@@ -1761,7 +1778,7 @@ func list(wg *sync.WaitGroup, rc chan resource,
 	}
 	// Filter the results to only the application annotation requested.
 	for _, application := range applications {
-		items := kubernetes.FilterOnAnnotation(ul.Items,
+		items := kubernetes.FilterOnAnnotation(items,
 			kubernetes.AnnotationSpinnakerMonikerApplication, application)
 		// Send all unstructured objects to the channel.
 		for _, u := range items {

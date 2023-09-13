@@ -24,8 +24,9 @@ func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 		return
 	}
 
-	if provider.Namespace != nil {
-		namespace = *provider.Namespace
+	// Preserve backwards compatibility
+	if len(provider.Namespaces) == 1 {
+		namespace = provider.Namespaces[0]
 	}
 
 	b, err := json.Marshal(pm.PatchBody)
@@ -51,6 +52,12 @@ func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 		return
 	}
 
+	err = provider.ValidateNamespaceAccess(namespace)
+	if err != nil {
+		clouddriver.Error(c, http.StatusBadRequest, err)
+		return
+	}
+
 	// Only bind artifacts for "strategic" or "merge" strategy.
 	//
 	// See https://spinnaker.io/docs/guides/user/kubernetes-v2/patch-manifest/#override-artifacts
@@ -65,7 +72,7 @@ func (cc *Controller) Patch(c *gin.Context, pm PatchManifestRequest) {
 		u := unstructured.Unstructured{
 			Object: m,
 		}
-		kubernetes.BindArtifacts(&u, pm.AllArtifacts)
+		kubernetes.BindArtifacts(&u, pm.AllArtifacts, pm.Account)
 
 		b, err = json.Marshal(&u.Object)
 		if err != nil {

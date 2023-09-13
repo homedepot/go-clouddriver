@@ -9,7 +9,7 @@ import (
 
 	kube "github.com/homedepot/go-clouddriver/internal/api/core/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

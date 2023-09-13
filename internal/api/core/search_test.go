@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/homedepot/go-clouddriver/internal/api/core"
@@ -134,14 +134,14 @@ var _ = Describe("Search", func() {
 			BeforeEach(func() {
 				d := "default"
 				provider.Name = "account1"
-				provider.Namespace = &d
+				provider.Namespaces = []string{d}
 				fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{provider}, nil)
 			})
 
 			When("the namespace is incorrect", func() {
 				BeforeEach(func() {
 					d := "different-namespace"
-					provider.Namespace = &d
+					provider.Namespaces = []string{d}
 					fakeSQLClient.ListKubernetesProvidersReturns([]kubernetes.Provider{provider}, nil)
 				})
 

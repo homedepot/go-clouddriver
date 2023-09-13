@@ -7,30 +7,30 @@ info:
   license:
     name: "Apache 2.0"
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
-servers:
+servers: 
   - url: "http://spin-clouddriver.spinnaker:7002"
 tags:
-  - name: "core"
-    description: "Core endpoints to the microservice"
-  - name: "kubernetes"
-    description: "Endpoints that handle kubernetes operations"
-  - name: "credentials"
-    description: "Credentials API controller"
-  - name: "applications"
-    description: "Applications API controller"
-  - name: "manifests"
-    description: "Manifests API controller"
-  - name: "artifacts"
-    description: "Artifacts API controller"
-  - name: "tasks"
-    description: "Tasks API controller"
-  - name: "instances"
-    description: "Instances API controller"
+- name: "core"
+  description: "Core endpoints to the microservice"
+- name: "kubernetes"
+  description: "Endpoints that handle kubernetes operations"
+- name: "credentials"
+  description: "Credentials API controller"
+- name: "applications"
+  description: "Applications API controller"
+- name: "manifests"
+  description: "Manifests API controller"
+- name: "artifacts"
+  description: "Artifacts API controller"
+- name: "tasks"
+  description: "Tasks API controller"
+- name: "instances"
+  description: "Instances API controller"
 paths:
   /health:
     get:
       tags:
-        - "core"
+      - "core"
       summary: "Health check endpoint"
       responses:
         "200":
@@ -38,7 +38,7 @@ paths:
   /cache/kubernetes/manifest:
     post:
       tags:
-        - "kubernetes"
+      - "kubernetes"
       summary: "Force cache refresh"
       responses:
         "200":
@@ -46,7 +46,7 @@ paths:
   /credentials:
     get:
       tags:
-        - "credentials"
+      - "credentials"
       summary: "List account credentials"
       responses:
         "200":
@@ -56,13 +56,13 @@ paths:
   /credentials/{account}:
     get:
       parameters:
-        - name: "account"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "account"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       tags:
-        - "credentials"
+      - "credentials"
       summary: "Get account credentials"
       responses:
         "200":
@@ -72,7 +72,7 @@ paths:
   /applications:
     get:
       tags:
-        - "applications"
+      - "applications"
       summary: "List Spinnaker applications and associated cluster names"
       responses:
         "200":
@@ -82,13 +82,13 @@ paths:
   /applications/{application}/serverGroupManagers:
     get:
       parameters:
-        - name: "application"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "application"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       tags:
-        - "applications"
+      - "applications"
       summary: "List server group managers for a given Spinnaker application"
       responses:
         "200":
@@ -98,13 +98,13 @@ paths:
   /applications/{application}/serverGroups:
     get:
       parameters:
-        - name: "application"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "application"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       tags:
-        - "applications"
+      - "applications"
       summary: "List server groups for a given Spinnaker application"
       responses:
         "200":
@@ -114,28 +114,28 @@ paths:
   /applications/{application}/serverGroups/{account}/{location}/{name}:
     get:
       parameters:
-        - name: "application"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-        - name: "account"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-        - name: "location"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-        - name: "name"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "application"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "account"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "location"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       tags:
-        - "applications"
+      - "applications"
       summary: "Get a server group for a given application, account, location, and name"
       responses:
         "200":
@@ -145,13 +145,13 @@ paths:
   /applications/{application}/loadBalancers:
     get:
       parameters:
-        - name: "application"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "application"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       tags:
-        - "applications"
+      - "applications"
       summary: "List load balancers for a given Spinnaker application"
       responses:
         "200":
@@ -161,13 +161,13 @@ paths:
   /applications/{application}/clusters:
     get:
       parameters:
-        - name: "application"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "application"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       tags:
-        - "applications"
+      - "applications"
       summary: "List clusters for a given Spinnaker application"
       responses:
         "200":
@@ -177,7 +177,7 @@ paths:
   /kubernetes/ops:
     post:
       tags:
-        - "kubernetes"
+      - "kubernetes"
       summary: "Create a kubernetes operation"
       responses:
         "200":
@@ -187,23 +187,23 @@ paths:
   /manifests/{account}/{location}/{name}:
     get:
       tags:
-        - "manifests"
+      - "manifests"
       parameters:
-        - name: "account"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-        - name: "location"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-        - name: "name"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "account"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "location"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       summary: "Get a manifest for a given account, location, and name"
       responses:
         "200":
@@ -213,23 +213,23 @@ paths:
   /instances/{account}/{location}/{name}:
     get:
       tags:
-        - "instances"
+      - "instances"
       parameters:
-        - name: "account"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-        - name: "location"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-        - name: "name"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "account"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "location"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       summary: "Get an instance for a given account, location, and name"
       responses:
         "200":
@@ -239,28 +239,28 @@ paths:
   /instances/{account}/{location}/{name}/console:
     get:
       tags:
-        - "instances"
+      - "instances"
       parameters:
-        - name: "account"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-        - name: "location"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-        - name: "name"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-        - name: "provider"
-          in: "query"
-          required: true
-          schema:
-            type: "string"
+      - name: "account"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "location"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "provider"
+        in: "query"
+        required: true
+        schema:
+          type: "string"
       summary: "Get instance console logs for a given account, location, and name"
       responses:
         "200":
@@ -272,13 +272,13 @@ paths:
   /task/{id}:
     get:
       tags:
-        - "tasks"
+      - "tasks"
       parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       summary: "Get a task result"
       responses:
         "200":
@@ -290,7 +290,7 @@ paths:
   /artifacts/credentials:
     get:
       tags:
-        - "artifacts"
+      - "artifacts"
       summary: "List artifacts credentials"
       responses:
         "200":
@@ -298,13 +298,13 @@ paths:
   /artifacts/account/{account}/names:
     get:
       tags:
-        - "artifacts"
+      - "artifacts"
       parameters:
-        - name: "account"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "account"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       summary: "List artifact names for a given (helm) account"
       responses:
         "200":
@@ -314,13 +314,13 @@ paths:
   /artifacts/account/{account}/versions:
     get:
       tags:
-        - "artifacts"
+      - "artifacts"
       parameters:
-        - name: "account"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "account"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       summary: "List artifact versions for a given (helm) account"
       responses:
         "200":
@@ -330,7 +330,7 @@ paths:
   /artifacts/fetch/:
     put:
       tags:
-        - "artifacts"
+      - "artifacts"
       summary: "Retrieve a given artifact"
       responses:
         "200":
@@ -342,7 +342,7 @@ paths:
   /v1/kubernetes/providers:
     get:
       tags:
-        - "kubernetes"
+      - "kubernetes"
       summary: "Retrieves list of all Kubernetes accounts (providers)"
       responses:
         "200":
@@ -357,7 +357,7 @@ paths:
           description: "Internal Server Error"
     post:
       tags:
-        - "kubernetes"
+      - "kubernetes"
       summary: "Create a new Kubernetes account (provider)"
       requestBody:
         description: "Object that describes the kubernetes provider"
@@ -381,7 +381,7 @@ paths:
           description: "Internal Server Error"
     put:
       tags:
-        - "kubernetes"
+      - "kubernetes"
       summary: "Create, or replace, a Kubernetes account (provider)"
       requestBody:
         description: "Object that describes the kubernetes provider"
@@ -404,13 +404,13 @@ paths:
   /v1/kubernetes/providers/{name}:
     get:
       tags:
-        - "kubernetes"
+      - "kubernetes"
       parameters:
-        - name: "name"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       summary: "Retrieve a Kubernetes account (provider)"
       responses:
         "200":
@@ -425,13 +425,13 @@ paths:
           description: "Internal Server Error"
     delete:
       tags:
-        - "kubernetes"
+      - "kubernetes"
       parameters:
-        - name: "name"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       summary: "Delete a Kubernetes account (provider)"
       responses:
         "204":
@@ -443,13 +443,13 @@ paths:
   /v1/kubernetes/providers/{name}/resources:
     put:
       tags:
-        - "kubernetes"
+      - "kubernetes"
       parameters:
-        - name: "name"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       summary: "Updates resources, read from the cluster, for the Kubernetes account (provider)"
       responses:
         "200":
@@ -466,13 +466,13 @@ paths:
           description: "Internal Server Error"
     delete:
       tags:
-        - "kubernetes"
+      - "kubernetes"
       parameters:
-        - name: "name"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      - name: "name"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       summary: "Deletes the database entries for all resources for the Kubernetes account (provider)"
       responses:
         "204":
@@ -486,8 +486,8 @@ components:
     KubernetesProvider:
       type: "object"
       required:
-        - name
-        - host
+      - name
+      - host
       properties:
         name:
           type: "string"
@@ -521,8 +521,8 @@ components:
     KubernetesResource:
       type: "object"
       required:
-        - accountName
-        - id
+      - accountName
+      - id
       properties:
         acccountName:
           type: "string"
@@ -571,8 +571,8 @@ components:
     Permissions:
       type: "object"
       required:
-        - read
-        - write
+      - read
+      - write
       properties:
         read:
           type: "array"

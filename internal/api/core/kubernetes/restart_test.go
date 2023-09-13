@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -96,6 +96,34 @@ var _ = Describe("RollingRestart", func() {
 		})
 
 		When("the kind is supported", func() {
+			It("succeeds", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+				_, _, namespace := fakeKubeClient.GetArgsForCall(0)
+				Expect(namespace).To(Equal("provider-namespace"))
+			})
+		})
+	})
+
+	When("Using a multiple namespace-scoped provider", func() {
+		BeforeEach(func() {
+			fakeSQLClient.GetKubernetesProviderReturns(multipleNamespaceScopedProvider, nil)
+		})
+
+		When("the kind is not supported", func() {
+			BeforeEach(func() {
+				rollingRestartManifestRequest.ManifestName = "namespace someNamespace"
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusBadRequest))
+				Expect(c.Errors.Last().Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: 'namespace'"))
+			})
+		})
+
+		When("the kind is supported", func() {
+			BeforeEach(func() {
+				rollingRestartManifestRequest.Location = "provider-namespace"
+			})
 			It("succeeds", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 				_, _, namespace := fakeKubeClient.GetArgsForCall(0)
