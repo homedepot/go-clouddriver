@@ -386,7 +386,7 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"name", "host", "ca_data", "bearer_token", "token_provider", "legacy_namespace", "namespace"}).
 					AddRow("test-name", "test-host", "test-ca-data", "test-token", "google", nil, "ns1").
 					AddRow("test-name", "test-host", "test-ca-data", "test-token", "google", nil, "ns2")
-				mock.ExpectQuery("(?i)^SELECT a.host, a.ca_data, a.bearer_token, a.token_provider, a.namespace as legacy_namespace, b.namespace FROM kubernetes_providers a " +
+				mock.ExpectQuery("(?i)^SELECT a.name, a.host, a.ca_data, a.bearer_token, a.token_provider, a.namespace as legacy_namespace, b.namespace FROM kubernetes_providers a " +
 					"LEFT JOIN kubernetes_providers_namespaces b ON a.name = b.account_name " +
 					"WHERE a.name = \\?").
 					WillReturnRows(sqlRows)
