@@ -182,7 +182,7 @@ func (c *client) DeleteKubernetesResourcesByAccountName(account string) error {
 func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error) {
 	p := kubernetes.Provider{}
 	rows, err := c.db.Table("kubernetes_providers a").
-		Select("a.host, a.ca_data, a.bearer_token, a.token_provider, a.namespace as legacy_namespace, b.namespace").
+		Select("a.name, a.host, a.ca_data, a.bearer_token, a.token_provider, a.namespace as legacy_namespace, b.namespace").
 		Joins("LEFT JOIN "+kubernetes.ProviderNamespaces{}.TableName()+" b ON a.name = b.account_name").
 		Where("a.name = ?", name).
 		Rows()
@@ -202,8 +202,6 @@ func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error)
 			BearerToken     string
 			LegacyNamespace *string
 			Namespace       *string
-			ReadGroup       *string
-			WriteGroup      *string
 			TokenProvider   string
 		}
 
@@ -216,6 +214,7 @@ func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error)
 			Name:          r.Name,
 			Host:          r.Host,
 			CAData:        r.CAData,
+			BearerToken:   r.BearerToken,
 			TokenProvider: r.TokenProvider,
 		}
 
@@ -229,6 +228,10 @@ func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error)
 	}
 
 	p.Namespaces = namespaces
+
+	if p.Name == "" {
+		return p, gorm.ErrRecordNotFound
+	}
 
 	return p, nil
 }
@@ -323,6 +326,10 @@ func (c *client) GetKubernetesProviderAndPermissions(name string) (kubernetes.Pr
 	p.Permissions.Read = readGroups[name]
 	p.Permissions.Write = writeGroups[name]
 	p.Namespaces = namespaces
+
+	if p.Name == "" {
+		return p, gorm.ErrRecordNotFound
+	}
 
 	return p, nil
 }

@@ -354,7 +354,7 @@ var _ = Describe("Provider", func() {
 
 		When("the record is not found", func() {
 			BeforeEach(func() {
-				fakeSQLClient.GetKubernetesProviderAndPermissionsReturns(kubernetes.Provider{}, nil)
+				fakeSQLClient.GetKubernetesProviderAndPermissionsReturns(kubernetes.Provider{}, gorm.ErrRecordNotFound)
 			})
 
 			It("returns an error", func() {
