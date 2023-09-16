@@ -8,17 +8,17 @@ import (
 )
 
 var (
-	clusterScopedKinds = []string{
-		"apiService",
-		"clusterRole",
-		"clusterRoleBinding",
-		"customResourceDefinition",
-		"mutatingWebhookConfiguration",
-		"namespace",
-		"persistentVolume",
-		"podSecurityPolicy",
-		"storageClass",
-		"validatingWebhookConfiguration",
+	clusterScopedKinds = map[string]struct{}{
+		"apiservice":                     struct{}{},
+		"clusterrole":                    struct{}{},
+		"clusterrolebinding":             struct{}{},
+		"customresourcedefinition":       struct{}{},
+		"mutatingwebhookconfiguration":   struct{}{},
+		"namespace":                      struct{}{},
+		"persistentvolume":               struct{}{},
+		"podsecuritypolicy":              struct{}{},
+		"storageclass":                   struct{}{},
+		"validatingwebhookconfiguration": struct{}{},
 	}
 )
 
@@ -78,10 +78,8 @@ func (p *Provider) ValidateKindStatus(kind string) error {
 		return nil
 	}
 
-	for _, value := range clusterScopedKinds {
-		if strings.EqualFold(value, kind) {
-			return fmt.Errorf("namespace-scoped account not allowed to access cluster-scoped kind: '%s'", kind)
-		}
+	if _, v := clusterScopedKinds[strings.ToLower(kind)]; v {
+		return fmt.Errorf("namespace-scoped account not allowed to access cluster-scoped kind: '%s'", kind)
 	}
 
 	return nil
