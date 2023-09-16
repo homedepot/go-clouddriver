@@ -78,7 +78,7 @@ func (p *Provider) ValidateKindStatus(kind string) error {
 		return nil
 	}
 
-	if _, v := clusterScopedKinds[strings.ToLower(kind)]; v {
+	if _, clusterScoped := clusterScopedKinds[strings.ToLower(kind)]; clusterScoped {
 		return fmt.Errorf("namespace-scoped account not allowed to access cluster-scoped kind: '%s'", kind)
 	}
 
