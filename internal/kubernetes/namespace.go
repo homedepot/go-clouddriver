@@ -55,6 +55,6 @@ func setNamespaceIfScoped(namespace string, u *unstructured.Unstructured) {
 // See https://github.com/spinnaker/clouddriver/blob/58ab154b0ec0d62772201b5b319af349498a4e3f/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/description/manifest/KubernetesKindProperties.java#L31
 // for clouddriver OSS namespace-scoped kinds.
 func isNamespaceScoped(kind string) bool {
-	_, v := clusterScopedKinds[strings.ToLower(kind)]
-	return !v
+	_, clusterScoped := clusterScopedKinds[strings.ToLower(kind)]
+	return !clusterScoped
 }
