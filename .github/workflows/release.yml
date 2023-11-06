@@ -1,0 +1,14 @@
+name: Release
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  docker:
+    needs: build
+    uses: ./.github/workflows/docker-push.yml
+      
