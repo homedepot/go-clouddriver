@@ -51,3 +51,4 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/${{ env.IMAGE_NAME }}
             org.opencontainers.image.version=${{ env.RELEASE_VERSION }}
+            org.opencontainers.image.description=${{ github.event.release.body }}
