@@ -31,8 +31,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set release version
-        run: echo "RELEASE_VERSION=$(echo ${{ github.ref_name }} | sed 's/v//g' | sed 's/+/-/g')" >> $GITHUB_ENV
+      - name: Set release info
+        run: |
+          set -vx
+          echo "RELEASE_VERSION=$(echo ${{ github.ref_name }} | sed 's/v//g' | sed 's/+/-/g')" >> $GITHUB_ENV
+          if ${{ github.event_name }} != 'released'; then
+            echo "TAGS=${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}" >> $GITHUB_ENV
+          else
+            echo "TAGS=${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }},${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_ENV
+          fi
 
       - name: Build and push
         id: docker_build
@@ -40,9 +47,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: |
-            ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}
-            ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.TAGS }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ env.IMAGE_NAME }}
             org.opencontainers.image.version=${{ env.RELEASE_VERSION }}
