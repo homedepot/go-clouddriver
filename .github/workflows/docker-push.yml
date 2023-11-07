@@ -40,8 +40,7 @@ jobs:
           else
             echo "TAGS=${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }},${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_ENV
           fi
-          echo ${{ github.event_name }}
-          echo ${{ github.event }}
+          echo ${{ toJson(github.event) }}
 
     #   - name: Build and push
     #     id: docker_build
