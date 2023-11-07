@@ -34,8 +34,7 @@ jobs:
 
       - name: Set release info
         run: |
-          set -vx
-          if ${{ github.event.action }} != 'released'
+          if [[ ! ${{ github.event.action }} == "released" ]]; then
           then
             echo "TAGS=${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}" >> $GITHUB_ENV
           else
