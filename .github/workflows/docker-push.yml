@@ -5,6 +5,7 @@ on:
 env:
   CONTAINER_REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  RELEASE_VERSION: $(echo ${{ github.ref_name }} | sed 's/v//g' | sed 's/+/-/g')
 
 jobs:
   push:
@@ -34,13 +35,12 @@ jobs:
       - name: Set release info
         run: |
           set -vx
-          echo "RELEASE_VERSION=$(echo ${{ github.ref_name }} | sed 's/v//g' | sed 's/+/-/g')" >> $GITHUB_ENV
-          if [ "${{ github.action }}" != "released" ]; then
+          if ${{ github.event.action }} != 'released'
+          then
             echo "TAGS=${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}" >> $GITHUB_ENV
           else
             echo "TAGS=${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }},${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_ENV
           fi
-          ${{ toJson(github.event) }}
 
     #   - name: Build and push
     #     id: docker_build
