@@ -46,7 +46,7 @@ jobs:
           args: --skip-files .*_test.go --enable wsl --enable misspell --out-format=colored-line-number --timeout 180s
 
       - name: Build
-        run: GOOS=linux GOARCH=amd64 go build -v cmd/clouddriver/clouddriver.go
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v cmd/clouddriver/clouddriver.go
 
       - name: Test
         run: go test -v ./...
