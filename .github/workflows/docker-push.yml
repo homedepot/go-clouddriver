@@ -21,7 +21,6 @@ jobs:
       - name: Add executable permissions
         run: |
           chmod +x clouddriver
-          ls
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -52,6 +51,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.TAGS }}
           labels: |
