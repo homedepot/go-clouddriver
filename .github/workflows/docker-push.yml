@@ -18,6 +18,9 @@ jobs:
         with:
           name: build
 
+      - name: Add executable permissions
+        run: chmod +x clouddriver
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
