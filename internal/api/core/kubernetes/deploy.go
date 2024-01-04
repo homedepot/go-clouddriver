@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -73,6 +74,8 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 	for _, manifest := range manifests {
 		// Create a copy of the unstructured object since we access by reference.
 		manifest := manifest
+
+		log.Println("before processing ", manifest.GetAnnotations())
 
 		err = provider.ValidateKindStatus(manifest.GetKind())
 		if err != nil {
@@ -159,6 +162,8 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 				return
 			}
 		}
+
+		log.Println("after processing", manifest.GetAnnotations())
 
 		meta := kubernetes.Metadata{}
 		if kubernetes.Replace(manifest) {
