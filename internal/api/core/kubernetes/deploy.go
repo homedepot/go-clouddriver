@@ -51,6 +51,9 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
+
+	log.Println("check toUnstructured ", dm.Manifests, manifests)
+
 	// Merge all list element items into the manifest list.
 	manifests, err = mergeManifests(manifests)
 	if err != nil {
@@ -74,8 +77,6 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 	for _, manifest := range manifests {
 		// Create a copy of the unstructured object since we access by reference.
 		manifest := manifest
-
-		log.Println("before processing ", manifest, manifest.GetAnnotations())
 
 		err = provider.ValidateKindStatus(manifest.GetKind())
 		if err != nil {
