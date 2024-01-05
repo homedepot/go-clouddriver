@@ -75,7 +75,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		// Create a copy of the unstructured object since we access by reference.
 		manifest := manifest
 
-		log.Println("before processing ", manifest.GetAnnotations())
+		log.Println("before processing ", manifest)
 
 		err = provider.ValidateKindStatus(manifest.GetKind())
 		if err != nil {
@@ -163,7 +163,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			}
 		}
 
-		log.Println("after processing", manifest.GetAnnotations())
+		log.Println("after processing", manifest)
 
 		meta := kubernetes.Metadata{}
 		if kubernetes.Replace(manifest) {
