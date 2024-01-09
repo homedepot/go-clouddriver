@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -51,12 +50,6 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
-
-	m, b, e := unstructured.NestedStringMap(manifests[0].Object, "metadata", "annotations")
-
-	log.Println("printing unstructured manifest", manifests[0])
-
-	log.Println("mocking manifest.GetAnnotations()", m, b, e)
 
 	// Merge all list element items into the manifest list.
 	manifests, err = mergeManifests(manifests)
@@ -119,8 +112,6 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
 		}
-
-		log.Println("after spinnaker annotations ", manifest, manifest.GetAnnotations())
 
 		kubernetes.BindArtifacts(&manifest, artifacts, dm.Account)
 
