@@ -62,6 +62,7 @@ func ToUnstructured(manifest map[string]interface{}) (unstructured.Unstructured,
 
 	// If annotations exist in manifest and are map[string]interface, attempt to convert to map[string]string
 	annotations := make(map[string]string, len(m))
+
 	for k, v := range annotationsMap {
 		if str, ok := v.(string); ok {
 			annotations[k] = str
