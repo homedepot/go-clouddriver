@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,9 +44,32 @@ func ToUnstructured(manifest map[string]interface{}) (unstructured.Unstructured,
 		return unstructured.Unstructured{}, err
 	}
 
-	return unstructured.Unstructured{
+	u := unstructured.Unstructured{
 		Object: m,
-	}, nil
+	}
+
+	// Attempt to get annotations as map[string]string
+	// If no errors then nothing else needs to be done
+	if _, _, err := unstructured.NestedStringMap(u.Object, "metadata", "annotations"); err == nil {
+		return u, nil
+	}
+
+	// Attempt to get annotations as map[string]interface{}
+	annotationsMap, exists, err := unstructured.NestedMap(u.Object, "metadata", "annotations")
+	if err != nil || !exists {
+		return u, err
+	}
+
+	// If annotations exist in manifest and are map[string]interface, convert to map[string]string
+	annotations := make(map[string]string, len(annotationsMap))
+
+	for k, v := range annotationsMap {
+		annotations[k] = fmt.Sprintf("%v", v)
+	}
+
+	u.SetAnnotations(annotations)
+
+	return u, nil
 }
 
 func SetDefaultNamespaceIfScopedAndNoneSet(u *unstructured.Unstructured, helper *resource.Helper) {

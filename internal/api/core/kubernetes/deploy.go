@@ -50,6 +50,7 @@ func (cc *Controller) Deploy(c *gin.Context, dm DeployManifestRequest) {
 		clouddriver.Error(c, http.StatusBadRequest, err)
 		return
 	}
+
 	// Merge all list element items into the manifest list.
 	manifests, err = mergeManifests(manifests)
 	if err != nil {

@@ -48,6 +48,31 @@ var _ = Describe("Deploy", func() {
 		})
 	})
 
+	When("the manifest contains a non-string annotation", func() {
+		BeforeEach(func() {
+			deployManifestRequest.Manifests = []map[string]interface{}{
+				{
+					"kind":       "ConfigMap",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							kubernetes.AnnotationSpinnakerMaxVersionHistory: 10,
+							kubernetes.AnnotationSpinnakerReplaced:          true,
+						},
+						"name": "test",
+					},
+				},
+			}
+		})
+
+		It("suceeds and annotations are set properly", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			u := fakeKubeClient.ReplaceArgsForCall(0)
+			Expect(u.GetAnnotations()).To(HaveKeyWithValue(kubernetes.AnnotationSpinnakerMaxVersionHistory, "10"))
+			Expect(u.GetAnnotations()).To(HaveKeyWithValue(kubernetes.AnnotationSpinnakerReplaced, "true"))
+		})
+	})
+
 	Context("the kind is a list", func() {
 		var fakeUnstructured unstructured.Unstructured
 		var manifests []map[string]interface{}

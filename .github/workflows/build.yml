@@ -1,6 +1,7 @@
 name: Build
 
 on:
+  workflow_dispatch:
   push:
     branches: [master]
   pull_request:
@@ -25,7 +26,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: ^1.13
+          go-version: "1.18"
 
       - name: Get dependencies
         run: |
