@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"log"
 	"strings"
 
 	"github.com/homedepot/go-clouddriver/internal/artifact"
@@ -89,7 +88,6 @@ func BindArtifacts(u *unstructured.Unstructured,
 	artifacts []clouddriver.Artifact, account string) {
 	for _, a := range artifacts {
 		if !isBindable(a, account) {
-			log.Println("not bindable", a, account)
 			continue
 		}
 
@@ -100,7 +98,6 @@ func BindArtifacts(u *unstructured.Unstructured,
 			bindArtifact(u.Object, a, iterables(jsonPathDockerImageInitContainers)...)
 			bindArtifact(u.Object, a, iterables(jsonPathDockerImageInitContainersPod)...)
 		case artifact.TypeKubernetesConfigMap:
-			log.Println("is bindable ", u.Object, a)
 			bindArtifact(u.Object, a, iterables(jsonPathConfigMapVolume)...)
 			bindArtifact(u.Object, a, iterables(jsonPathConfigMapPodVolume)...)
 			bindArtifact(u.Object, a, iterables(jsonPathConfigMapProjectedVolume)...)
@@ -195,6 +192,8 @@ func bindArtifact(obj map[string]interface{}, a clouddriver.Artifact, paths ...s
 }
 
 func isBindable(artifact clouddriver.Artifact, account string) bool {
+	// If the artifact fails to provide an account,
+	// assume this was unintentional and match anyways
 	return artifact.Metadata.Account == "" || artifact.Metadata.Account == account
 }
 
