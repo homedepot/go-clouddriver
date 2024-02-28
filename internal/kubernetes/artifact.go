@@ -100,7 +100,7 @@ func BindArtifacts(u *unstructured.Unstructured,
 			bindArtifact(u.Object, a, iterables(jsonPathDockerImageInitContainers)...)
 			bindArtifact(u.Object, a, iterables(jsonPathDockerImageInitContainersPod)...)
 		case artifact.TypeKubernetesConfigMap:
-			log.Println("bindable ", u.Object, a)
+			log.Println("is bindable ", u.Object, a)
 			bindArtifact(u.Object, a, iterables(jsonPathConfigMapVolume)...)
 			bindArtifact(u.Object, a, iterables(jsonPathConfigMapPodVolume)...)
 			bindArtifact(u.Object, a, iterables(jsonPathConfigMapProjectedVolume)...)
@@ -195,7 +195,7 @@ func bindArtifact(obj map[string]interface{}, a clouddriver.Artifact, paths ...s
 }
 
 func isBindable(artifact clouddriver.Artifact, account string) bool {
-	return artifact.Metadata.Account == account
+	return artifact.Metadata.Account == "" || artifact.Metadata.Account == account
 }
 
 // FindArtifacts lists all artifacts found in a given manifest.
