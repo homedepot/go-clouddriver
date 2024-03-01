@@ -192,7 +192,9 @@ func bindArtifact(obj map[string]interface{}, a clouddriver.Artifact, paths ...s
 }
 
 func isBindable(artifact clouddriver.Artifact, account string) bool {
-	return artifact.Metadata.Account == account
+	// If the artifact fails to provide an account,
+	// assume this was unintentional and match anyways
+	return artifact.Metadata.Account == "" || artifact.Metadata.Account == account
 }
 
 // FindArtifacts lists all artifacts found in a given manifest.
