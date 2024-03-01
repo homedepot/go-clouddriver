@@ -2,6 +2,8 @@ package kubernetes_test
 
 import (
 	"errors"
+	"io/ioutil"
+	"log"
 	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,6 +17,7 @@ import (
 
 var _ = Describe("CleanupArtifacts", func() {
 	BeforeEach(func() {
+		log.SetOutput(ioutil.Discard)
 		setup()
 	})
 
