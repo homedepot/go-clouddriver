@@ -18,7 +18,6 @@ package disk_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -48,7 +47,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 	Describe("#Fresh", func() {
 		BeforeEach(func() {
-			d, err = ioutil.TempDir("", "")
+			d, err = os.MkdirTemp("", "")
 			Expect(err).To(BeNil())
 			c = &fakeDiscoveryClient{}
 			cdc = NewCachedDiscoveryClient(c, d, 60*time.Second)
@@ -169,7 +168,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 	Describe("#TTL", func() {
 		BeforeEach(func() {
-			d, err = ioutil.TempDir("", "")
+			d, err = os.MkdirTemp("", "")
 			Expect(err).To(BeNil())
 			c = &fakeDiscoveryClient{}
 			cdc = NewCachedDiscoveryClient(c, d, 1*time.Nanosecond)
@@ -195,7 +194,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 	Describe("#PathPerm", func() {
 		BeforeEach(func() {
-			d, err = ioutil.TempDir("", "")
+			d, err = os.MkdirTemp("", "")
 			Expect(err).To(BeNil())
 			os.RemoveAll(d)
 			c = &fakeDiscoveryClient{}

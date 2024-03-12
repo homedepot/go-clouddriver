@@ -2,7 +2,7 @@ package core_test
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -38,7 +38,7 @@ var _ = Describe("Application", func() {
 					SpinnakerApp: "test-spinnaker-app2",
 				},
 			}, nil)
-			log.SetOutput(ioutil.Discard)
+			log.SetOutput(io.Discard)
 		})
 
 		AfterEach(func() {
@@ -217,7 +217,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			log.SetOutput(ioutil.Discard)
+			log.SetOutput(io.Discard)
 		})
 
 		AfterEach(func() {
@@ -617,7 +617,7 @@ var _ = Describe("Application", func() {
 						},
 					},
 				}, nil)
-				log.SetOutput(ioutil.Discard)
+				log.SetOutput(io.Discard)
 			})
 
 			It("succeeds", func() {
@@ -1054,7 +1054,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			log.SetOutput(ioutil.Discard)
+			log.SetOutput(io.Discard)
 		})
 
 		AfterEach(func() {
@@ -1652,7 +1652,7 @@ var _ = Describe("Application", func() {
 					Cluster:     "test-kind3 test-name3",
 				},
 			}, nil)
-			log.SetOutput(ioutil.Discard)
+			log.SetOutput(io.Discard)
 		})
 
 		AfterEach(func() {
@@ -2473,7 +2473,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			log.SetOutput(ioutil.Discard)
+			log.SetOutput(io.Discard)
 		})
 
 		AfterEach(func() {
@@ -3624,7 +3624,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			log.SetOutput(ioutil.Discard)
+			log.SetOutput(io.Discard)
 		})
 
 		AfterEach(func() {
@@ -4062,7 +4062,7 @@ var _ = Describe("Application", func() {
 					},
 				},
 			}, nil)
-			log.SetOutput(ioutil.Discard)
+			log.SetOutput(io.Discard)
 		})
 
 		AfterEach(func() {
@@ -4129,7 +4129,7 @@ var _ = Describe("Application", func() {
 			setup()
 			uri = svr.URL + "/applications/test-application/jobs/test-account/test-namespace/job test-job1"
 			createRequest(http.MethodDelete)
-			log.SetOutput(ioutil.Discard)
+			log.SetOutput(io.Discard)
 		})
 
 		AfterEach(func() {

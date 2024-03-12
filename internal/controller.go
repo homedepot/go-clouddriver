@@ -7,7 +7,7 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	"github.com/homedepot/go-clouddriver/internal/arcade"
+	arcade "github.com/homedepot/arcade/pkg"
 	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/fiat"
 	"github.com/homedepot/go-clouddriver/internal/front50"
