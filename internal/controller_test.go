@@ -2,15 +2,15 @@ package internal_test
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/homedepot/arcade/pkg/arcadefakes"
 	"github.com/homedepot/go-clouddriver/internal"
-	"github.com/homedepot/go-clouddriver/internal/arcade/arcadefakes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/kubernetesfakes"
 	"github.com/homedepot/go-clouddriver/internal/sql/sqlfakes"
@@ -70,7 +70,7 @@ var _ = Describe("Controller", func() {
 			KubernetesController: fakeKubernetesController,
 			SQLClient:            fakeSQLClient,
 		}
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	})
 
 	Describe("#KubernetesProvider", func() {

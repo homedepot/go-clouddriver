@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	arcade "github.com/homedepot/arcade/pkg"
 	"github.com/homedepot/go-clouddriver/internal"
 	"github.com/homedepot/go-clouddriver/internal/api"
-	"github.com/homedepot/go-clouddriver/internal/arcade"
 	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/fiat"
 	"github.com/homedepot/go-clouddriver/internal/front50"
@@ -38,21 +38,15 @@ func main() {
 
 func setupArcadeClient() (client arcade.Client) {
 	url := os.Getenv("ARCADE_URL")
-	if url != "" {
-		client = arcade.NewClient(url)
-	} else {
-		client = arcade.NewDefaultClient()
-	}
-
 	arcadeAPIKey := os.Getenv("ARCADE_API_KEY")
 	if arcadeAPIKey == "" {
 		log.Println("[CLOUDDRIVER] WARNING: ARCADE_API_KEY not set")
 	}
+	if url != "" {
+		return arcade.NewClient(url, arcadeAPIKey)
+	}
 
-	client.WithAPIKey(arcadeAPIKey)
-	client.WithShortExpiration(arcadeShortExpirationSeconds)
-
-	return client
+	return arcade.NewDefaultClient(arcadeAPIKey)
 }
 
 func setupFiatClient() fiat.Client {

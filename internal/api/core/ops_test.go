@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	kube "github.com/homedepot/go-clouddriver/internal/api/core/kubernetes"
@@ -217,7 +217,7 @@ var _ = Describe("Kubernetes", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 				or := kube.OperationsResponse{}
-				b, _ := ioutil.ReadAll(res.Body)
+				b, _ := io.ReadAll(res.Body)
 				json.Unmarshal(b, &or)
 				uuidLen := 36
 				Expect(or.ID).To(HaveLen(uuidLen))

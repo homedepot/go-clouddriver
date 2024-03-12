@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -233,7 +233,7 @@ var _ = Describe("Search", func() {
 
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				b, _ := ioutil.ReadAll(res.Body)
+				b, _ := io.ReadAll(res.Body)
 				s := core.SearchResponse{}
 				err := json.Unmarshal(b, &s)
 				Expect(err).To(BeNil())

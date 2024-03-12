@@ -3,7 +3,7 @@ package helm
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 
@@ -94,7 +94,7 @@ func (c *client) GetIndex() (Index, error) {
 		return i, errors.New("error getting helm index: " + res.Status)
 	}
 
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return i, err
 	}
@@ -155,7 +155,7 @@ func (c *client) GetChart(name, version string) ([]byte, error) {
 			continue
 		}
 
-		b, err = ioutil.ReadAll(res.Body)
+		b, err = io.ReadAll(res.Body)
 		if err != nil {
 			continue
 		}

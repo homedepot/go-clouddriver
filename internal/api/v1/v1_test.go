@@ -2,15 +2,15 @@ package v1_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"mime"
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/gin-gonic/gin"
+	"github.com/homedepot/arcade/pkg/arcadefakes"
 	"github.com/homedepot/go-clouddriver/internal"
 	"github.com/homedepot/go-clouddriver/internal/api"
-	"github.com/homedepot/go-clouddriver/internal/arcade/arcadefakes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/kubernetesfakes"
 	"github.com/homedepot/go-clouddriver/internal/sql/sqlfakes"
@@ -202,7 +202,7 @@ func teardown() {
 }
 
 func createRequest(method string) {
-	req, _ = http.NewRequest(method, uri, ioutil.NopCloser(body))
+	req, _ = http.NewRequest(method, uri, io.NopCloser(body))
 	req.Header.Set("API-Key", "test")
 }
 
@@ -211,6 +211,6 @@ func doRequest() {
 }
 
 func validateResponse(expected string) {
-	actual, _ := ioutil.ReadAll(res.Body)
+	actual, _ := io.ReadAll(res.Body)
 	Expect(actual).To(MatchJSON(expected), "correct body")
 }

@@ -3,7 +3,7 @@ package core_test
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -38,7 +38,7 @@ var _ = Describe("Task", func() {
 			It("returns a failed task", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				t := clouddriver.Task{}
-				b, _ := ioutil.ReadAll(res.Body)
+				b, _ := io.ReadAll(res.Body)
 				err := json.Unmarshal(b, &t)
 				Expect(err).To(BeNil())
 				Expect(t.Status.Failed).To(BeTrue())
@@ -65,7 +65,7 @@ var _ = Describe("Task", func() {
 			It("returns a failed task", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				t := clouddriver.Task{}
-				b, _ := ioutil.ReadAll(res.Body)
+				b, _ := io.ReadAll(res.Body)
 				err := json.Unmarshal(b, &t)
 				Expect(err).To(BeNil())
 				Expect(t.Status.Failed).To(BeTrue())
@@ -181,7 +181,7 @@ var _ = Describe("Task", func() {
 			It("returns a failed task", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
 				t := clouddriver.Task{}
-				b, _ := ioutil.ReadAll(res.Body)
+				b, _ := io.ReadAll(res.Body)
 				err := json.Unmarshal(b, &t)
 				Expect(err).To(BeNil())
 				Expect(t.Status.Failed).To(BeTrue())

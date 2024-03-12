@@ -3,7 +3,7 @@ package middleware_test
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 
@@ -230,7 +230,7 @@ var _ = Describe("Auth", func() {
 
 	Describe("#AuthOps", func() {
 		BeforeEach(func() {
-			c.Request, _ = http.NewRequest(http.MethodPost, "", ioutil.NopCloser(bytes.NewReader([]byte(`[
+			c.Request, _ = http.NewRequest(http.MethodPost, "", io.NopCloser(bytes.NewReader([]byte(`[
 				{ "cleanupArtifacts": { "account": "test-cleanup-account" } },
 				{ "deleteManifest": { "account": "test-delete-account" } },
 				{ "deployManifest": { "account": "test-deploy-account" } },
@@ -264,7 +264,7 @@ var _ = Describe("Auth", func() {
 
 		When("no accounts found in payload", func() {
 			BeforeEach(func() {
-				c.Request, _ = http.NewRequest(http.MethodPost, "", ioutil.NopCloser(bytes.NewReader([]byte(`[
+				c.Request, _ = http.NewRequest(http.MethodPost, "", io.NopCloser(bytes.NewReader([]byte(`[
 					{
 						"rollingRestartManifest": {}
 					}

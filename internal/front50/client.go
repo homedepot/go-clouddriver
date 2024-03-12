@@ -3,7 +3,7 @@ package front50
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -77,7 +77,7 @@ func (c *client) Project(project string) (Response, error) {
 		return Response{}, fmt.Errorf("user authorization error: %s", res.Status)
 	}
 
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return Response{}, err
 	}
