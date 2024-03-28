@@ -68,9 +68,8 @@ var _ = Describe("Sql", func() {
 			"`cluster` varchar\\(256\\)," +
 			"PRIMARY KEY \\(`id`\\)," +
 			"INDEX `kind_account_name_kind_name_spinnaker_app_idx` \\(`account_name`, `kind`, `name`, `spinnaker_app`\\)," +
-			"INDEX `kind_idx` \\(`kind`\\)," +
 			"INDEX `task_id_idx` \\(`task_id`\\)," +
-			"INDEX `account_name_idx` \\(`account_name`\\)" +
+			"INDEX `kind_idx` \\(`kind`\\)" +
 			"\\)$").WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("CREATE TABLE `kubernetes_providers_namespaces` " +
 			"\\(`account_name` varchar\\(256\\)," +
