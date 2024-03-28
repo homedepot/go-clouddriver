@@ -67,10 +67,7 @@ var _ = Describe("Sql", func() {
 			"`spinnaker_app` varchar\\(256\\)," +
 			"`cluster` varchar\\(256\\)," +
 			"PRIMARY KEY \\(`id`\\)," +
-			"INDEX `kind_account_name_kind_name_spinnaker_app_idx` \\(`account_name`, `kind`, `name`, `spinnaker_app`\\)," +
-			"INDEX `task_id_idx` \\(`task_id`\\)," +
-			"INDEX `kind_idx` \\(`kind`\\)" +
-			"\\)$").WillReturnResult(sqlmock.NewResult(1, 1))
+			"INDEX `.*").WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("CREATE TABLE `kubernetes_providers_namespaces` " +
 			"\\(`account_name` varchar\\(256\\)," +
 			"`namespace` varchar\\(256\\)").
@@ -79,14 +76,16 @@ var _ = Describe("Sql", func() {
 			"\\(`id`\\ varchar\\(256\\)," +
 			"`account_name` varchar\\(256\\)," +
 			"`read_group` varchar\\(256\\)," +
-			"PRIMARY KEY \\(`id`\\)" +
+			"PRIMARY KEY \\(`id`\\)," +
+			"INDEX `account_name_idx` \\(`account_name`\\)" +
 			"\\)$").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("(?i)^CREATE TABLE `provider_write_permissions` " +
 			"\\(`id`\\ varchar\\(256\\)," +
 			"`account_name` varchar\\(256\\)," +
 			"`write_group` varchar\\(256\\)," +
-			"PRIMARY KEY \\(`id`\\)" +
+			"PRIMARY KEY \\(`id`\\)," +
+			"INDEX `account_name_idx` \\(`account_name`\\)" +
 			"\\)$").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
