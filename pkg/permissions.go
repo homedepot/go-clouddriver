@@ -7,7 +7,7 @@ type Permissions struct {
 
 type ReadPermission struct {
 	ID          string `json:"-" gorm:"primary_key"`
-	AccountName string `json:"accountName"`
+	AccountName string `json:"accountName" gorm:"index:account_name_idx,sort:asc"`
 	ReadGroup   string `json:"readGroup"`
 }
 
@@ -17,7 +17,7 @@ func (ReadPermission) TableName() string {
 
 type WritePermission struct {
 	ID          string `json:"-" gorm:"primary_key"`
-	AccountName string `json:"accountName"`
+	AccountName string `json:"accountName" gorm:"index:account_name_idx,sort:asc"`
 	WriteGroup  string `json:"writeGroup"`
 }
 
