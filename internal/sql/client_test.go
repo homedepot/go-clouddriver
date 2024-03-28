@@ -52,7 +52,7 @@ var _ = Describe("Sql", func() {
 			"\\)$").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("(?i)^CREATE TABLE `kubernetes_resources` " +
-			"\\(`account_name`\\ varchar\\(256\\)," +
+			"\\(`account_name` varchar\\(256\\)," +
 			"`id` varchar\\(256\\)," +
 			"`timestamp` timestamp DEFAULT current_timestamp," +
 			"`task_id` varchar\\(256\\)," +
@@ -66,9 +66,12 @@ var _ = Describe("Sql", func() {
 			"`kind` varchar\\(256\\)," +
 			"`spinnaker_app` varchar\\(256\\)," +
 			"`cluster` varchar\\(256\\)," +
-			"PRIMARY KEY \\(`id`\\)" +
-			"\\)$").
-			WillReturnResult(sqlmock.NewResult(1, 1))
+			"PRIMARY KEY \\(`id`\\)," +
+			"INDEX `kind_account_name_kind_name_spinnaker_app_idx` \\(`account_name`, `kind`, `name`, `spinnaker_app`\\)," +
+			"INDEX `kind_idx` \\(`kind`\\)," +
+			"INDEX `task_id_idx` \\(`task_id`\\)," +
+			"INDEX `account_name_idx` \\(`account_name`\\)" +
+			"\\)$").WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("CREATE TABLE `kubernetes_providers_namespaces` " +
 			"\\(`account_name` varchar\\(256\\)," +
 			"`namespace` varchar\\(256\\)").
