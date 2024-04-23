@@ -111,7 +111,7 @@ starting the application.
 First, an index to help the Applications API remain efficient.
 
 ```sql
-CREATE INDEX kind_account_name_kind_name_spinnaker_app_idx ON kubernetes_resources(account_name, kind, name, spinnaker_app);
+CREATE INDEX account_name_kind_name_spinnaker_app_idx ON kubernetes_resources(account_name, kind, name, spinnaker_app);
 ```
 
 Next, an index to assist in pulling "cluster" kinds from the `kubernetes_resources` table.
