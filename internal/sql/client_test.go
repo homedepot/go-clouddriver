@@ -70,7 +70,9 @@ var _ = Describe("Sql", func() {
 			"INDEX `.*").WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("CREATE TABLE `kubernetes_providers_namespaces` " +
 			"\\(`account_name` varchar\\(256\\)," +
-			"`namespace` varchar\\(256\\)").
+			"`namespace` varchar\\(256\\)," +
+			"UNIQUE INDEX `account_name_namespace_idx` \\(`account_name`,`namespace`\\)" +
+			"\\)$").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("(?i)^CREATE TABLE `provider_read_permissions` " +
 			"\\(`id`\\ varchar\\(256\\)," +
