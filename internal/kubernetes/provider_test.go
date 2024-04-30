@@ -1,16 +1,17 @@
 package kubernetes_test
 
 import (
-	. "github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/homedepot/go-clouddriver/internal/kubernetes"
 )
 
 var _ = Describe("Provider", func() {
 	var (
 		provider  Provider
 		kind      string
-		namespace string = "test-namespace"
+		namespace = "test-namespace"
 	)
 
 	Context("#ValidateKindStatus", func() {
@@ -24,20 +25,35 @@ var _ = Describe("Provider", func() {
 		})
 
 		When("Provider is namespace-scoped", func() {
+			clusterScopedKinds := []string{
+				"apiService",
+				"clusterRole",
+				"clusterRoleBinding",
+				"customResourceDefinition",
+				"mutatingWebhookConfiguration",
+				"namespace",
+				"persistentVolume",
+				"podSecurityPolicy",
+				"storageClass",
+				"validatingWebhookConfiguration",
+			}
+
 			BeforeEach(func() {
 				provider.Namespaces = []string{namespace}
 			})
 
-			When("kind is not allowed", func() {
-				BeforeEach(func() {
-					kind = "Namespace"
-				})
+			for _, k := range clusterScopedKinds {
+				When("kind "+k+" is not allowed", func() {
+					BeforeEach(func() {
+						kind = k
+					})
 
-				It("errors", func() {
-					Expect(err).ToNot(BeNil())
-					Expect(err.Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: 'Namespace'"))
+					It("errors", func() {
+						Expect(err).ToNot(BeNil())
+						Expect(err.Error()).To(Equal("namespace-scoped account not allowed to access cluster-scoped kind: '" + kind + "'"))
+					})
 				})
-			})
+			}
 
 			When("kind is allowed", func() {
 				It("succeeds", func() {
