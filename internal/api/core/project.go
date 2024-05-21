@@ -130,12 +130,12 @@ func (cc *Controller) ListProjectClusters(c *gin.Context) {
 				// Update project application summary info
 				pa.LastPush = max(pa.LastPush, pc.LastPush)
 				// Update project level summary info
-				p.InstanceCounts.Down = p.InstanceCounts.Down + pc.InstanceCounts.Down
-				p.InstanceCounts.OutOfService = p.InstanceCounts.OutOfService + pc.InstanceCounts.OutOfService
-				p.InstanceCounts.Starting = p.InstanceCounts.Starting + pc.InstanceCounts.Starting
-				p.InstanceCounts.Total = p.InstanceCounts.Total + pc.InstanceCounts.Total
-				p.InstanceCounts.Unknown = p.InstanceCounts.Unknown + pc.InstanceCounts.Unknown
-				p.InstanceCounts.Up = p.InstanceCounts.Up + pc.InstanceCounts.Up
+				p.InstanceCounts.Down += pc.InstanceCounts.Down
+				p.InstanceCounts.OutOfService += pc.InstanceCounts.OutOfService
+				p.InstanceCounts.Starting += pc.InstanceCounts.Starting
+				p.InstanceCounts.Total += pc.InstanceCounts.Total
+				p.InstanceCounts.Unknown += pc.InstanceCounts.Unknown
+				p.InstanceCounts.Up += pc.InstanceCounts.Up
 			}
 			// Add to list of project applications.
 			p.Applications = append(p.Applications, pa)

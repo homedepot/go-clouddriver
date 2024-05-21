@@ -42,7 +42,7 @@ func (cc *Controller) AuthApplication(permissions ...string) gin.HandlerFunc {
 				for _, p := range permissions {
 					found := find(auth.Authorizations, p)
 					if !found {
-						clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to application %s - required authorization: %s", app, p))
+						clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("access denied to application %s - required authorization: %s", app, p))
 						c.Abort()
 
 						return
@@ -80,7 +80,7 @@ func (cc *Controller) AuthAccount(permissions ...string) gin.HandlerFunc {
 				for _, p := range permissions {
 					found := find(auth.Authorizations, p)
 					if !found {
-						clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
+						clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("access denied to account %s - required authorization: %s", account, p))
 						c.Abort()
 
 						return
@@ -180,7 +180,7 @@ func (cc *Controller) AuthOps(permissions ...string) gin.HandlerFunc {
 						// Check if user has required permission to account.
 						permitted = find(auth.Authorizations, p)
 						if !permitted {
-							clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
+							clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("access denied to account %s - required authorization: %s", account, p))
 							c.Abort()
 
 							return
@@ -189,7 +189,7 @@ func (cc *Controller) AuthOps(permissions ...string) gin.HandlerFunc {
 				}
 				// User doesn't have any permission to account.
 				if !permitted {
-					clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("Access denied to account %s - required authorization: %s", account, p))
+					clouddriver.Error(c, http.StatusForbidden, fmt.Errorf("access denied to account %s - required authorization: %s", account, p))
 					c.Abort()
 
 					return

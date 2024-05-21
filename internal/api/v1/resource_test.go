@@ -2,7 +2,7 @@ package v1_test
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -20,7 +20,7 @@ var _ = Describe("Resource", func() {
 			setup()
 			fakeSQLClient.DeleteKubernetesResourcesByAccountNameReturns(nil)
 			fakeKubeClient.ListResourceWithContextReturns(&unstructured.UnstructuredList{}, nil)
-			log.SetOutput(ioutil.Discard)
+			log.SetOutput(io.Discard)
 
 			uri = svr.URL + "/v1/kubernetes/providers/test-account/resources"
 			body.Write([]byte(payloadRequestKubernetesProviders))

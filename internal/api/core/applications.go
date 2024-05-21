@@ -1662,7 +1662,7 @@ func DeleteJob(c *gin.Context) {
 
 // listApplicationsResources lists all accounts for a given app, then concurrently lists
 // all requested resources for the given app concurrently.
-func (cc *Controller) listApplicationResources(c *gin.Context, rs, accounts,
+func (cc *Controller) listApplicationResources(_ *gin.Context, rs, accounts,
 	applications []string) ([]resource, error) {
 	providers, err := cc.KubernetesProvidersForAccountsWithTimeout(accounts,
 		time.Second*internal.DefaultListTimeoutSeconds)

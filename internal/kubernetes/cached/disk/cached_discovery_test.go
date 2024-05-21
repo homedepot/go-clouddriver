@@ -18,7 +18,6 @@ package disk_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -27,13 +26,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
+	openapi_v2 "github.com/google/gnostic/openapiv2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/openapi"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/rest/fake"
 )
@@ -48,7 +48,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 	Describe("#Fresh", func() {
 		BeforeEach(func() {
-			d, err = ioutil.TempDir("", "")
+			d, err = os.MkdirTemp("", "")
 			Expect(err).To(BeNil())
 			c = &fakeDiscoveryClient{}
 			cdc = NewCachedDiscoveryClient(c, d, 60*time.Second)
@@ -169,7 +169,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 	Describe("#TTL", func() {
 		BeforeEach(func() {
-			d, err = ioutil.TempDir("", "")
+			d, err = os.MkdirTemp("", "")
 			Expect(err).To(BeNil())
 			c = &fakeDiscoveryClient{}
 			cdc = NewCachedDiscoveryClient(c, d, 1*time.Nanosecond)
@@ -195,7 +195,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 	Describe("#PathPerm", func() {
 		BeforeEach(func() {
-			d, err = ioutil.TempDir("", "")
+			d, err = os.MkdirTemp("", "")
 			Expect(err).To(BeNil())
 			os.RemoveAll(d)
 			c = &fakeDiscoveryClient{}
@@ -240,6 +240,16 @@ type fakeDiscoveryClient struct {
 	openAPICalls  int
 
 	serverResourcesHandler func() ([]*metav1.APIResourceList, error)
+}
+
+// OpenAPIV3 implements discovery.DiscoveryInterface.
+func (c *fakeDiscoveryClient) OpenAPIV3() openapi.Client {
+	panic("unimplemented")
+}
+
+// WithLegacy implements discovery.DiscoveryInterface.
+func (c *fakeDiscoveryClient) WithLegacy() discovery.DiscoveryInterface {
+	panic("unimplemented")
 }
 
 var _ discovery.DiscoveryInterface = &fakeDiscoveryClient{}

@@ -3,7 +3,7 @@ package core_test
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"mime"
 	"net/http"
@@ -294,7 +294,7 @@ func setup() {
 	svr = httptest.NewServer(r)
 	body = &bytes.Buffer{}
 	// Ignore log output.
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(io.Discard)
 }
 
 func teardown() {
@@ -303,7 +303,7 @@ func teardown() {
 }
 
 func createRequest(method string) {
-	req, _ = http.NewRequest(method, uri, ioutil.NopCloser(body))
+	req, _ = http.NewRequest(method, uri, io.NopCloser(body))
 	req.Header.Set("API-Key", "test")
 }
 
@@ -316,7 +316,7 @@ func validateResponse(expected string) {
 	Expect(mt).To(Equal("application/json"), "content-type")
 	Expect(mtp["charset"]).To(Equal("utf-8"), "charset")
 
-	actual, _ := ioutil.ReadAll(res.Body)
+	actual, _ := io.ReadAll(res.Body)
 	Expect(actual).To(MatchJSON(expected), "correct body")
 }
 
@@ -325,7 +325,7 @@ func validateTextResponse(expected string) {
 	Expect(mt).To(Equal("text/plain"), "content-type")
 	Expect(mtp["charset"]).To(Equal("utf-8"), "charset")
 
-	actual, _ := ioutil.ReadAll(res.Body)
+	actual, _ := io.ReadAll(res.Body)
 	Expect(string(actual)).To(Equal(expected), "correct body")
 }
 
@@ -333,13 +333,13 @@ func validateGZipResponse(expected []byte) {
 	mt, _, _ := mime.ParseMediaType(res.Header.Get("content-type"))
 	Expect(mt).To(Equal("application/x-gzip"), "content-type")
 
-	actual, _ := ioutil.ReadAll(res.Body)
+	actual, _ := io.ReadAll(res.Body)
 	Expect(actual).To(Equal(expected), "correct body")
 }
 
 func getClouddriverError() clouddriver.ErrorResponse {
 	ce := clouddriver.ErrorResponse{}
-	b, _ := ioutil.ReadAll(res.Body)
+	b, _ := io.ReadAll(res.Body)
 	_ = json.Unmarshal(b, &ce)
 
 	return ce

@@ -2,7 +2,7 @@ package v1_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"mime"
 	"net/http"
 	"net/http/httptest"
@@ -202,7 +202,7 @@ func teardown() {
 }
 
 func createRequest(method string) {
-	req, _ = http.NewRequest(method, uri, ioutil.NopCloser(body))
+	req, _ = http.NewRequest(method, uri, io.NopCloser(body))
 	req.Header.Set("API-Key", "test")
 }
 
@@ -211,6 +211,6 @@ func doRequest() {
 }
 
 func validateResponse(expected string) {
-	actual, _ := ioutil.ReadAll(res.Body)
+	actual, _ := io.ReadAll(res.Body)
 	Expect(actual).To(MatchJSON(expected), "correct body")
 }

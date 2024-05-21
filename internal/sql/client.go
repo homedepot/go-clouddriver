@@ -190,6 +190,7 @@ func (c *client) GetKubernetesProvider(name string) (kubernetes.Provider, error)
 	if err != nil {
 		return p, err
 	}
+
 	defer rows.Close()
 
 	namespaces := []string{}
@@ -370,7 +371,7 @@ func (c *client) ListKubernetesClustersByFields(fields ...string) ([]kubernetes.
 
 // ListKubernetesProviders gets all the kubernetes providers from the DB.
 func (c *client) ListKubernetesProviders() ([]kubernetes.Provider, error) {
-	var ps []kubernetes.Provider
+	ps := make([]kubernetes.Provider, 0)
 
 	rows, err := c.db.Table("kubernetes_providers a").
 		Select("a.name, " +

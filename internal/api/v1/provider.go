@@ -113,11 +113,10 @@ func (cc *Controller) ListKubernetesProvider(c *gin.Context) {
 	for providerIndex, provider := range providers {
 		if provider.Namespace == nil {
 			continue
-		} else {
-			provider.Namespaces = []string{*provider.Namespace}
-			provider.Namespace = nil
 		}
 
+		provider.Namespaces = []string{*provider.Namespace}
+		provider.Namespace = nil
 		providers[providerIndex] = provider
 	}
 

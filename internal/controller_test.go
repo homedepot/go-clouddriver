@@ -2,7 +2,7 @@ package internal_test
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 	"time"
 
@@ -70,7 +70,7 @@ var _ = Describe("Controller", func() {
 			KubernetesController: fakeKubernetesController,
 			SQLClient:            fakeSQLClient,
 		}
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	})
 
 	Describe("#KubernetesProvider", func() {

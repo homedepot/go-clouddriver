@@ -23,12 +23,13 @@ import (
 	"sync"
 	"time"
 
-	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
+	openapi_v2 "github.com/google/gnostic-models/openapiv2"
 	"github.com/gregjones/httpcache"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/openapi"
 	restclient "k8s.io/client-go/rest"
 )
 
@@ -42,8 +43,10 @@ type CachedDiscoveryClient interface {
 	ServerPreferredNamespacedResources() ([]*metav1.APIResourceList, error)
 	ServerVersion() (*version.Info, error)
 	OpenAPISchema() (*openapi_v2.Document, error)
+	OpenAPIV3() openapi.Client
 	Fresh() bool
 	Invalidate()
+	WithLegacy() discovery.DiscoveryInterface
 }
 
 // memCacheClient can Invalidate() to stay up-to-date with discovery
@@ -56,6 +59,16 @@ type memCacheClient struct {
 	fresh       bool
 
 	c *Cache
+}
+
+// OpenAPIV3 implements discovery.CachedDiscoveryInterface.
+func (m *memCacheClient) OpenAPIV3() openapi.Client {
+	panic("unimplemented")
+}
+
+// WithLegacy implements discovery.CachedDiscoveryInterface.
+func (m *memCacheClient) WithLegacy() discovery.DiscoveryInterface {
+	panic("unimplemented")
 }
 
 // entry represents an in-memory cache of an API discovery resource.
@@ -166,6 +179,14 @@ func (m *memCacheClient) getCachedEntry(key string) (entry, error) {
 }
 
 func (m *memCacheClient) createCachedEntry(key string, content interface{}) {
+	m.c.mutex.Lock()
+	defer m.c.mutex.Unlock()
+
+	m.c.entries[key] = newEntry(content)
+	m.ourEntries[key] = struct{}{}
+}
+
+func (m *memCacheClient) CachedDiscoveryInterface(key string, content interface{}) {
 	m.c.mutex.Lock()
 	defer m.c.mutex.Unlock()
 

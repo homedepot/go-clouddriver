@@ -19,9 +19,10 @@ var (
 	useDiskCache bool
 )
 
-//go:generate counterfeiter . Controller
 // Controller holds the ability to generate a new
 // dynamic kubernetes client.
+//
+//go:generate counterfeiter . Controller
 type Controller interface {
 	NewClient(*rest.Config) (Client, error)
 	NewClientset(*rest.Config) (Clientset, error)

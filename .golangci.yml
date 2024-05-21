@@ -1,0 +1,41 @@
+run:
+  concurrency: 8
+  issues-exit-code: 2
+  tests: false
+  timeout: 200s
+
+output:
+  formats:
+    - format: colored-line-number
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  fix: true
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gochecknoinits
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - dogsled
+    - errcheck
+    - exportloopref
+    - gocritic
+    - gofmt
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - prealloc
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+    - wsl

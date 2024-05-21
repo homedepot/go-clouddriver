@@ -18,14 +18,14 @@ package disk
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
-	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
+	openapi_v2 "github.com/google/gnostic-models/openapiv2"
 	"k8s.io/klog/v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/openapi"
 	restclient "k8s.io/client-go/rest"
 )
 
@@ -46,8 +47,10 @@ type CachedDiscoveryClient interface {
 	ServerPreferredNamespacedResources() ([]*metav1.APIResourceList, error)
 	ServerVersion() (*version.Info, error)
 	OpenAPISchema() (*openapi_v2.Document, error)
+	OpenAPIV3() openapi.Client
 	Fresh() bool
 	Invalidate()
+	WithLegacy() discovery.DiscoveryInterface
 }
 
 // CachedDiscoveryClient implements the functions that discovery server-supported API groups,
@@ -70,6 +73,16 @@ type cachedDiscoveryClient struct {
 	invalidated bool
 	// fresh is true if all used cache files were ours
 	fresh bool
+}
+
+// OpenAPIV3 implements discovery.CachedDiscoveryInterface.
+func (d *cachedDiscoveryClient) OpenAPIV3() openapi.Client {
+	panic("unimplemented")
+}
+
+// WithLegacy implements discovery.CachedDiscoveryInterface.
+func (d *cachedDiscoveryClient) WithLegacy() discovery.DiscoveryInterface {
+	panic("unimplemented")
 }
 
 var _ discovery.CachedDiscoveryInterface = &cachedDiscoveryClient{}
@@ -177,7 +190,7 @@ func (d *cachedDiscoveryClient) getCachedFile(filename string) ([]byte, error) {
 	}
 
 	// the cache is present and its valid.  Try to read and use it.
-	cachedBytes, err := ioutil.ReadAll(file)
+	cachedBytes, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +212,7 @@ func (d *cachedDiscoveryClient) writeCachedFile(filename string, obj runtime.Obj
 		return err
 	}
 
-	f, err := ioutil.TempFile(filepath.Dir(filename), filepath.Base(filename)+".")
+	f, err := os.CreateTemp(filepath.Dir(filename), filepath.Base(filename)+".")
 	if err != nil {
 		return err
 	}

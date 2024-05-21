@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -78,7 +78,7 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 		httpClients:         map[string]*http.Client{},
 	}
 
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func NewCredentialsController(dir string) (CredentialsController, error) {
 				path = ln
 			}
 
-			b, err := ioutil.ReadFile(path)
+			b, err := os.ReadFile(path)
 			if err != nil {
 				// Just continue if we're not able to read the 'file' as the file might be a symlink to
 				// a dir when using kubernetes ConfigMaps, for example:

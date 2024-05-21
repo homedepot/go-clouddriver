@@ -1,6 +1,7 @@
 package artifact_test
 
 import (
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -23,7 +24,7 @@ var _ = Describe("Controller", func() {
 
 	BeforeEach(func() {
 		dir = "test"
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	})
 
 	Describe("#NewCredentialsController", func() {
@@ -63,7 +64,7 @@ var _ = Describe("Controller", func() {
 			var tmpFile *os.File
 
 			BeforeEach(func() {
-				tmpFile, err = ioutil.TempFile("test", "cred*.json")
+				tmpFile, err = os.CreateTemp("test", "cred*.json")
 				_, err = tmpFile.WriteString("{}")
 				Expect(err).To(BeNil())
 			})
@@ -82,7 +83,7 @@ var _ = Describe("Controller", func() {
 			var tmpFile *os.File
 
 			BeforeEach(func() {
-				tmpFile, err = ioutil.TempFile("test", "cred*.json")
+				tmpFile, err = os.CreateTemp("test", "cred*.json")
 				_, err = tmpFile.WriteString(`{
 					"name": "helm-test"
 				}`)
@@ -103,7 +104,7 @@ var _ = Describe("Controller", func() {
 			var tmpFile *os.File
 
 			BeforeEach(func() {
-				tmpFile, err = ioutil.TempFile("test", "gcs-fake.json")
+				tmpFile, err = os.CreateTemp("test", "gcs-fake.json")
 				_, err = tmpFile.WriteString(`{
 					"name": "gcs-fake",
 					"types": [
@@ -128,7 +129,7 @@ var _ = Describe("Controller", func() {
 			var tmpFile *os.File
 
 			BeforeEach(func() {
-				tmpFile, err = ioutil.TempFile("test", "cred*.json")
+				tmpFile, err = os.CreateTemp("test", "cred*.json")
 				_, err = tmpFile.WriteString(`{
           "enterprise": true,
 					"name": "github.example2.com",
@@ -153,7 +154,7 @@ var _ = Describe("Controller", func() {
 			var tmpFile *os.File
 
 			BeforeEach(func() {
-				tmpFile, err = ioutil.TempFile("test", "cred*.json")
+				tmpFile, err = os.CreateTemp("test", "cred*.json")
 				_, err = tmpFile.WriteString(`{
           "baseURL": ":haha",
           "enterprise": true,
@@ -179,7 +180,7 @@ var _ = Describe("Controller", func() {
 			var tmpFile *os.File
 
 			BeforeEach(func() {
-				tmpFile, err = ioutil.TempFile("test", "cred*.json")
+				tmpFile, err = os.CreateTemp("test", "cred*.json")
 				_, err = tmpFile.WriteString(`{
 					"name": "helm-test2",
 					"types": [
