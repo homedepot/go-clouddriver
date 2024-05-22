@@ -242,16 +242,6 @@ type fakeDiscoveryClient struct {
 	serverResourcesHandler func() ([]*metav1.APIResourceList, error)
 }
 
-// OpenAPIV3 implements discovery.DiscoveryInterface.
-func (c *fakeDiscoveryClient) OpenAPIV3() openapi.Client {
-	panic("unimplemented")
-}
-
-// WithLegacy implements discovery.DiscoveryInterface.
-func (c *fakeDiscoveryClient) WithLegacy() discovery.DiscoveryInterface {
-	panic("unimplemented")
-}
-
 var _ discovery.DiscoveryInterface = &fakeDiscoveryClient{}
 
 func (c *fakeDiscoveryClient) RESTClient() restclient.Interface {
@@ -259,7 +249,7 @@ func (c *fakeDiscoveryClient) RESTClient() restclient.Interface {
 }
 
 func (c *fakeDiscoveryClient) ServerGroups() (*metav1.APIGroupList, error) {
-	c.groupCalls = c.groupCalls + 1
+	c.groupCalls++
 	return c.serverGroups()
 }
 
@@ -284,7 +274,7 @@ func (c *fakeDiscoveryClient) serverGroups() (*metav1.APIGroupList, error) {
 }
 
 func (c *fakeDiscoveryClient) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
-	c.resourceCalls = c.resourceCalls + 1
+	c.resourceCalls++
 
 	if groupVersion == "a/v1" {
 		return &metav1.APIResourceList{APIResources: []metav1.APIResource{{Name: "widgets", Kind: "Widget"}}}, nil
@@ -300,7 +290,7 @@ func (c *fakeDiscoveryClient) ServerResources() ([]*metav1.APIResourceList, erro
 }
 
 func (c *fakeDiscoveryClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []*metav1.APIResourceList, error) {
-	c.resourceCalls = c.resourceCalls + 1
+	c.resourceCalls++
 
 	gs, _ := c.serverGroups()
 	resultGroups := []*metav1.APIGroup{}
@@ -318,21 +308,30 @@ func (c *fakeDiscoveryClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []
 }
 
 func (c *fakeDiscoveryClient) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
-	c.resourceCalls = c.resourceCalls + 1
+	c.resourceCalls++
 	return nil, nil
 }
 
 func (c *fakeDiscoveryClient) ServerPreferredNamespacedResources() ([]*metav1.APIResourceList, error) {
-	c.resourceCalls = c.resourceCalls + 1
+	c.resourceCalls++
 	return nil, nil
 }
 
 func (c *fakeDiscoveryClient) ServerVersion() (*version.Info, error) {
-	c.versionCalls = c.versionCalls + 1
+	c.versionCalls++
 	return &version.Info{}, nil
 }
 
 func (c *fakeDiscoveryClient) OpenAPISchema() (*openapi_v2.Document, error) {
-	c.openAPICalls = c.openAPICalls + 1
+	c.openAPICalls++
 	return &openapi_v2.Document{}, nil
+}
+
+func (c *fakeDiscoveryClient) OpenAPIV3() openapi.Client {
+	c.openAPICalls++
+	return nil
+}
+
+func (c *fakeDiscoveryClient) WithLegacy() discovery.DiscoveryInterface {
+	return &discovery.DiscoveryClient{}
 }
