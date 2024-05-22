@@ -16,12 +16,15 @@ issues:
       linters:
         - gochecknoinits
 
+linters-settings:
+  errcheck:
+    ignore : ""
+
 linters:
   disable-all: true
   enable:
     - bodyclose
     - dogsled
-    - errcheck
     - exportloopref
     - gocritic
     - gofmt

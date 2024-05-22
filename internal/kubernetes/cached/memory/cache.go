@@ -44,9 +44,9 @@ type CachedDiscoveryClient interface {
 	ServerVersion() (*version.Info, error)
 	OpenAPISchema() (*openapi_v2.Document, error)
 	OpenAPIV3() openapi.Client
+	WithLegacy() discovery.DiscoveryInterface
 	Fresh() bool
 	Invalidate()
-	WithLegacy() discovery.DiscoveryInterface
 }
 
 // memCacheClient can Invalidate() to stay up-to-date with discovery
@@ -59,16 +59,6 @@ type memCacheClient struct {
 	fresh       bool
 
 	c *Cache
-}
-
-// OpenAPIV3 implements discovery.CachedDiscoveryInterface.
-func (m *memCacheClient) OpenAPIV3() openapi.Client {
-	panic("unimplemented")
-}
-
-// WithLegacy implements discovery.CachedDiscoveryInterface.
-func (m *memCacheClient) WithLegacy() discovery.DiscoveryInterface {
-	panic("unimplemented")
 }
 
 // entry represents an in-memory cache of an API discovery resource.
@@ -228,6 +218,16 @@ func (m *memCacheClient) ServerVersion() (*version.Info, error) {
 // OpenAPISchema retrieves and parses the swagger API schema the server supports.
 func (m *memCacheClient) OpenAPISchema() (*openapi_v2.Document, error) {
 	return m.delegate.OpenAPISchema()
+}
+
+// OpenAPIV3 implements discovery.CachedDiscoveryInterface.
+func (m *memCacheClient) OpenAPIV3() openapi.Client {
+	return m.delegate.OpenAPIV3()
+}
+
+// WithLegacy implements discovery.CachedDiscoveryInterface.
+func (m *memCacheClient) WithLegacy() discovery.DiscoveryInterface {
+	return m.delegate.WithLegacy()
 }
 
 // Fresh is supposed to tell the caller whether or not to retry if the cache

@@ -48,9 +48,9 @@ type CachedDiscoveryClient interface {
 	ServerVersion() (*version.Info, error)
 	OpenAPISchema() (*openapi_v2.Document, error)
 	OpenAPIV3() openapi.Client
+	WithLegacy() discovery.DiscoveryInterface
 	Fresh() bool
 	Invalidate()
-	WithLegacy() discovery.DiscoveryInterface
 }
 
 // CachedDiscoveryClient implements the functions that discovery server-supported API groups,
@@ -73,16 +73,6 @@ type cachedDiscoveryClient struct {
 	invalidated bool
 	// fresh is true if all used cache files were ours
 	fresh bool
-}
-
-// OpenAPIV3 implements discovery.CachedDiscoveryInterface.
-func (d *cachedDiscoveryClient) OpenAPIV3() openapi.Client {
-	panic("unimplemented")
-}
-
-// WithLegacy implements discovery.CachedDiscoveryInterface.
-func (d *cachedDiscoveryClient) WithLegacy() discovery.DiscoveryInterface {
-	panic("unimplemented")
 }
 
 var _ discovery.CachedDiscoveryInterface = &cachedDiscoveryClient{}
@@ -274,6 +264,16 @@ func (d *cachedDiscoveryClient) ServerVersion() (*version.Info, error) {
 // OpenAPISchema retrieves and parses the swagger API schema the server supports.
 func (d *cachedDiscoveryClient) OpenAPISchema() (*openapi_v2.Document, error) {
 	return d.delegate.OpenAPISchema()
+}
+
+// OpenAPIV3 implements discovery.CachedDiscoveryInterface.
+func (d *cachedDiscoveryClient) OpenAPIV3() openapi.Client {
+	return d.delegate.OpenAPIV3()
+}
+
+// WithLegacy implements discovery.CachedDiscoveryInterface.
+func (d *cachedDiscoveryClient) WithLegacy() discovery.DiscoveryInterface {
+	return d.delegate.WithLegacy()
 }
 
 // Fresh is supposed to tell the caller whether or not to retry if the cache
