@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/homedepot/go-clouddriver/internal/kubernetes"
 )
 
@@ -262,7 +261,7 @@ var _ = Describe("Annotation", func() {
 
 				It("annotates the location annotation with empty string", func() {
 					annotations := u.GetAnnotations()
-					Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal(""))
+					Expect(annotations[AnnotationSpinnakerArtifactLocation]).To(Equal(""))
 				})
 			})
 
@@ -280,7 +279,7 @@ var _ = Describe("Annotation", func() {
 
 				It("annotates the location annotation with the namespace", func() {
 					annotations := u.GetAnnotations()
-					Expect(annotations[kubernetes.AnnotationSpinnakerArtifactLocation]).To(Equal("test-namespace"))
+					Expect(annotations[AnnotationSpinnakerArtifactLocation]).To(Equal("test-namespace"))
 				})
 			})
 		})

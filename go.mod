@@ -13,6 +13,7 @@ require (
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/uuid v1.6.0
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
+	github.com/homedepot/arcade v1.3.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/onsi/ginkgo/v2 v2.18.0

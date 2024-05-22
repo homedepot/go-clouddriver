@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 
 	"github.com/gin-gonic/gin"
+	"github.com/homedepot/arcade/pkg/arcadefakes"
 	"github.com/homedepot/go-clouddriver/internal"
-	"github.com/homedepot/go-clouddriver/internal/arcade/arcadefakes"
 	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"

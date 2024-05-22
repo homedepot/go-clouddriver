@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/homedepot/arcade/pkg/arcadefakes"
 	"github.com/homedepot/go-clouddriver/internal"
-	"github.com/homedepot/go-clouddriver/internal/arcade/arcadefakes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/kubernetesfakes"
 	"github.com/homedepot/go-clouddriver/internal/sql/sqlfakes"

@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 
 	. "github.com/homedepot/go-clouddriver/internal/kubernetes"
 )
@@ -66,7 +67,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal(""))
+					Expect(requirement.Operator()).Should(Equal(selection.Equals))
+					Expect(requirement.String()).To(Equal("=value1"))
 				})
 			})
 
@@ -77,7 +80,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.Equals))
+					Expect(requirement.String()).To(Equal("key1="))
 				})
 			})
 
@@ -88,7 +93,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.Equals))
+					Expect(requirement.String()).To(Equal("key1="))
 				})
 			})
 
@@ -99,7 +106,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.Equals))
+					Expect(requirement.String()).To(Equal("key1=value1,value2"))
 				})
 			})
 
@@ -125,7 +134,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal(""))
+					Expect(requirement.Operator()).Should(Equal(selection.NotEquals))
+					Expect(requirement.String()).To(Equal("!=value1"))
 				})
 			})
 
@@ -136,7 +147,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.NotEquals))
+					Expect(requirement.String()).To(Equal("key1!="))
 				})
 			})
 
@@ -147,7 +160,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.NotEquals))
+					Expect(requirement.String()).To(Equal("key1!="))
 				})
 			})
 
@@ -158,13 +173,17 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.NotEquals))
+					Expect(requirement.String()).To(Equal("key1!=value1,value2"))
 				})
 			})
 
 			Context("key and values are set", func() {
 				It("succeeds", func() {
 					Expect(err).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.NotEquals))
 					Expect(requirement.String()).To(Equal("key1!=value1"))
 				})
 			})
@@ -184,7 +203,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal(""))
+					Expect(requirement.Operator()).Should(Equal(selection.Exists))
+					Expect(requirement.String()).To(Equal(""))
 				})
 			})
 
@@ -195,13 +216,17 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.Exists))
+					Expect(requirement.String()).To(Equal("key1"))
 				})
 			})
 
 			Context("just key is set", func() {
 				It("succeeds", func() {
 					Expect(err).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.Exists))
 					Expect(requirement.String()).To(Equal("key1"))
 				})
 			})
@@ -221,7 +246,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal(""))
+					Expect(requirement.Operator()).Should(Equal(selection.DoesNotExist))
+					Expect(requirement.String()).To(Equal("!"))
 				})
 			})
 
@@ -232,13 +259,17 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.DoesNotExist))
+					Expect(requirement.String()).To(Equal("!key1"))
 				})
 			})
 
 			Context("just key is set", func() {
 				It("succeeds", func() {
 					Expect(err).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.DoesNotExist))
 					Expect(requirement.String()).To(Equal("!key1"))
 				})
 			})
@@ -258,7 +289,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal(""))
+					Expect(requirement.Operator()).Should(Equal(selection.In))
+					Expect(requirement.String()).To(Equal(" in (value1,value2)"))
 				})
 			})
 
@@ -269,7 +302,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.In))
+					Expect(requirement.String()).To(Equal("key1 in ()"))
 				})
 			})
 
@@ -280,7 +315,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.In))
+					Expect(requirement.String()).To(Equal("key1 in ()"))
 				})
 			})
 
@@ -291,6 +328,8 @@ var _ = Describe("Label Selector", func() {
 
 				It("succeeds", func() {
 					Expect(err).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.In))
 					Expect(requirement.String()).To(Equal("key1 in (value1)"))
 				})
 			})
@@ -298,6 +337,8 @@ var _ = Describe("Label Selector", func() {
 			Context("there is more than one value", func() {
 				It("succeeds", func() {
 					Expect(err).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.In))
 					Expect(requirement.String()).To(Equal("key1 in (value1,value2)"))
 				})
 			})
@@ -317,7 +358,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal(""))
+					Expect(requirement.Operator()).Should(Equal(selection.NotIn))
+					Expect(requirement.String()).To(Equal(" notin (value1,value2)"))
 				})
 			})
 
@@ -328,7 +371,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.NotIn))
+					Expect(requirement.String()).To(Equal("key1 notin ()"))
 				})
 			})
 
@@ -339,7 +384,9 @@ var _ = Describe("Label Selector", func() {
 
 				It("errors", func() {
 					Expect(err).To(Not(BeNil()))
-					Expect(requirement).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.NotIn))
+					Expect(requirement.String()).To(Equal("key1 notin ()"))
 				})
 			})
 
@@ -350,6 +397,8 @@ var _ = Describe("Label Selector", func() {
 
 				It("succeeds", func() {
 					Expect(err).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.NotIn))
 					Expect(requirement.String()).To(Equal("key1 notin (value1)"))
 				})
 			})
@@ -357,6 +406,8 @@ var _ = Describe("Label Selector", func() {
 			Context("there is more than one value", func() {
 				It("succeeds", func() {
 					Expect(err).To(BeNil())
+					Expect(requirement.Key()).Should(Equal("key1"))
+					Expect(requirement.Operator()).Should(Equal(selection.NotIn))
 					Expect(requirement.String()).To(Equal("key1 notin (value1,value2)"))
 				})
 			})

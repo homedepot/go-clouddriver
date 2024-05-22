@@ -2,7 +2,6 @@ package artifact_test
 
 import (
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -47,7 +46,7 @@ var _ = Describe("Controller", func() {
 			var tmpFile *os.File
 
 			BeforeEach(func() {
-				tmpFile, err = ioutil.TempFile("test", "cred*.json")
+				tmpFile, err = os.CreateTemp("test", "cred*.json")
 			})
 
 			AfterEach(func() {

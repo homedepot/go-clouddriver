@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	. "github.com/homedepot/go-clouddriver/internal/kubernetes"
 )
 
@@ -382,7 +381,7 @@ var _ = Describe("Label", func() {
 				}
 				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
-				version = kubernetes.SpinnakerVersion{
+				version = SpinnakerVersion{
 					Long:  "v002",
 					Short: "2",
 				}
@@ -421,7 +420,7 @@ var _ = Describe("Label", func() {
 				}
 				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
-				version = kubernetes.SpinnakerVersion{
+				version = SpinnakerVersion{
 					Long:  "v002",
 					Short: "2",
 				}
@@ -460,7 +459,7 @@ var _ = Describe("Label", func() {
 				}
 				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
-				version = kubernetes.SpinnakerVersion{
+				version = SpinnakerVersion{
 					Long:  "v002",
 					Short: "2",
 				}
@@ -499,7 +498,7 @@ var _ = Describe("Label", func() {
 				}
 				u, err = ToUnstructured(m)
 				Expect(err).To(BeNil())
-				version = kubernetes.SpinnakerVersion{
+				version = SpinnakerVersion{
 					Long:  "v002",
 					Short: "2",
 				}
