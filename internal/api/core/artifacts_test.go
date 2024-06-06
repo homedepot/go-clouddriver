@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/homedepot/go-clouddriver/internal/helm"
@@ -568,7 +568,7 @@ var _ = Describe("Artifacts", func() {
 					body.Write([]byte(fmt.Sprintf(payloadRequestFetchGitRepoArtifactBranch, fakeFileServer.URL())))
 					createRequest(http.MethodPut)
 
-					actual, err := ioutil.ReadFile("test/git-repo-test.tar.gz")
+					actual, err := os.ReadFile("test/git-repo-test.tar.gz")
 					Expect(err).To(BeNil())
 					fakeFileServer.AppendHandlers(ghttp.CombineHandlers(
 						ghttp.VerifyRequest(http.MethodGet, "/git-repo/archive/test.tar.gz"),
@@ -577,7 +577,7 @@ var _ = Describe("Artifacts", func() {
 				})
 
 				It("succeeds", func() {
-					expected, err := ioutil.ReadFile("test/expected-git-repo-test.tar.gz")
+					expected, err := os.ReadFile("test/expected-git-repo-test.tar.gz")
 					Expect(err).To(BeNil())
 
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
@@ -591,7 +591,7 @@ var _ = Describe("Artifacts", func() {
 					body.Write([]byte(fmt.Sprintf(payloadRequestFetchGitRepoArtifactSubPath, fakeFileServer.URL())))
 					createRequest(http.MethodPut)
 
-					actual, err := ioutil.ReadFile("test/git-repo-master.tar.gz")
+					actual, err := os.ReadFile("test/git-repo-master.tar.gz")
 					Expect(err).To(BeNil())
 					fakeFileServer.AppendHandlers(ghttp.CombineHandlers(
 						ghttp.VerifyRequest(http.MethodGet, "/git-repo/archive/master.tar.gz"),
@@ -600,7 +600,7 @@ var _ = Describe("Artifacts", func() {
 				})
 
 				It("succeeds", func() {
-					expected, err := ioutil.ReadFile("test/expected-git-repo-master-subpath.tar.gz")
+					expected, err := os.ReadFile("test/expected-git-repo-master-subpath.tar.gz")
 					Expect(err).To(BeNil())
 
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
@@ -610,7 +610,7 @@ var _ = Describe("Artifacts", func() {
 
 			When("it succeeds", func() {
 				BeforeEach(func() {
-					actual, err := ioutil.ReadFile("test/git-repo-master.tar.gz")
+					actual, err := os.ReadFile("test/git-repo-master.tar.gz")
 					Expect(err).To(BeNil())
 					fakeFileServer.AppendHandlers(ghttp.CombineHandlers(
 						ghttp.VerifyRequest(http.MethodGet, "/git-repo/archive/master.tar.gz"),
@@ -619,7 +619,7 @@ var _ = Describe("Artifacts", func() {
 				})
 
 				It("succeeds", func() {
-					expected, err := ioutil.ReadFile("test/expected-git-repo-master.tar.gz")
+					expected, err := os.ReadFile("test/expected-git-repo-master.tar.gz")
 					Expect(err).To(BeNil())
 
 					Expect(res.StatusCode).To(Equal(http.StatusOK))

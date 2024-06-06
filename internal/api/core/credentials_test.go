@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -138,7 +138,7 @@ var _ = Describe("Credential", func() {
 						},
 					},
 				}, nil)
-				log.SetOutput(ioutil.Discard)
+				log.SetOutput(io.Discard)
 			})
 
 			AfterEach(func() {
@@ -312,7 +312,7 @@ var _ = Describe("Credential", func() {
 
 				It("succeeds", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
-					b, _ := ioutil.ReadAll(res.Body)
+					b, _ := io.ReadAll(res.Body)
 					creds := []clouddriver.Credentials{}
 					err := json.Unmarshal(b, &creds)
 					Expect(err).To(BeNil())

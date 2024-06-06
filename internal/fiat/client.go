@@ -3,12 +3,12 @@ package fiat
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
 const (
-	defaultFiatUrl = "http://spin-fiat.spinnaker:7003"
+	defaultFiatURL = "http://spin-fiat.spinnaker:7003"
 )
 
 //go:generate counterfeiter . Client
@@ -23,7 +23,7 @@ func NewClient(url string) Client {
 }
 
 func NewDefaultClient() Client {
-	return NewClient(defaultFiatUrl)
+	return NewClient(defaultFiatURL)
 }
 
 type client struct {
@@ -80,7 +80,7 @@ func (c *client) Authorize(account string) (Response, error) {
 		return Response{}, fmt.Errorf("user authorization error: %s", res.Status)
 	}
 
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return Response{}, err
 	}

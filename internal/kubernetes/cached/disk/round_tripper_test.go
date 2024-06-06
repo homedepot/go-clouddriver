@@ -19,7 +19,7 @@ package disk_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -55,7 +55,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 	BeforeEach(func() {
 		rt = &testRoundTripper{}
-		cacheDir, err = ioutil.TempDir("", "cache-rt")
+		cacheDir, err = os.MkdirTemp("", "cache-rt")
 		Expect(err).To(BeNil())
 	})
 
@@ -81,7 +81,7 @@ var _ = Describe("CachedDiscovery", func() {
 		JustBeforeEach(func() {
 			resp, err = cache.RoundTrip(req)
 			Expect(err).To(BeNil())
-			content, err = ioutil.ReadAll(resp.Body)
+			content, err = io.ReadAll(resp.Body)
 			Expect(err).To(BeNil())
 		})
 
@@ -89,7 +89,7 @@ var _ = Describe("CachedDiscovery", func() {
 			BeforeEach(func() {
 				rt.Response = &http.Response{
 					Header:     http.Header{"ETag": []string{`"123456"`}},
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte("Content"))),
+					Body:       io.NopCloser(bytes.NewReader([]byte("Content"))),
 					StatusCode: http.StatusOK,
 				}
 			})
@@ -103,7 +103,7 @@ var _ = Describe("CachedDiscovery", func() {
 			BeforeEach(func() {
 				rt.Response = &http.Response{
 					StatusCode: http.StatusNotModified,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte("Other Content"))),
+					Body:       io.NopCloser(bytes.NewReader([]byte("Other Content"))),
 				}
 			})
 
@@ -117,7 +117,7 @@ var _ = Describe("CachedDiscovery", func() {
 				os.RemoveAll(cacheDir)
 				rt.Response = &http.Response{
 					Header:     http.Header{"ETag": []string{`"123456"`}},
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte("Content"))),
+					Body:       io.NopCloser(bytes.NewReader([]byte("Content"))),
 					StatusCode: http.StatusOK,
 				}
 			})

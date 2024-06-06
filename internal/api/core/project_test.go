@@ -2,7 +2,7 @@ package core_test
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -204,7 +204,7 @@ var _ = Describe("Project", func() {
 					},
 				},
 			}, nil)
-			log.SetOutput(ioutil.Discard)
+			log.SetOutput(io.Discard)
 		})
 
 		JustBeforeEach(func() {

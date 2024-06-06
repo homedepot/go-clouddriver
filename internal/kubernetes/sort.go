@@ -80,17 +80,17 @@ var (
 func SortManifests(manifests []unstructured.Unstructured) []unstructured.Unstructured {
 	// Map of priorities to lists of manifests.
 	manifestMap := map[int][]unstructured.Unstructured{
-		0:    []unstructured.Unstructured{},
-		20:   []unstructured.Unstructured{},
-		30:   []unstructured.Unstructured{},
-		40:   []unstructured.Unstructured{},
-		50:   []unstructured.Unstructured{},
-		70:   []unstructured.Unstructured{},
-		80:   []unstructured.Unstructured{},
-		90:   []unstructured.Unstructured{},
-		100:  []unstructured.Unstructured{},
-		110:  []unstructured.Unstructured{},
-		1000: []unstructured.Unstructured{},
+		0:    {},
+		20:   {},
+		30:   {},
+		40:   {},
+		50:   {},
+		70:   {},
+		80:   {},
+		90:   {},
+		100:  {},
+		110:  {},
+		1000: {},
 	}
 
 	for _, manifest := range manifests {

@@ -231,7 +231,7 @@ func toUnstructured(manifests []map[string]interface{}) ([]unstructured.Unstruct
 	return m, nil
 }
 
-func getListOptions(app string) (metav1.ListOptions, error) {
+func getListOptions(_ string) (metav1.ListOptions, error) {
 	labelSelector := metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{

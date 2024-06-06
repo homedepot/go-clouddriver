@@ -3,7 +3,7 @@ package middleware_test
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 
@@ -13,7 +13,6 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/fiat"
 	"github.com/homedepot/go-clouddriver/internal/fiat/fiatfakes"
 	"github.com/homedepot/go-clouddriver/internal/middleware"
-	. "github.com/homedepot/go-clouddriver/internal/middleware"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -27,7 +26,7 @@ var (
 	testUser, testApplication, testAccount, authorizeErrMsg string
 	allApps, filteredApps                                   core.Applications
 	authorizedAppsMap                                       map[string]fiat.Application
-	middlewareController                                    *Controller
+	middlewareController                                    *middleware.Controller
 )
 
 var _ = Describe("Auth", func() {
@@ -38,7 +37,7 @@ var _ = Describe("Auth", func() {
 		ic := &internal.Controller{
 			FiatClient: fakeFiatClient,
 		}
-		middlewareController = &Controller{ic}
+		middlewareController = &middleware.Controller{ic}
 		r, err = http.NewRequest(http.MethodGet, "", nil)
 		Expect(err).To(BeNil())
 		c.Request = r
@@ -108,7 +107,7 @@ var _ = Describe("Auth", func() {
 
 			It("returns status Forbidden", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusForbidden))
-				Expect(c.Errors[0].Error()).To(Equal("Access denied to application test-application - required authorization: READ"))
+				Expect(c.Errors[0].Error()).To(Equal("access denied to application test-application - required authorization: READ"))
 				Expect(c.IsAborted()).To(BeTrue())
 			})
 		})
@@ -204,7 +203,7 @@ var _ = Describe("Auth", func() {
 
 			It("returns status Forbidden", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusForbidden))
-				Expect(c.Errors[0].Error()).To(Equal("Access denied to account test-account - required authorization: READ"))
+				Expect(c.Errors[0].Error()).To(Equal("access denied to account test-account - required authorization: READ"))
 				Expect(c.IsAborted()).To(BeTrue())
 			})
 		})
@@ -230,7 +229,7 @@ var _ = Describe("Auth", func() {
 
 	Describe("#AuthOps", func() {
 		BeforeEach(func() {
-			c.Request, _ = http.NewRequest(http.MethodPost, "", ioutil.NopCloser(bytes.NewReader([]byte(`[
+			c.Request, _ = http.NewRequest(http.MethodPost, "", io.NopCloser(bytes.NewReader([]byte(`[
 				{ "cleanupArtifacts": { "account": "test-cleanup-account" } },
 				{ "deleteManifest": { "account": "test-delete-account" } },
 				{ "deployManifest": { "account": "test-deploy-account" } },
@@ -264,7 +263,7 @@ var _ = Describe("Auth", func() {
 
 		When("no accounts found in payload", func() {
 			BeforeEach(func() {
-				c.Request, _ = http.NewRequest(http.MethodPost, "", ioutil.NopCloser(bytes.NewReader([]byte(`[
+				c.Request, _ = http.NewRequest(http.MethodPost, "", io.NopCloser(bytes.NewReader([]byte(`[
 					{
 						"rollingRestartManifest": {}
 					}
@@ -304,7 +303,7 @@ var _ = Describe("Auth", func() {
 
 			It("returns status Forbidden", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusForbidden))
-				Expect(c.Errors[0].Error()).To(Equal("Access denied to account test-cleanup-account - required authorization: READ"))
+				Expect(c.Errors[0].Error()).To(Equal("access denied to account test-cleanup-account - required authorization: READ"))
 				Expect(c.IsAborted()).To(BeTrue())
 			})
 		})

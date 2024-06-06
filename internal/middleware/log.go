@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"time"
 
@@ -29,14 +29,14 @@ func LogRequest() gin.HandlerFunc {
 
 		clone := c.Request.Clone(context.TODO())
 
-		_, _ = buf.ReadFrom(c.Request.Body)
-		c.Request.Body = ioutil.NopCloser(&buf)
-		clone.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
+		_, err = buf.ReadFrom(c.Request.Body)
+		c.Request.Body = io.NopCloser(&buf)
+		clone.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
 
 		if err != nil {
 			clouddriver.Log(err)
 		} else {
-			b, _ := ioutil.ReadAll(clone.Body)
+			b, _ := io.ReadAll(clone.Body)
 			buffer := &bytes.Buffer{}
 
 			buffer.WriteString(bold("REQUEST: ["+time.Now().In(time.UTC).Format(time.RFC3339)) + bold("]"))
@@ -51,6 +51,7 @@ func LogRequest() gin.HandlerFunc {
 			buffer.WriteByte('\n')
 			buffer.WriteString(fmt.Sprintf("Headers: %s", clone.Header))
 			buffer.WriteByte('\n')
+
 			if len(b) > 0 {
 				j, err := json.MarshalIndent(b, "", "    ")
 				if err != nil {

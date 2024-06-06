@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"sort"
@@ -174,7 +173,7 @@ func (cc *Controller) GetArtifact(c *gin.Context) {
 		defer reader.Close()
 
 		// Read contents
-		b, err = ioutil.ReadAll(reader)
+		b, err = io.ReadAll(reader)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -265,7 +264,7 @@ func (cc *Controller) GetArtifact(c *gin.Context) {
 			return
 		}
 
-		rb, err := ioutil.ReadAll(resp.Body)
+		rb, err := io.ReadAll(resp.Body)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return
@@ -321,7 +320,7 @@ func (cc *Controller) GetArtifact(c *gin.Context) {
 				return
 			}
 
-			tb, err := ioutil.ReadAll(tr)
+			tb, err := io.ReadAll(tr)
 			if err != nil {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
@@ -383,7 +382,7 @@ func (cc *Controller) GetArtifact(c *gin.Context) {
 		}
 		defer resp.Body.Close()
 
-		b, err = ioutil.ReadAll(resp.Body)
+		b, err = io.ReadAll(resp.Body)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
 			return

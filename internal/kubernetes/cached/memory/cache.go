@@ -23,12 +23,13 @@ import (
 	"sync"
 	"time"
 
-	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
+	openapi_v2 "github.com/google/gnostic-models/openapiv2"
 	"github.com/gregjones/httpcache"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/openapi"
 	restclient "k8s.io/client-go/rest"
 )
 
@@ -42,6 +43,8 @@ type CachedDiscoveryClient interface {
 	ServerPreferredNamespacedResources() ([]*metav1.APIResourceList, error)
 	ServerVersion() (*version.Info, error)
 	OpenAPISchema() (*openapi_v2.Document, error)
+	OpenAPIV3() openapi.Client
+	WithLegacy() discovery.DiscoveryInterface
 	Fresh() bool
 	Invalidate()
 }
@@ -173,6 +176,14 @@ func (m *memCacheClient) createCachedEntry(key string, content interface{}) {
 	m.ourEntries[key] = struct{}{}
 }
 
+func (m *memCacheClient) CachedDiscoveryInterface(key string, content interface{}) {
+	m.c.mutex.Lock()
+	defer m.c.mutex.Unlock()
+
+	m.c.entries[key] = newEntry(content)
+	m.ourEntries[key] = struct{}{}
+}
+
 // newEntry creates a cached entry and generates its created at timestamp.
 func newEntry(content interface{}) entry {
 	return entry{
@@ -207,6 +218,16 @@ func (m *memCacheClient) ServerVersion() (*version.Info, error) {
 // OpenAPISchema retrieves and parses the swagger API schema the server supports.
 func (m *memCacheClient) OpenAPISchema() (*openapi_v2.Document, error) {
 	return m.delegate.OpenAPISchema()
+}
+
+// OpenAPIV3 implements discovery.CachedDiscoveryInterface.
+func (m *memCacheClient) OpenAPIV3() openapi.Client {
+	return m.delegate.OpenAPIV3()
+}
+
+// WithLegacy implements discovery.CachedDiscoveryInterface.
+func (m *memCacheClient) WithLegacy() discovery.DiscoveryInterface {
+	return m.delegate.WithLegacy()
 }
 
 // Fresh is supposed to tell the caller whether or not to retry if the cache

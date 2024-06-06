@@ -13,8 +13,6 @@ var (
 	isVersioned                     bool
 	updatedVersion, expectedVersion SpinnakerVersion
 	err                             error
-	fakeDeployment                  *Deployment
-	fakePod                         *Pod
 )
 
 var _ = Describe("Version", func() {

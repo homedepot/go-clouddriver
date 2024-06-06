@@ -10,14 +10,7 @@ clean:
 	-rm ./clouddriver
 
 lint:
-	golangci-lint run \
-		--enable misspell \
-		--enable wsl \
-		--print-issued-lines=false \
-		--skip-files .*_test.go \
-		--timeout=3m0s \
-		--out-format=colored-line-number \
-		--issues-exit-code=1 ./...
+	golangci-lint run
 
 run: clean lint build test
 	./clouddriver

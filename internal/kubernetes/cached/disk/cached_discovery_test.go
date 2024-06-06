@@ -18,7 +18,6 @@ package disk_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -27,13 +26,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
+	openapi_v2 "github.com/google/gnostic/openapiv2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/openapi"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/rest/fake"
 )
@@ -48,7 +48,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 	Describe("#Fresh", func() {
 		BeforeEach(func() {
-			d, err = ioutil.TempDir("", "")
+			d, err = os.MkdirTemp("", "")
 			Expect(err).To(BeNil())
 			c = &fakeDiscoveryClient{}
 			cdc = NewCachedDiscoveryClient(c, d, 60*time.Second)
@@ -169,7 +169,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 	Describe("#TTL", func() {
 		BeforeEach(func() {
-			d, err = ioutil.TempDir("", "")
+			d, err = os.MkdirTemp("", "")
 			Expect(err).To(BeNil())
 			c = &fakeDiscoveryClient{}
 			cdc = NewCachedDiscoveryClient(c, d, 1*time.Nanosecond)
@@ -195,7 +195,7 @@ var _ = Describe("CachedDiscovery", func() {
 
 	Describe("#PathPerm", func() {
 		BeforeEach(func() {
-			d, err = ioutil.TempDir("", "")
+			d, err = os.MkdirTemp("", "")
 			Expect(err).To(BeNil())
 			os.RemoveAll(d)
 			c = &fakeDiscoveryClient{}
@@ -249,7 +249,7 @@ func (c *fakeDiscoveryClient) RESTClient() restclient.Interface {
 }
 
 func (c *fakeDiscoveryClient) ServerGroups() (*metav1.APIGroupList, error) {
-	c.groupCalls = c.groupCalls + 1
+	c.groupCalls++
 	return c.serverGroups()
 }
 
@@ -274,7 +274,7 @@ func (c *fakeDiscoveryClient) serverGroups() (*metav1.APIGroupList, error) {
 }
 
 func (c *fakeDiscoveryClient) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
-	c.resourceCalls = c.resourceCalls + 1
+	c.resourceCalls++
 
 	if groupVersion == "a/v1" {
 		return &metav1.APIResourceList{APIResources: []metav1.APIResource{{Name: "widgets", Kind: "Widget"}}}, nil
@@ -290,7 +290,7 @@ func (c *fakeDiscoveryClient) ServerResources() ([]*metav1.APIResourceList, erro
 }
 
 func (c *fakeDiscoveryClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []*metav1.APIResourceList, error) {
-	c.resourceCalls = c.resourceCalls + 1
+	c.resourceCalls++
 
 	gs, _ := c.serverGroups()
 	resultGroups := []*metav1.APIGroup{}
@@ -308,21 +308,30 @@ func (c *fakeDiscoveryClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []
 }
 
 func (c *fakeDiscoveryClient) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
-	c.resourceCalls = c.resourceCalls + 1
+	c.resourceCalls++
 	return nil, nil
 }
 
 func (c *fakeDiscoveryClient) ServerPreferredNamespacedResources() ([]*metav1.APIResourceList, error) {
-	c.resourceCalls = c.resourceCalls + 1
+	c.resourceCalls++
 	return nil, nil
 }
 
 func (c *fakeDiscoveryClient) ServerVersion() (*version.Info, error) {
-	c.versionCalls = c.versionCalls + 1
+	c.versionCalls++
 	return &version.Info{}, nil
 }
 
 func (c *fakeDiscoveryClient) OpenAPISchema() (*openapi_v2.Document, error) {
-	c.openAPICalls = c.openAPICalls + 1
+	c.openAPICalls++
 	return &openapi_v2.Document{}, nil
+}
+
+func (c *fakeDiscoveryClient) OpenAPIV3() openapi.Client {
+	c.openAPICalls++
+	return nil
+}
+
+func (c *fakeDiscoveryClient) WithLegacy() discovery.DiscoveryInterface {
+	return &discovery.DiscoveryClient{}
 }

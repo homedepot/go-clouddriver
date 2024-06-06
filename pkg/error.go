@@ -24,12 +24,13 @@ type ErrorMeta struct {
 }
 
 // Example.
-// {
-//   "error":"Forbidden",
-//   "message":"Access denied to account spin-cluster-account - required authorization: READ",
-//   "status":403,
-//   "timestamp":1597608027851
-// }
+//
+//	{
+//	  "error":"Forbidden",
+//	  "message":"Access denied to account spin-cluster-account - required authorization: READ",
+//	  "status":403,
+//	  "timestamp":1597608027851
+//	}
 func NewError(err, message string, status int) ErrorResponse {
 	return ErrorResponse{
 		Error:     err,

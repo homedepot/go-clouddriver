@@ -46,7 +46,7 @@ func (Provider) TableName() string {
 }
 
 type ProviderNamespaces struct {
-	//ID          string `json:"-" gorm:"primary_key"`
+	// ID          string `json:"-" gorm:"primary_key"`
 	AccountName string `json:"accountName" gorm:"index:account_name_namespace_idx,unique"`
 	Namespace   string `json:"namespace,omitempty" gorm:"index:account_name_namespace_idx,unique"`
 }
