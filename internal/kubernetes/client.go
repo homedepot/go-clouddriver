@@ -58,6 +58,8 @@ type client struct {
 
 // Apply a given manifest.
 func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
+	var serverSideApply bool
+
 	metadata := Metadata{}
 	gvk := u.GroupVersionKind()
 
@@ -69,6 +71,11 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 	gvr := restMapping.Resource
 	gv := gvk.GroupVersion()
 	c.config.GroupVersion = &gv
+
+	// Check if server-side annotation is set.
+	if IsServerSideApply(*u) {
+		serverSideApply = true
+	}
 
 	restClient, err := newRestClient(*c.config, gv)
 	if err != nil {
@@ -120,7 +127,7 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 		_ = info.Refresh(obj, true)
 	}
 
-	_, patchedObject, err := patcher.Patch(info.Object, modified, info.Namespace, info.Name)
+	_, patchedObject, err := patcher.Patch(info.Object, modified, info.Namespace, info.Name, serverSideApply)
 	if err != nil {
 		return metadata, err
 	}

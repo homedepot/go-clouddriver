@@ -17,6 +17,7 @@ const (
 	AnnotationSpinnakerMonikerDetail      = `moniker.spinnaker.io/detail`
 	AnnotationSpinnakerMonikerStack       = `moniker.spinnaker.io/stack`
 	AnnotationSpinnakerStrategyVersioned  = `strategy.spinnaker.io/versioned`
+	AnnotationSpinnakerServerSideApply    = `strategy.spinnaker.io/server-side-apply`
 )
 
 // AddSpinnakerAnnotations adds Spinnaker-defined annotations to a given
@@ -157,4 +158,15 @@ func AnnotationMatches(u unstructured.Unstructured, annotationKey, value string)
 	}
 
 	return value == "*" || strings.EqualFold(value, annotationValue)
+}
+
+func IsServerSideApply(u unstructured.Unstructured) bool {
+	annotations := u.GetAnnotations()
+	if annotations != nil {
+		if value, ok := annotations[AnnotationSpinnakerServerSideApply]; ok {
+			return strings.EqualFold(value, "true")
+		}
+	}
+
+	return false
 }

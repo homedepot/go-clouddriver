@@ -77,10 +77,10 @@ type Patcher struct {
 // Patch tries to patch an OpenAPI resource. On success, returns the merge patch as well
 // the final patched object. On failure, returns an error.
 func (p *Patcher) Patch(current runtime.Object, modified []byte,
-	namespace, name string) ([]byte, runtime.Object, error) {
+	namespace, name string, serverSideApply bool) ([]byte, runtime.Object, error) {
 	var getErr error
 
-	patchBytes, patchObject, err := p.patchSimple(current, modified, namespace, name)
+	patchBytes, patchObject, err := p.patchSwitch(serverSideApply, current, modified, namespace, name)
 
 	if p.Retries == 0 {
 		p.Retries = maxPatchRetry
@@ -96,7 +96,7 @@ func (p *Patcher) Patch(current runtime.Object, modified []byte,
 			return nil, nil, getErr
 		}
 
-		patchBytes, patchObject, err = p.patchSimple(current, modified, namespace, name)
+		patchBytes, patchObject, err = p.patchSwitch(serverSideApply, current, modified, namespace, name)
 	}
 
 	if err != nil && (errors.IsConflict(err) || errors.IsInvalid(err)) && p.Force {
@@ -193,6 +193,46 @@ func (p *Patcher) patchSimple(obj runtime.Object, modified []byte, namespace, na
 	patchedObj, err := p.Helper.Patch(namespace, name, patchType, patch, nil)
 
 	return patch, patchedObj, err
+}
+
+func (p *Patcher) patchServerSide(obj runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
+	//todo: do I need to encode the obj or is there a way around doing this? I think this may add unnecessary overhead for server-side.
+	// Serialize the current configuration of the object from the server.
+	patch, err := runtime.Encode(unstructured.UnstructuredJSONScheme, obj)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	patchType := types.ApplyPatchType
+
+	if string(patch) == "{}" {
+		return patch, obj, nil
+	}
+
+	if p.ResourceVersion != nil {
+		patch, err = addResourceVersion(patch, *p.ResourceVersion)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	// todo: needs PatchOptions FieldManager but is this value fine?
+	// todo: need to set force = true?
+	options := metav1.PatchOptions{FieldManager: "server-side-apply"}
+
+	patchedObj, err := p.Helper.Patch(namespace, name, patchType, modified, &options)
+
+	return patch, patchedObj, err
+}
+
+// patchSwitch switches between a normal patch or a normal patch depending on whether the server-side annotation is set or not.
+// This is set as a switch function so that during Patch if there are retries the correct function is called again.
+func (p *Patcher) patchSwitch(serverSideApply bool, obj runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
+	if serverSideApply {
+		return p.patchServerSide(obj, modified, namespace, name)
+	} else {
+		return p.patchSimple(obj, modified, namespace, name)
+	}
 }
 
 func (p *Patcher) deleteAndCreate(original runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
