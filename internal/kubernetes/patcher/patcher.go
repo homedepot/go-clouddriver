@@ -218,7 +218,7 @@ func (p *Patcher) patchServerSide(obj runtime.Object, modified []byte, namespace
 
 	// todo: needs PatchOptions FieldManager but is this value fine?
 	// todo: need to set force = true?
-	options := metav1.PatchOptions{FieldManager: "server-side-apply"}
+	options := metav1.PatchOptions{FieldManager: "server-side-apply", Force: &p.Force}
 
 	patchedObj, err := p.Helper.Patch(namespace, name, patchType, modified, &options)
 

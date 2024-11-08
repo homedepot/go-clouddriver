@@ -72,11 +72,6 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 	gv := gvk.GroupVersion()
 	c.config.GroupVersion = &gv
 
-	// Check if server-side annotation is set.
-	if IsServerSideApply(*u) {
-		serverSideApply = true
-	}
-
 	restClient, err := newRestClient(*c.config, gv)
 	if err != nil {
 		return metadata, err
@@ -97,6 +92,18 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 	patcher, err := patcher.New(info, helper)
 	if err != nil {
 		return metadata, err
+	}
+
+	// Check if server-side annotation is set.
+	if AnnotationMatches(*u, AnnotationSpinnakerServerSideApply, "true") {
+		serverSideApply = true
+	}
+
+	// Server-side annotation can also be set to force-conflicts which  will update your resources using server-side
+	// apply and becomes the sole manager.
+	if AnnotationMatches(*u, AnnotationSpinnakerServerSideApply, "force-conflicts") {
+		serverSideApply = true
+		patcher.Force = true
 	}
 
 	// Get the modified configuration of the object. Embed the result

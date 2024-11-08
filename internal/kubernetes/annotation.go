@@ -159,14 +159,3 @@ func AnnotationMatches(u unstructured.Unstructured, annotationKey, value string)
 
 	return value == "*" || strings.EqualFold(value, annotationValue)
 }
-
-func IsServerSideApply(u unstructured.Unstructured) bool {
-	annotations := u.GetAnnotations()
-	if annotations != nil {
-		if value, ok := annotations[AnnotationSpinnakerServerSideApply]; ok {
-			return strings.EqualFold(value, "true")
-		}
-	}
-
-	return false
-}
