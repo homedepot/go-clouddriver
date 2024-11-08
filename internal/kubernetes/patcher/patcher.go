@@ -149,7 +149,7 @@ func (p *Patcher) patchSimple(obj runtime.Object, modified []byte, namespace, na
 	case err != nil:
 		return nil, nil, err
 	case err == nil:
-		// Compute a three way strategic merge patch to send to server.
+		// Compute a three-way strategic merge patch to send to server.
 		patchType = types.StrategicMergePatchType
 
 		// Try to use openapi first if the openapi spec is available and can successfully calculate the patch.
@@ -196,25 +196,7 @@ func (p *Patcher) patchSimple(obj runtime.Object, modified []byte, namespace, na
 }
 
 func (p *Patcher) patchServerSide(obj runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
-	//todo: do I need to encode the obj or is there a way around doing this? I think this may add unnecessary overhead for server-side.
-	// Serialize the current configuration of the object from the server.
-	patch, err := runtime.Encode(unstructured.UnstructuredJSONScheme, obj)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	patchType := types.ApplyPatchType
-
-	if string(patch) == "{}" {
-		return patch, obj, nil
-	}
-
-	if p.ResourceVersion != nil {
-		patch, err = addResourceVersion(patch, *p.ResourceVersion)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
 
 	// todo: needs PatchOptions FieldManager but is this value fine?
 	// todo: need to set force = true?
@@ -222,7 +204,7 @@ func (p *Patcher) patchServerSide(obj runtime.Object, modified []byte, namespace
 
 	patchedObj, err := p.Helper.Patch(namespace, name, patchType, modified, &options)
 
-	return patch, patchedObj, err
+	return nil, patchedObj, err
 }
 
 // patchSwitch switches between a normal patch or a normal patch depending on whether the server-side annotation is set or not.
