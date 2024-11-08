@@ -1,6 +1,7 @@
 package patcher
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -199,7 +200,7 @@ func (p *Patcher) deleteAndCreate(original runtime.Object, modified []byte, name
 		return modified, nil, err
 	}
 	// TODO: use wait
-	if err := wait.PollImmediate(1*time.Second, p.Timeout, func() (bool, error) {
+	if err := wait.PollUntilContextTimeout(context.Background(), 1*time.Second, p.Timeout, true, func(_ context.Context) (bool, error) {
 		if _, err := p.Helper.Get(namespace, name); !errors.IsNotFound(err) {
 			return false, err
 		}
