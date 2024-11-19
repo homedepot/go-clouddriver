@@ -3,14 +3,17 @@ package kubernetes
 import (
 	"context"
 	"fmt"
-
-	"github.com/homedepot/go-clouddriver/internal/kubernetes/patcher"
+	gcpatcher "github.com/homedepot/go-clouddriver/internal/kubernetes/patcher"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/resource"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
@@ -89,7 +92,15 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 		ResourceVersion: restMapping.Resource.Version,
 	}
 
-	patcher, err := patcher.New(info, helper)
+	patcher, err := gcpatcher.New(info, helper)
+	if err != nil {
+		return metadata, err
+	}
+
+	// Get the modified configuration of the object. Embed the result
+	// as an annotation in the modified configuration, so that it will appear
+	// in the patch sent to the server.
+	modified, err := util.GetModifiedConfiguration(info.Object, true, unstructured.UnstructuredJSONScheme)
 	if err != nil {
 		return metadata, err
 	}
@@ -106,14 +117,6 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 		patcher.Force = true
 	}
 
-	// Get the modified configuration of the object. Embed the result
-	// as an annotation in the modified configuration, so that it will appear
-	// in the patch sent to the server.
-	modified, err := util.GetModifiedConfiguration(info.Object, true, unstructured.UnstructuredJSONScheme)
-	if err != nil {
-		return metadata, err
-	}
-
 	if err := info.Get(); err != nil {
 		if !errors.IsNotFound(err) {
 			return metadata, err
@@ -125,18 +128,54 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 			return metadata, err
 		}
 
-		// Then create the resource and skip the three-way merge
-		obj, err := helper.Create(info.Namespace, true, info.Object)
-		if err != nil {
-			return metadata, err
-		}
+		// If server-side apply then you don't need to create the resource on the client side first.
+		if !serverSideApply {
+			// Then create the resource and skip the three-way merge
+			obj, err := helper.Create(info.Namespace, true, info.Object)
+			if err != nil {
+				return metadata, err
+			}
 
-		_ = info.Refresh(obj, true)
+			_ = info.Refresh(obj, true)
+		}
 	}
 
-	_, patchedObject, err := patcher.Patch(info.Object, modified, info.Namespace, info.Name, serverSideApply)
-	if err != nil {
-		return metadata, err
+	var patchedObject runtime.Object
+
+	if serverSideApply {
+		dc, err := discovery.NewDiscoveryClientForConfig(c.config)
+		if err != nil {
+			return metadata, fmt.Errorf("failed at discovery.NewDiscoveryClientForConfig: %w", err)
+		}
+		mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+
+		dyn, err := dynamic.NewForConfig(c.config)
+		if err != nil {
+			return metadata, fmt.Errorf("failed at dynamic.NewForConfig: %w", err)
+		}
+
+		mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+
+		var dr dynamic.ResourceInterface
+		if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
+			// namespaced resources should specify the namespace
+			dr = dyn.Resource(mapping.Resource).Namespace(info.Namespace)
+		} else {
+			// for cluster-wide resources
+			dr = dyn.Resource(mapping.Resource)
+		}
+
+		options := metav1.PatchOptions{FieldManager: "spinnaker", Force: &patcher.Force}
+
+		_, err = dr.Patch(context.Background(), info.Name, types.ApplyPatchType, modified, options)
+		if err != nil {
+			return metadata, fmt.Errorf("failed at dr.Patch: %w", err)
+		}
+	} else {
+		_, patchedObject, err = patcher.Patch(info.Object, modified, info.Namespace, info.Name, serverSideApply)
+		if err != nil {
+			return metadata, fmt.Errorf("failed at patcher.Patch: %w", err)
+		}
 	}
 
 	_ = info.Refresh(patchedObject, true)
