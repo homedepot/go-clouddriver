@@ -199,10 +199,10 @@ func (p *Patcher) patchSimple(obj runtime.Object, modified []byte, namespace, na
 	return patch, patchedObj, err
 }
 
-func (p *Patcher) patchServerSide(modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
+func (p *Patcher) patchServerSide(obj runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
 	patchType := types.ApplyPatchType
 
-	var err error
+	data, err := runtime.Encode(unstructured.UnstructuredJSONScheme, obj)
 
 	options := metav1.PatchOptions{FieldManager: "spinnaker", Force: &p.Force}
 
@@ -214,7 +214,7 @@ func (p *Patcher) patchServerSide(modified []byte, namespace, name string) ([]by
 		}
 	}
 
-	patchedObj, err := p.Helper.Patch(namespace, name, patchType, modified, &options)
+	patchedObj, err := p.Helper.Patch(namespace, name, patchType, data, &options)
 	if err != nil {
 		err = fmt.Errorf("failed patch on server side %w", err)
 	}
@@ -227,7 +227,7 @@ func (p *Patcher) patchServerSide(modified []byte, namespace, name string) ([]by
 // This is set as a switch function so that during Patch if there are retries the correct function is called again.
 func (p *Patcher) patchSwitch(serverSideApply bool, obj runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
 	if serverSideApply {
-		return p.patchServerSide(modified, namespace, name)
+		return p.patchServerSide(obj, modified, namespace, name)
 	} else {
 		return p.patchSimple(obj, modified, namespace, name)
 	}

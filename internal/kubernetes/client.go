@@ -3,8 +3,7 @@ package kubernetes
 import (
 	"context"
 	"fmt"
-
-	"github.com/homedepot/go-clouddriver/internal/kubernetes/patcher"
+	gcpatcher "github.com/homedepot/go-clouddriver/internal/kubernetes/patcher"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -89,7 +88,15 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 		ResourceVersion: restMapping.Resource.Version,
 	}
 
-	patcher, err := patcher.New(info, helper)
+	patcher, err := gcpatcher.New(info, helper)
+	if err != nil {
+		return metadata, err
+	}
+
+	// Get the modified configuration of the object. Embed the result
+	// as an annotation in the modified configuration, so that it will appear
+	// in the patch sent to the server.
+	modified, err := util.GetModifiedConfiguration(info.Object, true, unstructured.UnstructuredJSONScheme)
 	if err != nil {
 		return metadata, err
 	}
