@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+
 	gcpatcher "github.com/homedepot/go-clouddriver/internal/kubernetes/patcher"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -113,32 +114,26 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 		patcher.Force = true
 	}
 
-	// Get the modified configuration of the object. Embed the result
-	// as an annotation in the modified configuration, so that it will appear
-	// in the patch sent to the server.
-	modified, err := util.GetModifiedConfiguration(info.Object, true, unstructured.UnstructuredJSONScheme)
-	if err != nil {
-		return metadata, err
-	}
+	if !serverSideApply {
+		if err := info.Get(); err != nil {
+			if !errors.IsNotFound(err) {
+				return metadata, err
+			}
 
-	if err := info.Get(); err != nil {
-		if !errors.IsNotFound(err) {
-			return metadata, err
+			// Create the resource if it doesn't exist
+			// First, update the annotation used by kubectl apply
+			if err := util.CreateApplyAnnotation(info.Object, unstructured.UnstructuredJSONScheme); err != nil {
+				return metadata, err
+			}
+
+			// Then create the resource and skip the three-way merge if not a server-side apply
+			obj, err := helper.Create(info.Namespace, true, info.Object)
+			if err != nil {
+				return metadata, err
+			}
+
+			_ = info.Refresh(obj, true)
 		}
-
-		// Create the resource if it doesn't exist
-		// First, update the annotation used by kubectl apply
-		if err := util.CreateApplyAnnotation(info.Object, unstructured.UnstructuredJSONScheme); err != nil {
-			return metadata, err
-		}
-
-		// Then create the resource and skip the three-way merge
-		obj, err := helper.Create(info.Namespace, true, info.Object)
-		if err != nil {
-			return metadata, err
-		}
-
-		_ = info.Refresh(obj, true)
 	}
 
 	_, patchedObject, err := patcher.Patch(info.Object, modified, info.Namespace, info.Name, serverSideApply)

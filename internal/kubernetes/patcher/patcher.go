@@ -82,7 +82,7 @@ func (p *Patcher) Patch(current runtime.Object, modified []byte,
 
 	patchBytes, patchObject, err := p.patchSwitch(serverSideApply, current, modified, namespace, name)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed patchSwitch: %w", err)
+		return nil, nil, err
 	}
 
 	if p.Retries == 0 {
@@ -96,7 +96,7 @@ func (p *Patcher) Patch(current runtime.Object, modified []byte,
 
 		current, getErr = p.Helper.Get(namespace, name)
 		if getErr != nil {
-			return nil, nil, fmt.Errorf("failed at Helper.Get for retry: %w", getErr)
+			return nil, nil, getErr
 		}
 
 		patchBytes, patchObject, err = p.patchSwitch(serverSideApply, current, modified, namespace, name)
@@ -104,7 +104,6 @@ func (p *Patcher) Patch(current runtime.Object, modified []byte,
 
 	if err != nil && (errors.IsConflict(err) || errors.IsInvalid(err)) && p.Force {
 		patchBytes, patchObject, err = p.deleteAndCreate(current, modified, namespace, name)
-		return nil, nil, fmt.Errorf("error set at deleteAndCreate: %w", err)
 	}
 
 	return patchBytes, patchObject, err
@@ -199,35 +198,33 @@ func (p *Patcher) patchSimple(obj runtime.Object, modified []byte, namespace, na
 	return patch, patchedObj, err
 }
 
-func (p *Patcher) patchServerSide(obj runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
+func (p *Patcher) patchServerSide(obj runtime.Object, namespace, name string) ([]byte, runtime.Object, error) {
 	patchType := types.ApplyPatchType
 
 	data, err := runtime.Encode(unstructured.UnstructuredJSONScheme, obj)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	options := metav1.PatchOptions{FieldManager: "spinnaker", Force: &p.Force}
 
-	// todo: check if needed or not
 	if p.ResourceVersion != nil {
-		modified, err = addResourceVersion(modified, *p.ResourceVersion)
+		data, err = addResourceVersion(data, *p.ResourceVersion)
 		if err != nil {
 			return nil, nil, err
 		}
 	}
 
 	patchedObj, err := p.Helper.Patch(namespace, name, patchType, data, &options)
-	if err != nil {
-		err = fmt.Errorf("failed patch on server side %w", err)
-	}
 
-	// todo: check first return object
-	return nil, patchedObj, err
+	return data, patchedObj, err
 }
 
 // patchSwitch switches between a normal patch or a normal patch depending on whether the server-side annotation is set or not.
 // This is set as a switch function so that during Patch if there are retries the correct function is called again.
 func (p *Patcher) patchSwitch(serverSideApply bool, obj runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
 	if serverSideApply {
-		return p.patchServerSide(obj, modified, namespace, name)
+		return p.patchServerSide(obj, namespace, name)
 	} else {
 		return p.patchSimple(obj, modified, namespace, name)
 	}
