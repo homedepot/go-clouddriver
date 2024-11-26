@@ -17,6 +17,7 @@ const (
 	AnnotationSpinnakerMonikerDetail      = `moniker.spinnaker.io/detail`
 	AnnotationSpinnakerMonikerStack       = `moniker.spinnaker.io/stack`
 	AnnotationSpinnakerStrategyVersioned  = `strategy.spinnaker.io/versioned`
+	AnnotationSpinnakerServerSideApply    = `strategy.spinnaker.io/server-side-apply`
 )
 
 // AddSpinnakerAnnotations adds Spinnaker-defined annotations to a given

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/homedepot/go-clouddriver/internal/kubernetes/patcher"
+	gcpatcher "github.com/homedepot/go-clouddriver/internal/kubernetes/patcher"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -58,6 +58,8 @@ type client struct {
 
 // Apply a given manifest.
 func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
+	var serverSideApply bool
+
 	metadata := Metadata{}
 	gvk := u.GroupVersionKind()
 
@@ -87,7 +89,7 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 		ResourceVersion: restMapping.Resource.Version,
 	}
 
-	patcher, err := patcher.New(info, helper)
+	patcher, err := gcpatcher.New(info, helper)
 	if err != nil {
 		return metadata, err
 	}
@@ -100,27 +102,41 @@ func (c *client) Apply(u *unstructured.Unstructured) (Metadata, error) {
 		return metadata, err
 	}
 
-	if err := info.Get(); err != nil {
-		if !errors.IsNotFound(err) {
-			return metadata, err
-		}
-
-		// Create the resource if it doesn't exist
-		// First, update the annotation used by kubectl apply
-		if err := util.CreateApplyAnnotation(info.Object, unstructured.UnstructuredJSONScheme); err != nil {
-			return metadata, err
-		}
-
-		// Then create the resource and skip the three-way merge
-		obj, err := helper.Create(info.Namespace, true, info.Object)
-		if err != nil {
-			return metadata, err
-		}
-
-		_ = info.Refresh(obj, true)
+	// Check if server-side annotation is set.
+	if AnnotationMatches(*u, AnnotationSpinnakerServerSideApply, "true") {
+		serverSideApply = true
 	}
 
-	_, patchedObject, err := patcher.Patch(info.Object, modified, info.Namespace, info.Name)
+	// Server-side annotation can also be set to force-conflicts which  will update your resources using server-side
+	// apply and becomes the sole manager.
+	if AnnotationMatches(*u, AnnotationSpinnakerServerSideApply, "force-conflicts") {
+		serverSideApply = true
+		patcher.Force = true
+	}
+
+	if !serverSideApply {
+		if err := info.Get(); err != nil {
+			if !errors.IsNotFound(err) {
+				return metadata, err
+			}
+
+			// Create the resource if it doesn't exist
+			// First, update the annotation used by kubectl apply
+			if err := util.CreateApplyAnnotation(info.Object, unstructured.UnstructuredJSONScheme); err != nil {
+				return metadata, err
+			}
+
+			// Then create the resource and skip the three-way merge if not a server-side apply
+			obj, err := helper.Create(info.Namespace, true, info.Object)
+			if err != nil {
+				return metadata, err
+			}
+
+			_ = info.Refresh(obj, true)
+		}
+	}
+
+	_, patchedObject, err := patcher.Patch(info.Object, modified, info.Namespace, info.Name, serverSideApply)
 	if err != nil {
 		return metadata, err
 	}

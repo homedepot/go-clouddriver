@@ -1,6 +1,7 @@
 package patcher
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -76,10 +77,13 @@ type Patcher struct {
 // Patch tries to patch an OpenAPI resource. On success, returns the merge patch as well
 // the final patched object. On failure, returns an error.
 func (p *Patcher) Patch(current runtime.Object, modified []byte,
-	namespace, name string) ([]byte, runtime.Object, error) {
+	namespace, name string, serverSideApply bool) ([]byte, runtime.Object, error) {
 	var getErr error
 
-	patchBytes, patchObject, err := p.patchSimple(current, modified, namespace, name)
+	patchBytes, patchObject, err := p.patchSwitch(serverSideApply, current, modified, namespace, name)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	if p.Retries == 0 {
 		p.Retries = maxPatchRetry
@@ -95,7 +99,7 @@ func (p *Patcher) Patch(current runtime.Object, modified []byte,
 			return nil, nil, getErr
 		}
 
-		patchBytes, patchObject, err = p.patchSimple(current, modified, namespace, name)
+		patchBytes, patchObject, err = p.patchSwitch(serverSideApply, current, modified, namespace, name)
 	}
 
 	if err != nil && (errors.IsConflict(err) || errors.IsInvalid(err)) && p.Force {
@@ -148,7 +152,7 @@ func (p *Patcher) patchSimple(obj runtime.Object, modified []byte, namespace, na
 	case err != nil:
 		return nil, nil, err
 	case err == nil:
-		// Compute a three way strategic merge patch to send to server.
+		// Compute a three-way strategic merge patch to send to server.
 		patchType = types.StrategicMergePatchType
 
 		// Try to use openapi first if the openapi spec is available and can successfully calculate the patch.
@@ -194,12 +198,44 @@ func (p *Patcher) patchSimple(obj runtime.Object, modified []byte, namespace, na
 	return patch, patchedObj, err
 }
 
+func (p *Patcher) patchServerSide(obj runtime.Object, namespace, name string) ([]byte, runtime.Object, error) {
+	patchType := types.ApplyPatchType
+
+	data, err := runtime.Encode(unstructured.UnstructuredJSONScheme, obj)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	options := metav1.PatchOptions{FieldManager: "spinnaker", Force: &p.Force}
+
+	if p.ResourceVersion != nil {
+		data, err = addResourceVersion(data, *p.ResourceVersion)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	patchedObj, err := p.Helper.Patch(namespace, name, patchType, data, &options)
+
+	return data, patchedObj, err
+}
+
+// patchSwitch switches between a normal patch or a normal patch depending on whether the server-side annotation is set or not.
+// This is set as a switch function so that during Patch if there are retries the correct function is called again.
+func (p *Patcher) patchSwitch(serverSideApply bool, obj runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
+	if serverSideApply {
+		return p.patchServerSide(obj, namespace, name)
+	} else {
+		return p.patchSimple(obj, modified, namespace, name)
+	}
+}
+
 func (p *Patcher) deleteAndCreate(original runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
 	if err := p.delete(namespace, name); err != nil {
 		return modified, nil, err
 	}
 	// TODO: use wait
-	if err := wait.PollImmediate(1*time.Second, p.Timeout, func() (bool, error) {
+	if err := wait.PollUntilContextTimeout(context.Background(), 1*time.Second, p.Timeout, true, func(_ context.Context) (bool, error) {
 		if _, err := p.Helper.Get(namespace, name); !errors.IsNotFound(err) {
 			return false, err
 		}
