@@ -25,8 +25,13 @@ type CustomKind struct {
 }
 
 func NewCustomKind(kind string, m map[string]interface{}) *CustomKind {
-	manifest, _ := ToUnstructured(m)
+	manifest, err := ToUnstructured(m)
+	if err != nil {
+		clouddriver.Log(fmt.Errorf("error creating unstructured object from manifest: %v", err))
+	}
+
 	configData := getCustomKindConfig(kind)
+
 	return &CustomKind{manifest: &manifest, CustomKindConfig: configData}
 }
 
@@ -47,18 +52,19 @@ func (k *CustomKind) Status() manifest.Status {
 	for _, statusCheck := range k.StatusChecks {
 		if statusData[statusCheck.FieldName] != statusCheck.FieldValue {
 			s.Stable.State = false
-			s.Available.State = false
 			s.Stable.Message = fmt.Sprintf("Waiting for %s to be %s", statusCheck.FieldName, statusCheck.FieldValue)
-			s.Available.Message = fmt.Sprintf("Waiting for %s to be %s", statusCheck.FieldName, statusCheck.FieldValue)
+
 			return s
 		}
 	}
+
 	return s
 }
 
 func getCustomKindConfig(kind string) CustomKindConfig {
 	customKindsConfigPath := os.Getenv("CUSTOM_KINDS_CONFIG_PATH")
 	allConfigs := map[string]CustomKindConfig{}
+
 	if customKindsConfigPath == "" {
 		return CustomKindConfig{}
 	}
@@ -77,6 +83,7 @@ func getCustomKindConfig(kind string) CustomKindConfig {
 	if !ok {
 		return CustomKindConfig{}
 	}
+
 	return config
 }
 
