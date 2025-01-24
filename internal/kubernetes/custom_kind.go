@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/manifest"
@@ -40,6 +41,8 @@ func (k *CustomKind) Object() *unstructured.Unstructured {
 }
 
 func (k *CustomKind) Status() manifest.Status {
+	log.Println(k)
+
 	s := manifest.DefaultStatus
 
 	unstructuredContent := k.manifest.UnstructuredContent()
@@ -79,6 +82,8 @@ func getCustomKindConfig(kind string) CustomKindConfig {
 		clouddriver.Log(fmt.Errorf("error setting up custom kinds config: %v", err))
 	}
 
+	log.Println(allConfigs)
+
 	config, ok := allConfigs[kind]
 	if !ok {
 		return CustomKindConfig{}
@@ -91,8 +96,8 @@ func getCustomKindConfig(kind string) CustomKindConfig {
 //   "TinyhomeDeployment": {
 //     "statusChecks": [
 //       {
-// 	       "fieldName": "status",
-// 	       "fieldValue": "deployed"
+// 	       "fieldName": "ready",
+// 	       "fieldValue": true
 //       }
 //     ]
 //   }
