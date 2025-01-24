@@ -41,7 +41,7 @@ func (k *CustomKind) Object() *unstructured.Unstructured {
 }
 
 func (k *CustomKind) Status() manifest.Status {
-	log.Println(&k)
+	log.Println(*k)
 
 	s := manifest.DefaultStatus
 
