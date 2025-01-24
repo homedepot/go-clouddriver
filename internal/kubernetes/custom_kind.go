@@ -16,8 +16,8 @@ type CustomKindConfig struct {
 }
 
 type StatusCheck struct {
-	FieldName  string `json:"fieldName"`
-	FieldValue string `json:"fieldValue"`
+	FieldName  string      `json:"fieldName"`
+	FieldValue interface{} `json:"fieldValue"`
 }
 
 type CustomKind struct {
@@ -41,7 +41,7 @@ func (k *CustomKind) Object() *unstructured.Unstructured {
 }
 
 func (k *CustomKind) Status() manifest.Status {
-	log.Println(k)
+	log.Println(&k)
 
 	s := manifest.DefaultStatus
 
