@@ -114,17 +114,18 @@ func getStatusValue(statusMap map[string]interface{}, fieldPath string) interfac
 		if !exists {
 			return nil
 		}
+
 		return val
 	}
 
 	remainingFields := fields[1:]
+
 	val, exists := statusMap[currField]
 	if !exists {
 		return nil
 	}
 
 	return getStatusValue(val.(map[string]interface{}), strings.Join(remainingFields, "."))
-
 }
 
 func evaluatestatusCheck(actual, compared interface{}, operator string) bool {
