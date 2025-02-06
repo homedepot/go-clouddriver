@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/manifest"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
@@ -16,8 +17,9 @@ type CustomKindConfig struct {
 }
 
 type StatusCheck struct {
-	FieldName  string      `json:"fieldName"`
-	FieldValue interface{} `json:"fieldValue"`
+	FieldPath     string      `json:"fieldPath"`
+	ComparedValue interface{} `json:"comparedValue"`
+	Operator      string      `json:"operator"`
 }
 
 type CustomKind struct {
@@ -54,9 +56,15 @@ func (k *CustomKind) Status() manifest.Status {
 	statusData := unstructuredContent["status"].(map[string]interface{})
 
 	for _, statusCheck := range k.StatusChecks {
-		if statusData[statusCheck.FieldName] != statusCheck.FieldValue {
+		statusValue := getStatusValue(statusData, statusCheck.FieldPath)
+		if statusValue == nil {
+			continue
+		}
+
+		if !evaluatestatusCheck(statusValue, statusCheck.ComparedValue, statusCheck.Operator) {
 			s.Stable.State = false
-			s.Stable.Message = fmt.Sprintf("Waiting for %s to be %s", statusCheck.FieldName, statusCheck.FieldValue)
+			s.Failed.State = true
+			s.Failed.Message = fmt.Sprintf("Field status.%s was %v", statusCheck.FieldPath, statusValue)
 
 			return s
 		}
@@ -91,6 +99,43 @@ func getCustomKindConfig(kind string) CustomKindConfig {
 	}
 
 	return config
+}
+
+func getStatusValue(statusMap map[string]interface{}, fieldPath string) interface{} {
+	fields := strings.Split(fieldPath, ".")
+	if len(fields) == 0 {
+		return nil
+	}
+
+	currField := fields[0]
+
+	if len(fields) == 1 {
+		val, exists := statusMap[currField]
+		if !exists {
+			return nil
+		}
+		return val
+	}
+
+	remainingFields := fields[1:]
+	val, exists := statusMap[currField]
+	if !exists {
+		return nil
+	}
+
+	return getStatusValue(val.(map[string]interface{}), strings.Join(remainingFields, "."))
+
+}
+
+func evaluatestatusCheck(actual, compared interface{}, operator string) bool {
+	switch strings.ToLower(operator) {
+	case "eq":
+		return actual == compared
+	case "ne":
+		return actual != compared
+	default:
+		return true
+	}
 }
 
 // {

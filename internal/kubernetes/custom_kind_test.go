@@ -21,8 +21,9 @@ var _ = Describe("Custom Kind", Ordered, func() {
 			"test": {
 				StatusChecks: []StatusCheck{
 					{
-						FieldName:  "ready",
-						FieldValue: "true",
+						FieldPath:     "phase.type",
+						ComparedValue: "Error",
+						Operator:      "NE",
 					},
 				},
 			},
@@ -62,7 +63,7 @@ var _ = Describe("Custom Kind", Ordered, func() {
 
 		When("there is no configuration for the kind", func() {
 			BeforeEach(func() {
-				status := map[string]interface{}{"ready": "false"}
+				status := map[string]interface{}{"ready": false}
 				fakeManifest := map[string]interface{}{"status": status, "kind": "doesnotexist"}
 				customKind = NewCustomKind("doesnotexist", fakeManifest)
 			})
@@ -72,16 +73,16 @@ var _ = Describe("Custom Kind", Ordered, func() {
 			})
 		})
 
-		When("the values do not match", func() {
+		When("the status check fails", func() {
 			BeforeEach(func() {
-				status := map[string]interface{}{"ready": "false"}
+				status := map[string]interface{}{"phase": map[string]interface{}{"type": "Error", "reason": "some reason"}}
 				fakeManifest := map[string]interface{}{"status": status, "kind": "test"}
 				customKind = NewCustomKind("test", fakeManifest)
 			})
 
-			It("returns status unstable", func() {
-				Expect(s.Stable.State).To(BeFalse())
-				Expect(s.Stable.Message).To(Equal("Waiting for ready to be true"))
+			It("returns status failed", func() {
+				Expect(s.Failed.State).To(BeTrue())
+				Expect(s.Failed.Message).To(Equal("Field status.phase.type was Error"))
 			})
 		})
 
@@ -96,15 +97,16 @@ var _ = Describe("Custom Kind", Ordered, func() {
 			})
 		})
 
-		When("the expected field exists and values match", func() {
+		When("the status check succeeds", func() {
 			BeforeEach(func() {
-				status := map[string]interface{}{"ready": "true"}
+				status := map[string]interface{}{"phase": map[string]interface{}{"type": "some type"}}
 				fakeManifest := map[string]interface{}{"status": status, "kind": "test"}
 				customKind = NewCustomKind("test", fakeManifest)
 			})
 
 			It("returns the expected status", func() {
 				Expect(s.Stable.State).To(BeTrue())
+				Expect(s.Failed.State).To(BeFalse())
 			})
 		})
 	})
