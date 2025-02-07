@@ -29,13 +29,13 @@ type CustomKindConfig struct {
 }
 
 type StatusCheck struct {
-	//The path to the field within the manifest's status object that the status check should evaluate,
-	//use dot notation for nested fields
+	// The path to the field within the manifest's status object that the status check should evaluate,
+	// use dot notation for nested fields
 	FieldPath     string      `json:"fieldPath"`
 	ComparedValue interface{} `json:"comparedValue"`
-	//Specifies how to compare the actual value and the compared value;
-	//the status check passes if the comparison evaluates to true and fails otherwise.
-	//Currently only supports EQ and NE
+	// Specifies how to compare the actual value and the compared value;
+	// the status check passes if the comparison evaluates to true and fails otherwise.
+	// Currently only supports EQ and NE
 	Operator string `json:"operator"`
 }
 
