@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -12,14 +11,32 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+// CustomKindConfig describes the structure of each item in the custom kinds config file, see example below:
+//
+//	{
+//	  "myCustomKind": {
+//	    "statusChecks": [
+//	     {
+//		      "fieldPath": "field1.field2",
+//		      "comparedValue": true,
+//		      "operator": "EQ"
+//	     }
+//	   ]
+//	 }
+//	}
 type CustomKindConfig struct {
 	StatusChecks []StatusCheck `json:"statusChecks"`
 }
 
 type StatusCheck struct {
+	//The path to the field within the manifest's status object that the status check should evaluate,
+	//use dot notation for nested fields
 	FieldPath     string      `json:"fieldPath"`
 	ComparedValue interface{} `json:"comparedValue"`
-	Operator      string      `json:"operator"`
+	//Specifies how to compare the actual value and the compared value;
+	//the status check passes if the comparison evaluates to true and fails otherwise.
+	//Currently only supports EQ and NE
+	Operator string `json:"operator"`
 }
 
 type CustomKind struct {
@@ -43,9 +60,6 @@ func (k *CustomKind) Object() *unstructured.Unstructured {
 }
 
 func (k *CustomKind) Status() manifest.Status {
-	log.Println(k.manifest.Object)
-	log.Println(k.CustomKindConfig)
-
 	s := manifest.DefaultStatus
 
 	unstructuredContent := k.manifest.UnstructuredContent()
@@ -91,8 +105,6 @@ func getCustomKindConfig(kind string) CustomKindConfig {
 		clouddriver.Log(fmt.Errorf("error setting up custom kinds config: %v", err))
 	}
 
-	log.Println(allConfigs)
-
 	config, ok := allConfigs[kind]
 	if !ok {
 		return CustomKindConfig{}
@@ -125,10 +137,12 @@ func getStatusValue(statusMap map[string]interface{}, fieldPath string) interfac
 		return nil
 	}
 
+	// recursively traverses the status object until we reach the field we're looking for
 	return getStatusValue(val.(map[string]interface{}), strings.Join(remainingFields, "."))
 }
 
 func evaluatestatusCheck(actual, compared interface{}, operator string) bool {
+	// we can add more operators if necessary
 	switch strings.ToLower(operator) {
 	case "eq":
 		return actual == compared
@@ -138,14 +152,3 @@ func evaluatestatusCheck(actual, compared interface{}, operator string) bool {
 		return true
 	}
 }
-
-// {
-//   "TinyhomeDeployment": {
-//     "statusChecks": [
-//       {
-// 	       "fieldName": "ready",
-// 	       "fieldValue": true
-//       }
-//     ]
-//   }
-// }
