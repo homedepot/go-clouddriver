@@ -75,7 +75,7 @@ func (k *CustomKind) Status() manifest.Status {
 			continue
 		}
 
-		if !evaluatestatusCheck(statusValue, statusCheck.ComparedValue, statusCheck.Operator) {
+		if !evaluateStatusCheck(statusValue, statusCheck.ComparedValue, statusCheck.Operator) {
 			s.Stable.State = false
 			s.Failed.State = true
 			s.Failed.Message = fmt.Sprintf("Field status.%s was %v", statusCheck.FieldPath, statusValue)
@@ -141,7 +141,7 @@ func getStatusValue(statusMap map[string]interface{}, fieldPath string) interfac
 	return getStatusValue(val.(map[string]interface{}), strings.Join(remainingFields, "."))
 }
 
-func evaluatestatusCheck(actual, compared interface{}, operator string) bool {
+func evaluateStatusCheck(actual, compared interface{}, operator string) bool {
 	// we can add more operators if necessary
 	switch strings.ToLower(operator) {
 	case "eq":
