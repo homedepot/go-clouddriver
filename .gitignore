@@ -5,3 +5,4 @@ clouddriver.db
 .idea/
 .DS_Store
 vendor/
+.vscode/

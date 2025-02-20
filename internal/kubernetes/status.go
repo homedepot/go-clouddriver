@@ -9,7 +9,7 @@ import (
 // Status definitions of kinds can be found at
 // https://github.com/spinnaker/clouddriver/tree/master/clouddriver-kubernetes/src/main/java/com/netflix/spinnaker/clouddriver/kubernetes/op/handler
 func GetStatus(kind string, m map[string]interface{}) manifest.Status {
-	status := manifest.DefaultStatus
+	var status manifest.Status
 
 	switch strings.ToLower(kind) {
 	case "daemonset":
@@ -26,6 +26,8 @@ func GetStatus(kind string, m map[string]interface{}) manifest.Status {
 		status = NewReplicaSet(m).Status()
 	case "statefulset":
 		status = NewStatefulSet(m).Status()
+	default:
+		status = NewCustomKind(kind, m).Status()
 	}
 
 	return status
