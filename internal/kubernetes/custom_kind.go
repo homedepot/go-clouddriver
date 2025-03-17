@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"sync"
@@ -102,8 +101,6 @@ func getCustomKindConfig(kind string) CustomKindConfig {
 
 	if configFile == nil {
 		once.Do(func() {
-			log.Println("config file is nil, reading from file")
-
 			allConfigs := make(map[string]CustomKindConfig)
 			configBytes, err := os.ReadFile(customKindsConfigPath)
 
@@ -118,9 +115,6 @@ func getCustomKindConfig(kind string) CustomKindConfig {
 
 			configFile = allConfigs
 		})
-	} else {
-		log.Println("config file not nil")
-		log.Println(configFile)
 	}
 
 	config, ok := configFile[kind]
