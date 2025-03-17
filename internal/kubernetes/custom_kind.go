@@ -103,8 +103,10 @@ func getCustomKindConfig(kind string) CustomKindConfig {
 	if configFile == nil {
 		once.Do(func() {
 			log.Println("config file is nil, reading from file")
+
 			allConfigs := make(map[string]CustomKindConfig)
 			configBytes, err := os.ReadFile(customKindsConfigPath)
+
 			if err != nil {
 				clouddriver.Log(fmt.Errorf("error reading custom kinds config file at %s: %v",
 					customKindsConfigPath, err))
@@ -113,6 +115,7 @@ func getCustomKindConfig(kind string) CustomKindConfig {
 			if err := json.Unmarshal(configBytes, &allConfigs); err != nil {
 				clouddriver.Log(fmt.Errorf("error setting up custom kinds config: %v", err))
 			}
+
 			configFile = allConfigs
 		})
 	} else {
