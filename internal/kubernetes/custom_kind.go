@@ -5,10 +5,16 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes/manifest"
 	clouddriver "github.com/homedepot/go-clouddriver/pkg"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+)
+
+var (
+	once       sync.Once
+	configFile map[string]CustomKindConfig
 )
 
 // CustomKindConfig describes the structure of each item in the custom kinds config file, see example below:
@@ -89,23 +95,29 @@ func (k *CustomKind) Status() manifest.Status {
 
 func getCustomKindConfig(kind string) CustomKindConfig {
 	customKindsConfigPath := os.Getenv("CUSTOM_KINDS_CONFIG_PATH")
-	allConfigs := map[string]CustomKindConfig{}
-
 	if customKindsConfigPath == "" {
 		return CustomKindConfig{}
 	}
 
-	configBytes, err := os.ReadFile(customKindsConfigPath)
-	if err != nil {
-		clouddriver.Log(fmt.Errorf("error reading custom kinds config file at %s: %v",
-			customKindsConfigPath, err))
+	if configFile == nil {
+		once.Do(func() {
+			allConfigs := make(map[string]CustomKindConfig)
+			configBytes, err := os.ReadFile(customKindsConfigPath)
+
+			if err != nil {
+				clouddriver.Log(fmt.Errorf("error reading custom kinds config file at %s: %v",
+					customKindsConfigPath, err))
+			}
+
+			if err := json.Unmarshal(configBytes, &allConfigs); err != nil {
+				clouddriver.Log(fmt.Errorf("error setting up custom kinds config: %v", err))
+			}
+
+			configFile = allConfigs
+		})
 	}
 
-	if err := json.Unmarshal(configBytes, &allConfigs); err != nil {
-		clouddriver.Log(fmt.Errorf("error setting up custom kinds config: %v", err))
-	}
-
-	config, ok := allConfigs[kind]
+	config, ok := configFile[kind]
 	if !ok {
 		return CustomKindConfig{}
 	}

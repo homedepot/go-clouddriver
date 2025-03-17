@@ -5,7 +5,7 @@ This document contains a list of maintainers of this repo.  For information on c
 |------|--------|
 | James Guido | [@guido9j](https://github.com/guido9j) <img src="https://avatars.githubusercontent.com/guido9j" width="20"> |
 | Parag Patel | [@iteaguy](https://github.com/iteaguy) <img src="https://avatars.githubusercontent.com/iteaguy" width="20"> |
-| Abe Garcia | [@abe21412](https://github.com/abe21412) <img src="https://avatars.githubusercontent.com/abe21412" width="20"> |
+| Alice Garcia | [@alice485](https://github.com/alice485) <img src="https://avatars.githubusercontent.com/alice485" width="20"> |
 | Don Benjamin | [@theassyrian](https://github.com/theassyrian) <img src="https://avatars.githubusercontent.com/theassyrian" width="20"> |
 | Patrick Berry | [@pjberry16](https://github.com/pjberry16) <img src="https://avatars.githubusercontent.com/pjberry16" width="20"> |
 | Ryan Johnson | [@ryanjohnsontv](https://github.com/ryanjohnsontv) <img src="https://avatars.githubusercontent.com/ryanjohnsontv" width="20"> |
