@@ -182,11 +182,36 @@ func (cc *Controller) validate(p kubernetes.Provider) error {
 	}
 
 	// Verify that read and write permissions are not empty
+	// When read and/or write permissions are empty sometimes it is still a list of empty strings.
 	if len(p.Permissions.Read) == 0 {
 		return fmt.Errorf("error in permissions: read groups cannot be empty")
 	}
 
+	hasPermissions := false
+	for _, rg := range p.Permissions.Read {
+		if strings.TrimSpace(rg) != "" {
+			hasPermissions = true
+			break
+		}
+	}
+
+	if !hasPermissions {
+		return fmt.Errorf("error in permissions: read groups cannot be empty")
+	}
+
 	if len(p.Permissions.Write) == 0 {
+		return fmt.Errorf("error in permissions: write groups cannot be empty")
+	}
+
+	hasPermissions = false
+	for _, wg := range p.Permissions.Write {
+		if strings.TrimSpace(wg) != "" {
+			hasPermissions = true
+			break
+		}
+	}
+
+	if !hasPermissions {
 		return fmt.Errorf("error in permissions: write groups cannot be empty")
 	}
 
