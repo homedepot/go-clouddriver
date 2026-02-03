@@ -188,6 +188,7 @@ func (cc *Controller) validate(p kubernetes.Provider) error {
 	}
 
 	hasPermissions := false
+
 	for _, rg := range p.Permissions.Read {
 		if strings.TrimSpace(rg) != "" {
 			hasPermissions = true
@@ -204,6 +205,7 @@ func (cc *Controller) validate(p kubernetes.Provider) error {
 	}
 
 	hasPermissions = false
+
 	for _, wg := range p.Permissions.Write {
 		if strings.TrimSpace(wg) != "" {
 			hasPermissions = true
