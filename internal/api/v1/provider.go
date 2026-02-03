@@ -169,6 +169,7 @@ func (cc *Controller) CreateOrReplaceKubernetesProvider(c *gin.Context) {
 // - the CAData is base64 encoded
 // - the TokenProvider is known/supported by arcade
 // - every Permissions.Write entry exists in Permissions.Read
+// - Read permissions are not empty
 func (cc *Controller) validate(p kubernetes.Provider) error {
 	_, err := base64.StdEncoding.DecodeString(p.CAData)
 	if err != nil {
@@ -178,6 +179,40 @@ func (cc *Controller) validate(p kubernetes.Provider) error {
 	_, err = cc.ArcadeClient.Token(p.TokenProvider)
 	if err != nil {
 		return fmt.Errorf("error getting token: %s", err.Error())
+	}
+
+	// Verify that read and write permissions are not empty
+	// When read and/or write permissions are empty sometimes it is still a list of empty strings.
+	if len(p.Permissions.Read) == 0 {
+		return fmt.Errorf("error in permissions: read groups cannot be empty")
+	}
+
+	hasPermissions := false
+	for _, rg := range p.Permissions.Read {
+		if strings.TrimSpace(rg) != "" {
+			hasPermissions = true
+			break
+		}
+	}
+
+	if !hasPermissions {
+		return fmt.Errorf("error in permissions: read groups cannot be empty")
+	}
+
+	if len(p.Permissions.Write) == 0 {
+		return fmt.Errorf("error in permissions: write groups cannot be empty")
+	}
+
+	hasPermissions = false
+	for _, wg := range p.Permissions.Write {
+		if strings.TrimSpace(wg) != "" {
+			hasPermissions = true
+			break
+		}
+	}
+
+	if !hasPermissions {
+		return fmt.Errorf("error in permissions: write groups cannot be empty")
 	}
 
 	// Verify that each write group is included as a read group
