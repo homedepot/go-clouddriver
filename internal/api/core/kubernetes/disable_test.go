@@ -619,6 +619,22 @@ var _ = Describe("Disable", func() {
 		})
 	})
 
+	When("the manifest name casing differs from the live object's kind", func() {
+		BeforeEach(func() {
+			// ManifestName is parsed from a raw, possibly-lowercase string
+			// (e.g. from Orca), but the persisted Resource.Kind must come from
+			// the live object fetched via Get - not this raw string - so it
+			// stays canonical PascalCase regardless of ManifestName's casing.
+			disableManifestRequest.ManifestName = "replicaset test-rs-v001"
+		})
+
+		It("persists the canonical kind from the fetched target", func() {
+			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+			Expect(kr.Kind).To(Equal("ReplicaSet"))
+		})
+	})
+
 	It("succeeds", func() {
 		Expect(c.Writer.Status()).To(Equal(http.StatusOK))
 		Expect(fakeKubeClient.PatchUsingStrategyCallCount()).To(Equal(8))

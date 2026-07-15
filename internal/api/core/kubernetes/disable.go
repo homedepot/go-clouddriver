@@ -150,7 +150,7 @@ func (cc *Controller) Disable(c *gin.Context, dm DisableManifestRequest) {
 		TaskID:       taskID,
 		Name:         name,
 		Namespace:    namespace,
-		Kind:         kind,
+		Kind:         target.GetKind(),
 	}
 
 	err = cc.SQLClient.CreateKubernetesResource(kr)

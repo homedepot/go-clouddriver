@@ -18,6 +18,12 @@ import (
 var _ = Describe("Delete", func() {
 	BeforeEach(func() {
 		setup()
+		// The default ManifestName/Kinds fixtures use a lowercase "deployment" -
+		// stub the resolved canonical kind (as GVKForKind would return from the
+		// REST mapper) to its correct PascalCase form, to prove the persisted
+		// Resource.Kind comes from this resolution rather than the raw,
+		// possibly-lowercase manifest name.
+		fakeKubeClient.GVKForKindReturns(schema.GroupVersionKind{Kind: "Deployment"}, nil)
 	})
 
 	JustBeforeEach(func() {
@@ -44,6 +50,17 @@ var _ = Describe("Delete", func() {
 			It("returns an error", func() {
 				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
 				Expect(c.Errors.Last().Error()).To(Equal("error getting gvr"))
+			})
+		})
+
+		When("getting the gvk returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.GVKForKindReturns(schema.GroupVersionKind{}, errors.New("error getting gvk"))
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+				Expect(c.Errors.Last().Error()).To(Equal("error getting gvk"))
 			})
 		})
 
@@ -216,6 +233,17 @@ var _ = Describe("Delete", func() {
 			})
 		})
 
+		When("getting the gvk returns an error", func() {
+			BeforeEach(func() {
+				fakeKubeClient.GVKForKindReturns(schema.GroupVersionKind{}, errors.New("error getting gvk"))
+			})
+
+			It("returns an error", func() {
+				Expect(c.Writer.Status()).To(Equal(http.StatusInternalServerError))
+				Expect(c.Errors.Last().Error()).To(Equal("error getting gvk"))
+			})
+		})
+
 		When("listing by gvr returns an error", func() {
 			BeforeEach(func() {
 				fakeKubeClient.ListByGVRReturns(nil, errors.New("error listing by gvr"))
@@ -277,6 +305,8 @@ var _ = Describe("Delete", func() {
 			Expect(*deleteOptions.PropagationPolicy).To(Equal(v1.DeletePropagationOrphan))
 			kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
 			Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeDelete))
+			Expect(kr.Kind).To(Equal("Deployment"))
+			Expect(kr.Cluster).To(Equal("deployment test-name"))
 		})
 	})
 
@@ -304,6 +334,11 @@ var _ = Describe("Delete", func() {
 			Expect(*deleteOptions.PropagationPolicy).To(Equal(v1.DeletePropagationOrphan))
 			kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
 			Expect(kr.TaskType).To(Equal(clouddriver.TaskTypeDelete))
+			// The persisted Kind must come from the resolved GVK (canonical
+			// "Deployment"), not the raw, lowercase manifest name ("deployment"),
+			// so downstream kind IN (?) queries stay correct regardless of collation.
+			Expect(kr.Kind).To(Equal("Deployment"))
+			Expect(kr.Cluster).To(Equal("deployment test-deployment"))
 		})
 	})
 

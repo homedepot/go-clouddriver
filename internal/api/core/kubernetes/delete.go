@@ -82,6 +82,12 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 			return
 		}
 
+		gvk, err := provider.Client.GVKForKind(kind)
+		if err != nil {
+			clouddriver.Error(c, http.StatusInternalServerError, err)
+			return
+		}
+
 		err = provider.Client.DeleteResourceByKindAndNameAndNamespace(kind, name, namespace, do)
 		if err != nil {
 			clouddriver.Error(c, http.StatusInternalServerError, err)
@@ -99,9 +105,9 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 			Namespace:    namespace,
 			Resource:     gvr.Resource,
 			Version:      gvr.Version,
-			Kind:         kind,
+			Kind:         gvk.Kind,
 			SpinnakerApp: dm.App,
-			Cluster:      kubernetes.Cluster(kind, name),
+			Cluster:      kubernetes.Cluster(gvk.Kind, name),
 		}
 
 		err = cc.SQLClient.CreateKubernetesResource(kr)
@@ -155,6 +161,12 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 				clouddriver.Error(c, http.StatusInternalServerError, err)
 				return
 			}
+
+			gvk, err := provider.Client.GVKForKind(kind)
+			if err != nil {
+				clouddriver.Error(c, http.StatusInternalServerError, err)
+				return
+			}
 			// Find list of resources with label selectors
 			list, err := provider.Client.ListByGVR(gvr, lo)
 			if err != nil {
@@ -201,9 +213,9 @@ func (cc *Controller) Delete(c *gin.Context, dm DeleteManifestRequest) {
 					Namespace:    namespace,
 					Resource:     gvr.Resource,
 					Version:      gvr.Version,
-					Kind:         kind,
+					Kind:         gvk.Kind,
 					SpinnakerApp: dm.App,
-					Cluster:      kubernetes.Cluster(kind, item.GetName()),
+					Cluster:      kubernetes.Cluster(gvk.Kind, item.GetName()),
 				}
 
 				err = cc.SQLClient.CreateKubernetesResource(kr)

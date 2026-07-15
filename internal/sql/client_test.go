@@ -68,10 +68,18 @@ var _ = Describe("Sql", func() {
 			"`cluster` varchar\\(256\\)," +
 			"PRIMARY KEY \\(`id`\\)," +
 			"INDEX `.*").WillReturnResult(sqlmock.NewResult(1, 1))
+		// GORM's migrator builds this table's index clauses by ranging over
+		// stmt.Schema.ParseIndexes(), which returns a map - Go randomizes map
+		// iteration order on every range, so the two indexes below can be
+		// emitted in either order from one Connect() call to the next. Match
+		// both orderings so this doesn't flake.
 		mock.ExpectExec("CREATE TABLE `kubernetes_providers_namespaces` " +
 			"\\(`account_name` varchar\\(256\\)," +
 			"`namespace` varchar\\(256\\)," +
-			"UNIQUE INDEX `account_name_namespace_idx` \\(`account_name`,`namespace`\\)" +
+			"(?:UNIQUE INDEX `account_name_namespace_idx` \\(`account_name`,`namespace`\\)," +
+			"INDEX `idx_kubernetes_providers_namespaces_acct` \\(`account_name`\\)" +
+			"|INDEX `idx_kubernetes_providers_namespaces_acct` \\(`account_name`\\)," +
+			"UNIQUE INDEX `account_name_namespace_idx` \\(`account_name`,`namespace`\\))" +
 			"\\)$").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("(?i)^CREATE TABLE `provider_read_permissions` " +
@@ -498,17 +506,18 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"account_name", "cluster"}).
 					AddRow("account1", "cluster 1").
 					AddRow("account2", "cluster 2")
+				// Regression guard: this must query the raw `kind` column (no
+				// UPPER()) so idx_kubernetes_resources_kind_covering can be
+				// used. Wrapping kind in UPPER() again would make this match
+				// fail since the query text (and args) below would no
+				// longer line up.
 				mock.ExpectQuery("(?i)^SELECT " +
 					"account_name, " +
 					"cluster " +
 					"FROM `kubernetes_resources` " +
-					"WHERE spinnaker_app = \\? AND UPPER\\(kind\\) in \\('DEPLOYMENT', " +
-					"'STATEFULSET', " +
-					"'REPLICASET', " +
-					"'INGRESS', " +
-					"'SERVICE', " +
-					"'DAEMONSET'\\) GROUP BY " +
+					"WHERE spinnaker_app = \\? AND kind IN \\(\\?,\\?,\\?,\\?,\\?,\\?\\) GROUP BY " +
 					"account_name, cluster$").
+					WithArgs("test-application", "Deployment", "StatefulSet", "ReplicaSet", "Ingress", "Service", "DaemonSet").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -548,12 +557,18 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"group", "name"}).
 					AddRow("group1", "name1").
 					AddRow("group2", "name2")
+				// Regression guard: same as ListKubernetesClustersByApplication -
+				// must filter on the raw `kind` column, not UPPER(kind), and the
+				// literal kind values must stay in Kubernetes' native PascalCase
+				// so they match what's actually stored (and so the covering
+				// index stays usable).
 				mock.ExpectQuery("(?i)^SELECT " +
 					"field1, " +
 					"field2 " +
 					"FROM `kubernetes_resources` " +
-					"WHERE UPPER\\(kind\\) in \\('DEPLOYMENT', 'STATEFULSET', 'REPLICASET', 'INGRESS', 'SERVICE', 'DAEMONSET'\\)" +
+					"WHERE kind IN \\(\\?,\\?,\\?,\\?,\\?,\\?\\)" +
 					" GROUP BY field1, field2$").
+					WithArgs("Deployment", "StatefulSet", "ReplicaSet", "Ingress", "Service", "DaemonSet").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})

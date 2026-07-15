@@ -335,6 +335,26 @@ func (c *client) GetKubernetesProviderAndPermissions(name string) (kubernetes.Pr
 	return p, nil
 }
 
+// clusterKinds are the Kubernetes Kind values that make up a Spinnaker
+// "cluster" grouping, listed in the exact case the Kubernetes API uses
+// (PascalCase) so kind can be compared as-is instead of via UPPER(kind).
+// Previously these queries compared UPPER(kind) against all-caps literals,
+// which wraps the column in a function and prevents MySQL from using any
+// index on kind - forcing a full table scan (measured at 300k+ rows, 1-5s
+// per call) on every invocation.
+//
+// kubernetes_resources.kind is normalized to this same canonical PascalCase
+// at write time regardless of input casing: LoadKubernetesResources
+// (unstructured.GetKind()) and the deploy/patch/rollback/restart/scale paths
+// (resolved GVK) always produced canonical casing; delete/enable/disable
+// used to persist the raw, possibly-lowercase kind parsed from
+// ManifestName, but now resolve the canonical Kind via the REST mapper
+// (see kubernetes.Client.GVKForKind and target.GetKind() in
+// internal/api/core/kubernetes/{delete,enable,disable}.go) before
+// persisting. This comparison is therefore correct by construction and does
+// not depend on the DB's collation.
+var clusterKinds = []string{"Deployment", "StatefulSet", "ReplicaSet", "Ingress", "Service", "DaemonSet"}
+
 // ListKubernetesClustersByApplication gets the list of kubernetes clusters
 // for a Spinnaker application from the DB.
 //
@@ -343,8 +363,7 @@ func (c *client) GetKubernetesProviderAndPermissions(name string) (kubernetes.Pr
 func (c *client) ListKubernetesClustersByApplication(spinnakerApp string) ([]kubernetes.Resource, error) {
 	var rs []kubernetes.Resource
 	db := c.db.Select("account_name, cluster").
-		Where("spinnaker_app = ? AND UPPER(kind) in ('DEPLOYMENT', 'STATEFULSET', 'REPLICASET', 'INGRESS', 'SERVICE', 'DAEMONSET')",
-			spinnakerApp).
+		Where("spinnaker_app = ? AND kind IN (?)", spinnakerApp, clusterKinds).
 		Group("account_name, cluster").Find(&rs)
 
 	return rs, db.Error
@@ -364,7 +383,7 @@ func (c *client) ListKubernetesClustersByFields(fields ...string) ([]kubernetes.
 	}
 
 	var rs []kubernetes.Resource
-	db := c.db.Select(list).Where("UPPER(kind) in ('DEPLOYMENT', 'STATEFULSET', 'REPLICASET', 'INGRESS', 'SERVICE', 'DAEMONSET')").Group(list).Find(&rs)
+	db := c.db.Select(list).Where("kind IN (?)", clusterKinds).Group(list).Find(&rs)
 
 	return rs, db.Error
 }
