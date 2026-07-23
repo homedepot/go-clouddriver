@@ -47,14 +47,7 @@ func (Provider) TableName() string {
 
 type ProviderNamespaces struct {
 	// ID          string `json:"-" gorm:"primary_key"`
-	// account_name_namespace_idx already leads with account_name, but
-	// idx_kubernetes_providers_namespaces_acct is declared explicitly (and
-	// created via AutoMigrate, same as the indexes on Resource above) so the
-	// join in GetKubernetesProvider / GetKubernetesProviderAndPermissions /
-	// ListKubernetesProviders has a dedicated single-column index regardless
-	// of what the composite unique index's storage layout ends up looking
-	// like, and so it self-heals on any DB where it's missing.
-	AccountName string `json:"accountName" gorm:"index:account_name_namespace_idx,unique;index:idx_kubernetes_providers_namespaces_acct"`
+	AccountName string `json:"accountName" gorm:"index:account_name_namespace_idx,unique"`
 	Namespace   string `json:"namespace,omitempty" gorm:"index:account_name_namespace_idx,unique"`
 }
 

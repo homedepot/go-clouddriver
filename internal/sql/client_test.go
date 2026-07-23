@@ -68,18 +68,10 @@ var _ = Describe("Sql", func() {
 			"`cluster` varchar\\(256\\)," +
 			"PRIMARY KEY \\(`id`\\)," +
 			"INDEX `.*").WillReturnResult(sqlmock.NewResult(1, 1))
-		// GORM's migrator builds this table's index clauses by ranging over
-		// stmt.Schema.ParseIndexes(), which returns a map - Go randomizes map
-		// iteration order on every range, so the two indexes below can be
-		// emitted in either order from one Connect() call to the next. Match
-		// both orderings so this doesn't flake.
 		mock.ExpectExec("CREATE TABLE `kubernetes_providers_namespaces` " +
 			"\\(`account_name` varchar\\(256\\)," +
 			"`namespace` varchar\\(256\\)," +
-			"(?:UNIQUE INDEX `account_name_namespace_idx` \\(`account_name`,`namespace`\\)," +
-			"INDEX `idx_kubernetes_providers_namespaces_acct` \\(`account_name`\\)" +
-			"|INDEX `idx_kubernetes_providers_namespaces_acct` \\(`account_name`\\)," +
-			"UNIQUE INDEX `account_name_namespace_idx` \\(`account_name`,`namespace`\\))" +
+			"UNIQUE INDEX `account_name_namespace_idx` \\(`account_name`,`namespace`\\)" +
 			"\\)$").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("(?i)^CREATE TABLE `provider_read_permissions` " +

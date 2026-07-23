@@ -88,18 +88,39 @@ replica's boot is an operational risk, not just a code concern:
   lag depending on the DB engine and current load, even with mostly-online DDL in
   modern MySQL.
 
-**Resolution:** the index is created via a manual, directly-run `ALTER TABLE ...
-ALGORITHM=INPLACE, LOCK=NONE` statement against the database, and then removed
-from the Go struct entirely so `AutoMigrate` never touches it — eliminating the
-8-replica race at the source rather than hoping `AutoMigrate`'s `HasIndex` check
-avoids it. gh-ost/pt-online-schema-change were evaluated and **not used**: at this
-table's actual size (630,613 rows as of this writing), a secondary-index add via
-`ALGORITHM=INPLACE` doesn't rebuild the table and is expected to complete in
-seconds to low minutes, which is well within what a plain `ALTER TABLE` handles
-safely — those tools solve a problem (long-running blocking DDL on huge tables)
-this table doesn't have at its current scale. The full step-by-step execution
-plan (including production connection details) is maintained internally, not
-in this public repo.
+**Resolution:** the index tag **stays declared in the Go struct** — `AutoMigrate`
+remains the source of truth and continues to be how this index gets created by
+default. This matters for anyone else standing up a fresh install of this
+project (a new environment, a new tenant DB, a first-time deploy): they get this
+index automatically, with no manual step required, the same as any other index
+in this codebase.
+
+The manual, directly-run `ALTER TABLE ... ALGORITHM=INPLACE, LOCK=NONE` DDL is a
+**pre-emptive, conditional step** for a specific operational situation, not a
+replacement for `AutoMigrate`: run it by hand, once, *before* deploying this
+change, **only if both of the following are true**:
+- More than one replica of this service is running against the same database
+  (the race described above requires concurrent `AutoMigrate` calls to actually
+  matter — a single-replica deploy has nothing to race against).
+- The table has grown large enough that a live `ALTER TABLE` against it is a
+  real operational concern for your environment (no fixed row count applies
+  universally here — it depends on your DB's resources and tolerance for a
+  brief DDL operation; teams running a much larger `kubernetes_resources` table
+  than the one this decision was made against should evaluate their own
+  threshold rather than assume this one's numbers apply).
+
+When both conditions hold, applying the index manually first means every
+replica's subsequent `AutoMigrate` call finds the index already present via its
+`HasIndex` check and skips `CreateIndex` — the race is avoided without touching
+the code, and the index stays declared in the struct for the benefit of every
+other environment. gh-ost/pt-online-schema-change were evaluated and **not
+used** for this: at this table's actual size (630,613 rows as of this writing),
+a secondary-index add via `ALGORITHM=INPLACE` doesn't rebuild the table and is
+expected to complete in seconds to low minutes, which is well within what a
+plain `ALTER TABLE` handles safely — those tools solve a problem (long-running
+blocking DDL on huge tables) this table doesn't have at its current scale. The
+full step-by-step execution plan (including production connection details) is
+maintained internally, not in this public repo.
 
 ---
 
@@ -181,7 +202,10 @@ backend).
 - The `kind IN (?)` comparison is therefore correct on **any** database/collation —
   MySQL with any collation, Postgres, or SQLite — not just today's specific
   production configuration.
-- The index rollout mechanism (Decision 3) is resolved via manual DDL, tracked
-  in an internal runbook. Still open, tracked separately: the longer-term
+- The index rollout mechanism (Decision 3) is resolved: the index stays declared
+  in code via `AutoMigrate` for every environment by default, with a
+  conditional manual pre-creation step (tracked in an internal runbook) only
+  for deployments running multiple replicas against a database large enough
+  that the risk applies. Still open, tracked separately: the longer-term
   `utf8mb3` → `utf8mb4` charset migration (unrelated technical debt, not a
   blocker for this work).

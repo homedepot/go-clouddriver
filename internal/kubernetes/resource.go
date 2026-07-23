@@ -19,20 +19,25 @@ type Resource struct {
 	Cluster      string    `json:"-"`
 }
 
-// Composite index declared above (currently created automatically by
-// AutoMigrate in sql.Client.Connect on every startup):
+// Composite index declared above (created automatically by AutoMigrate in
+// sql.Client.Connect on every startup - this is intentional and should stay
+// this way, so any new environment/install of this project gets this index
+// with no manual step required):
 //
 //   idx_kubernetes_resources_kind_covering (kind, account_name, name, spinnaker_app)
 //     Covers ListKubernetesClustersByFields / ListKubernetesClustersByApplication,
 //     which filter on kind and select/group on all four columns.
 //
-// This index is slated to move to manual DDL management (removing it from
-// this struct's gorm tags entirely) to eliminate the multi-replica
-// AutoMigrate race on a write-heavy production table - see the internal
-// operator runbook for this rollout (tracked internally, not part of this
-// public repo). Do not remove the tag until that runbook's rollout steps
-// have been executed against the database; until then, AutoMigrate is still
-// the source of truth.
+// If you operate a deployment of this project with more than one replica
+// AND a kubernetes_resources table large enough that a live ALTER TABLE is
+// an operational concern for your environment, consider manually
+// pre-creating this index via a directly-run ALTER TABLE ... ADD INDEX ...,
+// ALGORITHM=INPLACE, LOCK=NONE statement before rolling out a change that
+// introduces it, so every replica's AutoMigrate call finds it already
+// present (via HasIndex) and skips CreateIndex - this avoids multiple
+// replicas racing to create the same index concurrently on a rolling
+// deploy. This is a deployment-time operational choice, not a code change:
+// the gorm tag stays as-is either way.
 //
 // A second covering index for the spinnaker_app-scoped queries
 // (ListKubernetesClustersByApplication, ListKubernetesAccountsBySpinnakerApp)
