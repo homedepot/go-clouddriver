@@ -1,6 +1,6 @@
 # Decision Record: `kubernetes_resources.kind` query fix, index rollout, and casing normalization
 
-JIRA: [CN-5272](https://thd.atlassian.net/browse/CN-5272)
+Tracked internally as CN-5272.
 
 ## Context
 
@@ -72,7 +72,7 @@ revisit adding `idx_kubernetes_resources_app_covering` at that point — not bef
 
 ---
 
-## Decision 3 — How the index actually gets created in production (resolved — see runbook)
+## Decision 3 — How the index actually gets created in production (resolved — see internal runbook)
 
 **What:** Both indexes (in Decision 2, and generally) are declared via GORM struct
 tags and created by `db.AutoMigrate(...)` in `sql.Client.Connect()`, which runs on
@@ -97,8 +97,9 @@ table's actual size (630,613 rows as of this writing), a secondary-index add via
 `ALGORITHM=INPLACE` doesn't rebuild the table and is expected to complete in
 seconds to low minutes, which is well within what a plain `ALTER TABLE` handles
 safely — those tools solve a problem (long-running blocking DDL on huge tables)
-this table doesn't have at its current scale. Full step-by-step execution plan:
-[kind-covering-index-rollout-runbook.md](kind-covering-index-rollout-runbook.md).
+this table doesn't have at its current scale. The full step-by-step execution
+plan (including production connection details) is maintained internally, not
+in this public repo.
 
 ---
 
@@ -180,6 +181,7 @@ backend).
 - The `kind IN (?)` comparison is therefore correct on **any** database/collation —
   MySQL with any collation, Postgres, or SQLite — not just today's specific
   production configuration.
-- The index rollout mechanism (Decision 3) is resolved via manual DDL — see the
-  runbook. Still open, tracked separately: the longer-term `utf8mb3` → `utf8mb4` charset
-  migration (unrelated technical debt, not a blocker for this work).
+- The index rollout mechanism (Decision 3) is resolved via manual DDL, tracked
+  in an internal runbook. Still open, tracked separately: the longer-term
+  `utf8mb3` → `utf8mb4` charset migration (unrelated technical debt, not a
+  blocker for this work).

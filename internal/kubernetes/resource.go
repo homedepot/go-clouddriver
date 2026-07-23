@@ -28,10 +28,11 @@ type Resource struct {
 //
 // This index is slated to move to manual DDL management (removing it from
 // this struct's gorm tags entirely) to eliminate the multi-replica
-// AutoMigrate race on a write-heavy production table - see
-// docs/decisions/kind-covering-index-rollout-runbook.md. Do not remove the
-// tag until that runbook's rollout steps have been executed against the
-// database; until then, AutoMigrate is still the source of truth.
+// AutoMigrate race on a write-heavy production table - see the internal
+// operator runbook for this rollout (tracked internally, not part of this
+// public repo). Do not remove the tag until that runbook's rollout steps
+// have been executed against the database; until then, AutoMigrate is still
+// the source of truth.
 //
 // A second covering index for the spinnaker_app-scoped queries
 // (ListKubernetesClustersByApplication, ListKubernetesAccountsBySpinnakerApp)
