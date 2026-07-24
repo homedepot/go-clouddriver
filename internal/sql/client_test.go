@@ -499,10 +499,10 @@ var _ = Describe("Sql", func() {
 					AddRow("account1", "cluster 1").
 					AddRow("account2", "cluster 2")
 				// Regression guard: this must query the raw `kind` column (no
-				// UPPER()) so idx_kubernetes_resources_kind_covering can be
-				// used. Wrapping kind in UPPER() again would make this match
-				// fail since the query text (and args) below would no
-				// longer line up.
+				// UPPER()), so the existing account_name_kind_name_spinnaker_app_idx
+				// index can be used. Wrapping kind in UPPER() again would make
+				// this match fail since the query text (and args) below would
+				// no longer line up.
 				mock.ExpectQuery("(?i)^SELECT " +
 					"account_name, " +
 					"cluster " +

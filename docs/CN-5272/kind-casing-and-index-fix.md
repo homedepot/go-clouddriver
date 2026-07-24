@@ -1,4 +1,4 @@
-# Decision Record: `kubernetes_resources.kind` query fix, index rollout, and casing normalization
+# Decision Record: `kubernetes_resources.kind` query fix, index evaluation, and casing normalization
 
 Tracked internally as CN-5272.
 
@@ -47,80 +47,63 @@ closed by normalizing at write time rather than leaning on collation.
 
 ---
 
-## Decision 2 — Add one covering index now (`idx_kubernetes_resources_kind_covering`), defer the second
+## Decision 2 — Add a covering index? Tried, tested against real data, rolled back
 
-**What:** `internal/kubernetes/resource.go` adds
+**What was originally proposed:** `internal/kubernetes/resource.go` added
 `idx_kubernetes_resources_kind_covering (kind, account_name, name, spinnaker_app)`,
-a covering index for the two hot queries above. A second index,
+a covering index intended for the two hot queries above. A second index,
 `idx_kubernetes_resources_app_covering (spinnaker_app, account_name, cluster, kind)`,
-was considered and **explicitly not added**.
+was considered and not added, on the reasoning that it should only be added if
+evidence showed it was needed.
 
-**Why:**
-- The `kind_covering` index is the direct fix for the measured bottleneck query — it
-  lets both queries run as index-only scans instead of scanning the table.
-- `kubernetes_resources` is written to continuously by a multi-tenant clouddriver
-  polling many clusters — every additional index taxes every `INSERT`/`UPDATE` with
-  write amplification (extra CPU/IOPS on Cloud SQL). Adding a second wide composite
-  index speculatively, without slow-query-log evidence it's needed, trades a
-  guaranteed ongoing write cost for a hypothetical read benefit.
-- Standard operational practice for a write-heavy production table: ship the index
-  that's proven necessary, measure, and only add more if the evidence says so.
+**What we did to validate it:** before shipping this permanently, we tested it
+against a real, production-shaped test database (630k+ rows) rather than
+relying on `EXPLAIN`'s estimated cost alone:
+- `ListKubernetesClustersByFields`: real wall-clock timing was **identical**
+  with the index present (1.39s) and absent (1.37s), same 90,103-row result.
+  Forcing the planner to use the index (`FORCE INDEX`) made the plan *worse* —
+  same row count scanned, plus an added `Using temporary` step the planner
+  otherwise avoided by choosing the pre-existing
+  `account_name_kind_name_spinnaker_app_idx` instead (which already contains
+  all four selected/grouped columns and served as a covering index on its own,
+  once `UPPER(kind)` was removed).
+- `ListKubernetesClustersByApplication`: real wall-clock timing improved 5x
+  (0.30s → 0.06s) after the query rewrite — but the query plan showed this
+  came entirely from an existing index on `(spinnaker_app, kind)` (tracked
+  separately, out of scope for this change — see below), not from
+  `idx_kubernetes_resources_kind_covering`, which the planner never chose for
+  this query either.
 
-**How to apply going forward:** if slow-query logs later show
-`ListKubernetesAccountsBySpinnakerApp`/application-scoped lookups are still slow,
-revisit adding `idx_kubernetes_resources_app_covering` at that point — not before.
+**Resolution: the index was removed.** Across both queries it was built for,
+real data showed no measurable benefit — the entire performance improvement
+came from Decision 1 (making `kind` sargable) combined with indexes that
+already existed. Shipping an index that provides no demonstrated benefit would
+mean paying its write-amplification cost (extra CPU/IOPS on every
+`INSERT`/`UPDATE` to this write-heavy table, in every environment,
+indefinitely) for nothing — exactly the tradeoff this decision originally said
+to avoid "without slow-query-log evidence it's needed." The evidence came in,
+and it said no.
+
+**How to apply going forward:** if a future slow-query-log shows a genuine gap
+not covered by existing indexes, design and validate a new index against real
+data the same way — don't ship on `EXPLAIN`'s estimate alone; confirm the
+planner actually chooses it and that real timing improves.
 
 ---
 
-## Decision 3 — How the index actually gets created in production (resolved — see internal runbook)
+## Decision 3 — Retired (was: how the index gets created in production)
 
-**What:** Both indexes (in Decision 2, and generally) are declared via GORM struct
-tags and created by `db.AutoMigrate(...)` in `sql.Client.Connect()`, which runs on
-**every pod's startup**.
+This decision existed to solve a rollout problem for the index proposed in
+Decision 2 (avoiding an `AutoMigrate` race across replicas on a large table).
+Since that index was removed entirely rather than shipped, **there is nothing
+to roll out, and this decision no longer applies.** No index-creation DDL
+needs to run anywhere, manually or via `AutoMigrate`, as a result of this
+change.
 
-**Why this needs a real decision before shipping:** `AutoMigrate` running a blind
-`ALTER TABLE ADD INDEX` against a live, 300k+-row, write-heavy table on every
-replica's boot is an operational risk, not just a code concern:
-- Multiple clouddriver replicas could race through `AutoMigrate` concurrently on a
-  rolling deploy; GORM's `HasIndex` + `CreateIndex` isn't atomic across processes,
-  so this could surface as a "duplicate key name" error on one replica.
-- An uncontrolled `ALTER TABLE` on a large table can cause lock contention/caching
-  lag depending on the DB engine and current load, even with mostly-online DDL in
-  modern MySQL.
-
-**Resolution:** the index tag **stays declared in the Go struct** — `AutoMigrate`
-remains the source of truth and continues to be how this index gets created by
-default. This matters for anyone else standing up a fresh install of this
-project (a new environment, a new tenant DB, a first-time deploy): they get this
-index automatically, with no manual step required, the same as any other index
-in this codebase.
-
-The manual, directly-run `ALTER TABLE ... ALGORITHM=INPLACE, LOCK=NONE` DDL is a
-**pre-emptive, conditional step** for a specific operational situation, not a
-replacement for `AutoMigrate`: run it by hand, once, *before* deploying this
-change, **only if both of the following are true**:
-- More than one replica of this service is running against the same database
-  (the race described above requires concurrent `AutoMigrate` calls to actually
-  matter — a single-replica deploy has nothing to race against).
-- The table has grown large enough that a live `ALTER TABLE` against it is a
-  real operational concern for your environment (no fixed row count applies
-  universally here — it depends on your DB's resources and tolerance for a
-  brief DDL operation; teams running a much larger `kubernetes_resources` table
-  than the one this decision was made against should evaluate their own
-  threshold rather than assume this one's numbers apply).
-
-When both conditions hold, applying the index manually first means every
-replica's subsequent `AutoMigrate` call finds the index already present via its
-`HasIndex` check and skips `CreateIndex` — the race is avoided without touching
-the code, and the index stays declared in the struct for the benefit of every
-other environment. gh-ost/pt-online-schema-change were evaluated and **not
-used** for this: at this table's actual size (630,613 rows as of this writing),
-a secondary-index add via `ALGORITHM=INPLACE` doesn't rebuild the table and is
-expected to complete in seconds to low minutes, which is well within what a
-plain `ALTER TABLE` handles safely — those tools solve a problem (long-running
-blocking DDL on huge tables) this table doesn't have at its current scale. The
-full step-by-step execution plan (including production connection details) is
-maintained internally, not in this public repo.
+The manual DDL runbook and its script that were drafted for this rollout
+(maintained internally, not in this public repo) are now obsolete and should
+be retired/removed rather than followed — they document a rollout for an
+index this change no longer ships.
 
 ---
 
@@ -196,16 +179,30 @@ backend).
 
 ## Summary of what's now true
 
-- The query is sargable and index-backed (Decision 1 + 2).
+- The query is sargable, and real testing confirms pre-existing indexes
+  (`account_name_kind_name_spinnaker_app_idx` and a separately-tracked index on
+  `(spinnaker_app, kind)`) are sufficient to serve it well — no new index ships
+  as part of this change (Decision 1 + 2).
 - `kubernetes_resources.kind` is normalized to canonical PascalCase at every write
   path, by construction, not by accident of collation (Decision 4).
 - The `kind IN (?)` comparison is therefore correct on **any** database/collation —
   MySQL with any collation, Postgres, or SQLite — not just today's specific
   production configuration.
-- The index rollout mechanism (Decision 3) is resolved: the index stays declared
-  in code via `AutoMigrate` for every environment by default, with a
-  conditional manual pre-creation step (tracked in an internal runbook) only
-  for deployments running multiple replicas against a database large enough
-  that the risk applies. Still open, tracked separately: the longer-term
+- No index rollout is needed (Decision 3 is retired along with the index it
+  existed to roll out). Still open, tracked separately: the longer-term
   `utf8mb3` → `utf8mb4` charset migration (unrelated technical debt, not a
-  blocker for this work).
+  blocker for this work), and formalizing `spinnaker_app_kind_idx` into
+  `AutoMigrate` (separate story, see below).
+
+## Tracked separately, out of scope for this fix
+
+- **`spinnaker_app_kind_idx (spinnaker_app, kind)` on `kubernetes_resources`** —
+  discovered during validation testing to be present consistently across all
+  environments (LLC and prod), and to be load-bearing for
+  `ListKubernetesClustersByApplication`'s real performance (it's what the query
+  planner actually uses; see validation notes). It is not declared in
+  `resource.go`, not managed by `AutoMigrate`, and not documented in the
+  README's "MySQL Indexes and Cleanup" section (verified - only five indexes
+  are documented there, and this isn't one of them). Deliberately not touched
+  as part of this work; a separate story will formalize it (add to
+  `AutoMigrate`/document it) rather than folding it into this fix's scope.
