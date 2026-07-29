@@ -85,7 +85,7 @@ func (cc *Controller) RunJob(c *gin.Context, rj RunJobRequest) {
 		Namespace:    meta.Namespace,
 		Resource:     meta.Resource,
 		Version:      meta.Version,
-		Kind:         "job",
+		Kind:         meta.Kind,
 		SpinnakerApp: rj.Application,
 	}
 

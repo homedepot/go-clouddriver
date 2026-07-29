@@ -498,17 +498,18 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"account_name", "cluster"}).
 					AddRow("account1", "cluster 1").
 					AddRow("account2", "cluster 2")
+				// Regression guard: this must query the raw `kind` column (no
+				// UPPER()), so the existing account_name_kind_name_spinnaker_app_idx
+				// index can be used. Wrapping kind in UPPER() again would make
+				// this match fail since the query text (and args) below would
+				// no longer line up.
 				mock.ExpectQuery("(?i)^SELECT " +
 					"account_name, " +
 					"cluster " +
 					"FROM `kubernetes_resources` " +
-					"WHERE spinnaker_app = \\? AND UPPER\\(kind\\) in \\('DEPLOYMENT', " +
-					"'STATEFULSET', " +
-					"'REPLICASET', " +
-					"'INGRESS', " +
-					"'SERVICE', " +
-					"'DAEMONSET'\\) GROUP BY " +
+					"WHERE spinnaker_app = \\? AND kind IN \\(\\?,\\?,\\?,\\?,\\?,\\?\\) GROUP BY " +
 					"account_name, cluster$").
+					WithArgs("test-application", "Deployment", "StatefulSet", "ReplicaSet", "Ingress", "Service", "DaemonSet").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})
@@ -548,12 +549,18 @@ var _ = Describe("Sql", func() {
 				sqlRows := sqlmock.NewRows([]string{"group", "name"}).
 					AddRow("group1", "name1").
 					AddRow("group2", "name2")
+				// Regression guard: same as ListKubernetesClustersByApplication -
+				// must filter on the raw `kind` column, not UPPER(kind), and the
+				// literal kind values must stay in Kubernetes' native PascalCase
+				// so they match what's actually stored (and so the covering
+				// index stays usable).
 				mock.ExpectQuery("(?i)^SELECT " +
 					"field1, " +
 					"field2 " +
 					"FROM `kubernetes_resources` " +
-					"WHERE UPPER\\(kind\\) in \\('DEPLOYMENT', 'STATEFULSET', 'REPLICASET', 'INGRESS', 'SERVICE', 'DAEMONSET'\\)" +
+					"WHERE kind IN \\(\\?,\\?,\\?,\\?,\\?,\\?\\)" +
 					" GROUP BY field1, field2$").
+					WithArgs("Deployment", "StatefulSet", "ReplicaSet", "Ingress", "Service", "DaemonSet").
 					WillReturnRows(sqlRows)
 				mock.ExpectCommit()
 			})

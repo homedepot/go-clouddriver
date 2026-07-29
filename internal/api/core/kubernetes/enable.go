@@ -142,7 +142,7 @@ func (cc *Controller) Enable(c *gin.Context, dm EnableManifestRequest) {
 		TaskID:       taskID,
 		Name:         name,
 		Namespace:    namespace,
-		Kind:         kind,
+		Kind:         target.GetKind(),
 	}
 
 	err = cc.SQLClient.CreateKubernetesResource(kr)

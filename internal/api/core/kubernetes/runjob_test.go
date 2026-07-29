@@ -14,6 +14,10 @@ import (
 var _ = Describe("RunJob", func() {
 	BeforeEach(func() {
 		setup()
+		// Apply resolves and returns the canonical Kind ("Job") from the
+		// manifest's GVK - stub it so the persisted Resource.Kind reflects
+		// that resolution instead of a hardcoded literal.
+		fakeKubeClient.ApplyReturns(kubernetes.Metadata{Kind: "Job"}, nil)
 	})
 
 	JustBeforeEach(func() {
@@ -88,6 +92,8 @@ var _ = Describe("RunJob", func() {
 	When("it succeeds", func() {
 		It("succeeds", func() {
 			Expect(c.Writer.Status()).To(Equal(http.StatusOK))
+			kr := fakeSQLClient.CreateKubernetesResourceArgsForCall(0)
+			Expect(kr.Kind).To(Equal("Job"))
 		})
 
 		It("generates the name correctly", func() {

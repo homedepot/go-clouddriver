@@ -39,6 +39,7 @@ type Client interface {
 	DeleteResourceByKindAndNameAndNamespace(string, string, string, metav1.DeleteOptions) error
 	Discover() error
 	GVRForKind(string) (schema.GroupVersionResource, error)
+	GVKForKind(string) (schema.GroupVersionKind, error)
 	Get(string, string, string) (*unstructured.Unstructured, error)
 	ListByGVR(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	ListByGVRWithContext(context.Context, schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
@@ -329,6 +330,16 @@ func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, 
 
 func (c *client) GVRForKind(kind string) (schema.GroupVersionResource, error) {
 	return c.mapper.ResourceFor(schema.GroupVersionResource{Resource: kind})
+}
+
+// GVKForKind resolves a kind string of any casing (e.g. "deployment",
+// "ReplicaSet", "clusterRole") to its canonical GroupVersionKind via the
+// REST mapper - the same resolution Get and
+// DeleteResourceByKindAndNameAndNamespace already perform internally. Use
+// gvk.Kind to get the Kubernetes API's canonical (PascalCase) Kind string
+// for persistence, regardless of the input casing.
+func (c *client) GVKForKind(kind string) (schema.GroupVersionKind, error) {
+	return c.mapper.KindFor(schema.GroupVersionResource{Resource: kind})
 }
 
 // List all resources by their GVR and list options.
