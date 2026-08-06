@@ -41,6 +41,7 @@ type Client interface {
 	GVRForKind(string) (schema.GroupVersionResource, error)
 	GVKForKind(string) (schema.GroupVersionKind, error)
 	Get(string, string, string) (*unstructured.Unstructured, error)
+	GetByGVR(schema.GroupVersionResource, string, string) (*unstructured.Unstructured, error)
 	ListByGVR(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	ListByGVRWithContext(context.Context, schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	ListResource(string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
@@ -326,6 +327,18 @@ func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, 
 	}
 
 	return u, err
+}
+
+// GetByGVR gets a resource by its fully-qualified GroupVersionResource,
+// name, and namespace — no RESTMapper resolution, so no ambiguity is
+// possible when a plural resource name collides across API groups
+// (see CN-5232).
+func (c *client) GetByGVR(gvr schema.GroupVersionResource, name, namespace string) (*unstructured.Unstructured, error) {
+	if namespace != "" {
+		return c.c.Resource(gvr).Namespace(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	}
+
+	return c.c.Resource(gvr).Get(context.TODO(), name, metav1.GetOptions{})
 }
 
 func (c *client) GVRForKind(kind string) (schema.GroupVersionResource, error) {

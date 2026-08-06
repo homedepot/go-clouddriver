@@ -50,19 +50,6 @@ type FakeClient struct {
 	discoverReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GVRForKindStub        func(string) (schema.GroupVersionResource, error)
-	gVRForKindMutex       sync.RWMutex
-	gVRForKindArgsForCall []struct {
-		arg1 string
-	}
-	gVRForKindReturns struct {
-		result1 schema.GroupVersionResource
-		result2 error
-	}
-	gVRForKindReturnsOnCall map[int]struct {
-		result1 schema.GroupVersionResource
-		result2 error
-	}
 	GVKForKindStub        func(string) (schema.GroupVersionKind, error)
 	gVKForKindMutex       sync.RWMutex
 	gVKForKindArgsForCall []struct {
@@ -74,6 +61,19 @@ type FakeClient struct {
 	}
 	gVKForKindReturnsOnCall map[int]struct {
 		result1 schema.GroupVersionKind
+		result2 error
+	}
+	GVRForKindStub        func(string) (schema.GroupVersionResource, error)
+	gVRForKindMutex       sync.RWMutex
+	gVRForKindArgsForCall []struct {
+		arg1 string
+	}
+	gVRForKindReturns struct {
+		result1 schema.GroupVersionResource
+		result2 error
+	}
+	gVRForKindReturnsOnCall map[int]struct {
+		result1 schema.GroupVersionResource
 		result2 error
 	}
 	GetStub        func(string, string, string) (*unstructured.Unstructured, error)
@@ -88,6 +88,21 @@ type FakeClient struct {
 		result2 error
 	}
 	getReturnsOnCall map[int]struct {
+		result1 *unstructured.Unstructured
+		result2 error
+	}
+	GetByGVRStub        func(schema.GroupVersionResource, string, string) (*unstructured.Unstructured, error)
+	getByGVRMutex       sync.RWMutex
+	getByGVRArgsForCall []struct {
+		arg1 schema.GroupVersionResource
+		arg2 string
+		arg3 string
+	}
+	getByGVRReturns struct {
+		result1 *unstructured.Unstructured
+		result2 error
+	}
+	getByGVRReturnsOnCall map[int]struct {
 		result1 *unstructured.Unstructured
 		result2 error
 	}
@@ -415,70 +430,6 @@ func (fake *FakeClient) DiscoverReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeClient) GVRForKind(arg1 string) (schema.GroupVersionResource, error) {
-	fake.gVRForKindMutex.Lock()
-	ret, specificReturn := fake.gVRForKindReturnsOnCall[len(fake.gVRForKindArgsForCall)]
-	fake.gVRForKindArgsForCall = append(fake.gVRForKindArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	stub := fake.GVRForKindStub
-	fakeReturns := fake.gVRForKindReturns
-	fake.recordInvocation("GVRForKind", []interface{}{arg1})
-	fake.gVRForKindMutex.Unlock()
-	if stub != nil {
-		return stub(arg1)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *FakeClient) GVRForKindCallCount() int {
-	fake.gVRForKindMutex.RLock()
-	defer fake.gVRForKindMutex.RUnlock()
-	return len(fake.gVRForKindArgsForCall)
-}
-
-func (fake *FakeClient) GVRForKindCalls(stub func(string) (schema.GroupVersionResource, error)) {
-	fake.gVRForKindMutex.Lock()
-	defer fake.gVRForKindMutex.Unlock()
-	fake.GVRForKindStub = stub
-}
-
-func (fake *FakeClient) GVRForKindArgsForCall(i int) string {
-	fake.gVRForKindMutex.RLock()
-	defer fake.gVRForKindMutex.RUnlock()
-	argsForCall := fake.gVRForKindArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeClient) GVRForKindReturns(result1 schema.GroupVersionResource, result2 error) {
-	fake.gVRForKindMutex.Lock()
-	defer fake.gVRForKindMutex.Unlock()
-	fake.GVRForKindStub = nil
-	fake.gVRForKindReturns = struct {
-		result1 schema.GroupVersionResource
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeClient) GVRForKindReturnsOnCall(i int, result1 schema.GroupVersionResource, result2 error) {
-	fake.gVRForKindMutex.Lock()
-	defer fake.gVRForKindMutex.Unlock()
-	fake.GVRForKindStub = nil
-	if fake.gVRForKindReturnsOnCall == nil {
-		fake.gVRForKindReturnsOnCall = make(map[int]struct {
-			result1 schema.GroupVersionResource
-			result2 error
-		})
-	}
-	fake.gVRForKindReturnsOnCall[i] = struct {
-		result1 schema.GroupVersionResource
-		result2 error
-	}{result1, result2}
-}
-
 func (fake *FakeClient) GVKForKind(arg1 string) (schema.GroupVersionKind, error) {
 	fake.gVKForKindMutex.Lock()
 	ret, specificReturn := fake.gVKForKindReturnsOnCall[len(fake.gVKForKindArgsForCall)]
@@ -539,6 +490,70 @@ func (fake *FakeClient) GVKForKindReturnsOnCall(i int, result1 schema.GroupVersi
 	}
 	fake.gVKForKindReturnsOnCall[i] = struct {
 		result1 schema.GroupVersionKind
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GVRForKind(arg1 string) (schema.GroupVersionResource, error) {
+	fake.gVRForKindMutex.Lock()
+	ret, specificReturn := fake.gVRForKindReturnsOnCall[len(fake.gVRForKindArgsForCall)]
+	fake.gVRForKindArgsForCall = append(fake.gVRForKindArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.GVRForKindStub
+	fakeReturns := fake.gVRForKindReturns
+	fake.recordInvocation("GVRForKind", []interface{}{arg1})
+	fake.gVRForKindMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) GVRForKindCallCount() int {
+	fake.gVRForKindMutex.RLock()
+	defer fake.gVRForKindMutex.RUnlock()
+	return len(fake.gVRForKindArgsForCall)
+}
+
+func (fake *FakeClient) GVRForKindCalls(stub func(string) (schema.GroupVersionResource, error)) {
+	fake.gVRForKindMutex.Lock()
+	defer fake.gVRForKindMutex.Unlock()
+	fake.GVRForKindStub = stub
+}
+
+func (fake *FakeClient) GVRForKindArgsForCall(i int) string {
+	fake.gVRForKindMutex.RLock()
+	defer fake.gVRForKindMutex.RUnlock()
+	argsForCall := fake.gVRForKindArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClient) GVRForKindReturns(result1 schema.GroupVersionResource, result2 error) {
+	fake.gVRForKindMutex.Lock()
+	defer fake.gVRForKindMutex.Unlock()
+	fake.GVRForKindStub = nil
+	fake.gVRForKindReturns = struct {
+		result1 schema.GroupVersionResource
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GVRForKindReturnsOnCall(i int, result1 schema.GroupVersionResource, result2 error) {
+	fake.gVRForKindMutex.Lock()
+	defer fake.gVRForKindMutex.Unlock()
+	fake.GVRForKindStub = nil
+	if fake.gVRForKindReturnsOnCall == nil {
+		fake.gVRForKindReturnsOnCall = make(map[int]struct {
+			result1 schema.GroupVersionResource
+			result2 error
+		})
+	}
+	fake.gVRForKindReturnsOnCall[i] = struct {
+		result1 schema.GroupVersionResource
 		result2 error
 	}{result1, result2}
 }
@@ -604,6 +619,72 @@ func (fake *FakeClient) GetReturnsOnCall(i int, result1 *unstructured.Unstructur
 		})
 	}
 	fake.getReturnsOnCall[i] = struct {
+		result1 *unstructured.Unstructured
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetByGVR(arg1 schema.GroupVersionResource, arg2 string, arg3 string) (*unstructured.Unstructured, error) {
+	fake.getByGVRMutex.Lock()
+	ret, specificReturn := fake.getByGVRReturnsOnCall[len(fake.getByGVRArgsForCall)]
+	fake.getByGVRArgsForCall = append(fake.getByGVRArgsForCall, struct {
+		arg1 schema.GroupVersionResource
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	stub := fake.GetByGVRStub
+	fakeReturns := fake.getByGVRReturns
+	fake.recordInvocation("GetByGVR", []interface{}{arg1, arg2, arg3})
+	fake.getByGVRMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) GetByGVRCallCount() int {
+	fake.getByGVRMutex.RLock()
+	defer fake.getByGVRMutex.RUnlock()
+	return len(fake.getByGVRArgsForCall)
+}
+
+func (fake *FakeClient) GetByGVRCalls(stub func(schema.GroupVersionResource, string, string) (*unstructured.Unstructured, error)) {
+	fake.getByGVRMutex.Lock()
+	defer fake.getByGVRMutex.Unlock()
+	fake.GetByGVRStub = stub
+}
+
+func (fake *FakeClient) GetByGVRArgsForCall(i int) (schema.GroupVersionResource, string, string) {
+	fake.getByGVRMutex.RLock()
+	defer fake.getByGVRMutex.RUnlock()
+	argsForCall := fake.getByGVRArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeClient) GetByGVRReturns(result1 *unstructured.Unstructured, result2 error) {
+	fake.getByGVRMutex.Lock()
+	defer fake.getByGVRMutex.Unlock()
+	fake.GetByGVRStub = nil
+	fake.getByGVRReturns = struct {
+		result1 *unstructured.Unstructured
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetByGVRReturnsOnCall(i int, result1 *unstructured.Unstructured, result2 error) {
+	fake.getByGVRMutex.Lock()
+	defer fake.getByGVRMutex.Unlock()
+	fake.GetByGVRStub = nil
+	if fake.getByGVRReturnsOnCall == nil {
+		fake.getByGVRReturnsOnCall = make(map[int]struct {
+			result1 *unstructured.Unstructured
+			result2 error
+		})
+	}
+	fake.getByGVRReturnsOnCall[i] = struct {
 		result1 *unstructured.Unstructured
 		result2 error
 	}{result1, result2}
@@ -1222,36 +1303,6 @@ func (fake *FakeClient) ReplaceReturnsOnCall(i int, result1 kubernetes.Metadata,
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.applyMutex.RLock()
-	defer fake.applyMutex.RUnlock()
-	fake.deleteResourceByKindAndNameAndNamespaceMutex.RLock()
-	defer fake.deleteResourceByKindAndNameAndNamespaceMutex.RUnlock()
-	fake.discoverMutex.RLock()
-	defer fake.discoverMutex.RUnlock()
-	fake.gVRForKindMutex.RLock()
-	defer fake.gVRForKindMutex.RUnlock()
-	fake.gVKForKindMutex.RLock()
-	defer fake.gVKForKindMutex.RUnlock()
-	fake.getMutex.RLock()
-	defer fake.getMutex.RUnlock()
-	fake.listByGVRMutex.RLock()
-	defer fake.listByGVRMutex.RUnlock()
-	fake.listByGVRWithContextMutex.RLock()
-	defer fake.listByGVRWithContextMutex.RUnlock()
-	fake.listResourceMutex.RLock()
-	defer fake.listResourceMutex.RUnlock()
-	fake.listResourceWithContextMutex.RLock()
-	defer fake.listResourceWithContextMutex.RUnlock()
-	fake.listResourcesByKindAndNamespaceMutex.RLock()
-	defer fake.listResourcesByKindAndNamespaceMutex.RUnlock()
-	fake.listResourcesByKindAndNamespaceWithContextMutex.RLock()
-	defer fake.listResourcesByKindAndNamespaceWithContextMutex.RUnlock()
-	fake.patchMutex.RLock()
-	defer fake.patchMutex.RUnlock()
-	fake.patchUsingStrategyMutex.RLock()
-	defer fake.patchUsingStrategyMutex.RUnlock()
-	fake.replaceMutex.RLock()
-	defer fake.replaceMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
