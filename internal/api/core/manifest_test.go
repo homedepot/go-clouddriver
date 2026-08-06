@@ -57,6 +57,80 @@ var _ = Describe("Manifest", func() {
 			})
 		})
 
+		When("the sql client returns an error looking up the resource", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesResourceByAccountNamespaceNameReturns(nil, errors.New("error getting resource"))
+			})
+
+			It("returns status internal server error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error getting resource"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("a matching resource is found in the database", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesResourceByAccountNamespaceNameReturns([]kubernetes.Resource{
+					{
+						APIGroup:  "",
+						Kind:      "Pod",
+						Name:      "test-pod",
+						Namespace: "test-namespace",
+						Resource:  "pods",
+						Version:   "v1",
+					},
+				}, nil)
+				fakeKubeClient.GetByGVRReturns(&unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"name":      "test-pod",
+							"namespace": "test-namespace",
+						},
+					},
+				}, nil)
+			})
+
+			It("uses GetByGVR instead of the ambiguous Get", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetByGVRCallCount()).To(Equal(1))
+				Expect(fakeKubeClient.GetCallCount()).To(Equal(0))
+
+				gvr, name, namespace := fakeKubeClient.GetByGVRArgsForCall(0)
+				Expect(gvr.Group).To(Equal(""))
+				Expect(gvr.Version).To(Equal("v1"))
+				Expect(gvr.Resource).To(Equal("pods"))
+				Expect(name).To(Equal("test-pod"))
+				Expect(namespace).To(Equal("test-namespace"))
+			})
+		})
+
+		When("no matching resource is found in the database", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesResourceByAccountNamespaceNameReturns([]kubernetes.Resource{}, nil)
+				fakeKubeClient.GetReturns(&unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"name":      "test-pod",
+							"namespace": "test-namespace",
+						},
+					},
+				}, nil)
+			})
+
+			It("falls back to the ambiguous Get", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+				Expect(fakeKubeClient.GetByGVRCallCount()).To(Equal(0))
+			})
+		})
+
 		When("getting the manifest returns null values", func() {
 			BeforeEach(func() {
 				uri = svr.URL + "/manifests/test-account/test-namespace/clusterRole test-cluster-role?includeEvents=false"
