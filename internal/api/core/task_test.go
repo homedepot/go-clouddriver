@@ -86,7 +86,7 @@ var _ = Describe("Task", func() {
 
 			It("does not call make calls to the server", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.GetCallCount()).To(Equal(0))
+				Expect(fakeKubeClient.GetByGVRCallCount()).To(Equal(0))
 			})
 		})
 
@@ -102,7 +102,7 @@ var _ = Describe("Task", func() {
 
 			It("does not call make calls to the server", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.GetCallCount()).To(Equal(0))
+				Expect(fakeKubeClient.GetByGVRCallCount()).To(Equal(0))
 			})
 		})
 
@@ -130,30 +130,30 @@ var _ = Describe("Task", func() {
 
 			When("the server returns a not found error", func() {
 				BeforeEach(func() {
-					fakeKubeClient.GetReturns(nil, errors.New(`horizontalpodautoscalers.autoscaling "php-apache1-v008" not found`))
+					fakeKubeClient.GetByGVRReturns(nil, errors.New(`horizontalpodautoscalers.autoscaling "php-apache1-v008" not found`))
 				})
 
 				It("ignores the not found error and returns a complete task", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
-					Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+					Expect(fakeKubeClient.GetByGVRCallCount()).To(Equal(1))
 					validateResponse(payloadTaskComplete)
 				})
 			})
 
 			When("the server returns a generic error", func() {
 				BeforeEach(func() {
-					fakeKubeClient.GetReturns(nil, errors.New(`generic error`))
+					fakeKubeClient.GetByGVRReturns(nil, errors.New(`generic error`))
 				})
 
 				It("ignores the not found error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-					Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+					Expect(fakeKubeClient.GetByGVRCallCount()).To(Equal(1))
 				})
 			})
 
 			When("the server returns the resource", func() {
 				BeforeEach(func() {
-					fakeKubeClient.GetReturns(&unstructured.Unstructured{
+					fakeKubeClient.GetByGVRReturns(&unstructured.Unstructured{
 						Object: map[string]interface{}{
 							"kind":       "Deployment",
 							"apiVersion": "apps/v1",
@@ -167,7 +167,7 @@ var _ = Describe("Task", func() {
 
 				It("returns an incomplete task", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
-					Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+					Expect(fakeKubeClient.GetByGVRCallCount()).To(Equal(1))
 					validateResponse(payloadTaskIncomplete)
 				})
 			})
@@ -175,7 +175,7 @@ var _ = Describe("Task", func() {
 
 		When("getting the manifest returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.GetReturns(nil, errors.New("error getting resource"))
+				fakeKubeClient.GetByGVRReturns(nil, errors.New("error getting resource"))
 			})
 
 			It("returns a failed task", func() {

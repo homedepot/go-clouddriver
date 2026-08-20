@@ -96,6 +96,7 @@ func setup() {
 
 	fakeKubeClient = &kubernetesfakes.FakeClient{}
 	fakeKubeClient.GetReturns(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil)
+	fakeKubeClient.GetByGVRReturns(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil)
 	fakeKubeClient.ListByGVRReturns(&unstructured.UnstructuredList{
 		Items: []unstructured.Unstructured{
 			{

@@ -14,6 +14,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/homedepot/go-clouddriver/internal"
 	ops "github.com/homedepot/go-clouddriver/internal/api/core/kubernetes"
@@ -55,6 +56,26 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 		return
 	}
 
+	// Look up the persisted resource to recover its correct API group,
+	// avoiding the ambiguous kind-only lookup below when a plural kind
+	// collides across multiple registered API groups (see CN-5232). A
+	// zero-value resource (no matching row) falls back to today's
+	// behavior in getManifest.
+	resource := kubernetes.Resource{}
+
+	resources, err := cc.SQLClient.GetKubernetesResourceByAccountNamespaceName(account, namespace, name)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	for _, r := range resources {
+		if strings.EqualFold(r.Kind, kind) {
+			resource = r
+			break
+		}
+	}
+
 	events := []v1.Event{}
 	errCh := make(chan error, defaultErrorChanSize)
 	eventsCh := make(chan v1.Event, internal.DefaultChanSize)
@@ -64,7 +85,7 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 	// Add 1 to the wait group for getting the manifest or error.
 	wg.Add(1)
 
-	go getManifest(provider, wg, manifestCh, errCh, kind, name, namespace)
+	go getManifest(provider, wg, manifestCh, errCh, resource, kind, name, namespace)
 
 	if includeEvents != "false" {
 		wg.Add(1)
@@ -140,10 +161,25 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 
 func getManifest(provider *kubernetes.Provider,
 	wg *sync.WaitGroup, manifestCh chan *unstructured.Unstructured,
-	errCh chan error, kind, name, namespace string) {
+	errCh chan error, resource kubernetes.Resource, kind, name, namespace string) {
 	defer wg.Done()
 
-	manifest, err := provider.Client.Get(kind, name, namespace)
+	var (
+		manifest *unstructured.Unstructured
+		err      error
+	)
+
+	// A non-empty Resource means a trustworthy DB row was found (see
+	// GetManifest) - use its exact GroupVersionResource, no RESTMapper
+	// resolution, no ambiguity possible. Otherwise fall back to the
+	// kind-only lookup, unchanged from before.
+	if resource.Resource != "" {
+		gvr := schema.GroupVersionResource{Group: resource.APIGroup, Version: resource.Version, Resource: resource.Resource}
+		manifest, err = provider.Client.GetByGVR(gvr, name, namespace)
+	} else {
+		manifest, err = provider.Client.Get(kind, name, namespace)
+	}
+
 	if err != nil {
 		errCh <- err
 		return

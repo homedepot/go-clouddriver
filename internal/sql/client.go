@@ -27,6 +27,7 @@ type Client interface {
 	DeleteKubernetesResourcesByAccountName(string) error
 	GetKubernetesProvider(string) (kubernetes.Provider, error)
 	GetKubernetesProviderAndPermissions(string) (kubernetes.Provider, error)
+	GetKubernetesResourceByAccountNamespaceName(string, string, string) ([]kubernetes.Resource, error)
 	ListKubernetesAccountsBySpinnakerApp(string) ([]string, error)
 	ListKubernetesClustersByApplication(string) ([]kubernetes.Resource, error)
 	ListKubernetesClustersByFields(...string) ([]kubernetes.Resource, error)
@@ -571,6 +572,29 @@ func contains(s []string, e string) bool {
 	}
 
 	return false
+}
+
+// GetKubernetesResourceByAccountNamespaceName gets the kubernetes
+// resources persisted for a given account, namespace, and name - used to
+// recover the correct API group for a resource whose plural kind
+// collides across multiple registered API groups (see CN-5232). Only
+// rows written by a deploy-type operation (task_type "") are considered
+// trustworthy: their APIGroup is captured from the manifest's own
+// declared apiVersion, unlike cleanup/delete rows, which derive it from
+// an ambiguous RESTMapper lookup and have been confirmed to sometimes
+// persist the wrong group. kind is intentionally not part of the SQL
+// WHERE (casing varies across callers, and comparing via UPPER(kind)
+// would reintroduce the non-sargable predicate CN-5272 removed) - the
+// caller disambiguates by kind itself, case-insensitively, over this
+// narrow result set.
+func (c *client) GetKubernetesResourceByAccountNamespaceName(accountName, namespace, name string) ([]kubernetes.Resource, error) {
+	var rs []kubernetes.Resource
+	db := c.db.Select("api_group, kind, name, namespace, resource, version").
+		Where("account_name = ? AND namespace = ? AND name = ? AND task_type = ?", accountName, namespace, name, "").
+		Order("timestamp desc").
+		Find(&rs)
+
+	return rs, db.Error
 }
 
 // ListKubernetesResourcesByTaskID get the list of kubernetes resources
