@@ -2022,7 +2022,6 @@ var _ = Describe("Application", func() {
 		BeforeEach(func() {
 			setup()
 			uri = svr.URL + "/applications/test-application/serverGroups"
-			createRequest(http.MethodGet)
 			fakeSQLClient.ListKubernetesAccountsBySpinnakerAppReturns([]string{
 				"account1",
 			}, nil)
@@ -2481,6 +2480,7 @@ var _ = Describe("Application", func() {
 		})
 
 		JustBeforeEach(func() {
+			createRequest(http.MethodGet)
 			doRequest()
 		})
 
@@ -3499,6 +3499,90 @@ var _ = Describe("Application", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
 				validateResponse(payloadListServerGroups)
+			})
+		})
+
+		Context("the 'clusters' query param", func() {
+			When("it is present and matches", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/applications/test-application/serverGroups" +
+						"?clusters=account1:deployment%20test-deployment1"
+				})
+
+				It("returns the matching cluster's server groups", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadListServerGroups)
+				})
+			})
+
+			When("it contains multiple entries and one matches", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/applications/test-application/serverGroups" +
+						"?clusters=account2:deployment%20other,account1:deployment%20test-deployment1"
+				})
+
+				It("returns the matching cluster's server groups", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadListServerGroups)
+				})
+			})
+
+			When("the cluster name case differs", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/applications/test-application/serverGroups" +
+						"?clusters=ACCOUNT1:DEPLOYMENT%20TEST-DEPLOYMENT1"
+				})
+
+				It("matches case-insensitively", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(payloadListServerGroups)
+				})
+			})
+
+			When("the cluster does not match", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/applications/test-application/serverGroups" +
+						"?clusters=account1:deployment%20test-deployment2"
+				})
+
+				It("returns no server groups", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(`[]`)
+				})
+			})
+
+			When("the account does not match", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/applications/test-application/serverGroups" +
+						"?clusters=account2:deployment%20test-deployment1"
+				})
+
+				It("returns no server groups", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(`[]`)
+				})
+			})
+
+			When("it is present and empty", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/applications/test-application/serverGroups?clusters="
+				})
+
+				It("returns no server groups", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(`[]`)
+				})
+			})
+
+			When("an entry is not in 'account:cluster' form", func() {
+				BeforeEach(func() {
+					uri = svr.URL + "/applications/test-application/serverGroups?clusters=not-parseable"
+				})
+
+				It("ignores the entry and returns no server groups", func() {
+					Expect(res.StatusCode).To(Equal(http.StatusOK))
+					validateResponse(`[]`)
+				})
 			})
 		})
 	})
