@@ -11,7 +11,6 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	"github.com/iancoleman/strcase"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // GetTask gets a task - currently only associated with kubernetes 'tasks'.
@@ -60,9 +59,7 @@ func (cc *Controller) GetTask(c *gin.Context) {
 			continue
 		}
 
-		gvr := schema.GroupVersionResource{Group: r.APIGroup, Version: r.Version, Resource: r.Resource}
-
-		result, err := provider.Client.GetByGVR(gvr, r.Name, r.Namespace)
+		result, err := provider.Client.Get(r.Resource, r.Name, r.Namespace)
 		if err != nil {
 			// If the task type is "delete" and the resource was not found,
 			// append an empty manifest and continue.
