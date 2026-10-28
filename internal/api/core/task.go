@@ -22,6 +22,8 @@ func (cc *Controller) GetTask(c *gin.Context) {
 
 	resources, err := cc.SQLClient.ListKubernetesResourcesByTaskID(id)
 	if err != nil {
+		clouddriver.Log(fmt.Errorf("GetTask: error listing resources for task (id: %s): %w", id, err))
+
 		task.Status.Failed = true
 		task.Status.Retryable = true
 		task.Status.Status = fmt.Sprintf("Error listing resources for task (id: %s): %v", id, err)
@@ -42,6 +44,9 @@ func (cc *Controller) GetTask(c *gin.Context) {
 
 	provider, err := cc.KubernetesProvider(accountName)
 	if err != nil {
+		clouddriver.Log(fmt.Errorf("GetTask: error getting kubernetes provider for task (id: %s, account: %s): %w",
+			id, accountName, err))
+
 		task.Status.Failed = true
 		task.Status.Retryable = true
 		task.Status.Status = fmt.Sprintf("Error getting kubernetes provider %s for task (id: %s): %v",
@@ -72,6 +77,10 @@ func (cc *Controller) GetTask(c *gin.Context) {
 
 				continue
 			}
+
+			clouddriver.Log(fmt.Errorf("GetTask: error getting resource for task (id: %s, account: %s, task type: %s, "+
+				"group: %s, version: %s, resource: %s, name: %s, namespace: %s): %w",
+				id, r.AccountName, r.TaskType, r.APIGroup, r.Version, r.Resource, r.Name, r.Namespace, err))
 
 			task.Status.Failed = true
 			task.Status.Retryable = true
