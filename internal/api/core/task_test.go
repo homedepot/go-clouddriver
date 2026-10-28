@@ -1,10 +1,13 @@
 package core_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
@@ -16,13 +19,18 @@ import (
 
 var _ = Describe("Task", func() {
 	Describe("#GetTask", func() {
+		var logBuf *bytes.Buffer
+
 		BeforeEach(func() {
 			setup()
+			logBuf = &bytes.Buffer{}
+			log.SetOutput(logBuf)
 			uri = svr.URL + "/task/task-id"
 			createRequest(http.MethodGet)
 		})
 
 		AfterEach(func() {
+			log.SetOutput(os.Stderr)
 			teardown()
 		})
 
@@ -44,6 +52,7 @@ var _ = Describe("Task", func() {
 				Expect(t.Status.Failed).To(BeTrue())
 				Expect(t.Status.Retryable).To(BeTrue())
 				Expect(t.Status.Status).To(Equal("Error listing resources for task (id: task-id): error listing resources"))
+				Expect(logBuf.String()).To(ContainSubstring("GetTask: error listing resources for task (id: task-id): error listing resources"))
 			})
 		})
 
@@ -54,6 +63,7 @@ var _ = Describe("Task", func() {
 
 			It("returns not found error", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusNotFound))
+				Expect(logBuf.String()).To(BeEmpty())
 			})
 		})
 
@@ -71,6 +81,7 @@ var _ = Describe("Task", func() {
 				Expect(t.Status.Failed).To(BeTrue())
 				Expect(t.Status.Retryable).To(BeTrue())
 				Expect(t.Status.Status).To(Equal("Error getting kubernetes provider test-account-name for task (id: task-id): internal: error getting kubernetes provider test-account-name: error getting provider"))
+				Expect(logBuf.String()).To(ContainSubstring("GetTask: error getting kubernetes provider for task (id: task-id, account: test-account-name)"))
 			})
 		})
 
@@ -187,12 +198,14 @@ var _ = Describe("Task", func() {
 				Expect(t.Status.Failed).To(BeTrue())
 				Expect(t.Status.Retryable).To(BeTrue())
 				Expect(t.Status.Status).To(Equal("Error getting resource for task (task ID: task-id, kind: test-kind, name: test-name, namespace: test-namespace): error getting resource"))
+				Expect(logBuf.String()).To(ContainSubstring("GetTask: error getting resource for task (id: task-id, account: test-account-name, task type: , group: , version: , resource: test-kind, name: test-name, namespace: test-namespace): error getting resource"))
 			})
 		})
 
 		When("it succeeds", func() {
 			It("succeeds", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				Expect(logBuf.String()).To(BeEmpty())
 			})
 		})
 	})
