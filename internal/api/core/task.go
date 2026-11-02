@@ -11,7 +11,6 @@ import (
 	"github.com/homedepot/go-clouddriver/internal/artifact"
 	"github.com/homedepot/go-clouddriver/internal/kubernetes"
 	"github.com/iancoleman/strcase"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // GetTask gets a task - currently only associated with kubernetes 'tasks'.
@@ -22,6 +21,8 @@ func (cc *Controller) GetTask(c *gin.Context) {
 
 	resources, err := cc.SQLClient.ListKubernetesResourcesByTaskID(id)
 	if err != nil {
+		clouddriver.Log(fmt.Errorf("GetTask: error listing resources for task (id: %s): %w", id, err))
+
 		task.Status.Failed = true
 		task.Status.Retryable = true
 		task.Status.Status = fmt.Sprintf("Error listing resources for task (id: %s): %v", id, err)
@@ -42,6 +43,9 @@ func (cc *Controller) GetTask(c *gin.Context) {
 
 	provider, err := cc.KubernetesProvider(accountName)
 	if err != nil {
+		clouddriver.Log(fmt.Errorf("GetTask: error getting kubernetes provider for task (id: %s, account: %s): %w",
+			id, accountName, err))
+
 		task.Status.Failed = true
 		task.Status.Retryable = true
 		task.Status.Status = fmt.Sprintf("Error getting kubernetes provider %s for task (id: %s): %v",
@@ -60,9 +64,7 @@ func (cc *Controller) GetTask(c *gin.Context) {
 			continue
 		}
 
-		gvr := schema.GroupVersionResource{Group: r.APIGroup, Version: r.Version, Resource: r.Resource}
-
-		result, err := provider.Client.GetByGVR(gvr, r.Name, r.Namespace)
+		result, err := provider.Client.Get(r.Resource, r.Name, r.Namespace)
 		if err != nil {
 			// If the task type is "delete" and the resource was not found,
 			// append an empty manifest and continue.
@@ -72,6 +74,10 @@ func (cc *Controller) GetTask(c *gin.Context) {
 
 				continue
 			}
+
+			clouddriver.Log(fmt.Errorf("GetTask: error getting resource for task (id: %s, account: %s, task type: %s, "+
+				"group: %s, version: %s, resource: %s, name: %s, namespace: %s): %w",
+				id, r.AccountName, r.TaskType, r.APIGroup, r.Version, r.Resource, r.Name, r.Namespace, err))
 
 			task.Status.Failed = true
 			task.Status.Retryable = true
