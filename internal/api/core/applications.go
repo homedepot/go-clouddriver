@@ -262,6 +262,25 @@ func filterResourcesByKind(rs []resource, kind string) []resource {
 	return filtered
 }
 
+// filterResourcesByClusters filters a resource slice down to those whose account and
+// 'moniker.spinnaker.io/cluster' annotation match one of the given "account:cluster"
+// entries and returns the resulting slice. Matching is case-insensitive, consistent
+// with how ListClusterServerGroups matches this same annotation. Entries not in
+// "account:cluster" form match nothing and are effectively ignored, mirroring OSS
+// Clouddriver.
+func filterResourcesByClusters(rs []resource, clusters []string) []resource {
+	var filtered []resource
+
+	for _, r := range rs {
+		cluster := r.u.GetAnnotations()[kubernetes.AnnotationSpinnakerMonikerCluster]
+		if containsIgnoreCase(clusters, r.account+":"+cluster) {
+			filtered = append(filtered, r)
+		}
+	}
+
+	return filtered
+}
+
 // makeServerGroupManagerMap returns a map of a server group manager's (Deployment)
 // UID to a list of ReplicaSets that the Deployment owns.
 func makeServerGroupManagerMap(replicaSets []resource, application string) map[string][]ServerGroupManagerServerGroup {
@@ -930,6 +949,13 @@ type InstanceHealth struct {
 func (cc *Controller) ListServerGroups(c *gin.Context) {
 	response := ServerGroups{}
 	application := c.Param("application")
+	// Deck sets the 'clusters' query param to the "account:cluster" entries the user
+	// picked when an application exceeds Deck's 'onDemandClusterThreshold'. Unlike the
+	// rest of this package we use GetQuery rather than Query because we have to tell
+	// "param absent" (return every server group) apart from "param present but empty"
+	// (the user picked nothing - return none), matching OSS Clouddriver's
+	// ServerGroupController.list.
+	clusters, hasClusters := c.GetQuery("clusters")
 	// List all accounts associated with the given Spinnaker app.
 	accounts, err := cc.SQLClient.ListKubernetesAccountsBySpinnakerApp(application)
 	if err != nil {
@@ -965,6 +991,13 @@ func (cc *Controller) ListServerGroups(c *gin.Context) {
 	serverGroups = append(serverGroups, replicaSets...)
 	serverGroups = append(serverGroups, daemonSets...)
 	serverGroups = append(serverGroups, statefulSets...)
+
+	// Only return the requested clusters, if any were requested. A present-but-empty
+	// or unparseable entry matches nothing, which is intentional (mirrors OSS
+	// Clouddriver returning an empty list when the param is present but empty).
+	if hasClusters {
+		serverGroups = filterResourcesByClusters(serverGroups, strings.Split(clusters, ","))
+	}
 
 	// Create a new server group for each of these resources.
 	for _, sg := range serverGroups {
