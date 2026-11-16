@@ -87,6 +87,30 @@ var _ = Describe("Task", func() {
 			})
 		})
 
+		When("a plural resource name exists in more than one API group", func() {
+			BeforeEach(func() {
+				fakeSQLClient.ListKubernetesResourcesByTaskIDReturns([]kubernetes.Resource{
+					{
+						AccountName: "test-account-name",
+						APIGroup:    "gateway.networking.k8s.io",
+						Resource:    "gateways",
+						Name:        "my-gateway",
+						Namespace:   "ns",
+					},
+				}, nil)
+			})
+
+			It("looks the resource up in the group it was stored with", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetByGroupResourceCallCount()).To(Equal(1))
+				group, resource, name, namespace := fakeKubeClient.GetByGroupResourceArgsForCall(0)
+				Expect(group).To(Equal("gateway.networking.k8s.io"))
+				Expect(resource).To(Equal("gateways"))
+				Expect(name).To(Equal("my-gateway"))
+				Expect(namespace).To(Equal("ns"))
+			})
+		})
+
 		When("the task type is cleanup", func() {
 			BeforeEach(func() {
 				fakeSQLClient.ListKubernetesResourcesByTaskIDReturns([]kubernetes.Resource{
@@ -99,7 +123,7 @@ var _ = Describe("Task", func() {
 
 			It("does not call make calls to the server", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.GetCallCount()).To(Equal(0))
+				Expect(fakeKubeClient.GetByGroupResourceCallCount()).To(Equal(0))
 			})
 		})
 
@@ -115,7 +139,7 @@ var _ = Describe("Task", func() {
 
 			It("does not call make calls to the server", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusOK))
-				Expect(fakeKubeClient.GetCallCount()).To(Equal(0))
+				Expect(fakeKubeClient.GetByGroupResourceCallCount()).To(Equal(0))
 			})
 		})
 
@@ -143,30 +167,30 @@ var _ = Describe("Task", func() {
 
 			When("the server returns a not found error", func() {
 				BeforeEach(func() {
-					fakeKubeClient.GetReturns(nil, errors.New(`horizontalpodautoscalers.autoscaling "php-apache1-v008" not found`))
+					fakeKubeClient.GetByGroupResourceReturns(nil, errors.New(`horizontalpodautoscalers.autoscaling "php-apache1-v008" not found`))
 				})
 
 				It("ignores the not found error and returns a complete task", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
-					Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+					Expect(fakeKubeClient.GetByGroupResourceCallCount()).To(Equal(1))
 					validateResponse(payloadTaskComplete)
 				})
 			})
 
 			When("the server returns a generic error", func() {
 				BeforeEach(func() {
-					fakeKubeClient.GetReturns(nil, errors.New(`generic error`))
+					fakeKubeClient.GetByGroupResourceReturns(nil, errors.New(`generic error`))
 				})
 
 				It("ignores the not found error", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
-					Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+					Expect(fakeKubeClient.GetByGroupResourceCallCount()).To(Equal(1))
 				})
 			})
 
 			When("the server returns the resource", func() {
 				BeforeEach(func() {
-					fakeKubeClient.GetReturns(&unstructured.Unstructured{
+					fakeKubeClient.GetByGroupResourceReturns(&unstructured.Unstructured{
 						Object: map[string]interface{}{
 							"kind":       "Deployment",
 							"apiVersion": "apps/v1",
@@ -180,7 +204,7 @@ var _ = Describe("Task", func() {
 
 				It("returns an incomplete task", func() {
 					Expect(res.StatusCode).To(Equal(http.StatusOK))
-					Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+					Expect(fakeKubeClient.GetByGroupResourceCallCount()).To(Equal(1))
 					validateResponse(payloadTaskIncomplete)
 				})
 			})
@@ -188,7 +212,7 @@ var _ = Describe("Task", func() {
 
 		When("getting the manifest returns an error", func() {
 			BeforeEach(func() {
-				fakeKubeClient.GetReturns(nil, errors.New("error getting resource"))
+				fakeKubeClient.GetByGroupResourceReturns(nil, errors.New("error getting resource"))
 			})
 
 			It("returns a failed task", func() {
@@ -246,7 +270,7 @@ var _ = Describe("Task", func() {
 			configure := func() {
 				fakeSQLClient.ListKubernetesResourcesByTaskIDReturns(rows, nil)
 				fakeKubeClient.GVKForKindReturns(schema.GroupVersionKind{Group: group}, gvkErr)
-				fakeKubeClient.GetStub = func(kind, name, namespace string) (*unstructured.Unstructured, error) {
+				fakeKubeClient.GetByGroupResourceStub = func(apiGroup, kind, name, namespace string) (*unstructured.Unstructured, error) {
 					for _, m := range missing {
 						if m == name {
 							return nil, apierrors.NewNotFound(schema.GroupResource{Group: group, Resource: kind}, name)
@@ -428,8 +452,8 @@ var _ = Describe("Task", func() {
 					rows = []kubernetes.Resource{mapping("app", "ns"), mapping("app-canary", "ns")}
 					group = "getambassador.io"
 					configure()
-					fakeKubeClient.GetStub = nil
-					fakeKubeClient.GetReturns(nil, apierrors.NewServiceUnavailable("api server unavailable"))
+					fakeKubeClient.GetByGroupResourceStub = nil
+					fakeKubeClient.GetByGroupResourceReturns(nil, apierrors.NewServiceUnavailable("api server unavailable"))
 					logBuf.Reset()
 					createRequest(http.MethodGet)
 					doRequest()

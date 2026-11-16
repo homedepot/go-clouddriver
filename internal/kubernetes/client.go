@@ -3,9 +3,11 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	gcpatcher "github.com/homedepot/go-clouddriver/internal/kubernetes/patcher"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -41,6 +43,7 @@ type Client interface {
 	GVRForKind(string) (schema.GroupVersionResource, error)
 	GVKForKind(string) (schema.GroupVersionKind, error)
 	Get(string, string, string) (*unstructured.Unstructured, error)
+	GetByGroupResource(string, string, string, string) (*unstructured.Unstructured, error)
 	ListByGVR(schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	ListByGVRWithContext(context.Context, schema.GroupVersionResource, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 	ListResource(string, metav1.ListOptions) (*unstructured.UnstructuredList, error)
@@ -326,6 +329,56 @@ func (c *client) Get(kind, name, namespace string) (*unstructured.Unstructured, 
 	}
 
 	return u, err
+}
+
+// GetByGroupResource gets a resource by API group, resource name (example:
+// 'gateways'), name, and namespace. Unlike Get, a plural resource name that
+// exists in more than one API group (for example gateways in
+// gateway.networking.k8s.io and networking.istio.io) is resolved to the
+// requested group instead of failing or picking the wrong one (see CN-5232).
+// The scope (namespaced or cluster-scoped) comes from the resolved REST
+// mapping, so the namespace is ignored for cluster-scoped resources, which
+// are stored with a placeholder namespace such as "default".
+func (c *client) GetByGroupResource(group, resource, name, namespace string) (*unstructured.Unstructured, error) {
+	candidates, err := c.mapper.KindsFor(schema.GroupVersionResource{Resource: resource})
+	if err != nil {
+		return nil, err
+	}
+
+	gvk, ok := selectKindForGroup(candidates, group)
+	if !ok {
+		return nil, fmt.Errorf("no kind found for resource %q in API group %q", resource, group)
+	}
+
+	restMapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	if restMapping.Scope.Name() == meta.RESTScopeNameNamespace {
+		return c.c.
+			Resource(restMapping.Resource).
+			Namespace(namespace).
+			Get(context.TODO(), name, metav1.GetOptions{})
+	}
+
+	return c.c.
+		Resource(restMapping.Resource).
+		Get(context.TODO(), name, metav1.GetOptions{})
+}
+
+// selectKindForGroup returns the first candidate in the given API group
+// (case-insensitive; the empty string is the core group). KindsFor returns
+// candidates in discovery priority order, so the first match is the
+// preferred version of that group.
+func selectKindForGroup(candidates []schema.GroupVersionKind, group string) (schema.GroupVersionKind, bool) {
+	for _, gvk := range candidates {
+		if strings.EqualFold(gvk.Group, group) {
+			return gvk, true
+		}
+	}
+
+	return schema.GroupVersionKind{}, false
 }
 
 func (c *client) GVRForKind(kind string) (schema.GroupVersionResource, error) {

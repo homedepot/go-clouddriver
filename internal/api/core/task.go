@@ -70,7 +70,7 @@ func (cc *Controller) GetTask(c *gin.Context) {
 			continue
 		}
 
-		result, err := provider.Client.Get(r.Resource, r.Name, r.Namespace)
+		result, err := provider.Client.GetByGroupResource(r.APIGroup, r.Resource, r.Name, r.Namespace)
 		if err != nil {
 			// If the task type is "delete" and the resource was not found,
 			// append an empty manifest and continue.
