@@ -3857,8 +3857,7 @@ const payloadManifestIncludeEvents = `{
                   "metadata": {
                     "name": "test-event-name",
                     "generateName": "test-event-generate-name",
-                    "namespace": "test-event-namespace",
-                    "creationTimestamp": null
+                    "namespace": "test-event-namespace"
                   },
                   "involvedObject": {
                     "kind": "test-kind",
@@ -3881,8 +3880,7 @@ const payloadManifestIncludeEvents = `{
                   "metadata": {
                     "name": "test-event-name2",
                     "generateName": "test-event-generate-name",
-                    "namespace": "test-event-namespace",
-                    "creationTimestamp": null
+                    "namespace": "test-event-namespace"
                   },
                   "involvedObject": {
                     "kind": "test-kind",

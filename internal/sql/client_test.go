@@ -195,17 +195,13 @@ var _ = Describe("Sql", func() {
 						WillReturnResult(sqlmock.NewResult(int64(i), 1))
 
 					mock.ExpectCommit()
-
-					// we make sure that all expectations were met
-					if err := mock.ExpectationsWereMet(); err != nil {
-						fmt.Errorf("there were unfulfilled expections: %s", err)
-					}
 				}
-
 			})
 
 			It("adds the namespaces to the DB and succeeds", func() {
 				Expect(err).To(BeNil())
+				// we make sure that all expectations were met
+				Expect(mock.ExpectationsWereMet()).To(Succeed())
 			})
 		})
 

@@ -122,6 +122,25 @@ var _ = Describe("Patcher", func() {
 			})
 		})
 
+		When("the manifest changes lifecycle.preStop.sleep", func() {
+			BeforeEach(func() {
+				current = withPreStopSleep(newDeployment(1, "nginx:1.0"), 20)
+				Expect(util.CreateApplyAnnotation(current, unstructured.UnstructuredJSONScheme)).To(Succeed())
+
+				modified = modifiedConfiguration(withPreStopSleep(newDeployment(1, "nginx:1.0"), 30))
+			})
+
+			It("sends one strategic merge patch with the new sleep duration", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(requests).To(HaveLen(1))
+
+				req := requests[0]
+				Expect(req.method).To(Equal(http.MethodPatch))
+				Expect(req.contentType).To(Equal(string(types.StrategicMergePatchType)))
+				Expect(string(req.body)).To(ContainSubstring(`"lifecycle":{"preStop":{"sleep":{"seconds":30}}}`))
+			})
+		})
+
 		When("the manifest is unchanged", func() {
 			BeforeEach(func() {
 				modified = modifiedConfiguration(newDeployment(1, "nginx:1.0"))
@@ -206,6 +225,21 @@ func newDeployment(replicas int64, image string) *unstructured.Unstructured {
 			},
 		},
 	}
+}
+
+func withPreStopSleep(u *unstructured.Unstructured, seconds int64) *unstructured.Unstructured {
+	containers, found, err := unstructured.NestedSlice(u.Object, "spec", "template", "spec", "containers")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(found).To(BeTrue())
+
+	containers[0].(map[string]interface{})["lifecycle"] = map[string]interface{}{
+		"preStop": map[string]interface{}{
+			"sleep": map[string]interface{}{"seconds": seconds},
+		},
+	}
+	Expect(unstructured.SetNestedSlice(u.Object, containers, "spec", "template", "spec", "containers")).To(Succeed())
+
+	return u
 }
 
 func modifiedConfiguration(u *unstructured.Unstructured) []byte {
