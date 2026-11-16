@@ -55,6 +55,25 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 		return
 	}
 
+	// Look up the persisted resource to recover its API group. The request
+	// only carries a kind and a name, so when a plural kind exists in more
+	// than one API group (see CN-5232) the kind-only lookup below can pick
+	// the wrong group. No matching row falls back to the kind-only lookup.
+	resource := kubernetes.Resource{}
+
+	resources, err := cc.SQLClient.GetKubernetesResourceByAccountNamespaceName(account, namespace, name)
+	if err != nil {
+		clouddriver.Error(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	for _, r := range resources {
+		if strings.EqualFold(r.Kind, kind) {
+			resource = r
+			break
+		}
+	}
+
 	events := []v1.Event{}
 	errCh := make(chan error, defaultErrorChanSize)
 	eventsCh := make(chan v1.Event, internal.DefaultChanSize)
@@ -64,7 +83,7 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 	// Add 1 to the wait group for getting the manifest or error.
 	wg.Add(1)
 
-	go getManifest(provider, wg, manifestCh, errCh, kind, name, namespace)
+	go getManifest(provider, wg, manifestCh, errCh, resource, kind, name, namespace)
 
 	if includeEvents != "false" {
 		wg.Add(1)
@@ -140,10 +159,23 @@ func (cc *Controller) GetManifest(c *gin.Context) {
 
 func getManifest(provider *kubernetes.Provider,
 	wg *sync.WaitGroup, manifestCh chan *unstructured.Unstructured,
-	errCh chan error, kind, name, namespace string) {
+	errCh chan error, resource kubernetes.Resource, kind, name, namespace string) {
 	defer wg.Done()
 
-	manifest, err := provider.Client.Get(kind, name, namespace)
+	var (
+		manifest *unstructured.Unstructured
+		err      error
+	)
+
+	// A non-empty Resource means a trustworthy row was found (see
+	// GetManifest): look it up in its stored API group. Otherwise fall back
+	// to the kind-only lookup.
+	if resource.Resource != "" {
+		manifest, err = provider.Client.GetByGroupResource(resource.APIGroup, resource.Resource, name, namespace)
+	} else {
+		manifest, err = provider.Client.Get(kind, name, namespace)
+	}
+
 	if err != nil {
 		errCh <- err
 		return

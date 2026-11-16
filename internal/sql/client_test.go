@@ -572,6 +572,61 @@ var _ = Describe("Sql", func() {
 		})
 	})
 
+	Describe("#GetKubernetesResourceByAccountNamespaceName", func() {
+		var resources []kubernetes.Resource
+
+		JustBeforeEach(func() {
+			resources, err = c.GetKubernetesResourceByAccountNamespaceName("test-account", "test-namespace", "test-name")
+		})
+
+		When("it succeeds and finds a matching resource", func() {
+			BeforeEach(func() {
+				sqlRows := sqlmock.NewRows([]string{"api_group", "kind", "name", "namespace", "resource", "version"}).
+					AddRow("networking.istio.io", "Gateway", "test-name", "test-namespace", "gateways", "v1beta1")
+				mock.ExpectQuery("(?i)^SELECT " +
+					"api_group, " +
+					"kind, " +
+					"name, " +
+					"namespace, " +
+					"resource, " +
+					"version " +
+					"FROM `kubernetes_resources` " +
+					"WHERE account_name = \\? AND namespace = \\? AND name = \\? AND task_type = \\?").
+					WillReturnRows(sqlRows)
+				mock.ExpectCommit()
+			})
+
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+				Expect(resources).To(HaveLen(1))
+				Expect(resources[0].APIGroup).To(Equal("networking.istio.io"))
+				Expect(resources[0].Kind).To(Equal("Gateway"))
+			})
+		})
+
+		When("no matching resource is found", func() {
+			BeforeEach(func() {
+				sqlRows := sqlmock.NewRows([]string{"api_group", "kind", "name", "namespace", "resource", "version"})
+				mock.ExpectQuery("(?i)^SELECT " +
+					"api_group, " +
+					"kind, " +
+					"name, " +
+					"namespace, " +
+					"resource, " +
+					"version " +
+					"FROM `kubernetes_resources` " +
+					"WHERE account_name = \\? AND namespace = \\? AND name = \\? AND task_type = \\?").
+					WillReturnRows(sqlRows)
+				mock.ExpectCommit()
+			})
+
+			It("returns an empty list with no error", func() {
+				Expect(err).To(BeNil())
+				Expect(resources).To(HaveLen(0))
+			})
+		})
+	})
+
 	Describe("#ListKubernetesResourcesByTaskID", func() {
 		var resources []kubernetes.Resource
 

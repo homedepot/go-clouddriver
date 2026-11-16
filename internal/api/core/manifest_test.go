@@ -57,6 +57,105 @@ var _ = Describe("Manifest", func() {
 			})
 		})
 
+		When("the sql client returns an error looking up the resource", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesResourceByAccountNamespaceNameReturns(nil, errors.New("error getting resource"))
+			})
+
+			It("returns status internal server error", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusInternalServerError))
+				ce := getClouddriverError()
+				Expect(ce.Error).To(HavePrefix("Internal Server Error"))
+				Expect(ce.Message).To(Equal("error getting resource"))
+				Expect(ce.Status).To(Equal(http.StatusInternalServerError))
+			})
+		})
+
+		When("a matching resource is found in the database", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesResourceByAccountNamespaceNameReturns([]kubernetes.Resource{
+					{
+						APIGroup:  "",
+						Kind:      "Pod",
+						Name:      "test-pod",
+						Namespace: "test-namespace",
+						Resource:  "pods",
+						Version:   "v1",
+					},
+				}, nil)
+				fakeKubeClient.GetByGroupResourceReturns(&unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"name":      "test-pod",
+							"namespace": "test-namespace",
+						},
+					},
+				}, nil)
+			})
+
+			It("looks the resource up in its stored API group instead of the ambiguous Get", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetByGroupResourceCallCount()).To(Equal(1))
+				Expect(fakeKubeClient.GetCallCount()).To(Equal(0))
+
+				group, resource, name, namespace := fakeKubeClient.GetByGroupResourceArgsForCall(0)
+				Expect(group).To(Equal(""))
+				Expect(resource).To(Equal("pods"))
+				Expect(name).To(Equal("test-pod"))
+				Expect(namespace).To(Equal("test-namespace"))
+			})
+		})
+
+		When("the stored resource is an Istio Gateway whose plural also exists in another group", func() {
+			BeforeEach(func() {
+				uri = svr.URL + "/manifests/test-account/test-namespace/Gateway test-gateway?includeEvents=false"
+				createRequest(http.MethodGet)
+				fakeSQLClient.GetKubernetesResourceByAccountNamespaceNameReturns([]kubernetes.Resource{
+					{
+						APIGroup:  "networking.istio.io",
+						Kind:      "Gateway",
+						Name:      "test-gateway",
+						Namespace: "test-namespace",
+						Resource:  "gateways",
+						Version:   "v1beta1",
+					},
+				}, nil)
+			})
+
+			It("looks it up in the stored group", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetCallCount()).To(Equal(0))
+				group, resource, name, _ := fakeKubeClient.GetByGroupResourceArgsForCall(0)
+				Expect(group).To(Equal("networking.istio.io"))
+				Expect(resource).To(Equal("gateways"))
+				Expect(name).To(Equal("test-gateway"))
+			})
+		})
+
+		When("no matching resource is found in the database", func() {
+			BeforeEach(func() {
+				fakeSQLClient.GetKubernetesResourceByAccountNamespaceNameReturns([]kubernetes.Resource{}, nil)
+				fakeKubeClient.GetReturns(&unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Pod",
+						"apiVersion": "v1",
+						"metadata": map[string]interface{}{
+							"name":      "test-pod",
+							"namespace": "test-namespace",
+						},
+					},
+				}, nil)
+			})
+
+			It("falls back to the ambiguous Get", func() {
+				Expect(res.StatusCode).To(Equal(http.StatusOK))
+				Expect(fakeKubeClient.GetCallCount()).To(Equal(1))
+				Expect(fakeKubeClient.GetByGroupResourceCallCount()).To(Equal(0))
+			})
+		})
+
 		When("getting the manifest returns null values", func() {
 			BeforeEach(func() {
 				uri = svr.URL + "/manifests/test-account/test-namespace/clusterRole test-cluster-role?includeEvents=false"
