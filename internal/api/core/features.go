@@ -138,7 +138,7 @@ var stages = []string{
 //
 // ]
 func ListStages(c *gin.Context) {
-	response := Stages{}
+	response := make(Stages, 0, len(stages))
 
 	for _, stage := range stages {
 		s := Stage{

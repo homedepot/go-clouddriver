@@ -214,7 +214,7 @@ type credentialsController struct {
 // There might be confidential info stored in a artifacts credentials, so we need to be careful
 // what we list here. In this case, only list the names and types.
 func (cc *credentialsController) ListArtifactCredentialsNamesAndTypes() []Credentials {
-	ac := []Credentials{}
+	ac := make([]Credentials, 0, len(cc.artifactCredentials))
 
 	for _, artifaceCredentials := range cc.artifactCredentials {
 		a := Credentials{

@@ -70,7 +70,7 @@ func (cc *Controller) Search(c *gin.Context) {
 	results := []PageResult{}
 	// Ignore requests for unsupported kinds
 	if containsIgnoreCase(unsupportedKinds, kind) {
-		sr := SearchResponse{}
+		sr := make(SearchResponse, 0, 1)
 		page := Page{
 			PageNumber:   1,
 			PageSize:     pageSize,
@@ -134,7 +134,7 @@ func (cc *Controller) Search(c *gin.Context) {
 		results = append(results, result)
 	}
 
-	sr := SearchResponse{}
+	sr := make(SearchResponse, 0, 1)
 	page := Page{
 		PageNumber:   1,
 		PageSize:     pageSize,
