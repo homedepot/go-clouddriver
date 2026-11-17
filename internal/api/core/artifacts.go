@@ -141,7 +141,7 @@ func (cc *Controller) GetArtifact(c *gin.Context) {
 		// Parse filename
 		matches := matchGcsObjectNameRegexp.FindStringSubmatch(a.Reference)
 
-		if matches == nil || len(matches) < 2 {
+		if len(matches) < 2 {
 			clouddriver.Error(c, http.StatusBadRequest, fmt.Errorf("gcs/object references must be of the format gs://<bucket>/<file-path>[#generation], got: %s", a.Reference))
 			return
 		}

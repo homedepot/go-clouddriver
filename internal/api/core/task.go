@@ -118,7 +118,7 @@ func buildCreatedArtifacts(resources []kubernetes.Resource) []clouddriver.Artifa
 		lastIndex       int
 	)
 
-	cas := []clouddriver.Artifact{}
+	cas := make([]clouddriver.Artifact, 0, len(resources))
 
 	for _, resource := range resources {
 		artifactVersion = ""

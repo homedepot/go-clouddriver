@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -229,9 +230,7 @@ func (cc *Controller) GetInstanceConsole(c *gin.Context) {
 	o := p.Object()
 	// Combine the containers and init containers into
 	// one object.
-	containers := []v1.Container{}
-	containers = append(containers, o.Spec.Containers...)
-	containers = append(containers, o.Spec.InitContainers...)
+	containers := slices.Concat(o.Spec.Containers, o.Spec.InitContainers)
 	// Declare a wait group for all the concurrent calls
 	// to make.
 	wg := &sync.WaitGroup{}

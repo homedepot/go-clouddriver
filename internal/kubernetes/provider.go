@@ -2,9 +2,8 @@ package kubernetes
 
 import (
 	"fmt"
+	"slices"
 	"strings"
-
-	"k8s.io/kubectl/pkg/util/slice"
 )
 
 var (
@@ -95,7 +94,7 @@ func (p *Provider) ValidateNamespaceAccess(namespace string) error {
 		namespace = "default"
 	}
 
-	if len(p.Namespaces) > 0 && !slice.ContainsString(p.Namespaces, namespace, nil) {
+	if len(p.Namespaces) > 0 && !slices.Contains(p.Namespaces, namespace) {
 		return fmt.Errorf("namespace-scoped account not allowed to access forbidden namespace: '%s'", namespace)
 	}
 

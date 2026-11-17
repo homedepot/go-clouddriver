@@ -401,7 +401,7 @@ func (cc *Controller) ListLoadBalancers(c *gin.Context) {
 	// Make a map of resources to Pods they own.
 	instances := makeLoadBalancerInstanceMap(pods)
 	// Make a map of ReplicaSet/StatefulSet UIDs to Services that front them.
-	frontableServerGroups := []resource{}
+	frontableServerGroups := make([]resource, 0, len(replicaSets)+len(statefulSets))
 	frontableServerGroups = append(frontableServerGroups, replicaSets...)
 	frontableServerGroups = append(frontableServerGroups, statefulSets...)
 	loadBalancerServerGroups := makeLoadBalancerServerGroupsMap(frontableServerGroups, services, instances)
@@ -956,12 +956,12 @@ func (cc *Controller) ListServerGroups(c *gin.Context) {
 	// it owns.
 	serverGroupMap := makeServerGroupMap(pods)
 	// Make a map of ReplicaSet/StatefulSet UIDs to Services that front them.
-	frontableServerGroups := []resource{}
+	frontableServerGroups := make([]resource, 0, len(replicaSets)+len(statefulSets))
 	frontableServerGroups = append(frontableServerGroups, replicaSets...)
 	frontableServerGroups = append(frontableServerGroups, statefulSets...)
 	serverGroupLoadBalancers := makeServerGroupLoadBalancersMap(frontableServerGroups, services)
 	// Combine the resources into one server group slice.
-	serverGroups := []resource{}
+	serverGroups := make([]resource, 0, len(replicaSets)+len(daemonSets)+len(statefulSets))
 	serverGroups = append(serverGroups, replicaSets...)
 	serverGroups = append(serverGroups, daemonSets...)
 	serverGroups = append(serverGroups, statefulSets...)

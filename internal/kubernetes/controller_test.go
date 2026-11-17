@@ -89,7 +89,7 @@ var _ = Describe("Controller", func() {
 
 				It("returns an error", func() {
 					Expect(err).ToNot(BeNil())
-					Expect(err.Error()).To(Equal("parse \"https://:::badhost;\": invalid port \":badhost;\" after host"))
+					Expect(err.Error()).To(Equal("parse \"https://:::badhost;\": invalid port \":::badhost;\" after host"))
 				})
 			})
 
@@ -209,7 +209,7 @@ var _ = Describe("Controller", func() {
 
 				It("returns an error", func() {
 					Expect(err).ToNot(BeNil())
-					Expect(err.Error()).To(Equal("parse \"https://:::badhost;\": invalid port \":badhost;\" after host"))
+					Expect(err.Error()).To(Equal("parse \"https://:::badhost;\": invalid port \":::badhost;\" after host"))
 				})
 			})
 

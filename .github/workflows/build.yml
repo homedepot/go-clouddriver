@@ -33,10 +33,10 @@ jobs:
         run: go mod verify
 
       - name: lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.58
+          version: v2.15
 
       - name: Build
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v cmd/clouddriver/clouddriver.go

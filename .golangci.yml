@@ -1,39 +1,58 @@
+version: "2"
 run:
   concurrency: 8
   issues-exit-code: 2
   tests: false
-  timeout: 200s
-
 output:
   formats:
-    - format: colored-line-number
-
-issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gochecknoinits
-
+    text:
+      path: stdout
 linters:
-  disable-all: true
+  default: none
   enable:
     - bodyclose
     - dogsled
-    - exportloopref
     - gocritic
-    - gofmt
-    - goimports
-    - gosimple
     - govet
     - ineffassign
     - misspell
     - nakedret
     - prealloc
-    - typecheck
+    - staticcheck
     - unconvert
     - unparam
     - unused
     - whitespace
     - wsl
+  settings:
+    staticcheck:
+      checks:
+        - S1*
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - gochecknoinits
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
